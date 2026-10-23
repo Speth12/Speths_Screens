@@ -126,7 +126,10 @@ func TestPostProjectAccepts(t *testing.T) {
 		t.Errorf("body: %v", body)
 	}
 
-	resp2, _ := http.Get(hs.URL + "/api/v1/project")
+	resp2, err := http.Get(hs.URL + "/api/v1/project")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp2.Body.Close()
 	var p map[string]any
 	_ = json.NewDecoder(resp2.Body).Decode(&p)
@@ -247,7 +250,10 @@ func TestAlarmTriggersAndAck(t *testing.T) {
 	}
 
 	// Verify acked state.
-	resp4, _ := http.Get(hs.URL + "/api/v1/alarms")
+	resp4, err := http.Get(hs.URL + "/api/v1/alarms")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp4.Body.Close()
 	var events2 []map[string]any
 	_ = json.NewDecoder(resp4.Body).Decode(&events2)
@@ -258,7 +264,10 @@ func TestAlarmTriggersAndAck(t *testing.T) {
 
 func TestAlarmAckMissing(t *testing.T) {
 	_, _, hs := newTestServer(t)
-	resp, _ := http.Post(hs.URL+"/api/v1/alarms/nonexistent/ack", "application/json", nil)
+	resp, err := http.Post(hs.URL+"/api/v1/alarms/nonexistent/ack", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 404 {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
@@ -282,7 +291,10 @@ func TestListRecipesEmpty(t *testing.T) {
 
 func TestRecipeApplyMissingProject(t *testing.T) {
 	_, _, hs := newTestServer(t)
-	resp, _ := http.Post(hs.URL+"/api/v1/recipes/rec1/apply", "application/json", nil)
+	resp, err := http.Post(hs.URL+"/api/v1/recipes/rec1/apply", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 503 {
 		t.Errorf("expected 503, got %d", resp.StatusCode)
@@ -294,7 +306,10 @@ func TestRecipeApplyNotFound(t *testing.T) {
 	resp := postJSON(t, hs.URL+"/api/v1/project", minimalProject)
 	resp.Body.Close()
 
-	resp2, _ := http.Post(hs.URL+"/api/v1/recipes/bogus/apply", "application/json", nil)
+	resp2, err := http.Post(hs.URL+"/api/v1/recipes/bogus/apply", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp2.Body.Close()
 	if resp2.StatusCode != 404 {
 		t.Errorf("expected 404, got %d", resp2.StatusCode)
@@ -357,7 +372,10 @@ func TestVersionSavedOnDeploy(t *testing.T) {
 		}
 	}
 
-	resp, _ := http.Get(hs.URL + "/api/v1/versions")
+	resp, err := http.Get(hs.URL + "/api/v1/versions")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp.Body.Close()
 	var metas []map[string]any
 	_ = json.NewDecoder(resp.Body).Decode(&metas)
@@ -404,7 +422,10 @@ func TestVersionGetAndRestore(t *testing.T) {
 	}
 
 	// There should now be 2 versions (original + restore).
-	resp4, _ := http.Get(hs.URL + "/api/v1/versions")
+	resp4, err := http.Get(hs.URL + "/api/v1/versions")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp4.Body.Close()
 	var all []map[string]any
 	_ = json.NewDecoder(resp4.Body).Decode(&all)
@@ -415,7 +436,10 @@ func TestVersionGetAndRestore(t *testing.T) {
 
 func TestVersionGetNotFound(t *testing.T) {
 	_, _, hs := newTestServer(t)
-	resp, _ := http.Get(hs.URL + "/api/v1/versions/9999")
+	resp, err := http.Get(hs.URL + "/api/v1/versions/9999")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 404 {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
@@ -424,7 +448,10 @@ func TestVersionGetNotFound(t *testing.T) {
 
 func TestVersionRestoreNotFound(t *testing.T) {
 	_, _, hs := newTestServer(t)
-	resp, _ := http.Post(hs.URL+"/api/v1/versions/9999/restore", "application/json", nil)
+	resp, err := http.Post(hs.URL+"/api/v1/versions/9999/restore", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 404 {
 		t.Errorf("expected 404, got %d", resp.StatusCode)
