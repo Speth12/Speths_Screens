@@ -68,6 +68,7 @@ type Driver struct {
 	// Timing; tests shorten these.
 	pollEvery   time.Duration
 	httpTimeout time.Duration
+	maxURL      int // longest read URL in bytes; longer path lists are split
 	backoffMin  time.Duration
 	backoffMax  time.Duration
 
@@ -93,6 +94,7 @@ func New() *Driver {
 	return &Driver{
 		pollEvery:   pollDefault,
 		httpTimeout: 8 * time.Second,
+		maxURL:      2000,
 		backoffMin:  1 * time.Second,
 		backoffMax:  30 * time.Second,
 	}
@@ -545,35 +547,38 @@ func jitter(d time.Duration) time.Duration {
 	return time.Duration(float64(d) * (0.8 + 0.4*rand.Float64()))
 }
 
-// pxcReadGroup reads one component group in a single GET request. A failed
-// request is returned; a variable the controller reports an error for (for
-// example NotExists) only makes that tag Bad.
+// pxcEntry is one variable in a PLCnext read reply.
+type pxcEntry struct {
+	Path  string          `json:"path"`
+	Value json.RawMessage `json:"value"`
+	Error *pxcError       `json:"error"`
+}
+
+// pxcReadGroup reads one component group, in as few GET requests as keep
+// each URL under maxURL. A failed request is returned; a variable the
+// controller reports an error for (for example NotExists) only makes that
+// tag Bad.
 func (d *Driver) pxcReadGroup(ctx context.Context, g pxcGroup, out chan<- tagstore.TagUpdate) error {
-	q := url.Values{}
-	q.Set("pathPrefix", g.prefix)
-	q.Set("paths", strings.Join(g.vars, ","))
-	reqURL := d.varURL() + "?" + q.Encode()
-
-	body, err := d.getJSON(ctx, reqURL)
-	if err != nil {
-		return fmt.Errorf("rest: read %s: %w", g.prefix, err)
-	}
-
-	// Response: { "variables": [{ "path": "...", "value": ..., "error": {...} }] }
-	type entry struct {
-		Path  string          `json:"path"`
-		Value json.RawMessage `json:"value"`
-		Error *pxcError       `json:"error"`
-	}
-	var resp struct {
-		Variables []entry `json:"variables"`
-	}
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return fmt.Errorf("rest: read %s: unreadable response: %w", g.prefix, err)
-	}
-	byPath := make(map[string]entry, len(resp.Variables))
-	for _, v := range resp.Variables {
-		byPath[v.Path] = v
+	base := d.varURL()
+	byPath := make(map[string]pxcEntry, len(g.vars))
+	for _, vars := range chunkVars(base, g.prefix, g.vars, d.maxURL) {
+		q := url.Values{}
+		q.Set("pathPrefix", g.prefix)
+		q.Set("paths", strings.Join(vars, ","))
+		body, err := d.getJSON(ctx, base+"?"+q.Encode())
+		if err != nil {
+			return fmt.Errorf("rest: read %s: %w", g.prefix, err)
+		}
+		// Response: { "variables": [{ "path": "...", "value": ..., "error": {...} }] }
+		var resp struct {
+			Variables []pxcEntry `json:"variables"`
+		}
+		if err := json.Unmarshal(body, &resp); err != nil {
+			return fmt.Errorf("rest: read %s: unreadable response: %w", g.prefix, err)
+		}
+		for _, v := range resp.Variables {
+			byPath[v.Path] = v
+		}
 	}
 
 	now := time.Now().UnixNano()
@@ -604,6 +609,33 @@ func (d *Driver) pxcReadGroup(ctx context.Context, g pxcGroup, out chan<- tagsto
 		}
 	}
 	return nil
+}
+
+// chunkVars splits vars so that each read URL (base, pathPrefix and paths)
+// stays within limit bytes. A single variable longer than that still gets a
+// request of its own.
+func chunkVars(base, prefix string, vars []string, limit int) [][]string {
+	fixed := len(base) + len("?pathPrefix=") + len(url.QueryEscape(prefix)) + len("&paths=")
+	var chunks [][]string
+	var cur []string
+	size := fixed
+	for _, v := range vars {
+		n := len(url.QueryEscape(v))
+		if len(cur) > 0 {
+			n += len("%2C") // the escaped comma before it
+		}
+		if len(cur) > 0 && size+n > limit {
+			chunks = append(chunks, cur)
+			cur, size = nil, fixed
+			n = len(url.QueryEscape(v))
+		}
+		cur = append(cur, v)
+		size += n
+	}
+	if len(cur) > 0 {
+		chunks = append(chunks, cur)
+	}
+	return chunks
 }
 
 // pxcSplitPath splits "Arp.Plc.Eclr/MainInstance.rHMI" into
