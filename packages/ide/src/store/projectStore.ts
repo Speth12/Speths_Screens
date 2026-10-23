@@ -1,180 +1,22 @@
 // Zustand store for the in-memory project (the JSON edited by the IDE).
 import { create } from "zustand";
 
-export type NamespaceNodeType = "folder" | "asset" | "tag" | "virtual";
+// Project types are generated from schema.json (npm run gen:types).
+import type {
+  AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Datasource, DatasourceType, Dynamic, DynamicActionType, Faceplate, FaceplateParam,
+  FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe,
+  RecipeEntry, Udt, UDTField, User, UserRole, Widget, WidgetType,
+} from "@speths-screens/shared-types";
 
-export type NamespaceNode = {
-  path: string;
-  type: NamespaceNodeType;
-  dataType?: string;
-  description?: string;
-  unit?: string;
-  driverId?: string;
-  driverAddr?: string;
-  expression?: string;
-  meta?: Record<string, string>;
+export type {
+  AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam, FaceplateWidget,
+  ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe, RecipeEntry,
+  UDTField, User, UserRole, Widget, WidgetType,
 };
-
-export type WidgetType =
-  | "gauge" | "trend" | "led" | "button" | "numericInput"
-  | "numericDisplay" | "textInput" | "textDisplay" | "historyLog"
-  | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol"
-  | "faceplate" | "table";
-
-export type UDTField = {
-  name: string;
-  type: "bool" | "int" | "real" | "string";
-  unit?: string;
-  description?: string;
-};
-
-export type UDT = {
-  id: string;
-  name: string;
-  description?: string;
-  fields: UDTField[];
-};
-
-export type AssetNode = {
-  id: string;
-  name: string;
-  parentId?: string;
-  description?: string;
-  tagPrefix?: string;
-  udtId?: string;
-  iconType?: "plant" | "area" | "unit" | "device" | "sensor";
-};
-
-export type FaceplateParam = { name: string; description?: string };
-export type FaceplateWidget = Omit<Widget, "id"> & { localId: string };
-export type Faceplate = {
-  id: string;
-  name: string;
-  description?: string;
-  params: FaceplateParam[];
-  widgets: FaceplateWidget[];
-};
-
-export type DynActionType =
-  | "writeValue" | "toggleValue" | "incrementValue"
-  | "navigate" | "openUrl";
-
-export type Dynamic = {
-  id: string;
-  kind: "visibility" | "colorFill" | "blink" | "rotation" | "disable"
-      | "onClick" | "onPressed" | "onReleased" | "script";
-  // property dynamics — tag binding
-  binding?: string;
-  // colorFill: truthy/falsy → color ring
-  trueColor?: string;
-  falseColor?: string;
-  // blink: flash when tag is truthy
-  blinkPeriodMs?: number;
-  blinkColor?: string;
-  // rotation: map value range → angle range
-  minValue?: number;
-  maxValue?: number;
-  minAngle?: number;
-  maxAngle?: number;
-  // action dynamics
-  actionType?: DynActionType;
-  writeTo?: string;       // binding to write to (may differ from read binding)
-  writeValue?: unknown;   // for writeValue
-  step?: number;          // for incrementValue
-  pageId?: string;        // for navigate
-  url?: string;           // for openUrl
-  // script dynamic — JS expression evaluated with `value` = tag value
-  expression?: string;    // e.g. "value > 5000"
-  targetProp?: string;    // config key to override: "bgColor" | "borderColor" | "textColor" | "visible"
-  trueValue?: string;     // applied when expression is truthy
-  falseValue?: string;    // applied when expression is falsy
-};
-
-export type Widget = {
-  id: string;
-  type: WidgetType;
-  x: number; y: number; w: number; h: number;
-  binding?: string;
-  visibleBinding?: string;
-  locked?: boolean;
-  groupId?: string;
-  config?: Record<string, unknown>;
-  dynamics?: Dynamic[];
-};
-
-export type Page = { id: string; name: string; widgets: Widget[]; backgroundColor?: string; script?: string };
-
-export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual";
-export type Datasource = {
-  id: string;
-  type: DatasourceType;
-  label: string;
-  config: Record<string, unknown>;
-};
-
-export type AlarmCondition = "gt" | "gte" | "lt" | "lte" | "eq" | "ne";
-export type AlarmSeverity = "critical" | "warning" | "info";
-
-export type AlarmRule = {
-  id: string;
-  name: string;
-  binding: string;      // "dsId:tagPath"
-  condition: AlarmCondition;
-  threshold: number;
-  severity: AlarmSeverity;
-  message: string;
-};
-
-export type RecipeEntry = {
-  binding: string;   // "dsId:tagPath"
-  value: unknown;    // value to write
-};
-
-export type Recipe = {
-  id: string;
-  name: string;
-  description?: string;
-  entries: RecipeEntry[];
-};
-
-export type ImageAsset = {
-  id: string;
-  name: string;
-  dataUrl: string;   // base64 data URL
-  mimeType: string;
-  width: number;
-  height: number;
-  size: number;      // bytes (original file size)
-};
-
-export type CanvasResolution =
-  | { type: "dynamic" }
-  | { type: "fixed"; width: number; height: number };
-
-export type CanvasSnap = "grid" | "pixel";
-
-export type UserRole = "admin" | "operator" | "viewer";
-export type ProjectUser = { id: string; name: string; pin: string; role: UserRole };
-
-export type Project = {
-  version: string;
-  name?: string;
-  pin?: string;
-  viewOnly?: boolean;
-  datasources: Datasource[];
-  pages: Page[];
-  alarmRules?: AlarmRule[];
-  recipes?: Recipe[];
-  images?: ImageAsset[];
-  canvasResolution?: CanvasResolution;
-  canvasSnap?: CanvasSnap;
-  enabledSymbolPacks?: string[];
-  users?: ProjectUser[];
-  udts?: UDT[];
-  assets?: AssetNode[];
-  faceplates?: Faceplate[];
-  namespace?: NamespaceNode[];
-};
+export type UDT = Udt;
+export type DynActionType = DynamicActionType;
 
 const MAX_HISTORY = 50;
 

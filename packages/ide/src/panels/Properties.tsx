@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useProject, type Dynamic } from "../store/projectStore";
+import type { DynamicTargetProp } from "@speths-screens/shared-types";
 import { useTag } from "../hooks/useTag";
 import { PositionEditor } from "./Canvas";
 import { registerWidget, getWidget, type PropertiesPanelProps } from "../widgets/widgetRegistry";
@@ -1020,7 +1021,7 @@ function DynamicCard({ d, onUpdate, onRemove, pages, inp, numInp }: {
               </div>
               <div>
                 <div className="text-[10px] text-zinc-500 mb-0.5">Target property</div>
-                <select value={d.targetProp ?? "bgColor"} onChange={(e) => onUpdate({ targetProp: e.target.value })} className={inp}>
+                <select value={d.targetProp ?? "bgColor"} onChange={(e) => onUpdate({ targetProp: e.target.value as DynamicTargetProp })} className={inp}>
                   <option value="bgColor">Background color</option>
                   <option value="borderColor">Border color</option>
                   <option value="textColor">Text color</option>

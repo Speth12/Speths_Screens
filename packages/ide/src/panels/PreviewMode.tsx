@@ -103,8 +103,8 @@ export function PreviewMode({ onExit }: Props) {
     const { width: vw, height: vh } = containerRef.current.getBoundingClientRect();
 
     if (resolution.type === "fixed") {
-      const fw = resolution.width;
-      const fh = resolution.height;
+      const fw = resolution.width ?? 1920;
+      const fh = resolution.height ?? 1080;
       const s = Math.min(vw / fw, vh / fh);
       setScale(s);
       setCanvasW(fw);
