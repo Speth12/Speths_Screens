@@ -116,6 +116,8 @@ Local files that are git-ignored and must stay out of commits: `*.db` (the histo
 
 Branch `phase-1-readwrite-core`. Gate: a 24-hour soak test against the AXC F 3152 with no frozen values, and every write either confirmed or failed with a reason.
 
+Defect 5 decisions (Dan, 2026-10-23): `Connect` only checks the config and starts the loop; the driver reaches the PLC, logs in and reconnects on its own (states: starting, online, offline). One failed request for a group (network error, timeout, HTTP 5xx, a 401 that one fresh login doesn't fix) takes the driver offline: every polled tag goes Bad keeping its last value, `Status()` shows the reason, retries back off from 1 s doubling to 30 s with ±20% jitter, and writes fail at once. A per-variable error (`NotExists`) makes only that tag Bad. `TagState` and the WebSocket tag message get an optional `reason`. Long `paths=` lists are split so each URL stays under 2000 bytes. Login and token refresh are built and tested against a fake; not yet verified on a controller with user authentication on. MQTT subscribes again after a reconnect and marks exact-topic tags Bad while the connection is lost. Per-datasource certificate checking is a separate change (needs `schema.json`).
+
 Known defects, in fix order:
 
 Defect 1 decisions (Dan, 2026-10-23): drivers get the output channel in `Connect(ctx, cfg, out)` and run one poll loop from `Connect` to `Disconnect`; `SetTags` swaps the tag set and is a no-op when the set is unchanged; an empty set keeps the driver connected but idle. OPC UA is covered by unit tests plus the soak test if no fake server works.

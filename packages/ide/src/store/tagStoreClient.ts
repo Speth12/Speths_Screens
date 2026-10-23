@@ -9,11 +9,13 @@ export type TagState = {
   value: unknown;
   quality: "Good" | "Bad" | "Uncertain" | "Unknown";
   ts: number;
+  /** Why the quality is not Good, when the runtime knows. */
+  reason?: string;
 };
 
 type Listener = (s: TagState) => void;
 type Outgoing = { subscribe?: string[]; unsubscribe?: string[] };
-type Incoming = { path: string; value: unknown; quality: TagState["quality"]; ts: number };
+type Incoming = { path: string; value: unknown; quality: TagState["quality"]; reason?: string; ts: number };
 
 const RECONNECT_MS = 1500;
 
@@ -108,6 +110,7 @@ class Client {
         const state: TagState = {
           value: msg.value,
           quality: msg.quality ?? "Unknown",
+          reason: msg.reason,
           ts: msg.ts ?? Date.now() * 1e6,
         };
         this.cache.set(msg.path, state);

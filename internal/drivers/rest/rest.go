@@ -20,9 +20,11 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"slices"
@@ -43,36 +45,69 @@ const (
 )
 
 // Driver implements drivers.ProtocolDriver.
+//
+// It moves through four states. Connect checks the config and starts the
+// driver's one goroutine (starting). Once the controller answers, the driver
+// polls (online). The first failed request for a group takes it offline:
+// every polled tag goes Bad keeping its last value, writes fail at once, and
+// the goroutine retries with backoff until the controller answers again.
+// Disconnect stops it (stopped).
 type Driver struct {
 	mu        sync.Mutex
 	hc        *http.Client
 	baseURL   string // e.g. https://192.168.88.10
 	basePath  string // e.g. /_pxc_api/v1.14  (trimmed of trailing slash)
 	isPXC     bool   // true when basePath contains "_pxc_api"
-	pxcVarURL string // full URL to the variables endpoint (PLCnext mode)
+	pxcRoot   string // e.g. https://192.168.88.10/_pxc_api (PLCnext mode)
+	pxcVarURL string // variables endpoint (PLCnext mode); guarded by mu, "" until known
 	token     string
-	pollEvery time.Duration
-	cancel    context.CancelFunc // stops the poll loop; nil when not connected
+	cancel    context.CancelFunc // stops the goroutine; nil when stopped
 	out       chan<- tagstore.TagUpdate
 	wg        sync.WaitGroup
 
+	// Timing; tests shorten these.
+	pollEvery   time.Duration
+	httpTimeout time.Duration
+	backoffMin  time.Duration
+	backoffMax  time.Duration
+
 	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
 
-	connected atomic.Bool
-	lastErr   atomic.Pointer[string]
-	tagCount  atomic.Int32
+	// last is the state most recently sent per path. Only the goroutine
+	// started by Connect touches it.
+	last map[string]tagstore.TagState
+
+	state    atomic.Int32 // stateStopped, stateStarting, stateOnline, stateOffline
+	lastErr  atomic.Pointer[string]
+	tagCount atomic.Int32
 }
 
-func New() *Driver { return &Driver{pollEvery: pollDefault} }
+const (
+	stateStopped int32 = iota
+	stateStarting
+	stateOnline
+	stateOffline
+)
+
+func New() *Driver {
+	return &Driver{
+		pollEvery:   pollDefault,
+		httpTimeout: 8 * time.Second,
+		backoffMin:  1 * time.Second,
+		backoffMax:  30 * time.Second,
+	}
+}
 
 func (d *Driver) ID() string { return driverID }
 
-// Connect establishes the HTTP client and detects the API mode.
+// Connect checks the config and starts the driver. It does not wait for the
+// controller: an unreachable controller shows up in Status() and the driver
+// keeps retrying in the background.
 //
 // cfg.Endpoint:             base URL  (e.g. https://192.168.88.10)
 // cfg.Extra["basePath"]:   path prefix — for PLCnext use /_pxc_api/v1.14
 //
-//	(the driver auto-detects _pxc_api and probes the correct version if needed)
+//	(without a version the driver asks the controller for it on first contact)
 //
 // cfg.Extra["bearerToken"]: optional Authorization: Bearer <token>
 func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
@@ -95,54 +130,44 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	// Always skip TLS verification — PLCs and embedded devices universally use
 	// self-signed certificates on trusted industrial networks.
 	tr.TLSClientConfig = insecureTLSConfig()
-	d.hc = &http.Client{Timeout: 8 * time.Second, Transport: tr}
+	d.hc = &http.Client{Timeout: d.httpTimeout, Transport: tr}
 
-	// Auto-detect PLCnext pxc_api mode.
+	// Auto-detect PLCnext pxc_api mode. With a version in basePath the
+	// variables URL is known now; otherwise contact learns it.
 	d.isPXC = strings.Contains(d.basePath, "_pxc_api")
+	d.setVarURL("")
 	if d.isPXC {
-		apiBase, err := d.probeAPIVersion(ctx)
-		if err != nil {
-			return d.fail(fmt.Errorf("rest: pxc_api probe failed: %w", err))
+		root := d.basePath
+		if i := strings.Index(root, "/v"); i >= 0 {
+			root = root[:i]
+			d.setVarURL(d.baseURL + d.basePath + "/variables")
 		}
-		d.pxcVarURL = apiBase + "/variables"
-		log.Printf("[DRIVER] rest: PLCnext mode, API base %s", apiBase)
+		d.pxcRoot = d.baseURL + root
 	}
 
 	loopCtx, cancel := context.WithCancel(context.Background())
 	d.mu.Lock()
 	d.cancel = cancel
 	d.mu.Unlock()
-	d.connected.Store(true)
 	d.lastErr.Store(strPtr(""))
-	log.Printf("[DRIVER] rest: connected to %s%s (pxc=%v)", d.baseURL, d.basePath, d.isPXC)
+	d.state.Store(stateStarting)
+	log.Printf("[DRIVER] rest: starting %s%s (pxc=%v)", d.baseURL, d.basePath, d.isPXC)
 
 	d.wg.Add(1)
-	go d.pollLoop(loopCtx)
+	go d.run(loopCtx)
 	return nil
 }
 
-// probeAPIVersion negotiates the highest supported pxc_api version by querying
-// the root endpoint. Falls back to the base path verbatim if detection fails.
-func (d *Driver) probeAPIVersion(ctx context.Context) (string, error) {
-	// Extract the base without any version fragment (e.g. https://host/_pxc_api).
-	pxcRoot := d.baseURL + d.basePath
-	if i := strings.Index(d.basePath, "/v"); i >= 0 {
-		// caller already included a version — use it directly
-		return d.baseURL + d.basePath, nil
-	}
-	// No version in basePath — ask the server which versions it supports.
-	body, err := d.getJSON(ctx, pxcRoot+"/api/")
-	if err != nil {
-		return pxcRoot + "/v1.14", nil // best-effort default
-	}
-	var resp struct {
-		BasePath string `json:"basePath"` // e.g. "/v1.14/"
-	}
-	if json.Unmarshal(body, &resp) == nil && resp.BasePath != "" {
-		ver := strings.Trim(resp.BasePath, "/")
-		return d.baseURL + "/_pxc_api/" + ver, nil
-	}
-	return pxcRoot + "/v1.14", nil
+func (d *Driver) varURL() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.pxcVarURL
+}
+
+func (d *Driver) setVarURL(u string) {
+	d.mu.Lock()
+	d.pxcVarURL = u
+	d.mu.Unlock()
 }
 
 func (d *Driver) Disconnect() error {
@@ -153,7 +178,7 @@ func (d *Driver) Disconnect() error {
 	}
 	d.mu.Unlock()
 	d.wg.Wait()
-	d.connected.Store(false)
+	d.state.Store(stateStopped)
 	return nil
 }
 
@@ -164,7 +189,7 @@ func (d *Driver) Disconnect() error {
 // PLCnext: reads /_pxc_api/v*/ports to get all HMI-exported port names.
 // Generic: GETs basePath and walks the JSON tree.
 func (d *Driver) Browse(ctx context.Context) ([]drivers.TagDefinition, error) {
-	if !d.connected.Load() {
+	if d.state.Load() == stateStopped {
 		return nil, fmt.Errorf("rest: not connected")
 	}
 
@@ -188,7 +213,7 @@ func (d *Driver) Browse(ctx context.Context) ([]drivers.TagDefinition, error) {
 // pxcBrowse reads the /ports endpoint and returns one TagDefinition per port.
 func (d *Driver) pxcBrowse(ctx context.Context) ([]drivers.TagDefinition, error) {
 	// Derive ports URL from the variables URL: swap "variables" → "ports".
-	portsURL := strings.TrimSuffix(d.pxcVarURL, "/variables") + "/ports"
+	portsURL := strings.TrimSuffix(d.varURL(), "/variables") + "/ports"
 	body, err := d.getJSON(ctx, portsURL)
 	if err != nil {
 		return nil, fmt.Errorf("rest: browse ports %s: %w", portsURL, err)
@@ -362,88 +387,223 @@ func (d *Driver) output() chan<- tagstore.TagUpdate {
 	return d.out
 }
 
-// pollLoop is the driver's only poll goroutine. It reads the current tag set
-// on every tick, so SetTags takes effect on the next tick.
-func (d *Driver) pollLoop(ctx context.Context) {
+// run is the driver's only goroutine. It reaches the controller, polls while
+// online, and after a failure marks every tag Bad and retries with backoff.
+func (d *Driver) run(ctx context.Context) {
 	defer d.wg.Done()
+	d.last = map[string]tagstore.TagState{}
+	wait := d.backoffMin
+	for {
+		err := d.contact(ctx)
+		if err == nil {
+			d.setOnline()
+			wait = d.backoffMin
+			err = d.pollUntilFailure(ctx)
+		}
+		if ctx.Err() != nil {
+			return
+		}
+		d.setOffline(ctx, err)
+		if !sleepCtx(ctx, jitter(wait)) {
+			return
+		}
+		wait = min(2*wait, d.backoffMax)
+	}
+}
+
+// contact checks that the controller answers. Any HTTP reply below 500
+// counts; a network error, a timeout or a 5xx does not. In PLCnext mode it
+// also learns the API version when basePath did not name one.
+func (d *Driver) contact(ctx context.Context) error {
+	if !d.isPXC {
+		_, err := d.getJSON(ctx, d.baseURL+d.basePath)
+		return unreachable(err)
+	}
+	body, err := d.getJSON(ctx, d.pxcRoot+"/api/")
+	if err := unreachable(err); err != nil {
+		return err
+	}
+	if d.varURL() == "" {
+		ver := "v1.14" // best-effort default
+		var resp struct {
+			BasePath string `json:"basePath"` // e.g. "/v1.14/"
+		}
+		if err == nil && json.Unmarshal(body, &resp) == nil && resp.BasePath != "" {
+			ver = strings.Trim(resp.BasePath, "/")
+		}
+		d.setVarURL(d.pxcRoot + "/" + ver + "/variables")
+		log.Printf("[DRIVER] rest: PLCnext mode, API base %s/%s", d.pxcRoot, ver)
+	}
+	return nil
+}
+
+// unreachable returns err unless it is an HTTP reply below 500, which shows
+// the controller is there.
+func unreachable(err error) error {
+	var se *statusError
+	if errors.As(err, &se) && se.code < 500 {
+		return nil
+	}
+	return err
+}
+
+// pollUntilFailure polls on every tick and returns the first failure, or the
+// context error when the driver is stopped. It reads the current tag set on
+// every tick, so SetTags takes effect on the next tick.
+func (d *Driver) pollUntilFailure(ctx context.Context) error {
 	tick := time.NewTicker(d.pollEvery)
 	defer tick.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		case <-tick.C:
-			ts := d.tags.Load()
-			out := d.output()
-			if ts == nil || len(ts.paths) == 0 || out == nil {
-				continue
-			}
-			if d.isPXC {
-				for _, g := range ts.groups {
-					d.pxcReadGroup(ctx, g.prefix, g.vars, g.paths, out)
-				}
-			} else {
-				d.genericPoll(ctx, ts.paths, out)
+			if err := d.pollOnce(ctx); err != nil {
+				return err
 			}
 		}
 	}
 }
 
-// pxcReadGroup reads one component group in a single GET request.
-func (d *Driver) pxcReadGroup(ctx context.Context, prefix string, vars []string, fullPaths []string, out chan<- tagstore.TagUpdate) {
-	q := url.Values{}
-	q.Set("pathPrefix", prefix)
-	q.Set("paths", strings.Join(vars, ","))
-	reqURL := d.pxcVarURL + "?" + q.Encode()
+func (d *Driver) pollOnce(ctx context.Context) error {
+	ts := d.tags.Load()
+	out := d.output()
+	if ts == nil || len(ts.paths) == 0 || out == nil {
+		return nil
+	}
+	if !d.isPXC {
+		return d.genericPoll(ctx, ts.paths, out)
+	}
+	for _, g := range ts.groups {
+		if err := d.pxcReadGroup(ctx, g, out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	body, err := d.getJSON(ctx, reqURL)
-	if err != nil {
-		log.Printf("[DRIVER] rest: pxc poll error: %v", err)
+func (d *Driver) setOnline() {
+	if d.state.Swap(stateOnline) != stateOnline {
+		log.Printf("[DRIVER] rest: online %s%s", d.baseURL, d.basePath)
+	}
+	d.lastErr.Store(strPtr(""))
+}
+
+// setOffline records why the driver is offline and marks every polled tag
+// Bad, keeping its last value. Tags already Bad for the same reason are not
+// sent again, so retries do not repeat the burst.
+func (d *Driver) setOffline(ctx context.Context, err error) {
+	reason := err.Error()
+	if d.state.Swap(stateOffline) != stateOffline || d.lastError() != reason {
+		log.Printf("[DRIVER] rest: offline: %s", reason)
+	}
+	d.lastErr.Store(&reason)
+	ts := d.tags.Load()
+	out := d.output()
+	if ts == nil || out == nil {
 		return
 	}
-
-	// Response: { "variables": [{ "path": "...", "value": ... }] }
-	var resp struct {
-		Variables []struct {
-			Path  string          `json:"path"`
-			Value json.RawMessage `json:"value"`
-		} `json:"variables"`
-	}
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return
-	}
-
-	// Map response by full path.
-	byPath := map[string]json.RawMessage{}
-	for _, v := range resp.Variables {
-		byPath[v.Path] = v.Value
-	}
-
 	now := time.Now().UnixNano()
-	for i, p := range fullPaths {
-		raw, ok := byPath[p]
-		if !ok {
-			// try by varName in case prefix was already embedded
-			_, vn := pxcSplitPath(p)
-			raw, ok = byPath[prefix+vn]
+	for _, p := range ts.paths {
+		prev := d.last[p]
+		if prev.Quality == "Bad" && prev.Reason == reason {
+			continue
 		}
-		quality := "Bad"
-		var val any
-		if ok && string(raw) != "null" {
-			if err := json.Unmarshal(raw, &val); err == nil {
-				quality = "Good"
-			}
-		}
-		_ = i
-		select {
-		case out <- tagstore.TagUpdate{
-			Path:  p,
-			State: tagstore.TagState{Value: val, Quality: quality, TS: now},
-		}:
-		case <-ctx.Done():
+		bad := tagstore.TagState{Value: prev.Value, Quality: "Bad", Reason: reason, TS: now}
+		if !d.emit(ctx, out, p, bad) {
 			return
 		}
 	}
+}
+
+// emit sends one update and remembers it. It returns false when the driver
+// is stopped while waiting on a full output.
+func (d *Driver) emit(ctx context.Context, out chan<- tagstore.TagUpdate, path string, st tagstore.TagState) bool {
+	select {
+	case out <- tagstore.TagUpdate{Path: path, State: st}:
+		d.last[path] = st
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// sleepCtx waits for d or until ctx is done; it reports whether d passed.
+func sleepCtx(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// jitter spreads d by ±20% so many runtimes do not retry in step.
+func jitter(d time.Duration) time.Duration {
+	return time.Duration(float64(d) * (0.8 + 0.4*rand.Float64()))
+}
+
+// pxcReadGroup reads one component group in a single GET request. A failed
+// request is returned; a variable the controller reports an error for (for
+// example NotExists) only makes that tag Bad.
+func (d *Driver) pxcReadGroup(ctx context.Context, g pxcGroup, out chan<- tagstore.TagUpdate) error {
+	q := url.Values{}
+	q.Set("pathPrefix", g.prefix)
+	q.Set("paths", strings.Join(g.vars, ","))
+	reqURL := d.varURL() + "?" + q.Encode()
+
+	body, err := d.getJSON(ctx, reqURL)
+	if err != nil {
+		return fmt.Errorf("rest: read %s: %w", g.prefix, err)
+	}
+
+	// Response: { "variables": [{ "path": "...", "value": ..., "error": {...} }] }
+	type entry struct {
+		Path  string          `json:"path"`
+		Value json.RawMessage `json:"value"`
+		Error *pxcError       `json:"error"`
+	}
+	var resp struct {
+		Variables []entry `json:"variables"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return fmt.Errorf("rest: read %s: unreadable response: %w", g.prefix, err)
+	}
+	byPath := make(map[string]entry, len(resp.Variables))
+	for _, v := range resp.Variables {
+		byPath[v.Path] = v
+	}
+
+	now := time.Now().UnixNano()
+	for i, p := range g.paths {
+		e, ok := byPath[p]
+		if !ok {
+			// try by varName in case prefix was already embedded
+			e, ok = byPath[g.prefix+g.vars[i]]
+		}
+		st := tagstore.TagState{Quality: "Bad", TS: now}
+		switch {
+		case !ok:
+			st.Reason = "missing from the controller's reply"
+		case e.Error != nil:
+			st.Reason = e.Error.String()
+		case len(e.Value) == 0 || string(e.Value) == "null":
+			st.Reason = "no value"
+		default:
+			var val any
+			if err := json.Unmarshal(e.Value, &val); err != nil {
+				st.Reason = "unreadable value"
+			} else {
+				st.Value, st.Quality = val, "Good"
+			}
+		}
+		if !d.emit(ctx, out, p, st) {
+			return ctx.Err()
+		}
+	}
+	return nil
 }
 
 // pxcSplitPath splits "Arp.Plc.Eclr/MainInstance.rHMI" into
@@ -455,49 +615,63 @@ func pxcSplitPath(path string) (prefix, varName string) {
 	return "", path
 }
 
-// genericPoll is the non-PLCnext poll: one GET per path.
-func (d *Driver) genericPoll(ctx context.Context, paths []string, out chan<- tagstore.TagUpdate) {
+// genericPoll is the non-PLCnext poll: one GET per path. A path the server
+// rejects (for example 404) only makes that tag Bad.
+func (d *Driver) genericPoll(ctx context.Context, paths []string, out chan<- tagstore.TagUpdate) error {
 	for _, p := range paths {
-		val, quality := d.readOne(ctx, p)
-		select {
-		case out <- tagstore.TagUpdate{
-			Path:  p,
-			State: tagstore.TagState{Value: val, Quality: quality, TS: time.Now().UnixNano()},
-		}:
-		case <-ctx.Done():
-			return
+		st, err := d.readOne(ctx, p)
+		if err != nil {
+			return err
+		}
+		if !d.emit(ctx, out, p, st) {
+			return ctx.Err()
 		}
 	}
+	return nil
 }
 
-func (d *Driver) readOne(ctx context.Context, path string) (any, string) {
+func (d *Driver) readOne(ctx context.Context, path string) (tagstore.TagState, error) {
+	st := tagstore.TagState{Quality: "Bad", TS: time.Now().UnixNano()}
 	urlPath, gjsonPath := splitPath(path)
 	reqURL := d.baseURL + d.basePath + "/" + strings.TrimLeft(urlPath, "/")
 	body, err := d.getJSON(ctx, reqURL)
 	if err != nil {
-		return nil, "Bad"
+		if unreachable(err) != nil {
+			return st, fmt.Errorf("rest: read %s: %w", urlPath, err)
+		}
+		st.Reason = err.Error()
+		return st, nil
 	}
+	st.Quality = "Good"
 	if gjsonPath != "" {
 		r := gjson.GetBytes(body, gjsonPath)
 		if !r.Exists() {
-			return nil, "Bad"
+			st.Quality, st.Reason = "Bad", "no "+gjsonPath+" in the reply"
+			return st, nil
 		}
-		return r.Value(), "Good"
+		st.Value = r.Value()
+		return st, nil
 	}
 	if v := gjson.GetBytes(body, "value"); v.Exists() {
-		return v.Value(), "Good"
+		st.Value = v.Value()
+		return st, nil
 	}
 	var v any
 	if err := json.Unmarshal(body, &v); err != nil {
-		return string(body), "Good"
+		st.Value = string(body)
+		return st, nil
 	}
-	return v, "Good"
+	st.Value = v
+	return st, nil
 }
 
 // ── Write ────────────────────────────────────────────────────────────────────
 
 // Write PUTs {"value": value} (generic) or POSTs PLCnext format.
 func (d *Driver) Write(ctx context.Context, path string, value any) error {
+	if d.state.Load() == stateOffline {
+		return fmt.Errorf("rest: not connected: %s", d.lastError())
+	}
 	if d.isPXC {
 		return d.pxcWrite(ctx, path, value)
 	}
@@ -505,13 +679,17 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 }
 
 func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
+	varURL := d.varURL()
+	if varURL == "" {
+		return fmt.Errorf("rest: not connected yet")
+	}
 	body, err := json.Marshal(map[string]any{
 		"variables": []map[string]any{{"path": path, "value": value}},
 	})
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, d.pxcVarURL, strings.NewReader(string(body)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, varURL, strings.NewReader(string(body)))
 	if err != nil {
 		return err
 	}
@@ -526,25 +704,38 @@ func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode/100 != 2 {
-		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", resp.StatusCode, respBody, d.pxcVarURL, body)
+		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", resp.StatusCode, respBody, varURL, body)
 		return fmt.Errorf("rest: pxc write status %d: %s", resp.StatusCode, respBody)
 	}
 	return pxcWriteError(path, respBody)
+}
+
+// pxcError is the error PLCnext puts on a variable or on a whole reply.
+type pxcError struct {
+	Code    int    `json:"code"`
+	Domain  string `json:"domain"`
+	Reason  string `json:"reason"`
+	Details []struct {
+		Domain string `json:"domain"`
+		Reason string `json:"reason"`
+	} `json:"details"`
+}
+
+// String gives "domain: reason", e.g. "variables: NotExists".
+func (e *pxcError) String() string {
+	if e.Reason == "" && len(e.Details) > 0 {
+		return e.Details[0].Domain + ": " + e.Details[0].Reason
+	}
+	if e.Domain != "" {
+		return e.Domain + ": " + e.Reason
+	}
+	return e.Reason
 }
 
 // pxcWriteError reports the error the controller put in a 2xx write response.
 // PLCnext answers a rejected write (unknown variable, wrong type, value out
 // of range) with HTTP 200 and an "error" on the variable or on the response.
 func pxcWriteError(path string, body []byte) error {
-	type pxcError struct {
-		Code    int    `json:"code"`
-		Domain  string `json:"domain"`
-		Reason  string `json:"reason"`
-		Details []struct {
-			Domain string `json:"domain"`
-			Reason string `json:"reason"`
-		} `json:"details"`
-	}
 	var resp struct {
 		Error     *pxcError `json:"error"`
 		Variables []struct {
@@ -558,21 +749,12 @@ func pxcWriteError(path string, body []byte) error {
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return fmt.Errorf("rest: pxc write %s: unreadable response: %w", path, err)
 	}
-	describe := func(e *pxcError) string {
-		if e.Reason == "" && len(e.Details) > 0 {
-			return e.Details[0].Domain + ": " + e.Details[0].Reason
-		}
-		if e.Domain != "" {
-			return e.Domain + ": " + e.Reason
-		}
-		return e.Reason
-	}
 	if resp.Error != nil {
-		return fmt.Errorf("rest: pxc write %s rejected: %s", path, describe(resp.Error))
+		return fmt.Errorf("rest: pxc write %s rejected: %s", path, resp.Error)
 	}
 	for _, v := range resp.Variables {
 		if v.Error != nil {
-			return fmt.Errorf("rest: pxc write %s rejected: %s", v.Path, describe(v.Error))
+			return fmt.Errorf("rest: pxc write %s rejected: %s", v.Path, v.Error)
 		}
 	}
 	return nil
@@ -607,22 +789,18 @@ func (d *Driver) genericWrite(ctx context.Context, path string, value any) error
 // ── Status ───────────────────────────────────────────────────────────────────
 
 func (d *Driver) Status() drivers.DriverStatus {
-	last := ""
-	if p := d.lastErr.Load(); p != nil {
-		last = *p
-	}
 	return drivers.DriverStatus{
-		Connected: d.connected.Load(),
-		LastError: last,
+		Connected: d.state.Load() == stateOnline,
+		LastError: d.lastError(),
 		TagCount:  int(d.tagCount.Load()),
 	}
 }
 
-func (d *Driver) fail(err error) error {
-	d.connected.Store(false)
-	s := err.Error()
-	d.lastErr.Store(&s)
-	return err
+func (d *Driver) lastError() string {
+	if p := d.lastErr.Load(); p != nil {
+		return *p
+	}
+	return ""
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -642,10 +820,15 @@ func (d *Driver) getJSON(ctx context.Context, rawURL string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+		return nil, &statusError{code: resp.StatusCode}
 	}
 	return io.ReadAll(resp.Body)
 }
+
+// statusError is a reply with a status other than 2xx.
+type statusError struct{ code int }
+
+func (e *statusError) Error() string { return fmt.Sprintf("HTTP %d", e.code) }
 
 func tagDefFromPath(path string) drivers.TagDefinition {
 	label := path

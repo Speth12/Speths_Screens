@@ -10,6 +10,8 @@ type TagState struct {
 	Value   any
 	Quality string // "Good" | "Bad" | "Uncertain"
 	TS      int64  // Unix nano
+	// Reason says why the quality is not Good, e.g. "connection refused".
+	Reason string `json:",omitempty"`
 }
 
 // TagUpdate is published to subscribers and written by drivers.

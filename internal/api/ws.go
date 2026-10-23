@@ -24,6 +24,7 @@ type wsUpdate struct {
 	Path    string `json:"path"`
 	Value   any    `json:"value"`
 	Quality string `json:"quality"`
+	Reason  string `json:"reason,omitempty"`
 	TS      int64  `json:"ts"`
 }
 
@@ -102,6 +103,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 					Path:    u.Path,
 					Value:   u.State.Value,
 					Quality: u.State.Quality,
+					Reason:  u.State.Reason,
 					TS:      u.State.TS,
 				})
 				wcancel()
