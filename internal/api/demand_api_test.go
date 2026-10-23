@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )
@@ -107,5 +108,38 @@ func TestDebugDemandEndpoint(t *testing.T) {
 	if len(got) != 1 || got[0].Binding != "plc:A" || got[0].Driver != "plc" ||
 		got[0].Path != "A" || !slices.Equal(got[0].Sources, []string{"ws:test"}) {
 		t.Errorf("got %+v", got)
+	}
+}
+
+// A client that stops reading while values keep changing must still end on
+// the newest value of every tag it subscribed to.
+func TestSlowWebSocketClientEndsOnNewest(t *testing.T) {
+	_, rt, hs := newTestServer(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c := dialWS(t, ctx, hs.URL)
+	defer c.Close(websocket.StatusNormalClosure, "")
+	tags := []string{"plc:A", "plc:B", "plc:C"}
+	send(t, ctx, c, map[string][]string{"subscribe": tags})
+	waitDemand(t, rt, map[string]int{"plc:A": 1, "plc:B": 1, "plc:C": 1})
+
+	const last = 5000
+	for i := 0; i <= last; i++ {
+		for _, p := range tags {
+			rt.Store.Update(p, tagstore.TagState{Value: float64(i), Quality: "Good"})
+		}
+	}
+
+	got := map[string]float64{}
+	for len(got) < len(tags) || got["plc:A"] != last || got["plc:B"] != last || got["plc:C"] != last {
+		var u struct {
+			Path  string  `json:"path"`
+			Value float64 `json:"value"`
+		}
+		if err := wsjson.Read(ctx, c, &u); err != nil {
+			t.Fatalf("Read: %v (so far %v)", err, got)
+		}
+		got[u.Path] = u.Value
 	}
 }

@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )
@@ -53,13 +51,14 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	demandSrc := fmt.Sprintf("ws:%d", wsConnSeq.Add(1))
 	defer s.rt.ReleaseDemand(demandSrc)
 
-	// per-connection: paths → cancel func from tagstore.Subscribe
-	subs := map[string]func(){}
-	var subsMu sync.Mutex
-	updates := make(chan tagstore.TagUpdate, 256)
+	// One watcher per connection: a slow client skips intermediate values
+	// but always receives the newest value of every tag it watches.
+	watcher := s.rt.Store.Watch()
+	defer watcher.Close()
 
 	// reader goroutine: parse subscribe/unsubscribe requests
 	go func() {
+		subs := map[string]struct{}{} // only this goroutine touches it
 		for {
 			var req wsRequest
 			if err := wsjson.Read(ctx, conn, &req); err != nil {
@@ -67,58 +66,49 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			var added, removed []string
-			subsMu.Lock()
 			for _, p := range req.Subscribe {
-				if _, exists := subs[p]; exists {
-					continue
+				if _, exists := subs[p]; !exists {
+					subs[p] = struct{}{}
+					added = append(added, p)
 				}
-				ch, cancelSub := s.rt.Store.Subscribe(p)
-				subs[p] = cancelSub
-				added = append(added, p)
-				log.Printf("[WS] subscribed %s", p)
-				go fanIn(ctx, ch, updates)
 			}
 			for _, p := range req.Unsubscribe {
-				if c, exists := subs[p]; exists {
-					c()
+				if _, exists := subs[p]; exists {
 					delete(subs, p)
 					removed = append(removed, p)
 				}
 			}
-			subsMu.Unlock()
-			// Outside subsMu: updating drivers can take a network round trip.
 			if len(added) > 0 {
+				watcher.Add(added...)
 				s.rt.AddDemand(demandSrc, added...)
 			}
 			if len(removed) > 0 {
+				watcher.Remove(removed...)
 				s.rt.RemoveDemand(demandSrc, removed...)
 			}
 		}
 	}()
 
-	// writer loop: push updates
+	// writer loop: push the newest value of every changed tag
 	for {
 		select {
 		case <-ctx.Done():
-			subsMu.Lock()
-			for _, c := range subs {
-				c()
-			}
-			subsMu.Unlock()
 			conn.Close(websocket.StatusNormalClosure, "bye")
 			return
-		case u := <-updates:
-			wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
-			err := wsjson.Write(wctx, conn, wsUpdate{
-				Path:    u.Path,
-				Value:   u.State.Value,
-				Quality: u.State.Quality,
-				TS:      u.State.TS,
-			})
-			wcancel()
-			if err != nil {
-				log.Printf("[WS] write: %v", err)
-				return
+		case <-watcher.C():
+			for _, u := range watcher.Drain() {
+				wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
+				err := wsjson.Write(wctx, conn, wsUpdate{
+					Path:    u.Path,
+					Value:   u.State.Value,
+					Quality: u.State.Quality,
+					TS:      u.State.TS,
+				})
+				wcancel()
+				if err != nil {
+					log.Printf("[WS] write: %v", err)
+					return
+				}
 			}
 		}
 	}
@@ -166,25 +156,6 @@ func (s *Server) handleAlarmWS(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("[WS/alarms] write: %v", err)
 				return
-			}
-		}
-	}
-}
-
-// fanIn forwards from one tagstore subscription channel into the shared updates channel.
-func fanIn(ctx context.Context, in <-chan tagstore.TagUpdate, out chan<- tagstore.TagUpdate) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case u, ok := <-in:
-			if !ok {
-				return
-			}
-			select {
-			case out <- u:
-			default:
-				// writer is slow; drop
 			}
 		}
 	}
