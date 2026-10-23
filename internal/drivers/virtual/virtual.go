@@ -95,9 +95,7 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	d.tagCount.Store(int32(len(specs)))
 	d.connected.Store(true)
 	log.Printf("[DRIVER] virtual: connected with %d computed tags", len(specs))
-	if out != nil {
-		d.evaluateAll(specs, out) // push initial values
-	}
+	d.evaluateAll(specs) // push initial values
 	d.startLoop(specs)
 	return nil
 }
@@ -133,12 +131,6 @@ func (d *Driver) Browse(_ context.Context) ([]drivers.TagDefinition, error) {
 // tag. It exists so the driver satisfies the same contract as the others.
 func (d *Driver) SetTags(_ []string) error { return nil }
 
-func (d *Driver) output() chan<- tagstore.TagUpdate {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.outCh
-}
-
 // startLoop starts the driver's only evaluation goroutine. It polls the
 // referenced upstream tags (the tagstore has no external pub/sub) and
 // re-evaluates every formula when one of them changes.
@@ -167,9 +159,7 @@ func (d *Driver) startLoop(specs []TagSpec) {
 				if !d.refreshUpstream(refMap) {
 					continue
 				}
-				if ch := d.output(); ch != nil {
-					d.evaluateAll(specs, ch)
-				}
+				d.evaluateAll(specs)
 			}
 		}
 	}()
@@ -198,11 +188,11 @@ func (d *Driver) refreshUpstream(refMap map[string][]int) bool {
 	return changed
 }
 
-// evaluateAll computes all formulas and pushes their results to ch.
+// evaluateAll computes all formulas and sends their results.
 // If a tag has been written via Write(), the override value is used instead
 // of the formula result — this lets Setpoint widgets and recipes actually
 // change virtual tag values during a demo.
-func (d *Driver) evaluateAll(specs []TagSpec, ch chan<- tagstore.TagUpdate) {
+func (d *Driver) evaluateAll(specs []TagSpec) {
 	d.mu.RLock()
 	vals := make(map[string]float64, len(d.vals))
 	for k, v := range d.vals {
@@ -234,13 +224,10 @@ func (d *Driver) evaluateAll(specs []TagSpec, ch chan<- tagstore.TagUpdate) {
 				}
 			}
 		}
-		select {
-		case ch <- tagstore.TagUpdate{
+		d.send(tagstore.TagUpdate{
 			Path:  s.Path,
 			State: tagstore.TagState{Value: result, Quality: quality, TS: now},
-		}:
-		default:
-		}
+		})
 	}
 }
 
@@ -268,16 +255,27 @@ func (d *Driver) Write(_ context.Context, path string, val any) error {
 	d.mu.Unlock()
 
 	// Immediately push the new value without waiting for the next tick.
-	if d.outCh != nil {
-		select {
-		case d.outCh <- tagstore.TagUpdate{
-			Path:  path,
-			State: tagstore.TagState{Value: f, Quality: "Good", TS: time.Now().UnixNano()},
-		}:
-		default:
-		}
-	}
+	d.send(tagstore.TagUpdate{
+		Path:  path,
+		State: tagstore.TagState{Value: f, Quality: "Good", TS: time.Now().UnixNano()},
+	})
 	return nil
+}
+
+// send delivers u to the output channel, waiting if the runtime is busy.
+// It gives up when the driver is disconnected and does nothing before
+// Connect or without an output channel.
+func (d *Driver) send(u tagstore.TagUpdate) {
+	d.mu.RLock()
+	ch, stop := d.outCh, d.stopCh
+	d.mu.RUnlock()
+	if ch == nil || stop == nil {
+		return
+	}
+	select {
+	case ch <- u:
+	case <-stop:
+	}
 }
 
 func (d *Driver) Status() drivers.DriverStatus {

@@ -29,7 +29,8 @@ type Driver struct {
 	mu        sync.Mutex
 	client    mqttlib.Client
 	out       chan<- tagstore.TagUpdate
-	seenTopic sync.Map // map[string]struct{}
+	done      chan struct{} // closed by Disconnect; unblocks message handlers
+	seenTopic sync.Map      // map[string]struct{}
 
 	// subMu serializes SetTags; subs holds the topics subscribed for tags.
 	subMu sync.Mutex
@@ -91,6 +92,7 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 
 	d.mu.Lock()
 	d.client = c
+	d.done = make(chan struct{})
 	d.mu.Unlock()
 
 	// Subscribe to # (all topics) for passive discovery.
@@ -112,6 +114,10 @@ func (d *Driver) Disconnect() error {
 	d.mu.Lock()
 	c := d.client
 	d.client = nil
+	if d.done != nil {
+		close(d.done)
+		d.done = nil
+	}
 	d.mu.Unlock()
 	if c != nil {
 		c.Disconnect(250)
@@ -185,8 +191,10 @@ func (d *Driver) onMessage(_ mqttlib.Client, msg mqttlib.Message) {
 	topic := msg.Topic()
 	d.seenTopic.Store(topic, struct{}{})
 	d.tagCount.Store(int32(d.countSeen()))
-	out := d.output()
-	if out == nil {
+	d.mu.Lock()
+	out, done := d.out, d.done
+	d.mu.Unlock()
+	if out == nil || done == nil {
 		return
 	}
 	select {
@@ -198,15 +206,8 @@ func (d *Driver) onMessage(_ mqttlib.Client, msg mqttlib.Message) {
 			TS:      time.Now().UnixNano(),
 		},
 	}:
-	default:
-		// pump is slow; drop
+	case <-done:
 	}
-}
-
-func (d *Driver) output() chan<- tagstore.TagUpdate {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return d.out
 }
 
 // Write publishes value as the payload to topic path.

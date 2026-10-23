@@ -2,6 +2,7 @@ package opcua
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sync"
 	"testing"
@@ -198,5 +199,29 @@ func TestEmptySetAndDisconnectStopPolling(t *testing.T) {
 				t.Errorf("got %d reads after stop, want 0", len(got))
 			}
 		})
+	}
+}
+
+// A Read result larger than the output buffer must arrive complete.
+func TestLargeReadIsNotDropped(t *testing.T) {
+	ch := make(chan tagstore.TagUpdate, 16)
+	d, _ := startFake(t, ch)
+	var paths []string
+	for i := 0; i < 600; i++ {
+		paths = append(paths, fmt.Sprintf("ns=6;s=V%03d", i))
+	}
+	if err := d.SetTags(paths); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	deadline := time.After(5 * time.Second)
+	for len(seen) < len(paths) {
+		select {
+		case u := <-ch:
+			seen[u.Path] = true
+			time.Sleep(50 * time.Microsecond)
+		case <-deadline:
+			t.Fatalf("only %d of %d nodes arrived", len(seen), len(paths))
+		}
 	}
 }

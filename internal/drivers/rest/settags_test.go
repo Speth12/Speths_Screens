@@ -197,3 +197,49 @@ func TestEmptySetAndDisconnectStopPolling(t *testing.T) {
 		})
 	}
 }
+
+// A poll batch larger than the output buffer must arrive complete, even if
+// the reader is slow.
+func TestLargeBatchIsNotDropped(t *testing.T) {
+	f := newFakePLC(t)
+	ch := make(chan tagstore.TagUpdate, 16)
+	d := connectPXC(t, f, ch)
+	var paths []string
+	for i := 0; i < 600; i++ {
+		paths = append(paths, fmt.Sprintf("Arp.Plc.Eclr/V%03d", i))
+	}
+	if err := d.SetTags(paths); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	deadline := time.After(5 * time.Second)
+	for len(seen) < len(paths) {
+		select {
+		case u := <-ch:
+			seen[u.Path] = true
+			time.Sleep(50 * time.Microsecond) // slow reader
+		case <-deadline:
+			t.Fatalf("only %d of %d tags arrived", len(seen), len(paths))
+		}
+	}
+}
+
+// Disconnect must not hang while the poll loop waits on a reader that is gone.
+func TestDisconnectWhileOutputIsFull(t *testing.T) {
+	f := newFakePLC(t)
+	d := connectPXC(t, f, make(chan tagstore.TagUpdate, 1)) // never read
+	if err := d.SetTags([]string{"C/A", "C/B", "C/C"}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(5 * testPoll) // the loop is now blocked on the full channel
+	done := make(chan struct{})
+	go func() {
+		_ = d.Disconnect()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Disconnect hung")
+	}
+}

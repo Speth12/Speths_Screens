@@ -363,7 +363,8 @@ func (d *Driver) pollLoop(ctx context.Context) {
 						TS:      dv.SourceTimestamp.UnixNano(),
 					},
 				}:
-				default:
+				case <-ctx.Done():
+					return
 				}
 			}
 		}

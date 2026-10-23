@@ -440,7 +440,8 @@ func (d *Driver) pxcReadGroup(ctx context.Context, prefix string, vars []string,
 			Path:  p,
 			State: tagstore.TagState{Value: val, Quality: quality, TS: now},
 		}:
-		default:
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -463,7 +464,8 @@ func (d *Driver) genericPoll(ctx context.Context, paths []string, out chan<- tag
 			Path:  p,
 			State: tagstore.TagState{Value: val, Quality: quality, TS: time.Now().UnixNano()},
 		}:
-		default:
+		case <-ctx.Done():
+			return
 		}
 	}
 }
