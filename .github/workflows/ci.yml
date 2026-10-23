@@ -31,6 +31,22 @@ jobs:
       - run: npm run build
       - run: npm test --workspace=packages/ide -- --run
 
+  gen-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run gen:types
+      - name: Generated types match schema.json
+        run: git diff --exit-code -- internal/project/types.go packages/shared-types/src/project.ts
+
   secrets:
     runs-on: ubuntu-latest
     steps:
