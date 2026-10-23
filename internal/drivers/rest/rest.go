@@ -524,10 +524,56 @@ func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
 		return err
 	}
 	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode/100 != 2 {
-		respBody, _ := io.ReadAll(resp.Body)
-		log.Printf("[DRIVER] rest: pxc write 400 body=%s url=%s payload=%s", respBody, d.pxcVarURL, body)
+		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", resp.StatusCode, respBody, d.pxcVarURL, body)
 		return fmt.Errorf("rest: pxc write status %d: %s", resp.StatusCode, respBody)
+	}
+	return pxcWriteError(path, respBody)
+}
+
+// pxcWriteError reports the error the controller put in a 2xx write response.
+// PLCnext answers a rejected write (unknown variable, wrong type, value out
+// of range) with HTTP 200 and an "error" on the variable or on the response.
+func pxcWriteError(path string, body []byte) error {
+	type pxcError struct {
+		Code    int    `json:"code"`
+		Domain  string `json:"domain"`
+		Reason  string `json:"reason"`
+		Details []struct {
+			Domain string `json:"domain"`
+			Reason string `json:"reason"`
+		} `json:"details"`
+	}
+	var resp struct {
+		Error     *pxcError `json:"error"`
+		Variables []struct {
+			Path  string    `json:"path"`
+			Error *pxcError `json:"error"`
+		} `json:"variables"`
+	}
+	if len(strings.TrimSpace(string(body))) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return fmt.Errorf("rest: pxc write %s: unreadable response: %w", path, err)
+	}
+	describe := func(e *pxcError) string {
+		if e.Reason == "" && len(e.Details) > 0 {
+			return e.Details[0].Domain + ": " + e.Details[0].Reason
+		}
+		if e.Domain != "" {
+			return e.Domain + ": " + e.Reason
+		}
+		return e.Reason
+	}
+	if resp.Error != nil {
+		return fmt.Errorf("rest: pxc write %s rejected: %s", path, describe(resp.Error))
+	}
+	for _, v := range resp.Variables {
+		if v.Error != nil {
+			return fmt.Errorf("rest: pxc write %s rejected: %s", v.Path, describe(v.Error))
+		}
 	}
 	return nil
 }
