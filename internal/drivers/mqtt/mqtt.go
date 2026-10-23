@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,6 +36,15 @@ type Driver struct {
 	// subMu serializes SetTags; subs holds the topics subscribed for tags.
 	subMu sync.Mutex
 	subs  map[string]bool
+
+	// sendMu orders what goes to out: the Bad burst after a lost connection
+	// and the messages after the reconnect. gen counts connections; lost is
+	// set from a lost connection until the next connect. last holds the
+	// newest value per topic so a Bad update can keep it.
+	sendMu sync.Mutex
+	gen    atomic.Uint64
+	lost   atomic.Bool
+	last   sync.Map // map[string]any
 
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
@@ -69,15 +79,22 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 		SetAutoReconnect(true).
 		SetConnectTimeout(connTimeout).
 		SetCleanSession(true).
-		SetOnConnectHandler(func(_ mqttlib.Client) {
+		SetOnConnectHandler(func(c mqttlib.Client) {
 			log.Printf("[DRIVER] mqtt: connected to %s", cfg.Endpoint)
+			d.gen.Add(1)
 			d.connected.Store(true)
+			d.lastErr.Store(strPtr(""))
+			if d.lost.Swap(false) {
+				d.resubscribe(c)
+			}
 		}).
 		SetConnectionLostHandler(func(_ mqttlib.Client, err error) {
 			log.Printf("[DRIVER] mqtt: connection lost: %v", err)
 			d.connected.Store(false)
 			s := err.Error()
 			d.lastErr.Store(&s)
+			d.lost.Store(true)
+			d.markLost(d.gen.Load(), "mqtt: connection lost: "+s)
 		})
 	if cfg.Username != "" {
 		opts.SetUsername(cfg.Username)
@@ -97,13 +114,8 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 
 	// Subscribe to # (all topics) for passive discovery.
 	// This lets Browse() return topics without any SetTags() calls.
-	discoveryHandler := func(_ mqttlib.Client, msg mqttlib.Message) {
-		topic := msg.Topic()
-		d.seenTopic.Store(topic, struct{}{})
-		d.tagCount.Store(int32(d.countSeen()))
-	}
 	// Use QoS 0 and don't block startup on failure.
-	tok = c.Subscribe("#", 0, discoveryHandler)
+	tok = c.Subscribe("#", 0, d.discover)
 	_ = tok.WaitTimeout(2 * time.Second)
 	log.Printf("[DRIVER] mqtt: wildcard discovery subscription active")
 
@@ -191,23 +203,79 @@ func (d *Driver) onMessage(_ mqttlib.Client, msg mqttlib.Message) {
 	topic := msg.Topic()
 	d.seenTopic.Store(topic, struct{}{})
 	d.tagCount.Store(int32(d.countSeen()))
+	val := parsePayload(msg.Payload())
+	d.last.Store(topic, val)
+	d.sendMu.Lock()
+	defer d.sendMu.Unlock()
+	d.send(topic, tagstore.TagState{Value: val, Quality: "Good", TS: time.Now().UnixNano()})
+}
+
+// send hands one update to the output; it gives up when the driver stops.
+// The caller holds sendMu.
+func (d *Driver) send(topic string, st tagstore.TagState) bool {
 	d.mu.Lock()
 	out, done := d.out, d.done
 	d.mu.Unlock()
 	if out == nil || done == nil {
-		return
+		return false
 	}
 	select {
-	case out <- tagstore.TagUpdate{
-		Path: topic,
-		State: tagstore.TagState{
-			Value:   parsePayload(msg.Payload()),
-			Quality: "Good",
-			TS:      time.Now().UnixNano(),
-		},
-	}:
+	case out <- tagstore.TagUpdate{Path: topic, State: st}:
+		return true
 	case <-done:
+		return false
 	}
+}
+
+// markLost marks every subscribed topic without wildcards Bad, keeping its
+// last value. It stops if the client reconnects meanwhile (gen changes), so
+// a Bad update never follows a fresh value.
+func (d *Driver) markLost(gen uint64, reason string) {
+	d.subMu.Lock()
+	var topics []string
+	for t := range d.subs {
+		if !strings.ContainsAny(t, "+#") {
+			topics = append(topics, t)
+		}
+	}
+	d.subMu.Unlock()
+	d.sendMu.Lock()
+	defer d.sendMu.Unlock()
+	now := time.Now().UnixNano()
+	for _, t := range topics {
+		if d.gen.Load() != gen {
+			return
+		}
+		val, _ := d.last.Load(t)
+		if !d.send(t, tagstore.TagState{Value: val, Quality: "Bad", Reason: reason, TS: now}) {
+			return
+		}
+	}
+}
+
+// resubscribe restores the subscriptions after a reconnect. With a clean
+// session the broker has forgotten them. A topic that fails is dropped from
+// subs so the next SetTags tries it again.
+func (d *Driver) resubscribe(c mqttlib.Client) {
+	if tok := c.Subscribe("#", 0, d.discover); !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
+		log.Printf("[DRIVER] mqtt: resubscribe #: %v", tok.Error())
+	}
+	d.subMu.Lock()
+	defer d.subMu.Unlock()
+	for topic := range d.subs {
+		tok := c.Subscribe(topic, 0, d.onMessage)
+		if !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
+			log.Printf("[DRIVER] mqtt: resubscribe %s: %v", topic, tok.Error())
+			delete(d.subs, topic)
+		}
+	}
+	log.Printf("[DRIVER] mqtt: resubscribed %d topics", len(d.subs))
+}
+
+// discover records a topic seen on the "#" subscription, for Browse.
+func (d *Driver) discover(_ mqttlib.Client, msg mqttlib.Message) {
+	d.seenTopic.Store(msg.Topic(), struct{}{})
+	d.tagCount.Store(int32(d.countSeen()))
 }
 
 // Write publishes value as the payload to topic path.
@@ -247,6 +315,8 @@ func (d *Driver) countSeen() int {
 	d.seenTopic.Range(func(_, _ any) bool { n++; return true })
 	return n
 }
+
+func strPtr(s string) *string { return &s }
 
 func (d *Driver) fail(err error) error {
 	s := err.Error()
