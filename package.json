@@ -8,7 +8,7 @@
     "packages/operator"
   ],
   "scripts": {
-    "gen:types": "quicktype --src schema.json --src-lang schema --lang go --out internal/project/types.go --package project --just-types-and-package && quicktype --src schema.json --src-lang schema --lang ts --out packages/shared-types/src/project.ts --just-types",
+    "gen:types": "quicktype --src schema.json --src-lang schema --lang go --out internal/project/types.go --package project --just-types-and-package --omit-empty && gofmt -w internal/project/types.go && quicktype --src schema.json --src-lang schema --lang ts --out packages/shared-types/src/project.ts --just-types --prefer-unions",
     "dev": "npm run dev --workspace=packages/ide",
     "dev:operator": "npm run dev --workspace=packages/operator",
     "dev:all": "concurrently --names 'runtime,ide,operator' --prefix-colors 'cyan,green,yellow' 'go run ./cmd/speths-screens --mode=dev --project=demo.xhmi.json' 'npm run dev --workspace=packages/ide' 'npm run dev --workspace=packages/operator'",

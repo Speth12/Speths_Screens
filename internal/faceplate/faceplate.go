@@ -42,7 +42,7 @@ const (
 	ModeEmbedded DisplayMode = "embedded"
 )
 
-// Widget mirrors the minimum fields needed from project.WidgetElement without
+// Widget mirrors the minimum fields needed from project.Widget without
 // creating a circular import.  The full WidgetElement is stored as raw JSON.
 type Widget = json.RawMessage
 

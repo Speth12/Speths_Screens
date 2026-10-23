@@ -14,12 +14,12 @@ func sampleProject() *project.Project {
 	p := &project.Project{
 		Version: "0.1.0",
 		Name:    &name,
-		Datasources: []project.DatasourceElement{
+		Datasources: []project.Datasource{
 			{ID: "virt", Label: "Virtual", Type: "virtual"},
 		},
-		Pages: []project.PageElement{
-			{ID: "p1", Name: "Main", Widgets: []project.WidgetElement{}},
-			{ID: "p2", Name: "Overview", Widgets: []project.WidgetElement{}},
+		Pages: []project.Page{
+			{ID: "p1", Name: "Main", Widgets: []project.Widget{}},
+			{ID: "p2", Name: "Overview", Widgets: []project.Widget{}},
 		},
 	}
 	return p

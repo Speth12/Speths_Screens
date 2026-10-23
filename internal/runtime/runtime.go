@@ -120,8 +120,13 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	r.Alarms.SetRules(rules)
 
 	// Load namespace from project JSON (replaces previous tree contents).
+	// Round-trips through JSON so Tree.UnmarshalJSON keeps doing the replace.
 	if len(p.Namespace) > 0 {
-		if err := json.Unmarshal(p.Namespace, r.Namespace); err != nil {
+		raw, err := json.Marshal(p.Namespace)
+		if err == nil {
+			err = json.Unmarshal(raw, r.Namespace)
+		}
+		if err != nil {
 			log.Printf("[RUNTIME] namespace unmarshal: %v", err)
 		}
 	}
@@ -248,7 +253,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 
 // TestDatasource creates a temporary driver, attempts to connect within 10 s,
 // returns its status, then disconnects. Safe to call concurrently.
-func (r *Runtime) TestDatasource(ctx context.Context, ds project.DatasourceElement) drivers.DriverStatus {
+func (r *Runtime) TestDatasource(ctx context.Context, ds project.Datasource) drivers.DriverStatus {
 	drv, err := r.buildDriver(ds.Type)
 	if err != nil {
 		return drivers.DriverStatus{LastError: err.Error()}
@@ -407,7 +412,7 @@ func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDrive
 	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store})
 }
 
-func buildConfig(ds project.DatasourceElement) drivers.DriverConfig {
+func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	cfg := drivers.DriverConfig{Extra: map[string]string{}}
 	c := ds.Config
 	if c.Endpoint != nil {
