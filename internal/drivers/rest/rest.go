@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -51,8 +52,11 @@ type Driver struct {
 	pxcVarURL string // full URL to the variables endpoint (PLCnext mode)
 	token     string
 	pollEvery time.Duration
-	stopCh    chan struct{}
+	cancel    context.CancelFunc // stops the poll loop; nil when not connected
+	out       chan<- tagstore.TagUpdate
 	wg        sync.WaitGroup
+
+	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
 
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
@@ -101,12 +105,16 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 		log.Printf("[DRIVER] rest: PLCnext mode, API base %s", apiBase)
 	}
 
+	loopCtx, cancel := context.WithCancel(context.Background())
 	d.mu.Lock()
-	d.stopCh = make(chan struct{})
+	d.cancel = cancel
 	d.mu.Unlock()
 	d.connected.Store(true)
 	d.lastErr.Store(strPtr(""))
 	log.Printf("[DRIVER] rest: connected to %s%s (pxc=%v)", d.baseURL, d.basePath, d.isPXC)
+
+	d.wg.Add(1)
+	go d.pollLoop(loopCtx)
 	return nil
 }
 
@@ -136,9 +144,9 @@ func (d *Driver) probeAPIVersion(ctx context.Context) (string, error) {
 
 func (d *Driver) Disconnect() error {
 	d.mu.Lock()
-	if d.stopCh != nil {
-		close(d.stopCh)
-		d.stopCh = nil
+	if d.cancel != nil {
+		d.cancel()
+		d.cancel = nil
 	}
 	d.mu.Unlock()
 	d.wg.Wait()
@@ -296,69 +304,98 @@ func (d *Driver) walkResponse(ctx context.Context, body []byte, prefix string, o
 	}
 }
 
-// ── Subscribe / poll ─────────────────────────────────────────────────────────
+// ── Tag set / poll ───────────────────────────────────────────────────────────
 
-// Subscribe starts a polling goroutine. In PLCnext mode all paths sharing the
-// same component prefix are batched into a single HTTP request per tick.
-func (d *Driver) Subscribe(ctx context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	if len(paths) == 0 {
-		return fmt.Errorf("rest: no paths to subscribe")
-	}
-	d.tagCount.Store(int32(len(paths)))
-
-	d.mu.Lock()
-	stop := d.stopCh
-	d.mu.Unlock()
-	if stop == nil {
-		return fmt.Errorf("rest: not connected")
-	}
-	for _, p := range paths {
-		log.Printf("[DRIVER] rest: subscribed %s", p)
-	}
-
-	d.wg.Add(1)
-	if d.isPXC {
-		go d.pxcPollLoop(ctx, stop, paths, ch)
-	} else {
-		go d.pollLoop(ctx, stop, paths, ch)
-	}
-	return nil
+// tagSet is an immutable poll set. In PLCnext mode the paths are pre-grouped
+// by component prefix so each tick sends one request per component.
+type tagSet struct {
+	paths  []string
+	groups []pxcGroup
 }
 
-// pxcPollLoop groups paths by their component prefix and polls them in batches.
-// PLCnext path format: "Component/Instance.Variable" → prefix="Component/", var="Instance.Variable"
-func (d *Driver) pxcPollLoop(ctx context.Context, stop <-chan struct{}, paths []string, out chan<- tagstore.TagUpdate) {
-	defer d.wg.Done()
-	tick := time.NewTicker(d.pollEvery)
-	defer tick.Stop()
+type pxcGroup struct {
+	prefix string   // e.g. "Arp.Plc.Eclr/"
+	vars   []string // variable names relative to prefix
+	paths  []string // original full paths
+}
 
-	// Group paths by component prefix (everything up to and including the first "/").
-	type group struct {
-		prefix string // e.g. "Arp.Plc.Eclr/"
-		vars   []string
-		paths  []string // original full paths
-	}
-	groups := map[string]*group{}
+func newTagSet(paths []string) *tagSet {
+	ts := &tagSet{paths: paths}
+	byPrefix := map[string]*pxcGroup{}
 	for _, p := range paths {
 		prefix, varName := pxcSplitPath(p)
-		g := groups[prefix]
+		g := byPrefix[prefix]
 		if g == nil {
-			g = &group{prefix: prefix}
-			groups[prefix] = g
+			g = &pxcGroup{prefix: prefix}
+			byPrefix[prefix] = g
 		}
 		g.vars = append(g.vars, varName)
 		g.paths = append(g.paths, p)
 	}
+	for _, g := range byPrefix {
+		ts.groups = append(ts.groups, *g)
+	}
+	sort.Slice(ts.groups, func(i, j int) bool { return ts.groups[i].prefix < ts.groups[j].prefix })
+	return ts
+}
 
+// SetTags replaces the set of polled paths. It is idempotent: calling it with
+// the same paths (in any order, with duplicates) changes nothing. An empty set
+// keeps the driver connected but idle.
+func (d *Driver) SetTags(paths []string) error {
+	norm := drivers.NormalizePaths(paths)
+	if cur := d.tags.Load(); cur != nil && slices.Equal(cur.paths, norm) {
+		return nil
+	}
+	d.tags.Store(newTagSet(norm))
+	d.tagCount.Store(int32(len(norm)))
+	log.Printf("[DRIVER] rest: polling %d tags", len(norm))
+	return nil
+}
+
+// Subscribe sets the output channel and the tag set.
+//
+// Deprecated: kept until the runtime switches to SetTags; it no longer starts
+// a poll loop, so repeated calls do not multiply polling.
+func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
+	d.mu.Lock()
+	connected := d.cancel != nil
+	d.out = ch
+	d.mu.Unlock()
+	if !connected {
+		return fmt.Errorf("rest: not connected")
+	}
+	return d.SetTags(paths)
+}
+
+func (d *Driver) output() chan<- tagstore.TagUpdate {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.out
+}
+
+// pollLoop is the driver's only poll goroutine. It reads the current tag set
+// on every tick, so SetTags takes effect on the next tick.
+func (d *Driver) pollLoop(ctx context.Context) {
+	defer d.wg.Done()
+	tick := time.NewTicker(d.pollEvery)
+	defer tick.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-stop:
-			return
 		case <-tick.C:
-			for _, g := range groups {
-				d.pxcReadGroup(ctx, g.prefix, g.vars, g.paths, out)
+			ts := d.tags.Load()
+			out := d.output()
+			if ts == nil || len(ts.paths) == 0 || out == nil {
+				continue
+			}
+			if d.isPXC {
+				for _, g := range ts.groups {
+					d.pxcReadGroup(ctx, g.prefix, g.vars, g.paths, out)
+				}
+			} else {
+				d.genericPoll(ctx, ts.paths, out)
 			}
 		}
 	}
@@ -429,28 +466,16 @@ func pxcSplitPath(path string) (prefix, varName string) {
 	return "", path
 }
 
-// pollLoop is the generic (non-PLCnext) poll: one GET per path per tick.
-func (d *Driver) pollLoop(ctx context.Context, stop <-chan struct{}, paths []string, out chan<- tagstore.TagUpdate) {
-	defer d.wg.Done()
-	tick := time.NewTicker(d.pollEvery)
-	defer tick.Stop()
-	for {
+// genericPoll is the non-PLCnext poll: one GET per path.
+func (d *Driver) genericPoll(ctx context.Context, paths []string, out chan<- tagstore.TagUpdate) {
+	for _, p := range paths {
+		val, quality := d.readOne(ctx, p)
 		select {
-		case <-ctx.Done():
-			return
-		case <-stop:
-			return
-		case <-tick.C:
-			for _, p := range paths {
-				val, quality := d.readOne(ctx, p)
-				select {
-				case out <- tagstore.TagUpdate{
-					Path:  p,
-					State: tagstore.TagState{Value: val, Quality: quality, TS: time.Now().UnixNano()},
-				}:
-				default:
-				}
-			}
+		case out <- tagstore.TagUpdate{
+			Path:  p,
+			State: tagstore.TagState{Value: val, Quality: quality, TS: time.Now().UnixNano()},
+		}:
+		default:
 		}
 	}
 }
