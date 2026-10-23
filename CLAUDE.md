@@ -97,7 +97,7 @@ Gate: CI green on `main`, and the test baseline recorded in `docs/TEST-BASELINE.
 
 Old history: the new repository was started fresh, so `spike-key.pem` and `project/project.json` were never in it. Do not rewrite history or force-push unless Dan asks.
 
-Status (2026-10-23): steps 1–6 done. Steps 1–5 were done in the old repository; the work then moved to `Speth12/Speths_Screens`, where step 6 and the Go module path change are on `phase-0-cleanup`. Step 7 is next.
+Status (2026-10-23): **Phase 0 done.** PR #1 merged; CI green on `main` (`b0a092f`).
 
 1. Save the uncommitted work on `day7-ide-polish-and-demo` (7 files, July: login always on with a first-run admin user, a dev-mode login bypass, IDE panel tweaks). Show Dan the diff summary, commit it, push.
 2. Fast-forward `main` to `day7-ide-polish-and-demo` (`git merge --ff-only`), tag `v0.7.0`, push. Delete the local leftovers `master` (stale, Day 5) and `day6-rest-driver-and-modal-redesign` (fully contained in day7). Remove the `old-origin` remote (the April repo). Ask Dan before deleting remote branches.
@@ -117,6 +117,8 @@ Local files that are git-ignored and must stay out of commits: `*.db` (the histo
 Branch `phase-1-readwrite-core`. Gate: a 24-hour soak test against the AXC F 3152 with no frozen values, and every write either confirmed or failed with a reason.
 
 Known defects, in fix order:
+
+Defect 1 decisions (Dan, 2026-10-23): drivers get the output channel in `Connect(ctx, cfg, out)` and run one poll loop from `Connect` to `Disconnect`; `SetTags` swaps the tag set and is a no-op when the set is unchanged; an empty set keeps the driver connected but idle. OPC UA is covered by unit tests plus the soak test if no fake server works.
 
 1. `internal/runtime/runtime.go` `LoadProject` calls `drv.Subscribe` on every load, so each deploy adds another poll loop. Replace `Subscribe` with an idempotent `SetTags(paths)` on every driver.
 2. `tagsForDatasource` only collects `Widget.Binding` and `Widget.VisibleBinding`. Tags used by dynamics, trend pens, multi-state, alarm rules, recipes, faceplate parameters and calculated tags are never polled unless they are also a main binding or a namespace tag. Build a subscription manager that counts demand from open screens (WebSocket subscriptions), alarms, the historian, scripts and calculated tags, and hands each driver one tag list.
