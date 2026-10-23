@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	goruntime "runtime"
 	"slices"
 	"sync"
@@ -249,4 +250,53 @@ func TestDriverValuesReachTheStore(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatal("plc:A never reached the tag store")
+}
+
+// A stalled pump must not lose the newest value of any tag: a burst much
+// larger than any buffer ends with every tag at its last value.
+func TestStalledPumpEndsOnNewest(t *testing.T) {
+	r, built := newTestRuntime(t)
+	load(t, r, testProject(t, []string{"plc"}, "A"))
+	drv := built()[0]
+	drv.mu.Lock()
+	out := drv.out
+	drv.mu.Unlock()
+
+	const tags, rounds = 100, 100
+	r.mu.Lock() // the pump needs r.mu for alias lookup, so it stalls here
+	sent := make(chan struct{})
+	go func() {
+		defer close(sent)
+		for i := 0; i < rounds; i++ {
+			for tag := 0; tag < tags; tag++ {
+				out <- tagstore.TagUpdate{
+					Path:  fmt.Sprintf("T%d", tag),
+					State: tagstore.TagState{Value: float64(i), Quality: "Good"},
+				}
+			}
+		}
+	}()
+	select {
+	case <-sent:
+	case <-time.After(5 * time.Second):
+		r.mu.Unlock()
+		t.Fatal("driver blocked while the pump was stalled")
+	}
+	time.Sleep(20 * time.Millisecond)
+	r.mu.Unlock()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for tag := 0; tag < tags; tag++ {
+		path := fmt.Sprintf("plc:T%d", tag)
+		for {
+			st, ok := r.Store.Get(path)
+			if ok && st.Value == float64(rounds-1) {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("%s = %v, want %d", path, st.Value, rounds-1)
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}
 }

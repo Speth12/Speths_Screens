@@ -57,7 +57,7 @@ type Runtime struct {
 	newDriver func(typ project.DatasourceType) (drivers.ProtocolDriver, error)
 	cancel    context.CancelFunc
 	pumpCtx   context.Context
-	pumpCh    chan tagstore.TagUpdate
+	pumpBox   *tagstore.Mailbox // fan-ins → pump; never blocks, newest value per tag
 	wg        sync.WaitGroup
 	project   *project.Project
 }
@@ -77,7 +77,7 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 		drivers:   make(map[string]drivers.ProtocolDriver),
 		fanStop:   make(map[string]context.CancelFunc),
 		demand:    demand{sources: map[string]map[string]struct{}{}},
-		pumpCh:    make(chan tagstore.TagUpdate, 1024),
+		pumpBox:   tagstore.NewMailbox(),
 	}
 }
 
@@ -244,10 +244,7 @@ func (r *Runtime) startFanIn(dsID string) chan<- tagstore.TagUpdate {
 			select {
 			case u := <-fanCh:
 				u.Path = prefix + u.Path
-				select {
-				case r.pumpCh <- u:
-				default:
-				}
+				r.pumpBox.Put(u)
 			case <-fanCtx.Done():
 				return
 			}
@@ -312,34 +309,37 @@ func (r *Runtime) has(id string) bool {
 }
 
 // pump reads from drivers, writes to TagStore + Historian + Alarms.
+// If it falls behind, the mailbox keeps only the newest value per tag, so
+// the store always ends on the latest value.
 func (r *Runtime) pump(ctx context.Context) {
 	defer r.wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case u, ok := <-r.pumpCh:
-			if !ok {
-				return
-			}
-			r.Store.Update(u.Path, u.State)
-			if r.Historian != nil {
-				_ = r.Historian.Record(u)
-			}
-			r.Alarms.Evaluate(u.Path, u.State.Value)
-			// Forward update to any namespace alias paths (ns:foo).
-			r.mu.RLock()
-			aliases := r.nsAliases[u.Path]
-			r.mu.RUnlock()
-			for _, nsPath := range aliases {
-				r.Store.Update("ns:"+nsPath, u.State)
+		case <-r.pumpBox.C():
+			for _, u := range r.pumpBox.Drain() {
+				r.process(u)
 			}
 		}
 	}
 }
 
-// PumpChan returns the channel drivers push into. Exposed for runtime tests.
-func (r *Runtime) PumpChan() chan<- tagstore.TagUpdate { return r.pumpCh }
+// process applies one driver update.
+func (r *Runtime) process(u tagstore.TagUpdate) {
+	r.Store.Update(u.Path, u.State)
+	if r.Historian != nil {
+		_ = r.Historian.Record(u)
+	}
+	r.Alarms.Evaluate(u.Path, u.State.Value)
+	// Forward update to any namespace alias paths (ns:foo).
+	r.mu.RLock()
+	aliases := r.nsAliases[u.Path]
+	r.mu.RUnlock()
+	for _, nsPath := range aliases {
+		r.Store.Update("ns:"+nsPath, u.State)
+	}
+}
 
 // RebuildNSAliases rebuilds the driverId:driverAddr → nsPath reverse-lookup
 // map from the current namespace tree. Call after any namespace mutation.
