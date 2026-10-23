@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -68,8 +69,11 @@ type Driver struct {
 	mu        sync.Mutex
 	client    *mb.ModbusClient
 	pollEvery time.Duration
-	stopCh    chan struct{}
+	cancel    context.CancelFunc // stops the poll loop; nil when not connected
+	out       chan<- tagstore.TagUpdate
 	wg        sync.WaitGroup
+
+	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
 
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
@@ -118,13 +122,17 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	}
 	c.SetUnitId(slaveID)
 
+	loopCtx, cancel := context.WithCancel(context.Background())
 	d.mu.Lock()
 	d.client = c
-	d.stopCh = make(chan struct{})
+	d.cancel = cancel
 	d.mu.Unlock()
 	d.connected.Store(true)
 	d.lastErr.Store(strPtr(""))
 	log.Printf("[DRIVER] modbus: connected to %s slave=%d", url, slaveID)
+
+	d.wg.Add(1)
+	go d.pollLoop(loopCtx)
 	return nil
 }
 
@@ -132,9 +140,9 @@ func (d *Driver) Disconnect() error {
 	d.mu.Lock()
 	c := d.client
 	d.client = nil
-	if d.stopCh != nil {
-		close(d.stopCh)
-		d.stopCh = nil
+	if d.cancel != nil {
+		d.cancel()
+		d.cancel = nil
 	}
 	d.mu.Unlock()
 	d.wg.Wait()
@@ -151,41 +159,65 @@ func (d *Driver) Browse(ctx context.Context) ([]drivers.TagDefinition, error) {
 	return nil, nil
 }
 
-// Subscribe starts a polling goroutine that reads each path every pollEvery
-// and pushes updates into ch. Stops when ctx is cancelled or Disconnect is called.
-func (d *Driver) Subscribe(ctx context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	if len(paths) == 0 {
-		return fmt.Errorf("modbus: no paths to subscribe")
-	}
+// tagSet is an immutable poll set. in is the normalized SetTags input (used
+// to detect "unchanged"); paths and parsed hold only the valid tags, in step.
+type tagSet struct {
+	in     []string
+	paths  []string
+	parsed []parsedTag
+}
 
-	parsed := make([]parsedTag, 0, len(paths))
-	for _, p := range paths {
+// SetTags replaces the set of polled tags. It is idempotent: calling it with
+// the same paths (in any order, with duplicates) changes nothing. Tags that do
+// not parse are logged and skipped. An empty set keeps the driver idle.
+func (d *Driver) SetTags(paths []string) error {
+	norm := drivers.NormalizePaths(paths)
+	if cur := d.tags.Load(); cur != nil && slices.Equal(cur.in, norm) {
+		return nil
+	}
+	ts := &tagSet{in: norm}
+	for _, p := range norm {
 		pt, err := parseTag(p)
 		if err != nil {
 			log.Printf("[DRIVER] modbus: bad tag %q: %v — skipping", p, err)
 			continue
 		}
-		parsed = append(parsed, pt)
-		log.Printf("[DRIVER] modbus: subscribed %s", p)
+		ts.paths = append(ts.paths, p)
+		ts.parsed = append(ts.parsed, pt)
 	}
-	if len(parsed) == 0 {
-		return fmt.Errorf("modbus: no valid tags to subscribe")
+	d.tags.Store(ts)
+	d.tagCount.Store(int32(len(ts.paths)))
+	log.Printf("[DRIVER] modbus: polling %d tags", len(ts.paths))
+	if len(norm) > 0 && len(ts.paths) == 0 {
+		return fmt.Errorf("modbus: no valid tags to poll")
 	}
-	d.tagCount.Store(int32(len(parsed)))
-
-	d.mu.Lock()
-	stop := d.stopCh
-	d.mu.Unlock()
-	if stop == nil {
-		return fmt.Errorf("modbus: not connected")
-	}
-
-	d.wg.Add(1)
-	go d.pollLoop(ctx, stop, parsed, paths, ch)
 	return nil
 }
 
-func (d *Driver) pollLoop(ctx context.Context, stop <-chan struct{}, parsed []parsedTag, origPaths []string, out chan<- tagstore.TagUpdate) {
+// Subscribe sets the output channel and the tag set.
+//
+// Deprecated: kept until the runtime switches to SetTags; it no longer starts
+// a poll loop, so repeated calls do not multiply polling.
+func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
+	d.mu.Lock()
+	connected := d.cancel != nil
+	d.out = ch
+	d.mu.Unlock()
+	if !connected {
+		return fmt.Errorf("modbus: not connected")
+	}
+	return d.SetTags(paths)
+}
+
+func (d *Driver) output() chan<- tagstore.TagUpdate {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.out
+}
+
+// pollLoop is the driver's only poll goroutine. It reads the current tag set
+// on every tick, so SetTags takes effect on the next tick.
+func (d *Driver) pollLoop(ctx context.Context) {
 	defer d.wg.Done()
 	tick := time.NewTicker(d.pollEvery)
 	defer tick.Stop()
@@ -193,18 +225,18 @@ func (d *Driver) pollLoop(ctx context.Context, stop <-chan struct{}, parsed []pa
 		select {
 		case <-ctx.Done():
 			return
-		case <-stop:
-			return
 		case <-tick.C:
+			ts := d.tags.Load()
+			out := d.output()
 			c := d.getClient()
-			if c == nil {
-				return
+			if ts == nil || len(ts.parsed) == 0 || out == nil || c == nil {
+				continue
 			}
-			for i, pt := range parsed {
+			for i, pt := range ts.parsed {
 				val, quality := d.readOne(c, pt)
 				select {
 				case out <- tagstore.TagUpdate{
-					Path: origPaths[i],
+					Path: ts.paths[i],
 					State: tagstore.TagState{
 						Value:   val,
 						Quality: quality,
