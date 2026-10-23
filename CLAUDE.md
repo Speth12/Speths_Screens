@@ -120,6 +120,8 @@ Known defects, in fix order:
 
 Defect 1 decisions (Dan, 2026-10-23): drivers get the output channel in `Connect(ctx, cfg, out)` and run one poll loop from `Connect` to `Disconnect`; `SetTags` swaps the tag set and is a no-op when the set is unchanged; an empty set keeps the driver connected but idle. OPC UA is covered by unit tests plus the soak test if no fake server works.
 
+Defect 2 decisions (Dan, 2026-10-23): every tag referenced in the project (screens, alarms, calculated-tag inputs) is polled all the time; WebSocket clients add their own subscriptions on top. Namespace nodes alone create no demand. Recipes create no demand. The historian stores whatever is polled until defect 7. `GET /api/v1/debug/demand` lists each needed tag and its sources.
+
 1. `internal/runtime/runtime.go` `LoadProject` calls `drv.Subscribe` on every load, so each deploy adds another poll loop. Replace `Subscribe` with an idempotent `SetTags(paths)` on every driver.
 2. `tagsForDatasource` only collects `Widget.Binding` and `Widget.VisibleBinding`. Tags used by dynamics, trend pens, multi-state, alarm rules, recipes, faceplate parameters and calculated tags are never polled unless they are also a main binding or a namespace tag. Build a subscription manager that counts demand from open screens (WebSocket subscriptions), alarms, the historian, scripts and calculated tags, and hands each driver one tag list.
 3. Silent drops: `select { case ch <- u: default: }` in `drivers/rest` (`pxcReadGroup`, `pollLoop`), the runtime fan-in goroutines and `tagstore.Update`. Replace them with a latest-value slot per tag so a slow consumer skips values but always ends on the newest.
