@@ -1,0 +1,23 @@
+services:
+  speths-screens:
+    build: .
+    image: speths-screens:latest
+    restart: unless-stopped
+    ports:
+      - "${XHMI_PORT:-8080}:8080"
+    volumes:
+      # Project JSON files — edit in the IDE, read by the runtime.
+      - ./project:/project
+      # Historian SQLite database — persists tag history across restarts.
+      - xhmi-data:/data
+    environment:
+      - TZ=${TZ:-America/Chicago}
+    healthcheck:
+      test: ["CMD", "/speths-screens", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  xhmi-data:

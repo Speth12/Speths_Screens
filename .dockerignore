@@ -1,0 +1,23 @@
+# Build artifacts
+/x-hmi*
+/speths-screens*
+
+# Frontend dev artifacts (built inside Docker, not needed from host)
+packages/ide/node_modules
+packages/ide/dist
+packages/operator/node_modules
+packages/shared-types/node_modules
+node_modules
+
+# Operator UI embed dir — rebuilt inside Docker from packages/operator
+cmd/speths-screens/ui
+
+# Data files that should come from volume mounts, not the image
+*.db
+*.xhmi.json
+project/
+
+# Git / editor
+.git
+.gitignore
+*.md

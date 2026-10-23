@@ -1,0 +1,25 @@
+[Unit]
+Description=Speth's Screens Operator Runtime
+After=network.target plcnext.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/opt/plcnext/apps/xhmi
+ExecStart=/opt/plcnext/apps/xhmi/speths-screens \
+    --mode=runtime \
+    --addr=:8080 \
+    --project=/opt/plcnext/apps/xhmi/demo.xhmi.json \
+    --history=/opt/plcnext/apps/xhmi/history.db
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=xhmi
+
+# Allow binding to port 8080 without root
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

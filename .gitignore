@@ -1,0 +1,41 @@
+node_modules/
+dist/
+
+# compiled binaries (the bare names are anchored so they never match the cmd/ folder)
+/speths-screens
+cmd/speths-screens/speths-screens
+speths-screens.exe
+speths-screens.exe~
+speths-screens-*
+# binaries from before the rename
+/x-hmi
+x-hmi.exe
+x-hmi.exe~
+x-hmi.exe.bak
+x-hmi-*
+
+# tsc transpiled JS alongside .ts/.tsx sources
+packages/ide/src/**/*.js
+packages/operator/src/**/*.js
+
+# generated TLS certs
+*.pem
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Project files (user data — mount via volume, don't commit)
+project/*.xhmi.json
+project/project.json
+
+# Operator UI embed dir (built by Dockerfile / make build-operator)
+cmd/speths-screens/ui/
+
+# logs
+*.log
+
+# Vite / tsc build cache
+*.tsbuildinfo
+packages/ide/vite.config.js

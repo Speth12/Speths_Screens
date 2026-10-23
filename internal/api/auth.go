@@ -1,0 +1,108 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"strings"
+
+	"github.com/Speth12/speths-screens/internal/security"
+)
+
+type ctxKey string
+
+const (
+	ctxUser ctxKey = "user"
+	ctxRole ctxKey = "role"
+)
+
+// claimedUser returns the username stored in the request context (empty if no auth).
+func claimedUser(r *http.Request) string {
+	v, _ := r.Context().Value(ctxUser).(string)
+	return v
+}
+
+// claimedRole returns the role stored in the request context.
+func claimedRole(r *http.Request) security.Role {
+	v, _ := r.Context().Value(ctxRole).(security.Role)
+	return v
+}
+
+// jwtMiddleware validates Bearer tokens.  If Security is nil or DevMode is
+// true it injects "anonymous" / "admin" so all routes remain accessible.
+func (s *Server) jwtMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.rt.Security == nil || s.DevMode {
+			ctx := context.WithValue(r.Context(), ctxUser, "anonymous")
+			ctx = context.WithValue(ctx, ctxRole, security.RoleAdmin)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			writeErr(w, 401, "authorization required")
+			return
+		}
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		username, role, err := s.rt.Security.VerifyToken(token)
+		if err != nil {
+			writeErr(w, 401, "invalid or expired token")
+			return
+		}
+		ctx := context.WithValue(r.Context(), ctxUser, username)
+		ctx = context.WithValue(ctx, ctxRole, role)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// requirePerm returns a middleware that checks the caller has permission.
+func (s *Server) requirePerm(perm security.Permission) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role := claimedRole(r)
+			if !security.HasPermission(role, perm) {
+				writeErr(w, 403, "forbidden")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// ── Auth handlers ──────────────────────────────────────────────────────────
+
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if s.rt.Security == nil {
+		writeErr(w, 503, "security not configured")
+		return
+	}
+	defer r.Body.Close()
+	var body struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeErr(w, 400, "invalid json")
+		return
+	}
+	token, user, err := s.rt.Security.Login(r.Context(), body.Username, body.Password)
+	if err != nil {
+		writeErr(w, 401, "invalid credentials")
+		return
+	}
+	if s.rt.Audit != nil {
+		_ = s.rt.Audit.Record(r.Context(), user.Username, "login", "", nil, nil, "")
+	}
+	writeJSON(w, 200, map[string]any{
+		"token":    token,
+		"username": user.Username,
+		"role":     user.Role,
+	})
+}
+
+func (s *Server) handleWhoAmI(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, 200, map[string]any{
+		"username": claimedUser(r),
+		"role":     claimedRole(r),
+	})
+}

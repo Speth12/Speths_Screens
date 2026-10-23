@@ -1,0 +1,23 @@
+{
+  "name": "speths-screens",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/shared-types",
+    "packages/ide",
+    "packages/operator"
+  ],
+  "scripts": {
+    "gen:types": "quicktype --src schema.json --src-lang schema --lang go --out internal/project/types.go --package project --just-types-and-package && quicktype --src schema.json --src-lang schema --lang ts --out packages/shared-types/src/project.ts --just-types",
+    "dev": "npm run dev --workspace=packages/ide",
+    "dev:operator": "npm run dev --workspace=packages/operator",
+    "dev:all": "concurrently --names 'runtime,ide,operator' --prefix-colors 'cyan,green,yellow' 'go run ./cmd/speths-screens --mode=dev --project=demo.xhmi.json' 'npm run dev --workspace=packages/ide' 'npm run dev --workspace=packages/operator'",
+    "build": "npm run build --workspace=packages/ide && npm run build --workspace=packages/operator",
+    "test": "npm run test --workspace=packages/ide",
+    "lint": "npm run lint --workspace=packages/ide"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "quicktype": "^23.2.6"
+  }
+}

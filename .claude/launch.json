@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ide",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace=packages/ide"],
+      "port": 5173
+    },
+    {
+      "name": "operator",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\speth\\source\\repos\\x-hmi\\cmd\\speths-screens\\speths-screens.exe --mode=runtime --project=project/project.json --addr=:8080 || echo already running"],
+      "port": 8080
+    }
+  ]
+}

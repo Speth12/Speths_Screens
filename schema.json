@@ -1,0 +1,251 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "X-HMI Project",
+  "description": "Runtime project file — single source of truth. Generated types: internal/project/types.go + packages/shared-types/src/project.ts",
+  "type": "object",
+  "required": ["version", "datasources", "pages"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version, e.g. '0.1.0'"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable project name"
+    },
+    "pin": {
+      "type": "string",
+      "description": "Operator PIN — operator panel locks behind this if set"
+    },
+    "viewOnly": {
+      "type": "boolean",
+      "description": "Disable all write widgets in the operator panel"
+    },
+    "datasources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Datasource" }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Page" }
+    },
+    "alarmRules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/AlarmRule" }
+    },
+    "recipes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Recipe" }
+    }
+  },
+  "$defs": {
+    "Datasource": {
+      "type": "object",
+      "required": ["id", "type", "label", "config"],
+      "additionalProperties": false,
+      "properties": {
+        "id":     { "type": "string", "description": "Unique driver instance ID, e.g. 'opcua', 'mbtcp1'" },
+        "type":   { "$ref": "#/$defs/DatasourceType" },
+        "label":  { "type": "string" },
+        "config": { "$ref": "#/$defs/DatasourceConfig" }
+      }
+    },
+    "DatasourceType": {
+      "type": "string",
+      "enum": ["opcua", "mbtcp", "mqtt", "rest", "virtual"]
+    },
+    "DatasourceConfig": {
+      "type": "object",
+      "description": "Driver-specific connection config. Fields used depend on 'type'.",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint":      { "type": "string", "description": "OPC UA: opc.tcp://host:port" },
+        "securityMode":  { "$ref": "#/$defs/SecurityMode" },
+        "securityPolicy":{ "$ref": "#/$defs/SecurityPolicy" },
+        "username":      { "type": "string" },
+        "password":      { "type": "string" },
+        "host":          { "type": "string", "description": "Modbus/MQTT/REST host" },
+        "port":          { "type": "integer", "description": "TCP port" },
+        "slaveId":       { "type": "integer", "description": "Modbus slave/unit ID" },
+        "clientId":      { "type": "string", "description": "MQTT client ID" },
+        "basePath":      { "type": "string", "description": "REST base path, e.g. /_pxc_api/v1.14" },
+        "bearerToken":   { "type": "string", "description": "REST bearer token" },
+        "tags":          { "type": "string", "description": "Virtual driver: JSON-encoded [{path,formula}...] array" }
+      }
+    },
+    "SecurityMode": {
+      "type": "string",
+      "enum": ["None", "Sign", "SignAndEncrypt"]
+    },
+    "SecurityPolicy": {
+      "type": "string",
+      "enum": ["None", "Basic128Rsa15", "Basic256", "Basic256Sha256"]
+    },
+    "Page": {
+      "type": "object",
+      "required": ["id", "name", "widgets"],
+      "additionalProperties": false,
+      "properties": {
+        "id":      { "type": "string" },
+        "name":    { "type": "string" },
+        "widgets": { "type": "array", "items": { "$ref": "#/$defs/Widget" } }
+      }
+    },
+    "Widget": {
+      "type": "object",
+      "required": ["id", "type", "x", "y", "w", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "id":             { "type": "string" },
+        "type":           { "$ref": "#/$defs/WidgetType" },
+        "x":              { "type": "integer", "minimum": 0, "description": "Grid column" },
+        "y":              { "type": "integer", "minimum": 0, "description": "Grid row" },
+        "w":              { "type": "integer", "minimum": 1, "description": "Width in grid units" },
+        "h":              { "type": "integer", "minimum": 1, "description": "Height in grid units" },
+        "binding":        { "type": "string", "description": "datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.iTest'" },
+        "visibleBinding": { "type": "string", "description": "BOOL tag — widget hidden when value is 0/false" },
+        "locked":         { "type": "boolean", "description": "IDE-only: widget cannot be moved or resized" },
+        "config":         { "$ref": "#/$defs/WidgetConfig" }
+      }
+    },
+    "WidgetType": {
+      "type": "string",
+      "enum": [
+        "gauge",
+        "trend",
+        "led",
+        "button",
+        "numericInput",
+        "numericDisplay",
+        "textInput",
+        "textDisplay",
+        "historyLog",
+        "tank",
+        "setpoint",
+        "multiState",
+        "alarmBanner",
+        "image"
+      ]
+    },
+    "WidgetConfig": {
+      "type": "object",
+      "description": "Per-widget configuration. Fields depend on type.",
+      "additionalProperties": true,
+      "properties": {
+        "label":          { "type": "string" },
+        "min":            { "type": "number" },
+        "max":            { "type": "number" },
+        "unit":           { "type": "string" },
+        "format":         { "type": "string", "description": "printf-style format, e.g. '%.2f'" },
+        "thresholds":     { "type": "array", "items": { "$ref": "#/$defs/Threshold" } },
+        "momentary":      { "type": "boolean", "description": "Button: true=momentary, false=toggle" },
+        "onValue":        { "description": "Button on-press value" },
+        "offValue":       { "description": "Button off/release value" },
+        "trueColor":      { "type": "string", "description": "LED color when true" },
+        "falseColor":     { "type": "string", "description": "LED color when false" },
+        "duration":       { "type": "integer", "description": "Trend history window in seconds" },
+        "xFormat":        { "type": "string", "enum": ["time", "time-short", "relative", "datetime"], "description": "Trend X-axis label format" },
+        "tags":           { "type": "array", "items": { "$ref": "#/$defs/TrendSeries" }, "description": "Trend multi-series config" },
+        "refLines":       { "type": "array", "items": { "$ref": "#/$defs/RefLine" }, "description": "Trend horizontal reference lines" },
+        "pageSize":       { "type": "integer", "description": "HistoryLog rows per page" },
+        "step":           { "type": "number", "description": "Setpoint slider step" },
+        "states":         { "type": "array", "items": { "$ref": "#/$defs/StateEntry" }, "description": "MultiState value→label→color map" },
+        "maxRows":        { "type": "integer", "description": "AlarmBanner max visible rows" },
+        "showAcked":      { "type": "boolean", "description": "AlarmBanner: show acknowledged alarms" },
+        "action":         { "type": "string", "enum": ["write", "navigate"], "description": "Button action type" },
+        "navigateTo":     { "type": "string", "description": "Button navigate: target page id" },
+        "src":            { "type": "string", "description": "Image: data-URL or URL" },
+        "fit":            { "type": "string", "enum": ["contain", "cover", "fill"], "description": "Image object-fit" },
+        "colorBinding":   { "type": "string", "description": "Tag path for color threshold evaluation" },
+        "colorThresholds":{ "type": "array", "items": { "$ref": "#/$defs/Threshold" }, "description": "Color threshold rules applied to colorBinding" }
+      }
+    },
+    "Threshold": {
+      "type": "object",
+      "required": ["value", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "number" },
+        "color": { "type": "string", "description": "CSS color, e.g. '#22c55e'" }
+      }
+    },
+    "TrendSeries": {
+      "type": "object",
+      "required": ["binding", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "binding": { "type": "string" },
+        "color":   { "type": "string" },
+        "label":   { "type": "string" },
+        "fill":    { "type": "boolean" },
+        "yMin":    { "type": "number" },
+        "yMax":    { "type": "number" }
+      }
+    },
+    "RefLine": {
+      "type": "object",
+      "required": ["value", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "number" },
+        "color": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    },
+    "StateEntry": {
+      "type": "object",
+      "required": ["value", "label", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "value":     {},
+        "label":     { "type": "string" },
+        "color":     { "type": "string" },
+        "textColor": { "type": "string" }
+      }
+    },
+    "AlarmRule": {
+      "type": "object",
+      "required": ["id", "name", "binding", "condition", "threshold", "severity", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "id":        { "type": "string" },
+        "name":      { "type": "string" },
+        "binding":   { "type": "string", "description": "datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.pressure'" },
+        "condition": { "$ref": "#/$defs/AlarmCondition" },
+        "threshold": { "type": "number" },
+        "severity":  { "$ref": "#/$defs/AlarmSeverity" },
+        "message":   { "type": "string" }
+      }
+    },
+    "AlarmCondition": {
+      "type": "string",
+      "enum": ["gt", "gte", "lt", "lte", "eq", "ne"]
+    },
+    "AlarmSeverity": {
+      "type": "string",
+      "enum": ["critical", "warning", "info"]
+    },
+    "Recipe": {
+      "type": "object",
+      "required": ["id", "name", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "id":          { "type": "string" },
+        "name":        { "type": "string" },
+        "description": { "type": "string" },
+        "entries":     { "type": "array", "items": { "$ref": "#/$defs/RecipeEntry" } }
+      }
+    },
+    "RecipeEntry": {
+      "type": "object",
+      "required": ["binding", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "binding": { "type": "string", "description": "datasource_id:tag_path" },
+        "value":   {}
+      }
+    }
+  }
+}

@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+html, body, #root { height: 100%; }
+
+/* ── HMI theme CSS variables (defaults = SCADA Industrial) ────────────────── */
+:root {
+  --background:           #0c0e10;
+  --foreground:           #dde2e6;
+  --card:                 #141719;
+  --card-foreground:      #dde2e6;
+  --primary:              #f0a500;
+  --primary-foreground:   #0c0e10;
+  --secondary:            #1e2124;
+  --secondary-foreground: #9ba3ac;
+  --muted:                #1a1d20;
+  --muted-foreground:     #6b7480;
+  --border:               #2a2f35;
+  --radius:               3px;
+  --danger:               #ff3b30;
+  --warning:              #ff9500;
+  --success:              #30d158;
+  --font-mono:            'JetBrains Mono', monospace;
+}
+
+/*
+ * ── Remap Tailwind's zinc + blue scale to theme variables ─────────────────
+ *
+ * Every existing component uses bg-zinc-*, text-zinc-*, border-zinc-*, bg-blue-*.
+ * By remapping those Tailwind color tokens here, ALL components update
+ * automatically when the theme changes — no component edits needed.
+ *
+ * Mapping rationale:
+ *   zinc-950 → --background    (page background)
+ *   zinc-900 → --card          (panel/card surface)
+ *   zinc-800 → --secondary     (button/input background)
+ *   zinc-700 → --border        (borders, dividers)
+ *   zinc-600 → --muted-foreground (dim text)
+ *   zinc-500 → --muted-foreground (placeholder text)
+ *   zinc-400 → secondary-foreground (secondary labels)
+ *   zinc-300 → secondary-foreground (slightly lighter labels)
+ *   zinc-200 → --card-foreground   (body text on cards)
+ *   zinc-100 → --foreground        (primary text)
+ *   blue-600 → --primary           (primary action)
+ *   blue-500 → --primary           (primary hover)
+ *   blue-700 → color-mix(--primary darker)
+ *   blue-400 → --primary           (active indicator)
+ *   blue-950 → color-mix(--primary very dark bg)
+ *   blue-500/40 → used in drag handles
+ */
+@theme inline {
+  --color-zinc-950: var(--background);
+  --color-zinc-900: var(--card);
+  --color-zinc-800: var(--secondary);
+  --color-zinc-700: var(--border);
+  --color-zinc-600: var(--muted-foreground);
+  --color-zinc-500: var(--muted-foreground);
+  --color-zinc-400: var(--secondary-foreground);
+  --color-zinc-300: var(--secondary-foreground);
+  --color-zinc-200: var(--card-foreground);
+  --color-zinc-100: var(--foreground);
+
+  --color-blue-600: var(--primary);
+  --color-blue-500: var(--primary);
+  --color-blue-700: color-mix(in srgb, var(--primary) 70%, black);
+  --color-blue-400: var(--primary);
+  --color-blue-950: color-mix(in srgb, var(--primary) 12%, var(--background));
+
+  --color-emerald-500: var(--success);
+  --color-red-500:     var(--danger);
+  --color-amber-500:   var(--warning);
+  --color-amber-700:   color-mix(in srgb, var(--warning) 60%, black);
+  --color-red-700:     color-mix(in srgb, var(--danger) 60%, black);
+}
+
+/* base background and text driven by theme vars */
+body { background-color: var(--background); color: var(--foreground); }
+
+/* ── Background patterns ──────────────────────────────────────────────────── */
+:root[data-bg-pattern="grid"] #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.4;
+  z-index: 0;
+}
+
+:root[data-bg-pattern="dots"] #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+:root[data-bg-pattern="crosshatch"] #root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(45deg, var(--border) 1px, transparent 1px),
+    linear-gradient(-45deg, var(--border) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.35;
+  z-index: 0;
+}
+
+/* ── Glass card style ─────────────────────────────────────────────────────── */
+:root[data-card-style="glass"] .panel-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Glow effects ─────────────────────────────────────────────────────────── */
+:root[data-glow="true"] .status-dot-good   { box-shadow: 0 0 6px var(--success); }
+:root[data-glow="true"] .status-dot-warn   { box-shadow: 0 0 6px var(--warning); }
+:root[data-glow="true"] .status-dot-danger { box-shadow: 0 0 6px var(--danger); }
+:root[data-glow="true"] .btn-primary       { box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 40%, transparent); }
