@@ -122,12 +122,14 @@ Defect 1 decisions (Dan, 2026-10-23): drivers get the output channel in `Connect
 
 Defect 2 decisions (Dan, 2026-10-23): every tag referenced in the project (screens, alarms, calculated-tag inputs) is polled all the time; WebSocket clients add their own subscriptions on top. Namespace nodes alone create no demand. Recipes create no demand. The historian stores whatever is polled until defect 7. `GET /api/v1/debug/demand` lists each needed tag and its sources.
 
+Defect 3 decisions (Dan, 2026-10-23): a `tagstore.Mailbox` (newest value per path, `Put` never blocks) sits between fan-ins and the pump and inside every store watcher; drivers wait on their fan-in instead of dropping. `TagStore.Subscribe` is replaced by `Watch` (`Add`, `Remove`, `C`, `Drain`, `Close`), one watcher per WebSocket connection. Defect 4 was done in the same change. Alarm and event-bus drops are item 10, not defect 3.
+
 1. `internal/runtime/runtime.go` `LoadProject` calls `drv.Subscribe` on every load, so each deploy adds another poll loop. Replace `Subscribe` with an idempotent `SetTags(paths)` on every driver.
 2. `tagsForDatasource` only collects `Widget.Binding` and `Widget.VisibleBinding`. Tags used by dynamics, trend pens, multi-state, alarm rules, recipes, faceplate parameters and calculated tags are never polled unless they are also a main binding or a namespace tag. Build a subscription manager that counts demand from open screens (WebSocket subscriptions), alarms, the historian, scripts and calculated tags, and hands each driver one tag list.
 3. Silent drops: `select { case ch <- u: default: }` in `drivers/rest` (`pxcReadGroup`, `pollLoop`), the runtime fan-in goroutines and `tagstore.Update`. Replace them with a latest-value slot per tag so a slow consumer skips values but always ends on the newest.
-4. `tagstore.Update` scans every subscription per update and logs every update. Look subscribers up by path; drop per-update logging.
+4. ~~`tagstore.Update` scans every subscription per update and logs every update. Look subscribers up by path; drop per-update logging.~~ Done with defect 3.
 5. `drivers/rest`: a failed poll only logs. Mark every tag in the batch Bad with a reason, report disconnected, reconnect with backoff. Add login and token refresh. Split long `paths=` lists.
-6. `tagstore.MarkStale` is never called. Run it on a timer in the runtime.
+6. `tagstore.MarkStale` is never called. Run it on a timer in the runtime. It reads then writes, so a pump update in between would be overwritten with the stale value; make the mark conditional on the value being unchanged.
 7. `historian.Record` does one synchronous SQLite insert per update inside the pump. Move it to a background batcher with a per-tag deadband that stores changed values only.
 8. `api.handleWriteTag` checks nothing. Build the write pipeline: tag must exist in the project and be writable; the user's role must allow it; convert the value to the tag's PLC type; apply limits; write; read back; reply confirmed or failed with a reason. Offer it over the WebSocket with a request id too. In the operator app, replace the three write call sites (`src/App.tsx`, `src/writeContext.ts`, `src/widgets/index.tsx`) with one client function.
 9. Security defaults (Dan's decision, 2026-10-23): login is set per project by `security.mode`. `none` (the default when missing) means no login: print a warning at startup and show a "Security off" badge on the operator screen. `login` means every user must log in. Restrict CORS to configured origins (today `*`). Check the WebSocket origin (today `InsecureSkipVerify: true`).
@@ -135,6 +137,7 @@ Defect 2 decisions (Dan, 2026-10-23): every tag referenced in the project (scree
     - With `security.mode: "login"`, replace the fixed first-run `admin`/`admin` user (July WIP, `cmd/speths-screens/main.go`) with a random first-run password shown once on the console, never written to log files, and force a password change at first login. With `none`, seed no user.
     - Dev mode (`--mode=dev`, which bypasses login) listens on `127.0.0.1` only.
     - Add tests for the dev-mode login bypass and for first-run user creation.
+10. Alarm events (`internal/alarms/alarms.go`, send to subscribers) and the event bus (`internal/eventbus/eventbus.go`) drop events for slow subscribers. These are discrete events, so "newest value wins" is wrong; use a bounded per-client queue and, on overflow, tell the client to re-fetch the alarm snapshot.
 
 ## Later phases (one line each)
 
