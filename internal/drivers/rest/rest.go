@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"math/rand/v2"
 	"net/http"
@@ -60,7 +59,14 @@ type Driver struct {
 	isPXC     bool   // true when basePath contains "_pxc_api"
 	pxcRoot   string // e.g. https://192.168.88.10/_pxc_api (PLCnext mode)
 	pxcVarURL string // variables endpoint (PLCnext mode); guarded by mu, "" until known
+
+	// Authentication (see auth.go). token and refreshAt are guarded by mu;
+	// loginMu keeps logins one at a time.
+	username  string
+	password  string
 	token     string
+	refreshAt time.Time
+	loginMu   sync.Mutex
 	cancel    context.CancelFunc // stops the goroutine; nil when stopped
 	out       chan<- tagstore.TagUpdate
 	wg        sync.WaitGroup
@@ -111,7 +117,8 @@ func (d *Driver) ID() string { return driverID }
 //
 //	(without a version the driver asks the controller for it on first contact)
 //
-// cfg.Extra["bearerToken"]: optional Authorization: Bearer <token>
+// cfg.Extra["bearerToken"]: optional fixed Authorization: Bearer <token>
+// cfg.Username, cfg.Password: PLCnext login (see auth.go)
 func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("rest: endpoint is required")
@@ -126,7 +133,11 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 		d.basePath = "/" + d.basePath
 	}
 	d.basePath = strings.TrimRight(d.basePath, "/")
+	d.username, d.password = cfg.Username, cfg.Password
+	d.mu.Lock()
 	d.token = cfg.Extra["bearerToken"]
+	d.refreshAt = time.Time{}
+	d.mu.Unlock()
 
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	// Always skip TLS verification — PLCs and embedded devices universally use
@@ -425,16 +436,26 @@ func (d *Driver) contact(ctx context.Context) error {
 	if err := unreachable(err); err != nil {
 		return err
 	}
+	var root struct {
+		BasePath     string `json:"basePath"` // e.g. "/v1.14/"
+		AuthRequired bool   `json:"userAuthenticationRequired"`
+	}
+	if err == nil {
+		_ = json.Unmarshal(body, &root)
+	}
 	if d.varURL() == "" {
 		ver := "v1.14" // best-effort default
-		var resp struct {
-			BasePath string `json:"basePath"` // e.g. "/v1.14/"
-		}
-		if err == nil && json.Unmarshal(body, &resp) == nil && resp.BasePath != "" {
-			ver = strings.Trim(resp.BasePath, "/")
+		if root.BasePath != "" {
+			ver = strings.Trim(root.BasePath, "/")
 		}
 		d.setVarURL(d.pxcRoot + "/" + ver + "/variables")
 		log.Printf("[DRIVER] rest: PLCnext mode, API base %s/%s", d.pxcRoot, ver)
+	}
+	if root.AuthRequired && !d.logsIn() && d.bearer() == "" {
+		return fmt.Errorf("rest: the controller requires a login; set a username and password on the datasource")
+	}
+	if d.tokenDue() {
+		return d.login(ctx)
 	}
 	return nil
 }
@@ -460,6 +481,11 @@ func (d *Driver) pollUntilFailure(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-tick.C:
+			if d.tokenDue() {
+				if err := d.login(ctx); err != nil {
+					return err
+				}
+			}
 			if err := d.pollOnce(ctx); err != nil {
 				return err
 			}
@@ -721,23 +747,13 @@ func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, varURL, strings.NewReader(string(body)))
+	status, respBody, err := d.send(ctx, http.MethodPut, varURL, body)
 	if err != nil {
 		return err
 	}
-	if d.token != "" {
-		req.Header.Set("Authorization", "Bearer "+d.token)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := d.hc.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode/100 != 2 {
-		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", resp.StatusCode, respBody, varURL, body)
-		return fmt.Errorf("rest: pxc write status %d: %s", resp.StatusCode, respBody)
+	if status/100 != 2 {
+		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", status, respBody, varURL, body)
+		return fmt.Errorf("rest: pxc write status %d: %s", status, respBody)
 	}
 	return pxcWriteError(path, respBody)
 }
@@ -799,21 +815,12 @@ func (d *Driver) genericWrite(ctx context.Context, path string, value any) error
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, reqURL, strings.NewReader(string(body)))
+	status, _, err := d.send(ctx, http.MethodPut, reqURL, body)
 	if err != nil {
 		return err
 	}
-	if d.token != "" {
-		req.Header.Set("Authorization", "Bearer "+d.token)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := d.hc.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("rest: PUT %s status %d", reqURL, resp.StatusCode)
+	if status/100 != 2 {
+		return fmt.Errorf("rest: PUT %s status %d", reqURL, status)
 	}
 	return nil
 }
@@ -838,23 +845,14 @@ func (d *Driver) lastError() string {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 func (d *Driver) getJSON(ctx context.Context, rawURL string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	status, body, err := d.send(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	if d.token != "" {
-		req.Header.Set("Authorization", "Bearer "+d.token)
+	if status/100 != 2 {
+		return nil, &statusError{code: status}
 	}
-	req.Header.Set("Accept", "application/json")
-	resp, err := d.hc.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return nil, &statusError{code: resp.StatusCode}
-	}
-	return io.ReadAll(resp.Body)
+	return body, nil
 }
 
 // statusError is a reply with a status other than 2xx.
