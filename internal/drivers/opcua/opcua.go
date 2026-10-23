@@ -45,8 +45,14 @@ type Driver struct {
 
 	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
 
-	// read replaces client.Read in tests; nil means use the client.
-	read func(ctx context.Context, req *ua.ReadRequest) (*ua.ReadResponse, error)
+	// read and write replace the client's Read and Write in tests; nil means
+	// use the client.
+	read  func(ctx context.Context, req *ua.ReadRequest) (*ua.ReadResponse, error)
+	write func(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResponse, error)
+
+	// types caches each written node's DataType until Disconnect.
+	typesMu sync.Mutex
+	types   map[string]*ua.NodeID
 }
 
 // New returns an unconnected driver.
@@ -162,6 +168,9 @@ func (d *Driver) Disconnect() error {
 	d.client = nil
 	d.mu.Unlock()
 	d.connected.Store(false)
+	d.typesMu.Lock()
+	d.types = nil
+	d.typesMu.Unlock()
 	if c == nil {
 		return nil
 	}
@@ -371,17 +380,22 @@ func (d *Driver) pollLoop(ctx context.Context) {
 	}
 }
 
-// Write writes value to the given OPC UA node.
+// Write writes value to the given OPC UA node, converted to the node's
+// data type (a JSON number written to a PLCnext REAL becomes a Float).
 func (d *Driver) Write(ctx context.Context, path string, value any) error {
-	c := d.getClient()
-	if c == nil {
-		return fmt.Errorf("opcua: not connected")
-	}
 	nid, err := ua.ParseNodeID(path)
 	if err != nil {
 		return fmt.Errorf("opcua: bad node id %q: %w", path, err)
 	}
-	v, err := ua.NewVariant(value)
+	dataType, err := d.dataType(ctx, path, nid)
+	if err != nil {
+		return err
+	}
+	converted, err := convertForType(value, dataType)
+	if err != nil {
+		return fmt.Errorf("opcua: %s: %w", path, err)
+	}
+	v, err := ua.NewVariant(converted)
 	if err != nil {
 		return fmt.Errorf("opcua: variant: %w", err)
 	}
@@ -392,7 +406,7 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 			Value:       &ua.DataValue{EncodingMask: ua.DataValueValue, Value: v},
 		}},
 	}
-	res, err := c.Write(ctx, req)
+	res, err := d.writeNow(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -400,6 +414,52 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 		return fmt.Errorf("opcua: write status %v", res.Results[0])
 	}
 	return nil
+}
+
+// dataType returns the node's DataType attribute, read once and cached.
+func (d *Driver) dataType(ctx context.Context, path string, nid *ua.NodeID) (*ua.NodeID, error) {
+	d.typesMu.Lock()
+	dt, ok := d.types[path]
+	d.typesMu.Unlock()
+	if ok {
+		return dt, nil
+	}
+	res, err := d.readNow(ctx, &ua.ReadRequest{NodesToRead: []*ua.ReadValueID{
+		{NodeID: nid, AttributeID: ua.AttributeIDDataType},
+	}})
+	if err != nil {
+		return nil, fmt.Errorf("opcua: read data type of %s: %w", path, err)
+	}
+	if len(res.Results) == 0 || res.Results[0].Status != ua.StatusOK || res.Results[0].Value == nil {
+		status := ua.StatusBad
+		if len(res.Results) > 0 {
+			status = res.Results[0].Status
+		}
+		return nil, fmt.Errorf("opcua: read data type of %s: %v", path, status)
+	}
+	dt, ok = res.Results[0].Value.Value().(*ua.NodeID)
+	if !ok {
+		return nil, fmt.Errorf("opcua: data type of %s is %T, not a node id", path, res.Results[0].Value.Value())
+	}
+	d.typesMu.Lock()
+	if d.types == nil {
+		d.types = map[string]*ua.NodeID{}
+	}
+	d.types[path] = dt
+	d.typesMu.Unlock()
+	return dt, nil
+}
+
+// writeNow sends one Write request.
+func (d *Driver) writeNow(ctx context.Context, req *ua.WriteRequest) (*ua.WriteResponse, error) {
+	if d.write != nil {
+		return d.write(ctx, req)
+	}
+	c := d.getClient()
+	if c == nil {
+		return nil, fmt.Errorf("opcua: not connected")
+	}
+	return c.Write(ctx, req)
 }
 
 // Status returns the current state.
