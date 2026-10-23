@@ -94,6 +94,7 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	d.tagCount.Store(int32(len(specs)))
 	d.connected.Store(true)
 	log.Printf("[DRIVER] virtual: connected with %d computed tags", len(specs))
+	d.startLoop(specs)
 	return nil
 }
 
@@ -124,20 +125,34 @@ func (d *Driver) Browse(_ context.Context) ([]drivers.TagDefinition, error) {
 	return out, nil
 }
 
-// Subscribe starts the reactive evaluation loop.
-// When any upstream tag referenced by a formula changes, all formulae that
-// use it are re-evaluated and pushed to ch.
-func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.TagUpdate) error {
+// SetTags does nothing: a virtual driver always computes every configured
+// tag. It exists so the driver satisfies the same contract as the others.
+func (d *Driver) SetTags(_ []string) error { return nil }
+
+// Subscribe sets the output channel and pushes the current value of every
+// computed tag once.
+//
+// Deprecated: kept until the runtime switches to SetTags; the evaluation loop
+// now starts in Connect, so repeated calls no longer add loops.
+func (d *Driver) Subscribe(_ context.Context, _ []string, ch chan<- tagstore.TagUpdate) error {
 	d.mu.Lock()
 	d.outCh = ch
-	stopCh := d.stopCh
-	d.mu.Unlock()
-
-	// Build a map from upstream tag key → which specs reference it.
-	d.mu.RLock()
 	specs := d.specs
-	d.mu.RUnlock()
+	d.mu.Unlock()
+	d.evaluateAll(specs, ch)
+	return nil
+}
 
+func (d *Driver) output() chan<- tagstore.TagUpdate {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.outCh
+}
+
+// startLoop starts the driver's only evaluation goroutine. It polls the
+// referenced upstream tags (the tagstore has no external pub/sub) and
+// re-evaluates every formula when one of them changes.
+func (d *Driver) startLoop(specs []TagSpec) {
 	// refMap: upstream key → list of spec indices that use it.
 	refMap := map[string][]int{}
 	for i, s := range specs {
@@ -145,13 +160,10 @@ func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.T
 			refMap[ref.Key] = append(refMap[ref.Key], i)
 		}
 	}
+	d.mu.RLock()
+	stopCh := d.stopCh
+	d.mu.RUnlock()
 
-	// Push initial values for all specs.
-	d.evaluateAll(specs, ch)
-
-	// Poll upstream values at 1 Hz as a fallback, and also react reactively
-	// via the tagstore subscription.
-	// (The tagstore doesn't expose a pub/sub API externally, so we poll.)
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()
@@ -159,19 +171,18 @@ func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.T
 		defer tick.Stop()
 		for {
 			select {
-			case <-ctx.Done():
-				return
 			case <-stopCh:
 				return
 			case <-tick.C:
-				if d.refreshUpstream(refMap) {
+				if !d.refreshUpstream(refMap) {
+					continue
+				}
+				if ch := d.output(); ch != nil {
 					d.evaluateAll(specs, ch)
 				}
 			}
 		}
 	}()
-
-	return nil
 }
 
 // refreshUpstream reads all referenced tags from the store and returns true if
