@@ -80,7 +80,7 @@ func TestConvertForType(t *testing.T) {
 func TestConvertRejectsNonBuiltinTypes(t *testing.T) {
 	for _, dt := range []*ua.NodeID{
 		nil,
-		ua.NewNumericNodeID(3, id.Float),          // same number, other namespace
+		ua.NewNumericNodeID(3, id.Float), // same number, other namespace
 		ua.NewStringNodeID(6, "Arp.Plc.MyStruct"), // a PLC structure
 	} {
 		if _, err := convertForType(1.0, dt); err == nil {
@@ -138,7 +138,7 @@ func newTypedDriver(f *fakeTypedServer) *Driver {
 func TestWriteSendsTheNodesType(t *testing.T) {
 	const temp = "ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp"
 	f := &fakeTypedServer{types: map[string]*ua.NodeID{
-		temp:                        ua.NewNumericNodeID(0, id.Float),
+		temp:                         ua.NewNumericNodeID(0, id.Float),
 		"ns=6;s=Arp.Plc.Eclr/iCount": ua.NewNumericNodeID(0, id.Int16),
 		"ns=6;s=Arp.Plc.Eclr/xRun":   ua.NewNumericNodeID(0, id.Boolean),
 	}}
