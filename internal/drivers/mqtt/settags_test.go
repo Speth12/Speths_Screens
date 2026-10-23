@@ -9,14 +9,14 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
-func connectBroker(t *testing.T) *Driver {
+func connectBroker(t *testing.T, out chan<- tagstore.TagUpdate) *Driver {
 	t.Helper()
 	endpoint, stop := startBroker(t)
 	t.Cleanup(stop)
 	d := New()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}); err != nil {
+	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}, out); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Disconnect() })
@@ -44,7 +44,7 @@ func collect(t *testing.T, d *Driver, ch chan tagstore.TagUpdate, topics []strin
 	}
 }
 
-func TestRepeatedSubscribeDeliversOnce(t *testing.T) {
+func TestRepeatedSetTagsDeliversOnce(t *testing.T) {
 	tests := []struct {
 		name  string
 		calls int
@@ -54,11 +54,11 @@ func TestRepeatedSubscribeDeliversOnce(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d := connectBroker(t)
 			ch := make(chan tagstore.TagUpdate, 64)
+			d := connectBroker(t, ch)
 			for i := 0; i < tc.calls; i++ {
-				if err := d.Subscribe(context.Background(), []string{"plant/a"}, ch); err != nil {
-					t.Fatalf("Subscribe: %v", err)
+				if err := d.SetTags([]string{"plant/a"}); err != nil {
+					t.Fatalf("SetTags: %v", err)
 				}
 			}
 			got := collect(t, d, ch, []string{"plant/a"})
@@ -83,10 +83,10 @@ func TestSetTagsReplacesSubscriptions(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d := connectBroker(t)
 			ch := make(chan tagstore.TagUpdate, 64)
-			if err := d.Subscribe(context.Background(), tc.first, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d := connectBroker(t, ch)
+			if err := d.SetTags(tc.first); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if err := d.SetTags(tc.second); err != nil {
 				t.Fatalf("SetTags: %v", err)

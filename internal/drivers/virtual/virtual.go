@@ -70,7 +70,7 @@ func (d *Driver) ID() string { return driverID }
 // cfg.Extra["tags"] must be a JSON-encoded []TagSpec:
 //
 //	[{"path":"tempF","formula":"{opcua:Temp}*9/5+32"},...]
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	tagsJSON := cfg.Extra["tags"]
 	if tagsJSON == "" {
 		return fmt.Errorf("virtual: cfg.Extra['tags'] is required")
@@ -89,11 +89,15 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	d.vals = make(map[string]float64)
 	d.overrides = make(map[string]float64)
 	d.stopCh = make(chan struct{})
+	d.outCh = out
 	d.mu.Unlock()
 
 	d.tagCount.Store(int32(len(specs)))
 	d.connected.Store(true)
 	log.Printf("[DRIVER] virtual: connected with %d computed tags", len(specs))
+	if out != nil {
+		d.evaluateAll(specs, out) // push initial values
+	}
 	d.startLoop(specs)
 	return nil
 }
@@ -128,20 +132,6 @@ func (d *Driver) Browse(_ context.Context) ([]drivers.TagDefinition, error) {
 // SetTags does nothing: a virtual driver always computes every configured
 // tag. It exists so the driver satisfies the same contract as the others.
 func (d *Driver) SetTags(_ []string) error { return nil }
-
-// Subscribe sets the output channel and pushes the current value of every
-// computed tag once.
-//
-// Deprecated: kept until the runtime switches to SetTags; the evaluation loop
-// now starts in Connect, so repeated calls no longer add loops.
-func (d *Driver) Subscribe(_ context.Context, _ []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	d.outCh = ch
-	specs := d.specs
-	d.mu.Unlock()
-	d.evaluateAll(specs, ch)
-	return nil
-}
 
 func (d *Driver) output() chan<- tagstore.TagUpdate {
 	d.mu.RLock()

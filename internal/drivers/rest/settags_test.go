@@ -55,14 +55,14 @@ func (f *fakePLC) take() [][]string {
 	return r
 }
 
-func connectPXC(t *testing.T, f *fakePLC) *Driver {
+func connectPXC(t *testing.T, f *fakePLC, out chan<- tagstore.TagUpdate) *Driver {
 	t.Helper()
 	d := New()
 	d.pollEvery = testPoll
 	err := d.Connect(context.Background(), drivers.DriverConfig{
 		Endpoint: f.srv.URL,
 		Extra:    map[string]string{"basePath": "/_pxc_api/v1.14"},
-	})
+	}, out)
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
@@ -77,7 +77,7 @@ func window(f *fakePLC, n int) [][]string {
 	return f.take()
 }
 
-func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
+func TestRepeatedSetTagsDoesNotMultiplyPolling(t *testing.T) {
 	tests := []struct {
 		name  string
 		calls int
@@ -88,15 +88,15 @@ func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newFakePLC(t)
-			d := connectPXC(t, f)
+			ch := make(chan tagstore.TagUpdate, 64)
+			go func() {
+				for range ch {
+				}
+			}()
+			d := connectPXC(t, f, ch)
 			for i := 0; i < tc.calls; i++ {
-				ch := make(chan tagstore.TagUpdate, 64)
-				go func() {
-					for range ch {
-					}
-				}()
-				if err := d.Subscribe(context.Background(), []string{"Arp.Plc.Eclr/A", "Arp.Plc.Eclr/B"}, ch); err != nil {
-					t.Fatalf("Subscribe: %v", err)
+				if err := d.SetTags([]string{"Arp.Plc.Eclr/A", "Arp.Plc.Eclr/B"}); err != nil {
+					t.Fatalf("SetTags: %v", err)
 				}
 			}
 			const ticks = 10
@@ -124,10 +124,9 @@ func TestSetTagsReplacesPollSet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newFakePLC(t)
-			d := connectPXC(t, f)
-			ch := make(chan tagstore.TagUpdate, 256)
-			if err := d.Subscribe(context.Background(), tc.first, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d := connectPXC(t, f, make(chan tagstore.TagUpdate, 256))
+			if err := d.SetTags(tc.first); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if err := d.SetTags(tc.second); err != nil {
 				t.Fatalf("SetTags: %v", err)
@@ -183,10 +182,9 @@ func TestEmptySetAndDisconnectStopPolling(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newFakePLC(t)
-			d := connectPXC(t, f)
-			ch := make(chan tagstore.TagUpdate, 256)
-			if err := d.Subscribe(context.Background(), []string{"C/A"}, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d := connectPXC(t, f, make(chan tagstore.TagUpdate, 256))
+			if err := d.SetTags([]string{"C/A"}); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if len(window(f, 5)) == 0 {
 				t.Fatal("not polling before stop")

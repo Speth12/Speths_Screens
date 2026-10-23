@@ -25,7 +25,7 @@ func countUpdates(ch chan tagstore.TagUpdate, d time.Duration) map[string]int {
 	}
 }
 
-func TestRepeatedSubscribeDoesNotAddLoops(t *testing.T) {
+func TestRepeatedSetTagsDoesNotAddLoops(t *testing.T) {
 	tests := []struct {
 		name  string
 		calls int
@@ -37,15 +37,14 @@ func TestRepeatedSubscribeDoesNotAddLoops(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d := New(tagstore.New())
 			cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","formula":"1"}]`}}
-			if err := d.Connect(context.Background(), cfg); err != nil {
+			ch := make(chan tagstore.TagUpdate, 1024)
+			if err := d.Connect(context.Background(), cfg, ch); err != nil {
 				t.Fatalf("Connect: %v", err)
 			}
 			t.Cleanup(func() { _ = d.Disconnect() })
-
-			ch := make(chan tagstore.TagUpdate, 1024)
 			for i := 0; i < tc.calls; i++ {
-				if err := d.Subscribe(context.Background(), nil, ch); err != nil {
-					t.Fatalf("Subscribe: %v", err)
+				if err := d.SetTags(nil); err != nil {
+					t.Fatalf("SetTags: %v", err)
 				}
 			}
 			// An active override re-emits on every tick of every loop.
@@ -66,12 +65,9 @@ func TestRepeatedSubscribeDoesNotAddLoops(t *testing.T) {
 func TestDisconnectStopsEvaluation(t *testing.T) {
 	d := New(tagstore.New())
 	cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","formula":"1"}]`}}
-	if err := d.Connect(context.Background(), cfg); err != nil {
-		t.Fatalf("Connect: %v", err)
-	}
 	ch := make(chan tagstore.TagUpdate, 1024)
-	if err := d.Subscribe(context.Background(), nil, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.Connect(context.Background(), cfg, ch); err != nil {
+		t.Fatalf("Connect: %v", err)
 	}
 	if err := d.Write(context.Background(), "x", 5.0); err != nil {
 		t.Fatalf("Write: %v", err)

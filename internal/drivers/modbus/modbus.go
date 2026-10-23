@@ -89,10 +89,13 @@ func (d *Driver) ID() string { return driverID }
 //
 // cfg.Endpoint:        host:port (defaults to :502 if no port)
 // cfg.Extra["slaveId"]: unit/slave ID (default 1)
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("modbus: endpoint is required")
 	}
+	d.mu.Lock()
+	d.out = out
+	d.mu.Unlock()
 	url := cfg.Endpoint
 	if !strings.Contains(url, "://") {
 		url = "tcp://" + url
@@ -192,21 +195,6 @@ func (d *Driver) SetTags(paths []string) error {
 		return fmt.Errorf("modbus: no valid tags to poll")
 	}
 	return nil
-}
-
-// Subscribe sets the output channel and the tag set.
-//
-// Deprecated: kept until the runtime switches to SetTags; it no longer starts
-// a poll loop, so repeated calls do not multiply polling.
-func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	connected := d.cancel != nil
-	d.out = ch
-	d.mu.Unlock()
-	if !connected {
-		return fmt.Errorf("modbus: not connected")
-	}
-	return d.SetTags(paths)
 }
 
 func (d *Driver) output() chan<- tagstore.TagUpdate {

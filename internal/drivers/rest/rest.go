@@ -75,10 +75,13 @@ func (d *Driver) ID() string { return driverID }
 //	(the driver auto-detects _pxc_api and probes the correct version if needed)
 //
 // cfg.Extra["bearerToken"]: optional Authorization: Bearer <token>
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("rest: endpoint is required")
 	}
+	d.mu.Lock()
+	d.out = out
+	d.mu.Unlock()
 
 	d.baseURL = strings.TrimRight(cfg.Endpoint, "/")
 	d.basePath = cfg.Extra["basePath"]
@@ -351,21 +354,6 @@ func (d *Driver) SetTags(paths []string) error {
 	d.tagCount.Store(int32(len(norm)))
 	log.Printf("[DRIVER] rest: polling %d tags", len(norm))
 	return nil
-}
-
-// Subscribe sets the output channel and the tag set.
-//
-// Deprecated: kept until the runtime switches to SetTags; it no longer starts
-// a poll loop, so repeated calls do not multiply polling.
-func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	connected := d.cancel != nil
-	d.out = ch
-	d.mu.Unlock()
-	if !connected {
-		return fmt.Errorf("rest: not connected")
-	}
-	return d.SetTags(paths)
 }
 
 func (d *Driver) output() chan<- tagstore.TagUpdate {

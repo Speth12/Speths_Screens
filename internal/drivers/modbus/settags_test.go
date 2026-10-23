@@ -80,11 +80,11 @@ func startSlave(t *testing.T) (*fakeSlave, string) {
 	return f, addr
 }
 
-func connectSlave(t *testing.T, addr string) *Driver {
+func connectSlave(t *testing.T, addr string, out chan<- tagstore.TagUpdate) *Driver {
 	t.Helper()
 	d := New()
 	d.pollEvery = testPoll
-	if err := d.Connect(context.Background(), drivers.DriverConfig{Endpoint: addr}); err != nil {
+	if err := d.Connect(context.Background(), drivers.DriverConfig{Endpoint: addr}, out); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Disconnect() })
@@ -98,7 +98,7 @@ func drain(ch chan tagstore.TagUpdate) {
 	}()
 }
 
-func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
+func TestRepeatedSetTagsDoesNotMultiplyPolling(t *testing.T) {
 	tests := []struct {
 		name  string
 		calls int
@@ -109,12 +109,12 @@ func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f, addr := startSlave(t)
-			d := connectSlave(t, addr)
+			ch := make(chan tagstore.TagUpdate, 64)
+			drain(ch)
+			d := connectSlave(t, addr, ch)
 			for i := 0; i < tc.calls; i++ {
-				ch := make(chan tagstore.TagUpdate, 64)
-				drain(ch)
-				if err := d.Subscribe(context.Background(), []string{"holding:1"}, ch); err != nil {
-					t.Fatalf("Subscribe: %v", err)
+				if err := d.SetTags([]string{"holding:1"}); err != nil {
+					t.Fatalf("SetTags: %v", err)
 				}
 			}
 			const ticks = 10
@@ -140,11 +140,11 @@ func TestSetTagsReplacesPollSet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f, addr := startSlave(t)
-			d := connectSlave(t, addr)
 			ch := make(chan tagstore.TagUpdate, 64)
 			drain(ch)
-			if err := d.Subscribe(context.Background(), tc.first, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d := connectSlave(t, addr, ch)
+			if err := d.SetTags(tc.first); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if err := d.SetTags(tc.second); err != nil {
 				t.Fatalf("SetTags: %v", err)
@@ -172,10 +172,10 @@ func TestSetTagsReplacesPollSet(t *testing.T) {
 // A tag that does not parse used to shift every later tag onto the wrong path.
 func TestBadTagDoesNotShiftPaths(t *testing.T) {
 	_, addr := startSlave(t)
-	d := connectSlave(t, addr)
 	ch := make(chan tagstore.TagUpdate, 64)
-	if err := d.Subscribe(context.Background(), []string{"holding:5", "bogus", "holding:7"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	d := connectSlave(t, addr, ch)
+	if err := d.SetTags([]string{"holding:5", "bogus", "holding:7"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 	want := map[string]uint16{"holding:5": 5, "holding:7": 7}
 	got := map[string]any{}
@@ -212,11 +212,11 @@ func TestEmptySetAndDisconnectStopPolling(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			f, addr := startSlave(t)
-			d := connectSlave(t, addr)
 			ch := make(chan tagstore.TagUpdate, 64)
 			drain(ch)
-			if err := d.Subscribe(context.Background(), []string{"holding:1"}, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d := connectSlave(t, addr, ch)
+			if err := d.SetTags([]string{"holding:1"}); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if len(f.window(5)) == 0 {
 				t.Fatal("not polling before stop")

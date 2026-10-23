@@ -60,10 +60,13 @@ func (d *Driver) ID() string { return driverID }
 // cfg.Endpoint:           opc.tcp://host:port
 // cfg.Extra["securityMode"]:   None | Sign | SignAndEncrypt   (default Sign+Encrypt if available)
 // cfg.Extra["securityPolicy"]: None | Basic128Rsa15 | Basic256 | Basic256Sha256
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("opcua: endpoint is required")
 	}
+	d.mu.Lock()
+	d.out = out
+	d.mu.Unlock()
 	d.endpoint = cfg.Endpoint
 
 	desiredMode := cfg.Extra["securityMode"]
@@ -301,21 +304,6 @@ func (d *Driver) SetTags(paths []string) error {
 		return fmt.Errorf("opcua: no valid node ids")
 	}
 	return nil
-}
-
-// Subscribe sets the output channel and the tag set.
-//
-// Deprecated: kept until the runtime switches to SetTags; it no longer starts
-// a poll loop, so repeated calls do not multiply polling.
-func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	running := d.cancel != nil
-	d.out = ch
-	d.mu.Unlock()
-	if !running {
-		return fmt.Errorf("opcua: not connected")
-	}
-	return d.SetTags(paths)
 }
 
 func (d *Driver) output() chan<- tagstore.TagUpdate {

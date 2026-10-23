@@ -50,10 +50,13 @@ func (d *Driver) ID() string { return driverID }
 // cfg.Endpoint:           tcp://host:port  or  ssl://host:port
 // cfg.Username/Password:  optional auth
 // cfg.Extra["clientId"]:  optional client id (default: x-hmi-<unix-nano>)
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("mqtt: endpoint is required")
 	}
+	d.mu.Lock()
+	d.out = out
+	d.mu.Unlock()
 	clientID := cfg.Extra["clientId"]
 	if clientID == "" {
 		clientID = fmt.Sprintf("x-hmi-%d", time.Now().UnixNano())
@@ -91,7 +94,7 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	d.mu.Unlock()
 
 	// Subscribe to # (all topics) for passive discovery.
-	// This lets Browse() return topics without any explicit Subscribe() calls.
+	// This lets Browse() return topics without any SetTags() calls.
 	discoveryHandler := func(_ mqttlib.Client, msg mqttlib.Message) {
 		topic := msg.Topic()
 		d.seenTopic.Store(topic, struct{}{})
@@ -198,16 +201,6 @@ func (d *Driver) onMessage(_ mqttlib.Client, msg mqttlib.Message) {
 	default:
 		// pump is slow; drop
 	}
-}
-
-// Subscribe sets the output channel and the tag set.
-//
-// Deprecated: kept until the runtime switches to SetTags.
-func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	d.out = ch
-	d.mu.Unlock()
-	return d.SetTags(paths)
 }
 
 func (d *Driver) output() chan<- tagstore.TagUpdate {

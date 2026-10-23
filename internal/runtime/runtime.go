@@ -48,7 +48,13 @@ type Runtime struct {
 
 	mu        sync.RWMutex
 	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
+	fanStop   map[string]context.CancelFunc     // datasource id → stops its fan-in
 	nsAliases map[string][]string               // "driverId:driverAddr" → []nsPath
+
+	// tagsMu serializes tag-set refreshes so a stale set never wins.
+	tagsMu sync.Mutex
+	// newDriver builds a driver for a datasource type; tests replace it.
+	newDriver func(typ project.DatasourceType) (drivers.ProtocolDriver, error)
 	cancel    context.CancelFunc
 	pumpCtx   context.Context
 	pumpCh    chan tagstore.TagUpdate
@@ -69,6 +75,7 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 		Namespace: namespace.New(),
 		Events:    eventbus.New(),
 		drivers:   make(map[string]drivers.ProtocolDriver),
+		fanStop:   make(map[string]context.CancelFunc),
 		pumpCh:    make(chan tagstore.TagUpdate, 1024),
 	}
 }
@@ -91,9 +98,13 @@ func (r *Runtime) Stop() {
 	r.mu.Lock()
 	for id, d := range r.drivers {
 		_ = d.Disconnect()
+		if stop := r.fanStop[id]; stop != nil {
+			stop()
+		}
 		log.Printf("[RUNTIME] disconnected %s", id)
 	}
 	r.drivers = nil
+	r.fanStop = nil
 	r.mu.Unlock()
 	if r.cancel != nil {
 		r.cancel()
@@ -103,6 +114,7 @@ func (r *Runtime) Stop() {
 
 // LoadProject reconfigures drivers based on a project file.
 // Existing drivers not in the new project are disconnected.
+// Safe to call any number of times; Start must have been called first.
 func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	// Update alarm rules.
 	rules := make([]alarms.Rule, 0, len(p.AlarmRules))
@@ -176,13 +188,17 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	for id, d := range r.drivers {
 		if !desired[id] {
 			_ = d.Disconnect()
+			if stop := r.fanStop[id]; stop != nil {
+				stop()
+			}
 			delete(r.drivers, id)
+			delete(r.fanStop, id)
 			log.Printf("[RUNTIME] removed datasource %s", id)
 		}
 	}
 	r.mu.Unlock()
 
-	// connect new datasources, then subscribe all (new and existing) to bound tags
+	// connect new datasources, then give every driver its tag set
 	for _, ds := range p.Datasources {
 		if !r.has(ds.ID) {
 			drv, err := r.buildDriver(ds.Type)
@@ -190,65 +206,75 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 				log.Printf("[RUNTIME] %s: %v — skipped", ds.ID, err)
 				continue
 			}
+			fanCh := r.startFanIn(ds.ID)
 			// Register driver before connecting so status endpoint always exists.
 			r.mu.Lock()
 			r.drivers[ds.ID] = drv
 			r.mu.Unlock()
 			cfg := buildConfig(ds)
-			if err := drv.Connect(ctx, cfg); err != nil {
+			if err := drv.Connect(ctx, cfg, fanCh); err != nil {
 				log.Printf("[RUNTIME] %s: connect failed: %v", ds.ID, err)
 				// driver remains registered with connected=false; status shows the error
 			} else {
 				log.Printf("[RUNTIME] connected %s (%s)", ds.ID, ds.Type)
 			}
 		}
-
-		// Subscribe every time so re-deploys with new bindings take effect.
-		drv := r.Driver(ds.ID)
-		if drv == nil {
-			continue
-		}
-		paths := tagsForDatasource(p, ds.ID)
-		// Also subscribe to paths needed by namespace nodes bound to this driver.
-		{
-			seen := map[string]bool{}
-			for _, path := range paths {
-				seen[path] = true
-			}
-			for _, n := range r.Namespace.All() {
-				if n.DriverID == ds.ID && n.DriverAddr != "" && !seen[n.DriverAddr] {
-					seen[n.DriverAddr] = true
-					paths = append(paths, n.DriverAddr)
-				}
-			}
-		}
-		if len(paths) > 0 {
-			fanCh := make(chan tagstore.TagUpdate, 256)
-			dsID := ds.ID
-			go func() {
-				prefix := dsID + ":"
-				for {
-					select {
-					case u, ok := <-fanCh:
-						if !ok {
-							return
-						}
-						u.Path = prefix + u.Path
-						select {
-						case r.pumpCh <- u:
-						default:
-						}
-					case <-r.pumpCtx.Done():
-						return
-					}
-				}
-			}()
-			if err := drv.Subscribe(r.pumpCtx, paths, fanCh); err != nil {
-				log.Printf("[RUNTIME] %s: subscribe failed: %v", ds.ID, err)
-			}
-		}
+		r.refreshTags(ds.ID)
 	}
 	return nil
+}
+
+// startFanIn creates the channel one driver pushes into and the goroutine
+// that prefixes each path with the datasource id and forwards it to the pump.
+// It runs until the driver is removed or the runtime stops.
+func (r *Runtime) startFanIn(dsID string) chan<- tagstore.TagUpdate {
+	fanCtx, stop := context.WithCancel(r.pumpCtx)
+	r.mu.Lock()
+	if old := r.fanStop[dsID]; old != nil {
+		old()
+	}
+	r.fanStop[dsID] = stop
+	r.mu.Unlock()
+
+	fanCh := make(chan tagstore.TagUpdate, 256)
+	prefix := dsID + ":"
+	go func() {
+		for {
+			select {
+			case u := <-fanCh:
+				u.Path = prefix + u.Path
+				select {
+				case r.pumpCh <- u:
+				default:
+				}
+			case <-fanCtx.Done():
+				return
+			}
+		}
+	}()
+	return fanCh
+}
+
+// refreshTags recomputes the tag set for one datasource from the loaded
+// project and namespace, and hands it to the driver. Safe to call any number
+// of times: drivers ignore an unchanged set.
+func (r *Runtime) refreshTags(dsID string) {
+	r.tagsMu.Lock()
+	defer r.tagsMu.Unlock()
+	p := r.Project()
+	drv := r.Driver(dsID)
+	if p == nil || drv == nil {
+		return
+	}
+	paths := tagsForDatasource(p, dsID)
+	for _, n := range r.Namespace.All() {
+		if n.DriverID == dsID && n.DriverAddr != "" {
+			paths = append(paths, n.DriverAddr)
+		}
+	}
+	if err := drv.SetTags(paths); err != nil {
+		log.Printf("[RUNTIME] %s: set tags: %v", dsID, err)
+	}
 }
 
 // TestDatasource creates a temporary driver, attempts to connect within 10 s,
@@ -261,7 +287,7 @@ func (r *Runtime) TestDatasource(ctx context.Context, ds project.Datasource) dri
 	tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	cfg := buildConfig(ds)
-	if err := drv.Connect(tctx, cfg); err != nil {
+	if err := drv.Connect(tctx, cfg, nil); err != nil {
 		return drivers.DriverStatus{LastError: err.Error()}
 	}
 	// Give driver a moment to fully handshake (especially MQTT).
@@ -351,40 +377,15 @@ func (r *Runtime) RebuildNSAliases() {
 	r.mu.Unlock()
 }
 
-// EnsureNSTagSubscribed makes sure the given driver is subscribed to driverAddr.
+// EnsureNSTagSubscribed makes sure the given driver reads driverAddr.
 // Call after adding a namespace node via API whose tag may not be polled yet.
+// The node must already be in the namespace: the driver's whole tag set is
+// recomputed, so the new tag is added without dropping the others.
 func (r *Runtime) EnsureNSTagSubscribed(driverID, driverAddr string) {
-	drv := r.Driver(driverID)
-	if drv == nil {
+	if driverAddr == "" {
 		return
 	}
-	// Already in tagstore means the driver is already delivering it — no-op.
-	if _, ok := r.Store.Get(driverID + ":" + driverAddr); ok {
-		return
-	}
-	fanCh := make(chan tagstore.TagUpdate, 64)
-	dsID := driverID
-	go func() {
-		prefix := dsID + ":"
-		for {
-			select {
-			case u, ok := <-fanCh:
-				if !ok {
-					return
-				}
-				u.Path = prefix + u.Path
-				select {
-				case r.pumpCh <- u:
-				default:
-				}
-			case <-r.pumpCtx.Done():
-				return
-			}
-		}
-	}()
-	if err := drv.Subscribe(r.pumpCtx, []string{driverAddr}, fanCh); err != nil {
-		log.Printf("[RUNTIME] EnsureNSTagSubscribed %s/%s: %v", driverID, driverAddr, err)
-	}
+	r.refreshTags(driverID)
 }
 
 // persistAlarms subscribes to the alarm engine and writes every state
@@ -409,6 +410,9 @@ func (r *Runtime) persistAlarms(ctx context.Context) {
 }
 
 func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDriver, error) {
+	if r.newDriver != nil {
+		return r.newDriver(typ)
+	}
 	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store})
 }
 

@@ -11,6 +11,7 @@ import (
 
 func TestWriteOverride(t *testing.T) {
 	store := tagstore.New()
+	ch := make(chan tagstore.TagUpdate, 64)
 	d := New(store)
 
 	cfg := drivers.DriverConfig{
@@ -24,13 +25,12 @@ func TestWriteOverride(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := d.Connect(ctx, cfg); err != nil {
+	if err := d.Connect(ctx, cfg, ch); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 
-	ch := make(chan tagstore.TagUpdate, 64)
-	if err := d.Subscribe(ctx, nil, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags(nil); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	// Let the driver push at least one tick.

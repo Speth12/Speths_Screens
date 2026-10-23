@@ -53,12 +53,13 @@ func (f *fakeServer) window(n int) [][]string {
 
 // startFake returns a driver whose poll loop runs against a fake server, as
 // it would after a successful Connect.
-func startFake(t *testing.T) (*Driver, *fakeServer) {
+func startFake(t *testing.T, out chan<- tagstore.TagUpdate) (*Driver, *fakeServer) {
 	t.Helper()
 	f := &fakeServer{}
 	d := New()
 	d.pollEvery = testPoll
 	d.read = f.read
+	d.out = out
 	d.startLoop()
 	t.Cleanup(func() { _ = d.Disconnect() })
 	return d, f
@@ -71,7 +72,7 @@ func drain(ch chan tagstore.TagUpdate) {
 	}()
 }
 
-func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
+func TestRepeatedSetTagsDoesNotMultiplyPolling(t *testing.T) {
 	tests := []struct {
 		name  string
 		calls int
@@ -81,12 +82,12 @@ func TestRepeatedSubscribeDoesNotMultiplyPolling(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, f := startFake(t)
+			ch := make(chan tagstore.TagUpdate, 64)
+			drain(ch)
+			d, f := startFake(t, ch)
 			for i := 0; i < tc.calls; i++ {
-				ch := make(chan tagstore.TagUpdate, 64)
-				drain(ch)
-				if err := d.Subscribe(context.Background(), []string{"ns=6;s=A", "ns=6;s=B"}, ch); err != nil {
-					t.Fatalf("Subscribe: %v", err)
+				if err := d.SetTags([]string{"ns=6;s=A", "ns=6;s=B"}); err != nil {
+					t.Fatalf("SetTags: %v", err)
 				}
 			}
 			const ticks = 10
@@ -110,11 +111,11 @@ func TestSetTagsReplacesPollSet(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, f := startFake(t)
 			ch := make(chan tagstore.TagUpdate, 64)
 			drain(ch)
-			if err := d.Subscribe(context.Background(), tc.first, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d, f := startFake(t, ch)
+			if err := d.SetTags(tc.first); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if err := d.SetTags(tc.second); err != nil {
 				t.Fatalf("SetTags: %v", err)
@@ -149,10 +150,10 @@ func TestSetTagsIdempotent(t *testing.T) {
 }
 
 func TestBadNodeIDDoesNotShiftPaths(t *testing.T) {
-	d, _ := startFake(t)
 	ch := make(chan tagstore.TagUpdate, 64)
-	if err := d.Subscribe(context.Background(), []string{"ns=6;s=A", "ns=abc;s=X", "ns=6;s=B"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	d, _ := startFake(t, ch)
+	if err := d.SetTags([]string{"ns=6;s=A", "ns=abc;s=X", "ns=6;s=B"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 	got := map[string]bool{}
 	deadline := time.After(2 * time.Second)
@@ -182,11 +183,11 @@ func TestEmptySetAndDisconnectStopPolling(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, f := startFake(t)
 			ch := make(chan tagstore.TagUpdate, 64)
 			drain(ch)
-			if err := d.Subscribe(context.Background(), []string{"ns=6;s=A"}, ch); err != nil {
-				t.Fatalf("Subscribe: %v", err)
+			d, f := startFake(t, ch)
+			if err := d.SetTags([]string{"ns=6;s=A"}); err != nil {
+				t.Fatalf("SetTags: %v", err)
 			}
 			if len(f.window(5)) == 0 {
 				t.Fatal("not polling before stop")
