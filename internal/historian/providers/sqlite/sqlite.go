@@ -2,7 +2,7 @@
 package sqlite
 
 import (
-	"github.com/Speth12/speths-screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/historian"
 )
 
 func init() {

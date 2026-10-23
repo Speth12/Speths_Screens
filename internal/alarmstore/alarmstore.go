@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarms"
+	"github.com/Speth12/Speths_Screens/internal/alarms"
 	_ "modernc.org/sqlite"
 )
 

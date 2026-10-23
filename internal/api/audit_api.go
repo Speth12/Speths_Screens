@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Speth12/speths-screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/audit"
 )
 
 func (s *Server) handleListAudit(w http.ResponseWriter, r *http.Request) {

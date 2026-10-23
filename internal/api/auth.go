@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Speth12/speths-screens/internal/security"
+	"github.com/Speth12/Speths_Screens/internal/security"
 )
 
 type ctxKey string

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Speth12/speths-screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/project"
 )
 
 func sampleProject() *project.Project {

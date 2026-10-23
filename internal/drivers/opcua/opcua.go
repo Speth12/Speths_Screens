@@ -11,29 +11,29 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/drivers/cert"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/drivers/cert"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 )
 
 const (
-	driverID    = "opcua"
-	defaultCert = "opcua-cert.pem"
-	defaultKey  = "opcua-key.pem"
-	appURI      = "urn:x-hmi:runtime"
-	browseDepth    = 10
-	browseMaxRefs  = 1000
-	subInterval    = 500 * time.Millisecond
+	driverID      = "opcua"
+	defaultCert   = "opcua-cert.pem"
+	defaultKey    = "opcua-key.pem"
+	appURI        = "urn:x-hmi:runtime"
+	browseDepth   = 10
+	browseMaxRefs = 1000
+	subInterval   = 500 * time.Millisecond
 )
 
 // Driver implements drivers.ProtocolDriver.
 type Driver struct {
-	mu       sync.Mutex
-	client   *opcua.Client
-	endpoint string
+	mu        sync.Mutex
+	client    *opcua.Client
+	endpoint  string
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
 	tagCount  atomic.Int32

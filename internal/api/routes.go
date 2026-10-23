@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarmstore"
-	"github.com/Speth12/speths-screens/internal/audit"
-	"github.com/Speth12/speths-screens/internal/project"
-	"github.com/Speth12/speths-screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/alarmstore"
+	"github.com/Speth12/Speths_Screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/recipestore"
 	"github.com/go-chi/chi/v5"
 )
 

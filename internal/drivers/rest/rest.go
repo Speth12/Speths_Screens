@@ -5,7 +5,7 @@
 //  1. PLCnext pxc_api mode (basePath contains "_pxc_api"):
 //     Browse: GET <baseURL>/_pxc_api/v*/ports → Ports{} map → tag list.
 //     Poll:   GET <baseURL>/_pxc_api/v*/variables?pathPrefix=<component>/&paths=<var1>,<var2>
-//             batches all subscribed paths into one request per component group.
+//     batches all subscribed paths into one request per component group.
 //
 //  2. Generic REST mode (any other basePath):
 //     Browse: GET basePath, walk the JSON response tree for path/name fields.
@@ -31,8 +31,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"github.com/tidwall/gjson"
 )
 
@@ -412,7 +412,7 @@ func (d *Driver) pxcReadGroup(ctx context.Context, prefix string, vars []string,
 		_ = i
 		select {
 		case out <- tagstore.TagUpdate{
-			Path: p,
+			Path:  p,
 			State: tagstore.TagState{Value: val, Quality: quality, TS: now},
 		}:
 		default:

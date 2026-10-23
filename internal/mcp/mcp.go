@@ -3,9 +3,10 @@
 // to POST /mcp with JSON-RPC 2.0 messages.
 //
 // Supported methods:
-//   initialize, initialized, ping
-//   resources/list, resources/read
-//   tools/list, tools/call
+//
+//	initialize, initialized, ping
+//	resources/list, resources/read
+//	tools/list, tools/call
 package mcp
 
 import (
@@ -16,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/eventbus"
-	"github.com/Speth12/speths-screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/eventbus"
+	"github.com/Speth12/Speths_Screens/internal/runtime"
 )
 
 // ── JSON-RPC 2.0 types ────────────────────────────────────────────────────

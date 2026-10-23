@@ -1,4 +1,4 @@
-module github.com/Speth12/speths-screens
+module github.com/Speth12/Speths_Screens
 
 go 1.25.0
 

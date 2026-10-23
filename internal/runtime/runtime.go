@@ -10,24 +10,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarmstore"
-	"github.com/Speth12/speths-screens/internal/alarms"
-	"github.com/Speth12/speths-screens/internal/assets"
-	"github.com/Speth12/speths-screens/internal/audit"
-	"github.com/Speth12/speths-screens/internal/drivers"
-	_ "github.com/Speth12/speths-screens/internal/drivers/modbus"
-	_ "github.com/Speth12/speths-screens/internal/drivers/mqtt"
-	_ "github.com/Speth12/speths-screens/internal/drivers/opcua"
-	_ "github.com/Speth12/speths-screens/internal/drivers/rest"
-	_ "github.com/Speth12/speths-screens/internal/drivers/virtual"
-	"github.com/Speth12/speths-screens/internal/eventbus"
-	"github.com/Speth12/speths-screens/internal/faceplate"
-	"github.com/Speth12/speths-screens/internal/historian"
-	"github.com/Speth12/speths-screens/internal/namespace"
-	"github.com/Speth12/speths-screens/internal/project"
-	"github.com/Speth12/speths-screens/internal/recipestore"
-	"github.com/Speth12/speths-screens/internal/security"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/alarms"
+	"github.com/Speth12/Speths_Screens/internal/alarmstore"
+	"github.com/Speth12/Speths_Screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/modbus"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/mqtt"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/opcua"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/rest"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/virtual"
+	"github.com/Speth12/Speths_Screens/internal/eventbus"
+	"github.com/Speth12/Speths_Screens/internal/faceplate"
+	"github.com/Speth12/Speths_Screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/namespace"
+	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/security"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 // Runtime owns the TagStore, Historian, alarm Engine, and active driver instances.
@@ -40,20 +40,20 @@ type Runtime struct {
 	Events     *eventbus.Bus
 
 	// Optional — nil in dev/test mode.
-	Security  *security.Store
-	Audit     *audit.Store
-	Assets    *assets.Registry
+	Security   *security.Store
+	Audit      *audit.Store
+	Assets     *assets.Registry
 	Faceplates *faceplate.Registry
-	Recipes   *recipestore.Store
+	Recipes    *recipestore.Store
 
-	mu         sync.RWMutex
-	drivers    map[string]drivers.ProtocolDriver // datasource id → driver
-	nsAliases  map[string][]string               // "driverId:driverAddr" → []nsPath
-	cancel     context.CancelFunc
-	pumpCtx    context.Context
-	pumpCh     chan tagstore.TagUpdate
-	wg         sync.WaitGroup
-	project    *project.Project
+	mu        sync.RWMutex
+	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
+	nsAliases map[string][]string               // "driverId:driverAddr" → []nsPath
+	cancel    context.CancelFunc
+	pumpCtx   context.Context
+	pumpCh    chan tagstore.TagUpdate
+	wg        sync.WaitGroup
+	project   *project.Project
 }
 
 // New returns an initialised runtime with the given store and historian.

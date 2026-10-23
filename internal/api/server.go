@@ -4,9 +4,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/Speth12/speths-screens/internal/mcp"
-	"github.com/Speth12/speths-screens/internal/runtime"
-	"github.com/Speth12/speths-screens/internal/versionstore"
+	"github.com/Speth12/Speths_Screens/internal/mcp"
+	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/versionstore"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -117,7 +117,7 @@ func (s *Server) routes(assets http.Handler) {
 			r.Get("/search", s.handleNSSearch)
 			r.Post("/", s.handleNSCreate)
 			r.Put("/*", s.handleNSUpdate)
-				r.Delete("/*", s.handleNSDelete)
+			r.Delete("/*", s.handleNSDelete)
 		})
 
 		r.Route("/assets", func(r chi.Router) {

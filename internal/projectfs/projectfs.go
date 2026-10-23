@@ -29,7 +29,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Speth12/speths-screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/project"
 )
 
 // Manifest is stored in project.json at the root.

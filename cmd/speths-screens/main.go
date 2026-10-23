@@ -18,20 +18,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarmstore"
-	"github.com/Speth12/speths-screens/internal/api"
-	"github.com/Speth12/speths-screens/internal/assets"
-	"github.com/Speth12/speths-screens/internal/audit"
-	"github.com/Speth12/speths-screens/internal/faceplate"
-	"github.com/Speth12/speths-screens/internal/historian"
-	_ "github.com/Speth12/speths-screens/internal/historian/providers/memory"
-	_ "github.com/Speth12/speths-screens/internal/historian/providers/sqlite"
-	"github.com/Speth12/speths-screens/internal/project"
-	"github.com/Speth12/speths-screens/internal/recipestore"
-	"github.com/Speth12/speths-screens/internal/runtime"
-	"github.com/Speth12/speths-screens/internal/security"
-	"github.com/Speth12/speths-screens/internal/tagstore"
-	"github.com/Speth12/speths-screens/internal/versionstore"
+	"github.com/Speth12/Speths_Screens/internal/alarmstore"
+	"github.com/Speth12/Speths_Screens/internal/api"
+	"github.com/Speth12/Speths_Screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/faceplate"
+	"github.com/Speth12/Speths_Screens/internal/historian"
+	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/memory"
+	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/sqlite"
+	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/security"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/versionstore"
 )
 
 //go:embed ui
@@ -67,12 +67,12 @@ func main() {
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
 	historyDB := flag.String("history", "history.db", "SQLite WAL file (use ':memory:' to disable persistence)")
 	historyRetention := flag.Duration("history-retention", 7*24*time.Hour, "how long to keep history (e.g. 48h, 7d)")
-	alarmDB    := flag.String("alarm-db",    "alarms.db",    "SQLite file for alarm event history")
-	versionDB  := flag.String("version-db",  "versions.db",  "SQLite file for project version history")
-	securityDB := flag.String("security-db", "security.db",  "SQLite file for users and sessions")
-	auditDB    := flag.String("audit-db",    "",             "SQLite file for audit log (empty = disabled)")
-	recipeDB   := flag.String("recipe-db",   "recipes.db",   "SQLite file for recipe history and approvals")
-	jwtSecret  := flag.String("jwt-secret",  "",             "JWT signing secret (random 32+ bytes); auto-generated if empty")
+	alarmDB := flag.String("alarm-db", "alarms.db", "SQLite file for alarm event history")
+	versionDB := flag.String("version-db", "versions.db", "SQLite file for project version history")
+	securityDB := flag.String("security-db", "security.db", "SQLite file for users and sessions")
+	auditDB := flag.String("audit-db", "", "SQLite file for audit log (empty = disabled)")
+	recipeDB := flag.String("recipe-db", "recipes.db", "SQLite file for recipe history and approvals")
+	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (random 32+ bytes); auto-generated if empty")
 	flag.Parse()
 
 	if *healthcheck {

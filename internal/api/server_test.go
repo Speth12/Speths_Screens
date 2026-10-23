@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/runtime"
-	"github.com/Speth12/speths-screens/internal/tagstore"
-	"github.com/Speth12/speths-screens/internal/versionstore"
+	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/versionstore"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )

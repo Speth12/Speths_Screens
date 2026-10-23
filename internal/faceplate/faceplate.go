@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Speth12/speths-screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/assets"
 )
 
 // ViewType classifies the purpose of a faceplate view.
