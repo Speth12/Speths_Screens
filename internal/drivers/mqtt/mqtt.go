@@ -7,6 +7,7 @@ package mqtt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -27,7 +28,13 @@ const (
 type Driver struct {
 	mu        sync.Mutex
 	client    mqttlib.Client
+	out       chan<- tagstore.TagUpdate
 	seenTopic sync.Map // map[string]struct{}
+
+	// subMu serializes SetTags; subs holds the topics subscribed for tags.
+	subMu sync.Mutex
+	subs  map[string]bool
+
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
 	tagCount  atomic.Int32
@@ -106,6 +113,9 @@ func (d *Driver) Disconnect() error {
 	if c != nil {
 		c.Disconnect(250)
 	}
+	d.subMu.Lock()
+	d.subs = nil
+	d.subMu.Unlock()
 	d.connected.Store(false)
 	return nil
 }
@@ -120,38 +130,90 @@ func (d *Driver) Browse(ctx context.Context) ([]drivers.TagDefinition, error) {
 	return defs, nil
 }
 
-// Subscribe attaches MQTT subscriptions for each path. Wildcards (+, #) are supported.
-func (d *Driver) Subscribe(ctx context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
+// SetTags makes the tag subscriptions match paths. Wildcards (+, #) are
+// supported. It is idempotent: topics already subscribed are left alone, new
+// ones are subscribed and removed ones unsubscribed. An empty set removes all
+// tag subscriptions (the "#" discovery subscription stays).
+func (d *Driver) SetTags(paths []string) error {
 	c := d.getClient()
 	if c == nil {
 		return fmt.Errorf("mqtt: not connected")
 	}
-	handler := func(_ mqttlib.Client, msg mqttlib.Message) {
-		topic := msg.Topic()
-		d.seenTopic.Store(topic, struct{}{})
-		d.tagCount.Store(int32(d.countSeen()))
-		select {
-		case ch <- tagstore.TagUpdate{
-			Path: topic,
-			State: tagstore.TagState{
-				Value:   parsePayload(msg.Payload()),
-				Quality: "Good",
-				TS:      time.Now().UnixNano(),
-			},
-		}:
-		default:
-			// pump is slow; drop
-		}
+	d.subMu.Lock()
+	defer d.subMu.Unlock()
+	if d.subs == nil {
+		d.subs = map[string]bool{}
 	}
 
-	for _, p := range paths {
-		tok := c.Subscribe(p, 0, handler)
-		if !waitToken(ctx, tok) {
-			return fmt.Errorf("mqtt: subscribe %s: %w", p, tok.Error())
-		}
-		log.Printf("[DRIVER] mqtt: subscribed %s", p)
+	want := map[string]bool{}
+	for _, p := range drivers.NormalizePaths(paths) {
+		want[p] = true
 	}
-	return nil
+	var errs []error
+	for topic := range d.subs {
+		if want[topic] {
+			continue
+		}
+		tok := c.Unsubscribe(topic)
+		if !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
+			errs = append(errs, fmt.Errorf("mqtt: unsubscribe %s: %v", topic, tok.Error()))
+			continue
+		}
+		delete(d.subs, topic)
+		log.Printf("[DRIVER] mqtt: unsubscribed %s", topic)
+	}
+	for topic := range want {
+		if d.subs[topic] {
+			continue
+		}
+		tok := c.Subscribe(topic, 0, d.onMessage)
+		if !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
+			errs = append(errs, fmt.Errorf("mqtt: subscribe %s: %v", topic, tok.Error()))
+			continue
+		}
+		d.subs[topic] = true
+		log.Printf("[DRIVER] mqtt: subscribed %s", topic)
+	}
+	return errors.Join(errs...)
+}
+
+// onMessage forwards a message on a tag topic to the output channel.
+func (d *Driver) onMessage(_ mqttlib.Client, msg mqttlib.Message) {
+	topic := msg.Topic()
+	d.seenTopic.Store(topic, struct{}{})
+	d.tagCount.Store(int32(d.countSeen()))
+	out := d.output()
+	if out == nil {
+		return
+	}
+	select {
+	case out <- tagstore.TagUpdate{
+		Path: topic,
+		State: tagstore.TagState{
+			Value:   parsePayload(msg.Payload()),
+			Quality: "Good",
+			TS:      time.Now().UnixNano(),
+		},
+	}:
+	default:
+		// pump is slow; drop
+	}
+}
+
+// Subscribe sets the output channel and the tag set.
+//
+// Deprecated: kept until the runtime switches to SetTags.
+func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
+	d.mu.Lock()
+	d.out = ch
+	d.mu.Unlock()
+	return d.SetTags(paths)
+}
+
+func (d *Driver) output() chan<- tagstore.TagUpdate {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.out
 }
 
 // Write publishes value as the payload to topic path.
