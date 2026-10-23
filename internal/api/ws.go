@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )

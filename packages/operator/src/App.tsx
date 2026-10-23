@@ -4,25 +4,7 @@ import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./write
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
 import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/themes";
 
-type Page = { id: string; name: string; widgets: Widget[]; backgroundColor?: string; script?: string };
-type ProjectImage = { id: string; dataUrl: string };
-type Project = {
-  version: string;
-  name?: string;
-  pages: Page[];
-  datasources: unknown[];
-  images?: ProjectImage[];
-  pin?: string;
-  viewOnly?: boolean;
-};
-
-type Recipe = {
-  id: string;
-  name: string;
-  description?: string;
-  entries: Array<{ binding: string; value: unknown }>;
-};
-
+import type { Project, Recipe } from "@speths-screens/shared-types";
 
 const COLS = 12;
 const ROW_H = 72;

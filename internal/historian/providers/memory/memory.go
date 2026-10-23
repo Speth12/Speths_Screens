@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/historian"
 )
 
 func init() {
@@ -118,7 +118,10 @@ func aggregateSamples(samples []historian.Sample, from, to int64, bucketDur time
 		return nil
 	}
 	bd := bucketDur.Nanoseconds()
-	buckets := map[int64]*struct{ min, max, sum float64; count int }{}
+	buckets := map[int64]*struct {
+		min, max, sum float64
+		count         int
+	}{}
 	for _, s := range samples {
 		v, ok := toFloat(s.Value)
 		if !ok {
@@ -127,7 +130,10 @@ func aggregateSamples(samples []historian.Sample, from, to int64, bucketDur time
 		key := (s.TS / bd) * bd
 		b := buckets[key]
 		if b == nil {
-			b = &struct{ min, max, sum float64; count int }{min: v, max: v}
+			b = &struct {
+				min, max, sum float64
+				count         int
+			}{min: v, max: v}
 			buckets[key] = b
 		}
 		if v < b.min {

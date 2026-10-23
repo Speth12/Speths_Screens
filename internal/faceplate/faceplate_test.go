@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Speth12/speths-screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/assets"
 )
 
 func makeRegistry() (*Registry, *assets.Registry) {

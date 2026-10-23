@@ -10,24 +10,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarmstore"
-	"github.com/Speth12/speths-screens/internal/alarms"
-	"github.com/Speth12/speths-screens/internal/assets"
-	"github.com/Speth12/speths-screens/internal/audit"
-	"github.com/Speth12/speths-screens/internal/drivers"
-	_ "github.com/Speth12/speths-screens/internal/drivers/modbus"
-	_ "github.com/Speth12/speths-screens/internal/drivers/mqtt"
-	_ "github.com/Speth12/speths-screens/internal/drivers/opcua"
-	_ "github.com/Speth12/speths-screens/internal/drivers/rest"
-	_ "github.com/Speth12/speths-screens/internal/drivers/virtual"
-	"github.com/Speth12/speths-screens/internal/eventbus"
-	"github.com/Speth12/speths-screens/internal/faceplate"
-	"github.com/Speth12/speths-screens/internal/historian"
-	"github.com/Speth12/speths-screens/internal/namespace"
-	"github.com/Speth12/speths-screens/internal/project"
-	"github.com/Speth12/speths-screens/internal/recipestore"
-	"github.com/Speth12/speths-screens/internal/security"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/alarms"
+	"github.com/Speth12/Speths_Screens/internal/alarmstore"
+	"github.com/Speth12/Speths_Screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/modbus"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/mqtt"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/opcua"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/rest"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/virtual"
+	"github.com/Speth12/Speths_Screens/internal/eventbus"
+	"github.com/Speth12/Speths_Screens/internal/faceplate"
+	"github.com/Speth12/Speths_Screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/namespace"
+	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/security"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 // Runtime owns the TagStore, Historian, alarm Engine, and active driver instances.
@@ -40,20 +40,20 @@ type Runtime struct {
 	Events     *eventbus.Bus
 
 	// Optional — nil in dev/test mode.
-	Security  *security.Store
-	Audit     *audit.Store
-	Assets    *assets.Registry
+	Security   *security.Store
+	Audit      *audit.Store
+	Assets     *assets.Registry
 	Faceplates *faceplate.Registry
-	Recipes   *recipestore.Store
+	Recipes    *recipestore.Store
 
-	mu         sync.RWMutex
-	drivers    map[string]drivers.ProtocolDriver // datasource id → driver
-	nsAliases  map[string][]string               // "driverId:driverAddr" → []nsPath
-	cancel     context.CancelFunc
-	pumpCtx    context.Context
-	pumpCh     chan tagstore.TagUpdate
-	wg         sync.WaitGroup
-	project    *project.Project
+	mu        sync.RWMutex
+	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
+	nsAliases map[string][]string               // "driverId:driverAddr" → []nsPath
+	cancel    context.CancelFunc
+	pumpCtx   context.Context
+	pumpCh    chan tagstore.TagUpdate
+	wg        sync.WaitGroup
+	project   *project.Project
 }
 
 // New returns an initialised runtime with the given store and historian.
@@ -120,8 +120,13 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	r.Alarms.SetRules(rules)
 
 	// Load namespace from project JSON (replaces previous tree contents).
+	// Round-trips through JSON so Tree.UnmarshalJSON keeps doing the replace.
 	if len(p.Namespace) > 0 {
-		if err := json.Unmarshal(p.Namespace, r.Namespace); err != nil {
+		raw, err := json.Marshal(p.Namespace)
+		if err == nil {
+			err = json.Unmarshal(raw, r.Namespace)
+		}
+		if err != nil {
 			log.Printf("[RUNTIME] namespace unmarshal: %v", err)
 		}
 	}
@@ -248,7 +253,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 
 // TestDatasource creates a temporary driver, attempts to connect within 10 s,
 // returns its status, then disconnects. Safe to call concurrently.
-func (r *Runtime) TestDatasource(ctx context.Context, ds project.DatasourceElement) drivers.DriverStatus {
+func (r *Runtime) TestDatasource(ctx context.Context, ds project.Datasource) drivers.DriverStatus {
 	drv, err := r.buildDriver(ds.Type)
 	if err != nil {
 		return drivers.DriverStatus{LastError: err.Error()}
@@ -407,7 +412,7 @@ func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDrive
 	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store})
 }
 
-func buildConfig(ds project.DatasourceElement) drivers.DriverConfig {
+func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	cfg := drivers.DriverConfig{Extra: map[string]string{}}
 	c := ds.Config
 	if c.Endpoint != nil {

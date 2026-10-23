@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	mochi "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"

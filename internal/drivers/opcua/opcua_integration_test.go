@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 // TestOPCUALive runs against a real OPC UA server. Skipped unless

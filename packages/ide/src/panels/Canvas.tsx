@@ -238,8 +238,8 @@ export function Canvas() {
   const eRowH = ROW_H * zoom;
   const isPixelMode = snapMode === "pixel";
   const isFixed = resolution.type === "fixed";
-  const canvasW = resolution.type === "fixed" ? resolution.width  * zoom : undefined;
-  const canvasH = resolution.type === "fixed" ? resolution.height * zoom : undefined;
+  const canvasW = resolution.type === "fixed" ? (resolution.width ?? 1920) * zoom : undefined;
+  const canvasH = resolution.type === "fixed" ? (resolution.height ?? 1080) * zoom : undefined;
   const gridW = COLS * (eColW + GAP) - GAP;
 
   // ── Rubber-band mouse handlers ────────────────────────────────────────────

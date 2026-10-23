@@ -6,10 +6,11 @@ package project
 type Project = Types
 
 // DatasourceType constants match schema.json enum.
+// DatasourceTypeVirtual is generated in types.go (quicktype prefixes it
+// because "virtual" is also a NamespaceNodeType).
 const (
-	DatasourceTypeOPCUA   DatasourceType = "opcua"
-	DatasourceTypeModbus  DatasourceType = "mbtcp"
-	DatasourceTypeMQTT    DatasourceType = "mqtt"
-	DatasourceTypeREST    DatasourceType = "rest"
-	DatasourceTypeVirtual DatasourceType = "virtual"
+	DatasourceTypeOPCUA  DatasourceType = "opcua"
+	DatasourceTypeModbus DatasourceType = "mbtcp"
+	DatasourceTypeMQTT   DatasourceType = "mqtt"
+	DatasourceTypeREST   DatasourceType = "rest"
 )

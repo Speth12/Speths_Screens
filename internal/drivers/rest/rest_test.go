@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 func TestSplitPath(t *testing.T) {
 	cases := map[string][2]string{
-		"a/b/c":          {"a/b/c", ""},
-		"a/b#x.y":        {"a/b", "x.y"},
-		"plain":          {"plain", ""},
-		"foo#":           {"foo", ""},
+		"a/b/c":   {"a/b/c", ""},
+		"a/b#x.y": {"a/b", "x.y"},
+		"plain":   {"plain", ""},
+		"foo#":    {"foo", ""},
 	}
 	for in, want := range cases {
 		gotURL, gotGJ := splitPath(in)

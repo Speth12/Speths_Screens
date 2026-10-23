@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Speth12/speths-screens/internal/namespace"
+	"github.com/Speth12/Speths_Screens/internal/namespace"
 )
 
 // GET /api/v1/namespace — list all nodes (flat)
@@ -37,15 +37,15 @@ func (s *Server) handleNSSearch(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleNSCreate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var body struct {
-		Path        string            `json:"path"`
+		Path        string             `json:"path"`
 		Type        namespace.NodeType `json:"type"`
-		DataType    string            `json:"dataType"`
-		Description string            `json:"description"`
-		Unit        string            `json:"unit"`
-		DriverID    string            `json:"driverId"`
-		DriverAddr  string            `json:"driverAddr"`
-		Expression  string            `json:"expression"`
-		Meta        map[string]string `json:"meta"`
+		DataType    string             `json:"dataType"`
+		Description string             `json:"description"`
+		Unit        string             `json:"unit"`
+		DriverID    string             `json:"driverId"`
+		DriverAddr  string             `json:"driverAddr"`
+		Expression  string             `json:"expression"`
+		Meta        map[string]string  `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeErr(w, 400, "invalid json: "+err.Error())

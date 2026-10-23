@@ -6,20 +6,9 @@ import { useTags } from "../hooks/useTags";
 import { useWriteConfirm, useNavigate } from "../writeContext";
 import { useAlarms } from "../alarmContext";
 
-export type WidgetType =
-  | "gauge" | "trend" | "led" | "button" | "numericInput"
-  | "numericDisplay" | "textInput" | "textDisplay" | "historyLog"
-  | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image";
+import type { Dynamic, Widget, WidgetType } from "@speths-screens/shared-types";
 
-export type Widget = {
-  id: string;
-  type: WidgetType;
-  x: number; y: number; w: number; h: number;
-  binding?: string;
-  visibleBinding?: string;
-  config?: Record<string, unknown>;
-  dynamics?: unknown[];
-};
+export type { Widget, WidgetType };
 
 // ── Script expression evaluator ───────────────────────────────────────────
 
@@ -988,24 +977,8 @@ export function WidgetRenderer({ w }: { w: Widget }) {
 
 // ── DynamicsApplicator ─────────────────────────────────────────────────────
 
-type Dynamic = {
-  id: string;
-  kind: string;
-  binding?: string;
-  expression?: string;
-  targetProp?: string;
-  trueValue?: string;
-  falseValue?: string;
-  trueColor?: string;
-  falseColor?: string;
-  blinkPeriodMs?: number;
-  minValue?: number; maxValue?: number; minAngle?: number; maxAngle?: number;
-  actionType?: string;
-  writeTo?: string; writeValue?: unknown; step?: number; pageId?: string; url?: string;
-};
-
 function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const dynamics = (w.dynamics as Dynamic[] | undefined) ?? [];
+  const dynamics: Dynamic[] = w.dynamics ?? [];
   const navigate = useNavigate();
   const confirm  = useWriteConfirm();
 

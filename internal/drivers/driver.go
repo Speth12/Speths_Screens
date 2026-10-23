@@ -7,7 +7,7 @@ package drivers
 import (
 	"context"
 
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 // TagDefinition is a tag discovered by browsing a datasource.
@@ -21,12 +21,13 @@ type TagDefinition struct {
 // DriverConfig is the connection config passed to Connect.
 //
 // Field meanings depend on the driver:
-//   OPC UA: Endpoint (opc.tcp://...), Username, Password,
-//           Extra["securityMode"], Extra["securityPolicy"]
-//   MQTT:   Endpoint (mqtt://host:port or mqtts://...), Username, Password,
-//           Extra["clientId"]
-//   Modbus: Endpoint (host:port), Extra["slaveId"]
-//   REST:   Endpoint (https://host), Extra["basePath"], Extra["bearerToken"]
+//
+//	OPC UA: Endpoint (opc.tcp://...), Username, Password,
+//	        Extra["securityMode"], Extra["securityPolicy"]
+//	MQTT:   Endpoint (mqtt://host:port or mqtts://...), Username, Password,
+//	        Extra["clientId"]
+//	Modbus: Endpoint (host:port), Extra["slaveId"]
+//	REST:   Endpoint (https://host), Extra["basePath"], Extra["bearerToken"]
 type DriverConfig struct {
 	Endpoint string
 	Username string

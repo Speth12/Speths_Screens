@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Speth12/speths-screens/internal/assets"
-	"github.com/Speth12/speths-screens/internal/faceplate"
+	"github.com/Speth12/Speths_Screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/faceplate"
 	"github.com/go-chi/chi/v5"
 )
 

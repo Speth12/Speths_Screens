@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Speth12/speths-screens/internal/assets"
+	"github.com/Speth12/Speths_Screens/internal/assets"
 )
 
 // ViewType classifies the purpose of a faceplate view.
@@ -42,7 +42,7 @@ const (
 	ModeEmbedded DisplayMode = "embedded"
 )
 
-// Widget mirrors the minimum fields needed from project.WidgetElement without
+// Widget mirrors the minimum fields needed from project.Widget without
 // creating a circular import.  The full WidgetElement is stored as raw JSON.
 type Widget = json.RawMessage
 

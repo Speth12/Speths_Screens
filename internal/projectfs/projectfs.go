@@ -29,7 +29,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Speth12/speths-screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/project"
 )
 
 // Manifest is stored in project.json at the root.
@@ -120,7 +120,7 @@ func Load(dir string) (*project.Project, error) {
 	// pages/
 	pageFiles, _ := filepath.Glob(filepath.Join(dir, "pages", "*.json"))
 	for _, f := range pageFiles {
-		var pg project.PageElement
+		var pg project.Page
 		if err := readJSON(f, &pg); err != nil {
 			return nil, fmt.Errorf("projectfs: page %s: %w", f, err)
 		}
@@ -130,7 +130,7 @@ func Load(dir string) (*project.Project, error) {
 	// drivers/
 	driverFiles, _ := filepath.Glob(filepath.Join(dir, "drivers", "*.json"))
 	for _, f := range driverFiles {
-		var ds project.DatasourceElement
+		var ds project.Datasource
 		if err := readJSON(f, &ds); err != nil {
 			return nil, fmt.Errorf("projectfs: driver %s: %w", f, err)
 		}
@@ -148,7 +148,7 @@ func Load(dir string) (*project.Project, error) {
 	// recipes/
 	recipeFiles, _ := filepath.Glob(filepath.Join(dir, "recipes", "*.json"))
 	for _, f := range recipeFiles {
-		var rec project.RecipeElement
+		var rec project.Recipe
 		if err := readJSON(f, &rec); err != nil {
 			return nil, fmt.Errorf("projectfs: recipe %s: %w", f, err)
 		}

@@ -147,7 +147,7 @@ export function LeftPanel({ width }: { width?: number }) {
             const strMap: Record<string, string> = {};
             for (const [k, v] of Object.entries(raw._files as Record<string, unknown>)) strMap[k] = JSON.stringify(v);
             loadProject(importGitFormat(strMap));
-          } else { loadProject(raw as Parameters<typeof loadProject>[0]); }
+          } else { loadProject(raw as unknown as Parameters<typeof loadProject>[0]); }
         } catch (e) { alert(`Import failed: ${(e as Error).message}`); }
       };
       reader.readAsText(file);
@@ -476,8 +476,8 @@ function CanvasSettings() {
   const res: CanvasResolution = project.canvasResolution ?? { type: "dynamic" };
   const snap: CanvasSnap = project.canvasSnap ?? "grid";
 
-  const [fw, setFw] = useState<number>(res.type === "fixed" ? res.width  : 1920);
-  const [fh, setFh] = useState<number>(res.type === "fixed" ? res.height : 1080);
+  const [fw, setFw] = useState<number>(res.type === "fixed" ? (res.width ?? 1920) : 1920);
+  const [fh, setFh] = useState<number>(res.type === "fixed" ? (res.height ?? 1080) : 1080);
 
   const COL_W = 80, ROW_H = 64, GAP = 8;
 
@@ -630,7 +630,7 @@ type AlarmRule = {
 
 function AlarmRulesEditor() {
   const { exportJSON, loadProject } = useProject();
-  const project = useProject((s) => s.project) as { alarmRules?: AlarmRule[] } & Record<string, unknown>;
+  const project = useProject((s) => s.project);
   const rules: AlarmRule[] = (project.alarmRules as AlarmRule[]) ?? [];
 
   const setRules = (next: AlarmRule[]) => {

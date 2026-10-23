@@ -30,8 +30,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/drivers"
-	"github.com/Speth12/speths-screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 const driverID = "virtual"
@@ -46,9 +46,9 @@ type TagSpec struct {
 type Driver struct {
 	mu        sync.RWMutex
 	specs     []TagSpec
-	vals      map[string]float64            // current upstream tag values keyed by "ds:path"
-	overrides map[string]float64            // manually written values that suppress formula evaluation
-	store     *tagstore.TagStore            // upstream tagstore for live reads
+	vals      map[string]float64 // current upstream tag values keyed by "ds:path"
+	overrides map[string]float64 // manually written values that suppress formula evaluation
+	store     *tagstore.TagStore // upstream tagstore for live reads
 	outCh     chan<- tagstore.TagUpdate
 	stopCh    chan struct{}
 	wg        sync.WaitGroup

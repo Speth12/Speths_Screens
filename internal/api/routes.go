@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/alarmstore"
-	"github.com/Speth12/speths-screens/internal/audit"
-	"github.com/Speth12/speths-screens/internal/project"
-	"github.com/Speth12/speths-screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/alarmstore"
+	"github.com/Speth12/Speths_Screens/internal/audit"
+	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/recipestore"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -90,7 +90,7 @@ func (s *Server) handleRestoreVersion(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleTestDatasource(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var ds project.DatasourceElement
+	var ds project.Datasource
 	if err := json.NewDecoder(r.Body).Decode(&ds); err != nil {
 		writeErr(w, 400, "invalid json: "+err.Error())
 		return
@@ -576,7 +576,7 @@ func (s *Server) handleApplyRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 // findRecipe looks up a recipe in the loaded project. Returns (entries, name) or (nil, "").
-func (s *Server) findRecipe(id string) ([]project.EntryElement, string) {
+func (s *Server) findRecipe(id string) ([]project.RecipeEntry, string) {
 	p := s.rt.Project()
 	if p == nil {
 		return nil, ""

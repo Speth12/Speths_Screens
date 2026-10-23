@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Speth12/speths-screens/internal/historian"
-	_ "github.com/Speth12/speths-screens/internal/historian/providers/memory"
-	_ "github.com/Speth12/speths-screens/internal/historian/providers/sqlite"
+	"github.com/Speth12/Speths_Screens/internal/historian"
+	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/memory"
+	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/sqlite"
 )
 
 func TestProviderRegistry(t *testing.T) {
