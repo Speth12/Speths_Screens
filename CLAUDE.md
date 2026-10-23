@@ -17,9 +17,10 @@ Dan is the only developer and owns the code.
 ## Name
 
 - Product name, everywhere a person reads it: **Speth's Screens**. Mention "formerly X-HMI" only in the README.
-- Code-safe name (module paths, binary, folders, package names): `speths-screens`.
+- Code-safe name (binary, `cmd/` folder, npm package names): `speths-screens`.
+- Go module path: `github.com/Speth12/Speths_Screens` (matches the repository name).
 - Keep opening existing `.xhmi.json` project files. Changing the project file extension is a later decision for Dan.
-- Do not rename the GitHub repository or the local folder `C:\Users\speth\source\repos\x-hmi`; ask Dan first.
+- Repository: `github.com/Speth12/Speths_Screens` (public), cloned to `C:\Users\speth\source\repos\Speths_Screens`. It started from a single fresh commit; the full earlier history stays in `Speth12/The-HMI-Development` (local folder `C:\Users\speth\source\repos\x-hmi`), which still contains `spike-key.pem` and `project/project.json`. Never push that history to the new repository. Ask Dan before renaming either repository or folder.
 
 ## Stack (locked — ask Dan before changing)
 
@@ -28,7 +29,7 @@ Dan is the only developer and owns the code.
 | Runtime | Go (see `go.mod`), chi router, coder/websocket, modernc.org/sqlite (no CGO) |
 | Drivers | PLCnext REST (net/http), OPC UA (gopcua), Modbus TCP (simonvetter/modbus), MQTT (paho; mochi-mqtt for the embedded broker), calculated tags (`virtual`) |
 | IDE and operator | React 19, Vite, Zustand, Tailwind; npm workspaces `packages/ide`, `packages/operator`, `packages/shared-types` |
-| Contract | `schema.json` generates `internal/project/types.go` and `packages/shared-types/src/project.ts` with `npm run gen:types` |
+| Contract | `schema.json` generates `internal/project/types.go` and `packages/shared-types/src/project.ts` with `npm run gen:types`. Both apps import their project types from `@speths-screens/shared-types`; CI fails if the generated files drift from the schema |
 | Scripting (Phase 4) | JavaScript. Runtime scripts run in goja; screen scripts run in a Web Worker |
 | Canvas | Our own canvas in `packages/ide` |
 
@@ -94,7 +95,9 @@ npm run dev:operator                                     # operator on :7001
 
 Gate: CI green on `main`, and the test baseline recorded in `docs/TEST-BASELINE.md`.
 
-Deferred by Dan's decision: removing `spike-key.pem` and `project/project.json` from git history. Do not rewrite history or force-push unless Dan asks.
+Old history: the new repository was started fresh, so `spike-key.pem` and `project/project.json` were never in it. Do not rewrite history or force-push unless Dan asks.
+
+Status (2026-10-23): steps 1–6 done. Steps 1–5 were done in the old repository; the work then moved to `Speth12/Speths_Screens`, where step 6 and the Go module path change are on `phase-0-cleanup`. Step 7 is next.
 
 1. Save the uncommitted work on `day7-ide-polish-and-demo` (7 files, July: login always on with a first-run admin user, a dev-mode login bypass, IDE panel tweaks). Show Dan the diff summary, commit it, push.
 2. Fast-forward `main` to `day7-ide-polish-and-demo` (`git merge --ff-only`), tag `v0.7.0`, push. Delete the local leftovers `master` (stale, Day 5) and `day6-rest-driver-and-modal-redesign` (fully contained in day7). Remove the `old-origin` remote (the April repo). Ask Dan before deleting remote branches.
@@ -104,8 +107,8 @@ Deferred by Dan's decision: removing `spike-key.pem` and `project/project.json` 
     - Commit A, what people read: page titles, IDE and operator headers, the about/demo panels, log prefixes (`[X-HMI]` becomes `[Speth's Screens]`), `README.md`, and docs.
     - Commit B, code names: Go module `github.com/Speth12/x-hmi` becomes `github.com/Speth12/speths-screens` (update every import); `cmd/x-hmi` becomes `cmd/speths-screens`; binary `x-hmi(.exe)` becomes `speths-screens(.exe)`; root npm package `x-hmi` becomes `speths-screens`; update `Makefile`, `Dockerfile`, `docker-compose.yml`, `.gitignore` binary entries and `.claude/launch.json`.
     - Before commit B, list every place you will change and show Dan.
-6. Put `schema.json` back in charge. Widget `dynamics`, page `script`, the project `namespace`, theme and canvas settings were added to the generated types by hand. Show Dan the plan for the new types first, then add them to `schema.json` with real types (no `unknown[]`), regenerate, and fix compile errors. Add a CI step that runs `npm run gen:types` and fails when `git diff --exit-code` shows changes.
-7. Open a pull request from `phase-0-cleanup` to `main` and fix whatever keeps CI red, without skipping or deleting tests. If the secret-scan job flags the deferred files in old history, say so in the pull request instead of weakening the scan.
+6. Put `schema.json` back in charge. Widget `dynamics`, page `script`, the project `namespace`, theme and canvas settings were added to the generated types by hand. Show Dan the plan for the new types first, then add them to `schema.json` with real types (no `unknown[]`), regenerate, and fix compile errors. Add a CI step that runs `npm run gen:types` and fails when `git diff --exit-code` shows changes. **Done:** the schema now also covers `theme`, `security`, `users` (bcrypt `passwordHash` only), faceplates, images, UDTs and assets. Value fields (`onValue`, `writeValue`, recipe and state values) stay "any" until Phase 1 item 8.
+7. Open a pull request from `phase-0-cleanup` to `main` and fix whatever keeps CI red, without skipping or deleting tests. Known red items: the 9 `go vet` warnings in `internal/api/server_test.go`.
 
 Local files that are git-ignored and must stay out of commits: `*.db` (the historian `history.db` is about 850 MB because it stores every update; Phase 1 fixes that), `*.pem`, and the built binaries in the repo root.
 
@@ -123,8 +126,9 @@ Known defects, in fix order:
 6. `tagstore.MarkStale` is never called. Run it on a timer in the runtime.
 7. `historian.Record` does one synchronous SQLite insert per update inside the pump. Move it to a background batcher with a per-tag deadband that stores changed values only.
 8. `api.handleWriteTag` checks nothing. Build the write pipeline: tag must exist in the project and be writable; the user's role must allow it; convert the value to the tag's PLC type; apply limits; write; read back; reply confirmed or failed with a reason. Offer it over the WebSocket with a request id too. In the operator app, replace the three write call sites (`src/App.tsx`, `src/writeContext.ts`, `src/widgets/index.tsx`) with one client function.
-9. Security defaults: in `--mode=runtime`, require login. Restrict CORS to configured origins (today `*`). Check the WebSocket origin (today `InsecureSkipVerify: true`).
-    - Replace the fixed first-run `admin`/`admin` user (July WIP, `cmd/speths-screens/main.go`) with a random first-run password shown once on the console, never written to log files, and force a password change at first login.
+9. Security defaults (Dan's decision, 2026-10-23): login is set per project by `security.mode`. `none` (the default when missing) means no login: print a warning at startup and show a "Security off" badge on the operator screen. `login` means every user must log in. Restrict CORS to configured origins (today `*`). Check the WebSocket origin (today `InsecureSkipVerify: true`).
+    - Project `users` hold bcrypt `passwordHash` values, never plain text. How they relate to the runtime's `security.db` users (managed by the IDE Users panel through `/api/v1/users`) is open; ask Dan before building it.
+    - With `security.mode: "login"`, replace the fixed first-run `admin`/`admin` user (July WIP, `cmd/speths-screens/main.go`) with a random first-run password shown once on the console, never written to log files, and force a password change at first login. With `none`, seed no user.
     - Dev mode (`--mode=dev`, which bypasses login) listens on `127.0.0.1` only.
     - Add tests for the dev-mode login bypass and for first-run user creation.
 
