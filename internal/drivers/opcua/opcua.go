@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"slices"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -34,13 +35,22 @@ type Driver struct {
 	mu        sync.Mutex
 	client    *opcua.Client
 	endpoint  string
+	pollEvery time.Duration
+	cancel    context.CancelFunc // stops the poll loop; nil when not running
+	out       chan<- tagstore.TagUpdate
+	wg        sync.WaitGroup
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
 	tagCount  atomic.Int32
+
+	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
+
+	// read replaces client.Read in tests; nil means use the client.
+	read func(ctx context.Context, req *ua.ReadRequest) (*ua.ReadResponse, error)
 }
 
 // New returns an unconnected driver.
-func New() *Driver { return &Driver{} }
+func New() *Driver { return &Driver{pollEvery: subInterval} }
 
 // ID returns "opcua".
 func (d *Driver) ID() string { return driverID }
@@ -120,11 +130,30 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	d.connected.Store(true)
 	d.lastErr.Store(strPtr(""))
 	log.Printf("[DRIVER] opcua: connected")
+	d.startLoop()
 	return nil
 }
 
-// Disconnect cleanly closes the connection.
+// startLoop starts the driver's only poll goroutine.
+func (d *Driver) startLoop() {
+	loopCtx, cancel := context.WithCancel(context.Background())
+	d.mu.Lock()
+	d.cancel = cancel
+	d.mu.Unlock()
+	d.wg.Add(1)
+	go d.pollLoop(loopCtx)
+}
+
+// Disconnect stops the poll loop and closes the connection.
 func (d *Driver) Disconnect() error {
+	d.mu.Lock()
+	if d.cancel != nil {
+		d.cancel()
+		d.cancel = nil
+	}
+	d.mu.Unlock()
+	d.wg.Wait()
+
 	d.mu.Lock()
 	c := d.client
 	d.client = nil
@@ -230,73 +259,116 @@ func (d *Driver) browseRecursive(ctx context.Context, c *opcua.Client, nodeID *u
 	}
 }
 
-// Subscribe polls the given OPC UA node IDs at subInterval and pushes updates
-// into ch until ctx is cancelled. Polling is used in place of subscriptions
-// because PLCnext closes the TCP connection after responding to
-// CreateMonitoredItems, which causes gopcua to return EOF before the response
-// is read, making it impossible to confirm subscription success.
-func (d *Driver) Subscribe(ctx context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
-	if len(paths) == 0 {
-		return fmt.Errorf("opcua: no paths to subscribe")
-	}
+// tagSet is an immutable poll set. in is the normalized SetTags input (used
+// to detect "unchanged"); paths and req.NodesToRead hold the valid node IDs,
+// in step.
+type tagSet struct {
+	in    []string
+	paths []string
+	req   *ua.ReadRequest
+}
 
-	nodeIDs := make([]*ua.NodeID, 0, len(paths))
-	validPaths := make([]string, 0, len(paths))
-	for _, p := range paths {
+// SetTags replaces the set of polled node IDs. It is idempotent: calling it
+// with the same paths (in any order, with duplicates) changes nothing. Node
+// IDs that do not parse are logged and skipped. An empty set keeps the driver
+// idle.
+//
+// The driver polls with Read instead of using OPC UA subscriptions because
+// PLCnext closes the TCP connection after responding to CreateMonitoredItems,
+// which makes gopcua return EOF before the response is read.
+func (d *Driver) SetTags(paths []string) error {
+	norm := drivers.NormalizePaths(paths)
+	if cur := d.tags.Load(); cur != nil && slices.Equal(cur.in, norm) {
+		return nil
+	}
+	ts := &tagSet{in: norm, req: &ua.ReadRequest{TimestampsToReturn: ua.TimestampsToReturnBoth}}
+	for _, p := range norm {
 		nid, err := ua.ParseNodeID(p)
 		if err != nil {
-			log.Printf("[DRIVER] opcua: bad node id %q: %v", p, err)
+			log.Printf("[DRIVER] opcua: bad node id %q: %v — skipping", p, err)
 			continue
 		}
-		nodeIDs = append(nodeIDs, nid)
-		validPaths = append(validPaths, p)
-		log.Printf("[DRIVER] opcua: polling %s", p)
+		ts.paths = append(ts.paths, p)
+		ts.req.NodesToRead = append(ts.req.NodesToRead, &ua.ReadValueID{
+			NodeID:      nid,
+			AttributeID: ua.AttributeIDValue,
+		})
 	}
-	if len(nodeIDs) == 0 {
+	d.tags.Store(ts)
+	d.tagCount.Store(int32(len(ts.paths)))
+	log.Printf("[DRIVER] opcua: polling %d nodes", len(ts.paths))
+	if len(norm) > 0 && len(ts.paths) == 0 {
 		return fmt.Errorf("opcua: no valid node ids")
 	}
-
-	go d.pollLoop(ctx, validPaths, nodeIDs, ch)
 	return nil
 }
 
-func (d *Driver) pollLoop(ctx context.Context, paths []string, nodeIDs []*ua.NodeID, out chan<- tagstore.TagUpdate) {
-	log.Printf("[DRIVER] opcua: pollLoop started for %d nodes", len(nodeIDs))
-	ticker := time.NewTicker(subInterval)
+// Subscribe sets the output channel and the tag set.
+//
+// Deprecated: kept until the runtime switches to SetTags; it no longer starts
+// a poll loop, so repeated calls do not multiply polling.
+func (d *Driver) Subscribe(_ context.Context, paths []string, ch chan<- tagstore.TagUpdate) error {
+	d.mu.Lock()
+	running := d.cancel != nil
+	d.out = ch
+	d.mu.Unlock()
+	if !running {
+		return fmt.Errorf("opcua: not connected")
+	}
+	return d.SetTags(paths)
+}
+
+func (d *Driver) output() chan<- tagstore.TagUpdate {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.out
+}
+
+// readNow sends one Read for the whole tag set.
+func (d *Driver) readNow(ctx context.Context, req *ua.ReadRequest) (*ua.ReadResponse, error) {
+	if d.read != nil {
+		return d.read(ctx, req)
+	}
+	c := d.getClient()
+	if c == nil {
+		return nil, fmt.Errorf("opcua: not connected")
+	}
+	return c.Read(ctx, req)
+}
+
+// pollLoop is the driver's only poll goroutine. It reads the current tag set
+// on every tick, so SetTags takes effect on the next tick.
+func (d *Driver) pollLoop(ctx context.Context) {
+	defer d.wg.Done()
+	ticker := time.NewTicker(d.pollEvery)
 	defer ticker.Stop()
-
-	readReq := &ua.ReadRequest{
-		TimestampsToReturn: ua.TimestampsToReturnBoth,
-		NodesToRead:        make([]*ua.ReadValueID, len(nodeIDs)),
-	}
-	for i, nid := range nodeIDs {
-		readReq.NodesToRead[i] = &ua.ReadValueID{
-			NodeID:      nid,
-			AttributeID: ua.AttributeIDValue,
-		}
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			c := d.getClient()
-			if c == nil {
+			ts := d.tags.Load()
+			out := d.output()
+			if ts == nil || len(ts.paths) == 0 || out == nil {
 				continue
 			}
-			res, err := c.Read(ctx, readReq)
+			res, err := d.readNow(ctx, ts.req)
 			if err != nil {
-				log.Printf("[DRIVER] opcua: poll read error: %v", err)
+				if ctx.Err() == nil {
+					log.Printf("[DRIVER] opcua: poll read error: %v", err)
+				}
 				continue
 			}
 			for i, dv := range res.Results {
+				if i >= len(ts.paths) {
+					break
+				}
 				if dv == nil || dv.Value == nil {
 					continue
 				}
 				select {
 				case out <- tagstore.TagUpdate{
-					Path: paths[i],
+					Path: ts.paths[i],
 					State: tagstore.TagState{
 						Value:   dv.Value.Value(),
 						Quality: qualityFromStatus(dv.Status),
