@@ -55,6 +55,7 @@ type Driver struct {
 	mu        sync.Mutex
 	hc        *http.Client
 	baseURL   string // e.g. https://192.168.88.10
+	host      string // e.g. 192.168.88.10, for reasons shown to operators
 	basePath  string // e.g. /_pxc_api/v1.14  (trimmed of trailing slash)
 	isPXC     bool   // true when basePath contains "_pxc_api"
 	pxcRoot   string // e.g. https://192.168.88.10/_pxc_api (PLCnext mode)
@@ -71,7 +72,8 @@ type Driver struct {
 	out       chan<- tagstore.TagUpdate
 	wg        sync.WaitGroup
 
-	// Timing; tests shorten these.
+	// Timing; tests shorten these. A PLCnext controller answers in well under
+	// a second, so a short httpTimeout lets an unplugged one show up fast.
 	pollEvery   time.Duration
 	httpTimeout time.Duration
 	maxURL      int // longest read URL in bytes; longer path lists are split
@@ -99,7 +101,7 @@ const (
 func New() *Driver {
 	return &Driver{
 		pollEvery:   pollDefault,
-		httpTimeout: 8 * time.Second,
+		httpTimeout: 3 * time.Second,
 		maxURL:      2000,
 		backoffMin:  1 * time.Second,
 		backoffMax:  30 * time.Second,
@@ -128,6 +130,10 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	d.mu.Unlock()
 
 	d.baseURL = strings.TrimRight(cfg.Endpoint, "/")
+	d.host = d.baseURL
+	if u, err := url.Parse(d.baseURL); err == nil && u.Hostname() != "" {
+		d.host = u.Hostname()
+	}
 	d.basePath = cfg.Extra["basePath"]
 	if d.basePath != "" && !strings.HasPrefix(d.basePath, "/") {
 		d.basePath = "/" + d.basePath
@@ -521,7 +527,7 @@ func (d *Driver) setOnline() {
 // Bad, keeping its last value. Tags already Bad for the same reason are not
 // sent again, so retries do not repeat the burst.
 func (d *Driver) setOffline(ctx context.Context, err error) {
-	reason := err.Error()
+	reason := d.reasonFor(err)
 	if d.state.Swap(stateOffline) != stateOffline || d.lastError() != reason {
 		log.Printf("[DRIVER] rest: offline: %s", reason)
 	}
@@ -600,7 +606,7 @@ func (d *Driver) pxcReadGroup(ctx context.Context, g pxcGroup, out chan<- tagsto
 			Variables []pxcEntry `json:"variables"`
 		}
 		if err := json.Unmarshal(body, &resp); err != nil {
-			return fmt.Errorf("rest: read %s: unreadable response: %w", g.prefix, err)
+			return fmt.Errorf("rest: read %s: %w: %v", g.prefix, errUnreadable, err)
 		}
 		for _, v := range resp.Variables {
 			byPath[v.Path] = v

@@ -130,9 +130,9 @@ func TestOutageMarksTagsBadAndRecovers(t *testing.T) {
 		mode       int32
 		wantReason string
 	}{
-		{"HTTP 503", plcDown, "HTTP 503"},
-		{"no answer in time", plcSlow, "Timeout"},
-		{"unreadable reply", plcGarbage, "unreadable response"},
+		{"HTTP 503", plcDown, "answered HTTP 503"},
+		{"no answer in time", plcSlow, "(timed out)"},
+		{"unreadable reply", plcGarbage, "unreadable reply from 127.0.0.1"},
 	}
 	paths := []string{"Arp.Plc.Eclr/A", "Arp.Plc.Eclr/B"}
 	for _, tc := range tests {
