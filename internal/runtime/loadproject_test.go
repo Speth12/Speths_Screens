@@ -85,14 +85,12 @@ func newTestRuntime(t *testing.T) (r *Runtime, built func() []*fakeDriver) {
 }
 
 // testProject returns a project with the given datasources and one widget
-// per tag, bound to "plc:<tag>". Like the demo project it has its own
-// namespace list, so each load replaces the namespace tree.
+// per tag, bound to "plc:<tag>". It has no namespace list, so LoadProject
+// auto-adds a namespace node per binding and never removes them; removed
+// bindings must still stop being polled.
 func testProject(t *testing.T, datasources []string, tags ...string) *project.Project {
 	t.Helper()
-	p := &project.Project{
-		Version:   "0.1.0",
-		Namespace: []project.NamespaceNode{{Path: "plant", Type: project.Folder}},
-	}
+	p := &project.Project{Version: "0.1.0"}
 	for _, id := range datasources {
 		p.Datasources = append(p.Datasources, project.Datasource{ID: id, Label: id, Type: project.REST})
 	}
@@ -209,16 +207,20 @@ func TestLoadProjectChanges(t *testing.T) {
 	}
 }
 
-// Adding a namespace tag used to replace the driver's whole tag set with the
-// one new tag.
-func TestEnsureNSTagSubscribedKeepsExistingTags(t *testing.T) {
+// A subscribed ns: binding starts polling once its namespace node is bound
+// to a driver, without dropping the driver's other tags.
+func TestNamespaceBindingResolvesWhenNodeIsAdded(t *testing.T) {
 	r, built := newTestRuntime(t)
 	load(t, r, testProject(t, []string{"plc"}, "A", "B"))
+	r.AddDemand("ws:1", "ns:plant.extra")
+	if got := built()[0].lastSet(); !slices.Equal(got, []string{"A", "B"}) {
+		t.Fatalf("before the node exists: tag set = %v, want [A B]", got)
+	}
 
 	if _, err := r.Namespace.PublishDriverTag("plant.extra", "plc", "X", ""); err != nil {
 		t.Fatal(err)
 	}
-	r.EnsureNSTagSubscribed("plc", "X")
+	r.RebuildNSAliases()
 
 	if got := built()[0].lastSet(); !slices.Equal(got, []string{"A", "B", "X"}) {
 		t.Errorf("tag set = %v, want [A B X]", got)

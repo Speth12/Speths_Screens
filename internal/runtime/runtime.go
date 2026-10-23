@@ -51,8 +51,8 @@ type Runtime struct {
 	fanStop   map[string]context.CancelFunc     // datasource id → stops its fan-in
 	nsAliases map[string][]string               // "driverId:driverAddr" → []nsPath
 
-	// tagsMu serializes tag-set refreshes so a stale set never wins.
-	tagsMu sync.Mutex
+	// demand is the subscription manager (see demand.go).
+	demand demand
 	// newDriver builds a driver for a datasource type; tests replace it.
 	newDriver func(typ project.DatasourceType) (drivers.ProtocolDriver, error)
 	cancel    context.CancelFunc
@@ -76,6 +76,7 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 		Events:    eventbus.New(),
 		drivers:   make(map[string]drivers.ProtocolDriver),
 		fanStop:   make(map[string]context.CancelFunc),
+		demand:    demand{sources: map[string]map[string]struct{}{}},
 		pumpCh:    make(chan tagstore.TagUpdate, 1024),
 	}
 }
@@ -219,8 +220,8 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 				log.Printf("[RUNTIME] connected %s (%s)", ds.ID, ds.Type)
 			}
 		}
-		r.refreshTags(ds.ID)
 	}
+	r.setDemands(projectDemand(p))
 	return nil
 }
 
@@ -253,28 +254,6 @@ func (r *Runtime) startFanIn(dsID string) chan<- tagstore.TagUpdate {
 		}
 	}()
 	return fanCh
-}
-
-// refreshTags recomputes the tag set for one datasource from the loaded
-// project and namespace, and hands it to the driver. Safe to call any number
-// of times: drivers ignore an unchanged set.
-func (r *Runtime) refreshTags(dsID string) {
-	r.tagsMu.Lock()
-	defer r.tagsMu.Unlock()
-	p := r.Project()
-	drv := r.Driver(dsID)
-	if p == nil || drv == nil {
-		return
-	}
-	paths := tagsForDatasource(p, dsID)
-	for _, n := range r.Namespace.All() {
-		if n.DriverID == dsID && n.DriverAddr != "" {
-			paths = append(paths, n.DriverAddr)
-		}
-	}
-	if err := drv.SetTags(paths); err != nil {
-		log.Printf("[RUNTIME] %s: set tags: %v", dsID, err)
-	}
 }
 
 // TestDatasource creates a temporary driver, attempts to connect within 10 s,
@@ -375,17 +354,7 @@ func (r *Runtime) RebuildNSAliases() {
 	r.mu.Lock()
 	r.nsAliases = aliases
 	r.mu.Unlock()
-}
-
-// EnsureNSTagSubscribed makes sure the given driver reads driverAddr.
-// Call after adding a namespace node via API whose tag may not be polled yet.
-// The node must already be in the namespace: the driver's whole tag set is
-// recomputed, so the new tag is added without dropping the others.
-func (r *Runtime) EnsureNSTagSubscribed(driverID, driverAddr string) {
-	if driverAddr == "" {
-		return
-	}
-	r.refreshTags(driverID)
+	r.applyDemand() // ns: bindings may now resolve to different driver tags
 }
 
 // persistAlarms subscribes to the alarm engine and writes every state
@@ -456,32 +425,4 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 		cfg.Extra["tags"] = *c.Tags
 	}
 	return cfg
-}
-
-// tagsForDatasource returns every binding path on any widget that targets dsID.
-// Bindings are formatted "datasource_id:tag_path". Includes visibleBinding paths.
-func tagsForDatasource(p *project.Project, dsID string) []string {
-	prefix := dsID + ":"
-	seen := map[string]bool{}
-	var out []string
-	addBinding := func(b string) {
-		if len(b) > len(prefix) && b[:len(prefix)] == prefix {
-			path := b[len(prefix):]
-			if !seen[path] {
-				seen[path] = true
-				out = append(out, path)
-			}
-		}
-	}
-	for _, page := range p.Pages {
-		for _, w := range page.Widgets {
-			if w.Binding != nil {
-				addBinding(*w.Binding)
-			}
-			if w.VisibleBinding != nil {
-				addBinding(*w.VisibleBinding)
-			}
-		}
-	}
-	return out
 }

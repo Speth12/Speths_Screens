@@ -3,9 +3,11 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
@@ -27,6 +29,9 @@ type wsUpdate struct {
 	TS      int64  `json:"ts"`
 }
 
+// wsConnSeq numbers WebSocket connections; each one is its own demand source.
+var wsConnSeq atomic.Uint64
+
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		// for dev IDE on different port — Day 5+ may tighten this
@@ -43,6 +48,11 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WS] client connected from %s", r.RemoteAddr)
 
+	// Tags this client subscribes to are polled until it unsubscribes or
+	// disconnects.
+	demandSrc := fmt.Sprintf("ws:%d", wsConnSeq.Add(1))
+	defer s.rt.ReleaseDemand(demandSrc)
+
 	// per-connection: paths → cancel func from tagstore.Subscribe
 	subs := map[string]func(){}
 	var subsMu sync.Mutex
@@ -56,6 +66,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				cancel()
 				return
 			}
+			var added, removed []string
 			subsMu.Lock()
 			for _, p := range req.Subscribe {
 				if _, exists := subs[p]; exists {
@@ -63,6 +74,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				}
 				ch, cancelSub := s.rt.Store.Subscribe(p)
 				subs[p] = cancelSub
+				added = append(added, p)
 				log.Printf("[WS] subscribed %s", p)
 				go fanIn(ctx, ch, updates)
 			}
@@ -70,9 +82,17 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				if c, exists := subs[p]; exists {
 					c()
 					delete(subs, p)
+					removed = append(removed, p)
 				}
 			}
 			subsMu.Unlock()
+			// Outside subsMu: updating drivers can take a network round trip.
+			if len(added) > 0 {
+				s.rt.AddDemand(demandSrc, added...)
+			}
+			if len(removed) > 0 {
+				s.rt.RemoveDemand(demandSrc, removed...)
+			}
 		}
 	}()
 
