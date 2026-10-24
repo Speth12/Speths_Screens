@@ -72,7 +72,7 @@ npm run dev                                              # IDE on :5173
 npm run dev:operator                                     # operator on :7001
 
 # Phase 1 soak test against a real PLC (writes only the *_Write test variables, restores them):
-powershell -ExecutionPolicy Bypass -File scripts\soakun-soak.ps1 -Plc 10.0.0.210 -Hours 24   # results in soak-runs\<time>\summary.json
+powershell -ExecutionPolicy Bypass -File scripts\soak\run-soak.ps1 -Plc 10.0.0.210 -Hours 24   # results in soak-runs\<time>\summary.json
 ```
 
 ## Rules
