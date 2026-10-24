@@ -1,4 +1,4 @@
-import type { Project, Page, Datasource, AlarmRule, Recipe, ImageAsset } from "./projectStore";
+import type { Project, Page, Datasource, AlarmRule, Recipe } from "./projectStore";
 import type { UDT, AssetNode, Faceplate } from "./projectStore";
 
 function sortedJson(obj: unknown): string {

@@ -973,7 +973,7 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
 
   const bindings = useMemo(() =>
     [...new Set(dynamics.flatMap((d) => [d.binding, d.writeTo].filter(Boolean) as string[]))],
-    [dynamics] // eslint-disable-line react-hooks/exhaustive-deps
+    [dynamics]
   );
   const tagVals = useTags(bindings);
 

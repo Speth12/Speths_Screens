@@ -1186,9 +1186,9 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
   const hasPressed  = dynamics.some((d) => d.kind === "onPressed");
   const hasReleased = dynamics.some((d) => d.kind === "onReleased");
 
-  const handleClick    = useCallback(() => dynamics.filter((d) => d.kind === "onClick").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]); // eslint-disable-line react-hooks/exhaustive-deps
-  const handlePressed  = useCallback(() => dynamics.filter((d) => d.kind === "onPressed").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]); // eslint-disable-line react-hooks/exhaustive-deps
-  const handleReleased = useCallback(() => dynamics.filter((d) => d.kind === "onReleased").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleClick    = useCallback(() => dynamics.filter((d) => d.kind === "onClick").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]);
+  const handlePressed  = useCallback(() => dynamics.filter((d) => d.kind === "onPressed").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]);
+  const handleReleased = useCallback(() => dynamics.filter((d) => d.kind === "onReleased").forEach((d) => execDynAction(d, tagVals, setActivePage)), [dynamics, tagVals, setActivePage]);
 
   if (hidden) return null;
 

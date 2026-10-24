@@ -115,7 +115,7 @@ export function TagScannerModal({
   const groupKeys = Object.keys(groups).sort();
 
   const toggleTag = (path: string) =>
-    setSelected(prev => { const s = new Set(prev); s.has(path) ? s.delete(path) : s.add(path); return s; });
+    setSelected(prev => { const s = new Set(prev); if (s.has(path)) s.delete(path); else s.add(path); return s; });
 
   const toggleGroup = (key: string) => {
     const paths = (groups[key] ?? []).map(t => t.Path);
@@ -134,7 +134,7 @@ export function TagScannerModal({
   };
 
   const toggleCollapse = (key: string) =>
-    setCollapsed(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+    setCollapsed(prev => { const s = new Set(prev); if (s.has(key)) s.delete(key); else s.add(key); return s; });
 
   const handlePublish = async () => {
     setPublishing(true);
@@ -411,7 +411,7 @@ function SourceBrowser() {
     setBusy(false);
   };
 
-  useEffect(() => { void refresh(); /* eslint-disable-next-line */ }, [project.datasources.length]);
+  useEffect(() => { void refresh(); }, [project.datasources.length]);
 
   useEffect(() => {
     unsubsRef.current.forEach((u) => u());
@@ -621,6 +621,8 @@ function SourceBrowser() {
 
 // ── Namespace browser ──────────────────────────────────────────────────────
 
+// Not rendered anywhere yet: wire it in or delete it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NamespaceBrowser() {
   const { selectedWidgetId, activePageId, updateWidget } = useProject();
   const [query, setQuery] = useState("");

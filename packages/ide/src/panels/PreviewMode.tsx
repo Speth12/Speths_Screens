@@ -74,7 +74,7 @@ export function PreviewMode({ onExit }: Props) {
     };
     connect();
     return () => { closed = true; ws?.close(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Page script execution ─────────────────────────────────────────────────
   useEffect(() => {
@@ -143,7 +143,7 @@ export function PreviewMode({ onExit }: Props) {
   useEffect(() => {
     showToolbar();
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── PIN screen ────────────────────────────────────────────────────────────
   if (!pinOk) {

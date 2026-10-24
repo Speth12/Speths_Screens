@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { WidgetRenderer, ProjectImagesProvider, type Widget } from "./widgets";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { WidgetRenderer, ProjectImagesProvider } from "./widgets";
 import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./writeContext";
 import { writeTag, onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
@@ -11,13 +11,6 @@ import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/them
 import type { Project, Recipe } from "@speths-screens/shared-types";
 
 const COLS = 12;
-const ROW_H = 72;
-
-const severityBg: Record<string, string> = {
-  critical: "bg-red-900/80 border-red-700",
-  warning:  "bg-amber-900/80 border-amber-700",
-  info:     "bg-blue-900/80 border-blue-700",
-};
 
 
 // ── Alarm log panel ────────────────────────────────────────────────────────

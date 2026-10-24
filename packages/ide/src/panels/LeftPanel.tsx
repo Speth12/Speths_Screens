@@ -629,6 +629,8 @@ type AlarmRule = {
   message: string;
 };
 
+// Not rendered anywhere yet: wire it in or delete it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AlarmRulesEditor() {
   const { exportJSON, loadProject } = useProject();
   const project = useProject((s) => s.project);
@@ -844,7 +846,6 @@ function PageThumbnail({ page }: { page: import("../store/projectStore").Page })
   const maxRow = Math.max(6,    ...page.widgets.map(w => w.y + w.h));
   const naturalW = maxCol * (COL_W + GAP) - GAP;
   const naturalH = maxRow * (ROW_H + GAP) - GAP;
-  const scale = Math.min(THUMB_W / naturalW, THUMB_H / naturalH);
 
   return (
     <svg
@@ -873,6 +874,8 @@ function PageThumbnail({ page }: { page: import("../store/projectStore").Page })
 
 // ── Page Settings ─────────────────────────────────────────────────────────────
 
+// Not rendered anywhere yet: wire it in or delete it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function PageSettings() {
   const { project, activePageId, setActivePage, addPage, removePage, renamePage, addWidget, updatePage } = useProject();
   const [editingId, setEditingId] = useState<string | null>(null);

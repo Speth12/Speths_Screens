@@ -3,7 +3,7 @@ import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
 import { SYMBOLS } from "../data/symbols";
 import { WidgetRenderer } from "../widgets";
-import { setClipboard, getClipboard } from "../hooks/useKeyboardShortcuts";
+import { setClipboard } from "../hooks/useKeyboardShortcuts";
 
 const COLS  = 12;
 const ROW_H = 64;
@@ -53,6 +53,8 @@ const ALIGN_BUTTONS: { action: AlignAction; title: string; icon: string }[] = [
   { action: "dist-v",      title: "Distribute vertically",     icon: "↕" },
 ];
 
+// Not rendered anywhere yet: wire it in or delete it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AlignToolbar({ widgets, onAlign }: {
   widgets: Widget[];
   onAlign: (action: AlignAction) => void;
@@ -111,8 +113,6 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
   const w = page?.widgets.find(x => x.id === menu.widgetId);
   const isLocked = w?.locked ?? false;
   const multi = multiCount > 1;
-  const idx = page?.widgets.findIndex(x => x.id === menu.widgetId) ?? -1;
-  const total = page?.widgets.length ?? 0;
 
   return (
     <div
@@ -232,28 +232,9 @@ export function Canvas() {
     return () => window.removeEventListener("keydown", handler);
   }, [selectedIds, activePageId, page, removeWidget, removeWidgets, updateWidgets]);
 
-  if (!page) return <div className="p-6 text-zinc-500">No page selected.</div>;
-
-  const eColW = COL_W * zoom;
-  const eRowH = ROW_H * zoom;
+  // Hooks stay above the early return below: React needs the same hooks in
+  // every render, with or without a page.
   const isPixelMode = snapMode === "pixel";
-  const isFixed = resolution.type === "fixed";
-  const canvasW = resolution.type === "fixed" ? (resolution.width ?? 1920) * zoom : undefined;
-  const canvasH = resolution.type === "fixed" ? (resolution.height ?? 1080) * zoom : undefined;
-  const gridW = COLS * (eColW + GAP) - GAP;
-
-  // ── Rubber-band mouse handlers ────────────────────────────────────────────
-
-  const onOuterMouseDown = (e: React.MouseEvent) => {
-    // Only start rubber band on the grid background (not on a widget)
-    if (e.target !== gridRef.current) return;
-    if (e.button !== 0) return;
-    const rect = outerRef.current!.getBoundingClientRect();
-    const x0 = e.clientX - rect.left + outerRef.current!.scrollLeft;
-    const y0 = e.clientY - rect.top  + outerRef.current!.scrollTop;
-    rubberActive.current = true;
-    setRubber({ x0, y0, x1: x0, y1: y0 });
-  };
 
   const onOuterMouseMove = useCallback((e: React.MouseEvent) => {
     if (!rubberActive.current || !outerRef.current) return;
@@ -267,7 +248,7 @@ export function Canvas() {
     if (!rubberActive.current) return;
     rubberActive.current = false;
     setRubber(prev => {
-      if (!prev || !gridRef.current || !outerRef.current) return null;
+      if (!prev || !page || !gridRef.current || !outerRef.current) return null;
       const { x0, y0, x1, y1 } = prev;
       if (Math.abs(x1 - x0) < 4 && Math.abs(y1 - y0) < 4) return null;
 
@@ -301,6 +282,29 @@ export function Canvas() {
       return null;
     });
   }, [page, zoom, isPixelMode]);
+
+  if (!page) return <div className="p-6 text-zinc-500">No page selected.</div>;
+
+  const eColW = COL_W * zoom;
+  const eRowH = ROW_H * zoom;
+  const isFixed = resolution.type === "fixed";
+  const canvasW = resolution.type === "fixed" ? (resolution.width ?? 1920) * zoom : undefined;
+  const canvasH = resolution.type === "fixed" ? (resolution.height ?? 1080) * zoom : undefined;
+  const gridW = COLS * (eColW + GAP) - GAP;
+
+  // ── Rubber-band mouse handlers ────────────────────────────────────────────
+
+  const onOuterMouseDown = (e: React.MouseEvent) => {
+    // Only start rubber band on the grid background (not on a widget)
+    if (e.target !== gridRef.current) return;
+    if (e.button !== 0) return;
+    const rect = outerRef.current!.getBoundingClientRect();
+    const x0 = e.clientX - rect.left + outerRef.current!.scrollLeft;
+    const y0 = e.clientY - rect.top  + outerRef.current!.scrollTop;
+    rubberActive.current = true;
+    setRubber({ x0, y0, x1: x0, y1: y0 });
+  };
+
 
   // ── Align actions ─────────────────────────────────────────────────────────
 
@@ -521,7 +525,6 @@ export function Canvas() {
     ? { backgroundColor: pageBg || undefined, backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${16 * zoom}px ${16 * zoom}px` }
     : { backgroundColor: pageBg || undefined, backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${eColW + GAP}px ${eRowH + GAP}px`, backgroundPosition: `${GAP / 2}px ${GAP / 2}px` };
 
-  const selectedWidgets = page.widgets.filter(w => selectedIds.includes(w.id));
 
   return (
     <div className="flex-1 flex flex-col min-h-0">

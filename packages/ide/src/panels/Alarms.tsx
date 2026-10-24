@@ -264,7 +264,6 @@ export function Alarms() {
     catch { /* ignore */ }
   };
 
-  const editingRule = editId ? rules.find((r) => r.id === editId) : undefined;
   const runtimeActive = events.filter((e) => e.active && !e.acked).length;
   const activeCount = clientAlarms.length + runtimeActive;
 

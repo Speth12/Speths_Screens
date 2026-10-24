@@ -3,7 +3,7 @@ import { useProject } from "../store/projectStore";
 import { useShallow } from "zustand/react/shallow";
 import { setApiBase } from "../store/runtimeTarget";
 import { tagStoreClient } from "../store/tagStoreClient";
-import { getToken, setToken, clearToken, authHeader } from "../store/runtimeAuth";
+import { setToken, clearToken, authHeader } from "../store/runtimeAuth";
 import {
   subscribeTargets, getTargets, getActiveTarget,
   setActiveTarget, addTarget, updateTarget, removeTarget,
@@ -312,7 +312,6 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
     finally { setBusy("none"); }
   };
 
-  const previewUrl = activeTarget.url || window.location.origin;
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800 bg-zinc-900/80 shrink-0">
