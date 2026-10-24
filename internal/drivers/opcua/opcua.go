@@ -61,6 +61,7 @@ type Driver struct {
 	state    atomic.Int32 // stateStopped, stateStarting, stateOnline, stateOffline
 	lastErr  atomic.Pointer[string]
 	tagCount atomic.Int32
+	certs    atomic.Pointer[drivers.CertPolicy] // checks the chosen endpoint's certificate
 
 	tags atomic.Pointer[tagSet] // current poll set, swapped by SetTags
 
@@ -105,6 +106,15 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("opcua: endpoint is required")
 	}
+	// Without a certCheck nothing is checked, as before.
+	certs, err := drivers.NewCertPolicy(cfg.Extra["certCheck"], cfg.Extra["certFingerprint"], drivers.CertOff)
+	if err != nil {
+		return fmt.Errorf("opcua: %w", err)
+	}
+	if cfg.Extra["securityMode"] == "None" && certs.Mode() != drivers.CertOff {
+		return fmt.Errorf("opcua: certificate checks need securityMode Sign or SignAndEncrypt")
+	}
+	d.certs.Store(certs)
 	d.mu.Lock()
 	d.out = out
 	d.mu.Unlock()
@@ -136,14 +146,6 @@ func (d *Driver) connect(ctx context.Context) error {
 		return d.dial(ctx)
 	}
 	cfg := d.cfg
-	desiredMode := cfg.Extra["securityMode"]
-	if desiredMode == "" {
-		desiredMode = "SignAndEncrypt"
-	}
-	desiredPolicy := cfg.Extra["securityPolicy"]
-	if desiredPolicy == "" {
-		desiredPolicy = "Basic256Sha256"
-	}
 
 	log.Printf("[DRIVER] opcua: discovering endpoints at %s", cfg.Endpoint)
 	dctx, cancel := context.WithTimeout(ctx, d.timeout)
@@ -153,13 +155,14 @@ func (d *Driver) connect(ctx context.Context) error {
 		return fmt.Errorf("opcua: GetEndpoints: %w", err)
 	}
 
-	ep := opcua.SelectEndpoint(eps, desiredPolicy, mapMode(desiredMode))
-	if ep == nil {
-		ep = opcua.SelectEndpoint(eps, "None", ua.MessageSecurityModeNone)
-		if ep == nil {
-			return fmt.Errorf("opcua: no usable endpoint in %d offered", len(eps))
+	ep, err := chooseEndpoint(eps, cfg.Extra["securityMode"], cfg.Extra["securityPolicy"])
+	if err != nil {
+		return err
+	}
+	if ep.SecurityMode != ua.MessageSecurityModeNone {
+		if err := checkServerCert(d.certs.Load(), ep.ServerCertificate); err != nil {
+			return fmt.Errorf("opcua: %w", err) // before any credentials are sent
 		}
-		log.Printf("[DRIVER] opcua: %s/%s not offered, falling back to None", desiredMode, desiredPolicy)
 	}
 
 	opts := []opcua.Option{
@@ -650,11 +653,56 @@ func (d *Driver) writeNow(ctx context.Context, req *ua.WriteRequest) (*ua.WriteR
 
 // Status returns the current state.
 func (d *Driver) Status() drivers.DriverStatus {
-	return drivers.DriverStatus{
+	st := drivers.DriverStatus{
 		Connected: d.state.Load() == stateOnline,
 		LastError: d.lastError(),
 		TagCount:  int(d.tagCount.Load()),
 	}
+	if c := d.certs.Load(); c != nil {
+		st.CertFingerprint = c.Seen()
+	}
+	return st
+}
+
+// chooseEndpoint picks the endpoint for the configured security mode and
+// policy (defaults SignAndEncrypt and Basic256Sha256). There is no fallback:
+// a server that does not offer them is an error, so credentials never go
+// out without the security the project asked for. A project that wants no
+// security says securityMode None.
+func chooseEndpoint(eps []*ua.EndpointDescription, mode, policy string) (*ua.EndpointDescription, error) {
+	if mode == "" {
+		mode = "SignAndEncrypt"
+	}
+	switch {
+	case mode == "None":
+		policy = "None"
+	case policy == "None":
+		return nil, fmt.Errorf("opcua: securityPolicy None needs securityMode None")
+	case policy == "":
+		policy = "Basic256Sha256"
+	}
+	ep := opcua.SelectEndpoint(eps, policy, mapMode(mode))
+	if ep == nil {
+		if mode == "None" {
+			return nil, fmt.Errorf("opcua: server does not offer security None")
+		}
+		return nil, fmt.Errorf("opcua: server does not offer %s / %s; set securityMode None to connect without security", policy, mode)
+	}
+	return ep, nil
+}
+
+// checkServerCert checks the certificate in the chosen endpoint.
+func checkServerCert(certs *drivers.CertPolicy, der []byte) error {
+	if certs == nil {
+		return nil
+	}
+	if len(der) == 0 {
+		if certs.Mode() == drivers.CertOff {
+			return nil
+		}
+		return fmt.Errorf("server sent no certificate")
+	}
+	return certs.Check(der)
 }
 
 func (d *Driver) lastError() string {

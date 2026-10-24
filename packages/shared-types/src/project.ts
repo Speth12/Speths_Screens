@@ -126,6 +126,16 @@ export interface DatasourceConfig {
      */
     bearerToken?: string;
     /**
+     * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+     * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+     */
+    certCheck?: CERTCheck;
+    /**
+     * SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
+     * optional)
+     */
+    certFingerprint?: string;
+    /**
      * MQTT client ID
      */
     clientId?: string;
@@ -154,6 +164,15 @@ export interface DatasourceConfig {
     tags?:     string;
     username?: string;
 }
+
+/**
+ * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+ * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+ *
+ * off: accept any certificate; pinned: only the one with certFingerprint; trusted:
+ * certificates the system trusts
+ */
+export type CERTCheck = "off" | "pinned" | "trusted";
 
 export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
 

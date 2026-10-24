@@ -249,6 +249,9 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		}
 	}
 	r.setDemands(projectDemand(p))
+	for _, w := range certWarnings(p) {
+		log.Printf("[SECURITY] WARNING: %s", w)
+	}
 	if p.Security == nil || p.Security.Mode != project.Login {
 		log.Printf("[SECURITY] WARNING: security.mode is not \"login\": no login is needed and everyone has full access, including writes and deploys")
 	} else if r.Security != nil && r.InitialAdminFile != "" {
@@ -473,6 +476,12 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	}
 	if c.SecurityPolicy != nil {
 		cfg.Extra["securityPolicy"] = string(*c.SecurityPolicy)
+	}
+	if c.CERTCheck != nil {
+		cfg.Extra["certCheck"] = string(*c.CERTCheck)
+	}
+	if c.CERTFingerprint != nil {
+		cfg.Extra["certFingerprint"] = *c.CERTFingerprint
 	}
 	if c.SlaveID != nil {
 		cfg.Extra["slaveId"] = fmt.Sprintf("%d", *c.SlaveID)

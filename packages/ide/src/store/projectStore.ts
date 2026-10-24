@@ -42,6 +42,7 @@ type State = {
 
   addDatasource: (ds: Datasource) => void;
   removeDatasource: (id: string) => void;
+  updateDatasource: (id: string, patch: Partial<Datasource>) => void;
 
   addWidget: (pageId: string, w: Widget) => void;
   updateWidget: (pageId: string, id: string, patch: Partial<Widget>) => void;
@@ -188,6 +189,13 @@ export const useProject = create<State>((set, get) => {
       pushHistory();
       set((s) => ({
         project: { ...s.project, datasources: s.project.datasources.filter((d) => d.id !== id) },
+      }));
+    },
+
+    updateDatasource: (id, patch) => {
+      pushHistory();
+      set((s) => ({
+        project: { ...s.project, datasources: s.project.datasources.map((d) => (d.id === id ? { ...d, ...patch } : d)) },
       }));
     },
 

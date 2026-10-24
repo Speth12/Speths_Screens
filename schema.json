@@ -135,8 +135,16 @@
         "clientId":      { "type": "string", "description": "MQTT client ID" },
         "basePath":      { "type": "string", "description": "REST base path, e.g. /_pxc_api/v1.14" },
         "bearerToken":   { "type": "string", "description": "REST bearer token" },
+        "certCheck":     { "$ref": "#/$defs/CertCheck", "description": "How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security). Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off" },
+        "certFingerprint": { "type": "string", "description": "SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons optional)" },
         "tags":          { "type": "string", "description": "Virtual driver: JSON-encoded [{path,formula}...] array" }
       }
+    },
+    "CertCheck": {
+      "title": "CertCheck",
+      "type": "string",
+      "enum": ["off", "pinned", "trusted"],
+      "description": "off: accept any certificate; pinned: only the one with certFingerprint; trusted: certificates the system trusts"
     },
     "SecurityMode": {
       "title": "SecurityMode",

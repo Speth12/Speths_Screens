@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useProject, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
+import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
+import type { CERTCheck } from "@speths-screens/shared-types";
 import { SYMBOL_PACKS, SYMBOLS } from "../data/symbols";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
@@ -8,6 +9,7 @@ import { TagBrowser, TagScannerModal } from "./TagBrowser";
 import { generateStandaloneHtml } from "../store/exportHtml";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
+import { CertCheckField, CertPinModal, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
 import { AssetModel } from "./AssetModel";
 import { Faceplates } from "./Faceplates";
 import { Namespace } from "./Namespace";
@@ -80,11 +82,12 @@ export function LeftPanel({ width }: { width?: number }) {
   const {
     project, activePageId, setActivePage,
     addPage, renamePage, removePage,
-    addDatasource, removeDatasource,
+    addDatasource, removeDatasource, updateDatasource,
     exportJSON, loadProject, newProject,
   } = useProject();
 
   const [showMCP,    setShowMCP]    = useState(false);
+  const [pinDS,      setPinDS]      = useState<Datasource | null>(null);
   const [showAddDS,  setShowAddDS]  = useState(false);
   const [scannerDS,  setScannerDS]  = useState<{ id: string; label: string; type: string } | null>(null);
   const [renaming,   setRenaming]   = useState<string | null>(null);
@@ -274,6 +277,14 @@ export function LeftPanel({ width }: { width?: number }) {
                     <div className="text-[11px] text-zinc-200 truncate">{d.label}</div>
                     <div className="text-[9px] text-zinc-600 font-mono">[{d.id}] {d.type}</div>
                   </div>
+                  {needsCertPin(d) && (
+                    <button
+                      onClick={() => setPinDS(d)}
+                      className="text-amber-400 hover:text-amber-300 text-[10px] shrink-0"
+                      title="The server's certificate is not checked. Click to pin it."
+                      aria-label={`Pin the certificate of ${d.label}`}
+                    >⚠</button>
+                  )}
                   <button
                     onClick={() => setScannerDS({ id: d.id, label: d.label, type: d.type })}
                     className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-blue-400 text-[10px] shrink-0 transition-opacity"
@@ -396,6 +407,13 @@ export function LeftPanel({ width }: { width?: number }) {
         <TagScannerModal dsId={scannerDS.id} dsLabel={scannerDS.label} dsType={scannerDS.type} onClose={() => setScannerDS(null)} />
       )}
       {showMCP && <MCPModal onClose={() => setShowMCP(false)} />}
+      {pinDS && (
+        <CertPinModal
+          ds={pinDS}
+          onClose={() => setPinDS(null)}
+          onPin={(fp) => { updateDatasource(pinDS.id, { config: { ...pinDS.config, certCheck: "pinned", certFingerprint: fp } }); setPinDS(null); }}
+        />
+      )}
     </div>
   );
 }
@@ -1045,8 +1063,13 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [virtualRows, setVirtualRows]       = useState<{ path: string; formula: string }[]>([
     { path: "tagA", formula: "{rest:tagPath} * 1.0" },
   ]);
+  const [certCheck, setCertCheck]           = useState<CERTCheck>("pinned");
+  const [certFp, setCertFp]                 = useState("");
   const [testing, setTesting]  = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [seenFp, setSeenFp] = useState("");
+  // REST always uses https; OPC UA has a certificate only with security on.
+  const hasCert = type === "rest" || (type === "opcua" && securityMode !== "None");
 
   const changeType = (t: DatasourceType) => { setType(t); setId(TYPE_DEFAULTS[t].id); setLabel(TYPE_DEFAULTS[t].label); setTestResult(null); };
 
@@ -1055,7 +1078,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
     if (type === "opcua") {
       config.endpoint = `opc.tcp://${ip}:${opcuaPort}`;
       config.securityMode = securityMode;
-      config.securityPolicy = securityPolicy;
+      // The runtime refuses policy None with a secure mode; use the usual one.
+      config.securityPolicy = securityMode === "None" ? "None" : securityPolicy === "None" ? "Basic256Sha256" : securityPolicy;
     } else if (type === "mbtcp") {
       config.host = ip; config.port = mbPort || 502; config.slaveId = slaveId || 1;
     } else if (type === "mqtt") {
@@ -1067,19 +1091,23 @@ export function AddDatasourceModal({ onClose, onAdd }: {
       config.basePath = basePath;
       if (bearerToken) config.bearerToken = bearerToken;
     }
+    if (hasCert) {
+      config.certCheck = certCheck;
+      if (certCheck === "pinned" && certFp.trim()) config.certFingerprint = certFp.trim();
+    }
     return { id, type, label, config };
   };
 
   const testConn = async () => {
     setTesting(true); setTestResult(null);
     const { type: dsType, config } = buildPayload();
-    try {
-      const r = await fetch(`${apiBase}/api/v1/datasources/test`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeader(apiBase) }, body: JSON.stringify({ id: "test", type: dsType, label: "test", config }) });
-      const data = (await r.json()) as { connected: boolean; lastError?: string; tagCount?: number };
-      setTestResult(data.connected ? { ok: true, msg: `Connected${data.tagCount ? ` · ${data.tagCount} tags` : ""}` } : { ok: false, msg: data.lastError ?? "Connection failed" });
-    } catch (e) { setTestResult({ ok: false, msg: (e as Error).message }); }
-    finally { setTesting(false); }
+    const data: TestStatus = await testDatasource({ type: dsType, config });
+    setTestResult(data.connected ? { ok: true, msg: `Connected${data.tagCount ? ` · ${data.tagCount} tags` : ""}` } : { ok: false, msg: data.lastError ?? "Connection failed" });
+    setSeenFp(data.certFingerprint ?? "");
+    setTesting(false);
   };
+  const samePrint = (a: string, b: string) => a.replace(/[^0-9a-f]/gi, "").toUpperCase() === b.replace(/[^0-9a-f]/gi, "").toUpperCase();
+  const offerPin = hasCert && certCheck === "pinned" && seenFp !== "" && !samePrint(seenFp, certFp);
 
   const inpCls = "mt-1 w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-mono";
   const lblCls = "block text-[11px] text-zinc-400";
@@ -1138,6 +1166,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <label className={lblCls}>Bearer token <span className="text-zinc-600">(optional)</span><input value={bearerToken} onChange={(e) => setBearerToken(e.target.value)} placeholder="leave blank if not required" className={inpCls} /></label>
         </>)}
 
+        {hasCert && <CertCheckField mode={certCheck} fingerprint={certFp} onMode={setCertCheck} onFingerprint={setCertFp} />}
+
         {type === "virtual" && (
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -1172,6 +1202,13 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <button onClick={onClose} className="text-xs px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700">Cancel</button>
           <button onClick={() => { const { id: dsId, type: dsType, label: dsLabel, config } = buildPayload(); onAdd({ id: dsId, type: dsType, label: dsLabel, config }); }} className="text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 font-medium">Add</button>
         </div>
+        {offerPin && (
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="text-zinc-400 shrink-0">Device certificate</span>
+            <span className="font-mono text-zinc-200 truncate" title={seenFp}>{seenFp}</span>
+            <button onClick={() => { setCertFp(seenFp); setSeenFp(""); setTestResult(null); }} className="shrink-0 px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white">Pin</button>
+          </div>
+        )}
       </div>
     </div>
   );

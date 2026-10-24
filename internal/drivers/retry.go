@@ -53,6 +53,10 @@ func SleepCtx(ctx context.Context, d time.Duration) bool {
 // 10.0.0.210 (timed out)". It reports false when err is not a network
 // failure, so the driver can describe it itself.
 func NetReason(host string, err error) (string, bool) {
+	var ce *CertError
+	if errors.As(err, &ce) {
+		return ce.Error(), true // a refused certificate, wrapped by TLS or HTTP
+	}
 	var ne net.Error
 	if !errors.As(err, &ne) {
 		return "", false

@@ -81,6 +81,12 @@ type DatasourceConfig struct {
 	BasePath *string `json:"basePath,omitempty"`
 	// REST bearer token
 	BearerToken *string `json:"bearerToken,omitempty"`
+	// How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+	// Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+	CERTCheck *CERTCheck `json:"certCheck,omitempty"`
+	// SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
+	// optional)
+	CERTFingerprint *string `json:"certFingerprint,omitempty"`
 	// MQTT client ID
 	ClientID *string `json:"clientId,omitempty"`
 	// OPC UA: opc.tcp://host:port
@@ -461,6 +467,19 @@ type CanvasSnap string
 const (
 	Grid  CanvasSnap = "grid"
 	Pixel CanvasSnap = "pixel"
+)
+
+// How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+// Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+//
+// off: accept any certificate; pinned: only the one with certFingerprint; trusted:
+// certificates the system trusts
+type CERTCheck string
+
+const (
+	Off     CERTCheck = "off"
+	Pinned  CERTCheck = "pinned"
+	Trusted CERTCheck = "trusted"
 )
 
 type SecurityMode string

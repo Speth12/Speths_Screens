@@ -53,6 +53,7 @@ type Driver struct {
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
 	tagCount  atomic.Int32
+	certs     atomic.Pointer[drivers.CertPolicy] // set for TLS endpoints only
 
 	// cancel stops the first-connect loop; wg waits for it.
 	cancel     context.CancelFunc
@@ -86,6 +87,12 @@ func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<-
 	u, err := url.Parse(endpoint)
 	if err != nil || u.Host == "" {
 		return fmt.Errorf("mqtt: endpoint %q is not host:port, tcp://host:port or ssl://host:port", cfg.Endpoint)
+	}
+	// Without a certCheck a TLS broker is checked against the system's
+	// trusted roots, as paho always did.
+	certs, err := drivers.NewCertPolicy(cfg.Extra["certCheck"], cfg.Extra["certFingerprint"], drivers.CertTrusted)
+	if err != nil {
+		return fmt.Errorf("mqtt: %w", err)
 	}
 	clientID := cfg.Extra["clientId"]
 	if clientID == "" {
@@ -121,6 +128,13 @@ func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<-
 	if cfg.Username != "" {
 		opts.SetUsername(cfg.Username)
 		opts.SetPassword(cfg.Password)
+	}
+	switch u.Scheme {
+	case "ssl", "tls", "mqtts", "tcps", "wss":
+		opts.SetTLSConfig(certs.TLSConfig()) // a refused certificate fails before the login is sent
+		d.certs.Store(certs)
+	default:
+		d.certs.Store(nil)
 	}
 
 	c := mqttlib.NewClient(opts)
@@ -370,11 +384,15 @@ func (d *Driver) Status() drivers.DriverStatus {
 	if p := d.lastErr.Load(); p != nil {
 		last = *p
 	}
-	return drivers.DriverStatus{
+	st := drivers.DriverStatus{
 		Connected: d.connected.Load(),
 		LastError: last,
 		TagCount:  int(d.tagCount.Load()),
 	}
+	if c := d.certs.Load(); c != nil {
+		st.CertFingerprint = c.Seen()
+	}
+	return st
 }
 
 func (d *Driver) getClient() mqttlib.Client {
