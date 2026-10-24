@@ -1,22 +1,22 @@
 // Zustand store for the in-memory project (the JSON edited by the IDE).
 import { create } from "zustand";
+import { openProject } from "./openProject";
 
 // Project types are generated from schema.json (npm run gen:types).
 import type {
-  AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
-  Datasource, DatasourceType, Dynamic, DynamicActionType, Faceplate, FaceplateParam,
+  Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe,
-  RecipeEntry, Udt, UDTField, Widget, WidgetType,
+  RecipeEntry, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
-  AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam, FaceplateWidget,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe, RecipeEntry,
-  UDTField, Widget, WidgetType,
+  UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 };
 export type UDT = Udt;
-export type DynActionType = DynamicActionType;
 
 const MAX_HISTORY = 50;
 
@@ -46,6 +46,8 @@ type State = {
 
   addWidget: (pageId: string, w: Widget) => void;
   updateWidget: (pageId: string, id: string, patch: Partial<Widget>) => void;
+  /** Sets one tag slot of a widget, keeping the others; "" clears it. */
+  setWidgetTag: (pageId: string, id: string, slot: keyof WidgetBindings, tag: string) => void;
   updateWidgets: (pageId: string, patches: { id: string; patch: Partial<Widget> }[]) => void;
   removeWidget: (pageId: string, id: string) => void;
   removeWidgets: (pageId: string, ids: string[]) => void;
@@ -87,6 +89,7 @@ type State = {
 };
 
 const blankProject = (): Project => ({
+  schemaVersion: 2,
   version: "0.1.0",
   datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [] }],
@@ -224,6 +227,15 @@ export const useProject = create<State>((set, get) => {
           ),
         },
       }));
+    },
+
+    setWidgetTag: (pageId, id, slot, tag) => {
+      const w = get().project.pages.find((p) => p.id === pageId)?.widgets.find((x) => x.id === id);
+      if (!w) return;
+      const bindings: WidgetBindings = { ...w.bindings };
+      if (tag) bindings[slot] = tag;
+      else delete bindings[slot];
+      get().updateWidget(pageId, id, { bindings: Object.keys(bindings).length ? bindings : undefined });
     },
 
     updateWidgets: (pageId, patches) => {
@@ -525,10 +537,9 @@ const LS_KEY = "xhmi-project-v1";
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
-    const saved = JSON.parse(raw) as Project;
-    if (saved && saved.version && Array.isArray(saved.pages)) {
-      useProject.getState().loadProject(saved);
-    }
+    const o = openProject(JSON.parse(raw));
+    if (o.ok) useProject.getState().loadProject(o.project);
+    else console.warn("[IDE] the autosaved project was not restored:", o.problems);
   } catch {
     // ignore parse errors — blank project is fine
   }

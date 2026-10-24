@@ -15,6 +15,8 @@ import { Faceplates } from "./Faceplates";
 import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
+import { openProject, openSummary } from "../store/openProject";
+import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
 
@@ -116,6 +118,8 @@ export function LeftPanel({ width }: { width?: number }) {
   };
 
   const doDeploy = async () => {
+    const problems = validateProject(useProject.getState().project);
+    if (problems.length) { setDeployMsg(`Not deployed: ${problems.join("; ")}`); return; }
     setDeploying(true); setDeployMsg("");
     try {
       const r = await fetch(`${apiBase}/api/v1/project`, {
@@ -148,11 +152,15 @@ export function LeftPanel({ width }: { width?: number }) {
       reader.onload = () => {
         try {
           const raw = JSON.parse(reader.result as string) as Record<string, unknown>;
+          let incoming: unknown = raw;
           if (raw._gitFormat) {
             const strMap: Record<string, string> = {};
             for (const [k, v] of Object.entries(raw._files as Record<string, unknown>)) strMap[k] = JSON.stringify(v);
-            loadProject(importGitFormat(strMap));
-          } else { loadProject(raw as unknown as Parameters<typeof loadProject>[0]); }
+            incoming = importGitFormat(strMap);
+          }
+          const o = openProject(incoming);
+          if (o.ok) loadProject(o.project);
+          setDeployMsg(openSummary(file.name, o));
         } catch (e) { alert(`Import failed: ${(e as Error).message}`); }
       };
       reader.readAsText(file);
@@ -774,13 +782,14 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Overview",
     description: "Gauges, LED, button",
     widgets: [
-      { type: "gauge",          x: 0,  y: 0, w: 4, h: 3, config: { label: "Value 1" } },
-      { type: "gauge",          x: 4,  y: 0, w: 4, h: 3, config: { label: "Value 2" } },
-      { type: "tank",           x: 8,  y: 0, w: 2, h: 4, config: { label: "Level" } },
-      { type: "numericDisplay", x: 0,  y: 3, w: 3, h: 2, config: { label: "PV" } },
-      { type: "numericDisplay", x: 3,  y: 3, w: 3, h: 2, config: { label: "SP" } },
-      { type: "led",            x: 10, y: 0, w: 2, h: 2, config: { label: "Status" } },
-      { type: "button",         x: 10, y: 2, w: 2, h: 2, config: { label: "Reset" } },
+      { type: "gauge",          x: 0,  y: 0, w: 4, h: 3, props: { label: "Value 1" } },
+      { type: "gauge",          x: 4,  y: 0, w: 4, h: 3, props: { label: "Value 2" } },
+      { type: "tank",           x: 8,  y: 0, w: 2, h: 4, props: { label: "Level" } },
+      { type: "numericDisplay", x: 0,  y: 3, w: 3, h: 2, props: { label: "PV" } },
+      { type: "numericDisplay", x: 3,  y: 3, w: 3, h: 2, props: { label: "SP" } },
+      { type: "led",            x: 10, y: 0, w: 2, h: 2, props: { label: "Status" } },
+      { type: "button",         x: 10, y: 2, w: 2, h: 2, props: { label: "Reset" },
+        events: { onPress: [{ type: "write", value: 1 }], onRelease: [{ type: "write", value: 0 }] } },
     ],
   },
   {
@@ -788,8 +797,8 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Trend",
     description: "Full-width trend chart",
     widgets: [
-      { type: "trend",  x: 0, y: 0, w: 12, h: 7, config: { label: "Trend", duration: 300 } },
-      { type: "button", x: 0, y: 7, w: 3,  h: 2, config: { label: "← Back", action: "navigate" } },
+      { type: "trend",  x: 0, y: 0, w: 12, h: 7, props: { label: "Trend", duration: 300 } },
+      { type: "button", x: 0, y: 7, w: 3,  h: 2, props: { label: "← Back" } },
     ],
   },
   {
@@ -797,8 +806,8 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Alarms",
     description: "Alarm banner + history",
     widgets: [
-      { type: "alarmBanner", x: 0, y: 0, w: 12, h: 4, config: { label: "Active Alarms", maxRows: 8 } },
-      { type: "historyLog",  x: 0, y: 4, w: 12, h: 5, config: { label: "Write History" } },
+      { type: "alarmBanner", x: 0, y: 0, w: 12, h: 4, props: { label: "Active Alarms", maxRows: 8 } },
+      { type: "historyLog",  x: 0, y: 4, w: 12, h: 5, props: { label: "Write History" } },
     ],
   },
 ];

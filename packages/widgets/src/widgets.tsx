@@ -1,15 +1,21 @@
 // Widget renderers shared by the IDE canvas, the IDE preview and the
 // operator screen. Everything outside the widget (tag values, writes,
 // navigation, the runtime API, alarms, images, faceplates) comes from the
-// WidgetHost the app provides (host.tsx).
+// WidgetHost the app provides (host.tsx). Widgets use format v2: settings in
+// props (typed per widget type), tags in bindings, actions in events.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Dynamic, Widget } from "@speths-screens/shared-types";
-import { useHost, useTag, useTags } from "./host";
-import { imageFit } from "./imageFit";
+import type {
+  Action, ButtonColor, Dynamic, FaceplateWidget, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
+  Widget, WidgetBindings, WidgetEvents, WidgetType,
+} from "@speths-screens/shared-types";
+import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
 import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
 import { DEFAULT_STATES } from "./manifests";
+
+/** A renderer's props: its widget, typed for its type. */
+type WP<T extends WidgetType> = { w: TypedWidget<T> };
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -102,7 +108,7 @@ function evalExpression(expr: string, value: unknown): unknown {
   }
 }
 
-// Context carries script-dynamic overrides (config key → value) from DynamicsApplicator into Frame
+// Context carries script-dynamic overrides (frame setting → value) from DynamicsApplicator into Frame
 const ScriptOverrideContext = createContext<Record<string, unknown>>({});
 
 // ── Typography helper ──────────────────────────────────────────────────────
@@ -117,24 +123,21 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   serif: "ui-serif, Georgia, serif",
 };
 
-function fontStyle(config: Record<string, unknown> | undefined): React.CSSProperties {
-  if (!config) return {};
+function fontStyle(p: FrameProps): React.CSSProperties {
   return {
-    fontFamily: FONT_FAMILY_MAP[config.fontFamily as string] ?? undefined,
-    fontSize:   FONT_SIZE_MAP[config.fontSize as string] ?? undefined,
-    fontWeight: config.fontBold    ? "bold"   : undefined,
-    fontStyle:  config.fontItalic  ? "italic" : undefined,
-    textDecoration: config.fontUnderline ? "underline" : undefined,
-    textAlign:  (config.textAlign as React.CSSProperties["textAlign"]) ?? undefined,
-    color:      (config.textColor as string) || undefined,
+    fontFamily: FONT_FAMILY_MAP[p.fontFamily ?? ""] ?? undefined,
+    fontSize:   FONT_SIZE_MAP[p.fontSize ?? ""] ?? undefined,
+    fontWeight: p.fontBold    ? "bold"   : undefined,
+    fontStyle:  p.fontItalic  ? "italic" : undefined,
+    textDecoration: p.fontUnderline ? "underline" : undefined,
+    textAlign:  p.textAlign ?? undefined,
+    color:      p.textColor || undefined,
   };
 }
 
 // ── Color threshold helper ─────────────────────────────────────────────────
 
-type ColorThreshold = { value: number; toValue?: number; color: string };
-
-export function resolveColor(value: unknown, thresholds: ColorThreshold[]): string | null {
+export function resolveColor(value: unknown, thresholds: Threshold[]): string | null {
   if (!thresholds.length) return null;
   if (typeof value !== "number") return null;
   // Explicit range entries [value, toValue) take precedence
@@ -153,18 +156,18 @@ export function resolveColor(value: unknown, thresholds: ColorThreshold[]): stri
 
 // ── Frame ──────────────────────────────────────────────────────────────────
 
+const NO_THRESHOLDS: Threshold[] = [];
+
 function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   const overrides = useContext(ScriptOverrideContext);
-  const colorThresholds = (w.config?.colorThresholds as ColorThreshold[]) ?? [];
-  const colorBinding = (w.config?.colorBinding as string) || w.binding;
-  const colorTag = useTag(colorThresholds.length ? colorBinding : undefined);
+  const p: FrameProps = w.props ?? {};
+  const colorThresholds = p.colorThresholds ?? NO_THRESHOLDS;
+  const colorTag = useTag(colorThresholds.length ? (w.bindings?.color || w.bindings?.value) : undefined);
   const dynColor = resolveColor(colorTag.value, colorThresholds);
 
-  const bgColor = (overrides.bgColor as string | undefined) ?? (w.config?.bgColor as string | undefined);
-  const borderColor = (overrides.borderColor as string | undefined) ?? (w.config?.borderColor as string | undefined);
-  const textColor = (overrides.textColor as string | undefined) ?? (w.config?.textColor as string | undefined);
-  const noPadding = w.config?.noPadding as boolean | undefined;
-  const label = w.config?.label as string | undefined;
+  const bgColor = (overrides.bgColor as string | undefined) ?? p.bgColor;
+  const borderColor = (overrides.borderColor as string | undefined) ?? p.borderColor;
+  const textColor = (overrides.textColor as string | undefined) ?? p.textColor;
 
   const isTransparent = bgColor === "none" || bgColor === "transparent";
 
@@ -181,18 +184,18 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
 
   return (
     <div
-      className={`h-full w-full rounded-lg flex flex-col gap-1 select-none transition-colors overflow-hidden ${noPadding ? "" : "p-3"}`}
+      className={`h-full w-full rounded-lg flex flex-col gap-1 select-none transition-colors overflow-hidden ${p.noPadding ? "" : "p-3"}`}
       style={style}
     >
-      {label && (
+      {p.label && (
         <div
           className="text-[10px] uppercase tracking-wider truncate shrink-0"
           style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
         >
-          {label}
+          {p.label}
         </div>
       )}
-      <div className="flex-1 min-h-0 flex flex-col" style={fontStyle(w.config)}>{children}</div>
+      <div className="flex-1 min-h-0 flex flex-col" style={fontStyle(p)}>{children}</div>
     </div>
   );
 }
@@ -216,17 +219,20 @@ function gaugeArcPath(startDeg: number, sweepDeg: number): string {
   return `M ${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A ${GAUGE_R} ${GAUGE_R} 0 ${s > 180 ? 1 : 0} 1 ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
 }
 
-function GaugeWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
-  const min = (w.config?.min as number) ?? 0;
-  const max = (w.config?.max as number) ?? 100;
+/** The fill colour rules: colorThresholds, else the older thresholds. */
+function fillThresholds(p: { colorThresholds?: Threshold[]; thresholds?: Threshold[] }): Threshold[] {
+  return p.colorThresholds?.length ? p.colorThresholds : p.thresholds ?? NO_THRESHOLDS;
+}
+
+function GaugeWidget({ w }: WP<"gauge">) {
+  const p = w.props ?? {};
+  const t = useTag(w.bindings?.value);
+  const min = p.min ?? 0;
+  const max = p.max ?? 100;
   const v = typeof t.value === "number" ? t.value : min;
   const pct = Math.max(0, Math.min(1, (v - min) / (max - min)));
   const fillSweep = pct * GAUGE_SWEEP;
-
-  const colorThresholds = (w.config?.colorThresholds as ColorThreshold[]) ?? [];
-  const legacyThresholds = (w.config?.thresholds as ColorThreshold[]) ?? [];
-  const arcColor = resolveColor(v, colorThresholds.length ? colorThresholds : legacyThresholds) ?? "#22c55e";
+  const arcColor = resolveColor(v, fillThresholds(p)) ?? "#22c55e";
 
   // needleAngle: degrees clockwise from 12 o'clock. Needle drawn at 12 o'clock,
   // rotated via CSS transform for smooth animation.
@@ -244,14 +250,14 @@ function GaugeWidget({ w }: { w: Widget }) {
           <path d={gaugeArcPath(GAUGE_START, fillSweep)} fill="none" stroke={arcColor} strokeWidth="7" strokeLinecap="round" />
         )}
         {/* Tick marks at 0%, 25%, 50%, 75%, 100% */}
-        {[0, 0.25, 0.5, 0.75, 1].map((p) => {
-          const a = GAUGE_START + p * GAUGE_SWEEP;
+        {[0, 0.25, 0.5, 0.75, 1].map((q) => {
+          const a = GAUGE_START + q * GAUGE_SWEEP;
           const outer = gaugePolar(a, GAUGE_R + 2);
           const inner = gaugePolar(a, GAUGE_R - 9);
           return (
-            <line key={p} x1={outer.x.toFixed(2)} y1={outer.y.toFixed(2)}
+            <line key={q} x1={outer.x.toFixed(2)} y1={outer.y.toFixed(2)}
               x2={inner.x.toFixed(2)} y2={inner.y.toFixed(2)}
-              stroke="#52525b" strokeWidth={p === 0 || p === 1 ? 1.5 : 0.8} />
+              stroke="#52525b" strokeWidth={q === 0 || q === 1 ? 1.5 : 0.8} />
           );
         })}
         {/* Min/max labels */}
@@ -274,81 +280,79 @@ function GaugeWidget({ w }: { w: Widget }) {
         <text x={GAUGE_CX} y={GAUGE_CY + 14} textAnchor="middle"
           fontSize="8" fill="#e4e4e7" fontWeight="600" fontFamily="monospace">
           {typeof t.value === "number" ? t.value.toFixed(1) : "—"}
-          {w.config?.unit ? ` ${w.config.unit as string}` : ""}
+          {p.unit ? ` ${p.unit}` : ""}
         </text>
       </svg>
-      {(w.config?.showQuality ?? true) && (
+      {(p.showQuality ?? true) && (
         <div className={`text-[9px] text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
       )}
     </div>
   );
 }
 
-function NumericDisplayWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
+function NumericDisplayWidget({ w }: WP<"numericDisplay">) {
+  const p = w.props ?? {};
+  const t = useTag(w.bindings?.value);
   return (
     <div className="flex flex-col h-full justify-center">
       <div className="text-3xl font-semibold tabular-nums">
         {fmt(t.value)}
-        {w.config?.unit ? <span className="text-base text-zinc-500 ml-1">{w.config.unit as string}</span> : null}
+        {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
       </div>
-      {(w.config?.showQuality ?? true) && (
+      {(p.showQuality ?? true) && (
         <div className={`text-[10px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
       )}
     </div>
   );
 }
 
-function TextDisplayWidget({ w }: { w: Widget }) {
-  // A binding without ":" is a literal constant (e.g. "Pump Status").
-  const isLiveBinding = !!w.binding?.includes(":");
-  const t = useTag(isLiveBinding ? w.binding : undefined);
-  const staticText = w.config?.staticText as string | undefined;
-  const align = (w.config?.textAlign as string) || "left";
+function TextDisplayWidget({ w }: WP<"textDisplay">) {
+  const p = w.props ?? {};
+  const t = useTag(p.staticText === undefined ? w.bindings?.value : undefined);
+  const align = p.textAlign ?? "left";
   const justifyCls = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
-  const displayText = staticText ?? (isLiveBinding ? fmt(t.value) : (w.binding ?? ""));
   return (
     <div className={`break-words h-full flex items-center ${justifyCls} text-lg`}>
-      {displayText}
+      {p.staticText ?? fmt(t.value)}
     </div>
   );
 }
 
-function LEDWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
+function LEDWidget({ w }: WP<"led">) {
+  const p = w.props ?? {};
+  const t = useTag(w.bindings?.value);
   const on = !!t.value;
-  const trueColor = (w.config?.trueColor as string) ?? "#22c55e";
-  const falseColor = (w.config?.falseColor as string) ?? "#3f3f46";
+  const trueColor = p.trueColor ?? "#22c55e";
+  const falseColor = p.falseColor ?? "#3f3f46";
   return (
     <div className="flex items-center gap-2 h-full">
       <div
         className="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]"
         style={{ background: on ? trueColor : falseColor, boxShadow: on ? `0 0 10px ${trueColor}88` : undefined }}
       />
-      <div className="text-sm font-medium">{on ? (w.config?.trueLabel as string ?? "ON") : (w.config?.falseLabel as string ?? "OFF")}</div>
+      <div className="text-sm font-medium">{on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")}</div>
     </div>
   );
 }
 
 // ── Tank (vertical level) ─────────────────────────────────────────────────
 
-function TankWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
-  const min = (w.config?.min as number) ?? 0;
-  const max = (w.config?.max as number) ?? 100;
+function TankWidget({ w }: WP<"tank">) {
+  const p = w.props ?? {};
+  const t = useTag(w.bindings?.value);
+  const min = p.min ?? 0;
+  const max = p.max ?? 100;
   const v = typeof t.value === "number" ? t.value : 0;
   const pct = Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100));
-  const colorThresholds = (w.config?.colorThresholds as ColorThreshold[]) ?? [];
-  const legacyThresholds = (w.config?.thresholds as ColorThreshold[]) ?? [];
-  const fillColor = resolveColor(v, colorThresholds.length ? colorThresholds : legacyThresholds) ?? "#3b82f6";
+  const fillColor = resolveColor(v, fillThresholds(p)) ?? "#3b82f6";
 
   return (
     <div className="flex gap-3 h-full items-end">
       {/* Vertical bar */}
       <div className="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
-        {[75, 50, 25].map((p) => (
-          <div key={p} className="absolute left-0 right-0 border-t border-zinc-600/50"
-            style={{ bottom: `${p}%` }} />
+        {[75, 50, 25].map((q) => (
+          <div key={q} className="absolute left-0 right-0 border-t border-zinc-600/50"
+            style={{ bottom: `${q}%` }} />
         ))}
         <div
           className="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500"
@@ -358,8 +362,8 @@ function TankWidget({ w }: { w: Widget }) {
       {/* Value + quality */}
       <div className="flex flex-col justify-end pb-1">
         <div className="text-xl font-semibold tabular-nums leading-none">{fmt(t.value)}</div>
-        {(w.config?.unit as string | undefined) && <div className="text-[10px] text-zinc-500">{w.config!.unit as string}</div>}
-        {(w.config?.showQuality ?? true) && <div className={`text-[9px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+        {p.unit && <div className="text-[10px] text-zinc-500">{p.unit}</div>}
+        {(p.showQuality ?? true) && <div className={`text-[9px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
       </div>
     </div>
   );
@@ -368,14 +372,13 @@ function TankWidget({ w }: { w: Widget }) {
 // ── Button style system ────────────────────────────────────────────────────
 
 type BtnVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
-type BtnColor   = "blue" | "green" | "red" | "amber" | "zinc" | "purple" | "orange" | "white";
 type BtnRounded = "none" | "sm" | "md" | "lg" | "full";
 
 const BTN_ROUNDED: Record<BtnRounded, string> = {
   none: "rounded-none", sm: "rounded-sm", md: "rounded-md", lg: "rounded-lg", full: "rounded-full",
 };
 
-const BTN_COLORS: Record<BtnColor, Record<BtnVariant, string>> = {
+const BTN_COLORS: Record<ButtonColor, Record<BtnVariant, string>> = {
   blue:   { filled: "bg-blue-600 hover:bg-blue-500 text-white",                 outlined: "border-2 border-blue-500 text-blue-300 hover:bg-blue-900/30",   ghost: "text-blue-300 hover:bg-blue-900/40",      flat: "bg-blue-900/40 text-blue-300 hover:bg-blue-800/50",   industrial: "bg-gradient-to-b from-blue-500 to-blue-700 border border-blue-900 text-white shadow-inner" },
   green:  { filled: "bg-emerald-600 hover:bg-emerald-500 text-white",           outlined: "border-2 border-emerald-500 text-emerald-300 hover:bg-emerald-900/30", ghost: "text-emerald-300 hover:bg-emerald-900/40", flat: "bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/50", industrial: "bg-gradient-to-b from-emerald-500 to-emerald-700 border border-emerald-900 text-white shadow-inner" },
   red:    { filled: "bg-red-600 hover:bg-red-500 text-white",                   outlined: "border-2 border-red-500 text-red-300 hover:bg-red-900/30",       ghost: "text-red-300 hover:bg-red-900/40",        flat: "bg-red-900/40 text-red-300 hover:bg-red-800/50",       industrial: "bg-gradient-to-b from-red-500 to-red-700 border border-red-900 text-white shadow-inner" },
@@ -386,79 +389,41 @@ const BTN_COLORS: Record<BtnColor, Record<BtnVariant, string>> = {
   white:  { filled: "bg-white hover:bg-zinc-100 text-zinc-900",                 outlined: "border-2 border-zinc-300 text-zinc-100 hover:bg-zinc-800",         ghost: "text-zinc-200 hover:bg-zinc-800",          flat: "bg-white/10 text-zinc-200 hover:bg-white/20",          industrial: "bg-gradient-to-b from-zinc-200 to-zinc-400 border border-zinc-600 text-zinc-900 shadow-inner" },
 };
 
-function btnClass(config: Record<string, unknown> | undefined, activeOn = false): string {
-  const variant = ((config?.btnVariant as BtnVariant) ?? "filled");
-  const color   = ((config?.btnColor   as BtnColor)   ?? "blue");
-  const rounded = ((config?.btnRounded as BtnRounded) ?? "md");
-  const colorCls = BTN_COLORS[color]?.[variant] ?? BTN_COLORS.blue.filled;
-  const roundedCls = BTN_ROUNDED[rounded] ?? "rounded-md";
+function btnClass(variant: BtnVariant | undefined, color: ButtonColor, rounded: BtnRounded | undefined, activeOn = false): string {
+  const colorCls = BTN_COLORS[color]?.[variant ?? "filled"] ?? BTN_COLORS.blue.filled;
+  const roundedCls = BTN_ROUNDED[rounded ?? "md"] ?? "rounded-md";
   const activeCls = activeOn ? "ring-2 ring-current ring-offset-1 ring-offset-zinc-950" : "";
   return `w-full h-full ${roundedCls} ${colorCls} text-sm font-medium transition-all active:scale-95 ${activeCls}`;
 }
 
 // ── Write widgets ──────────────────────────────────────────────────────────
 
-function ButtonWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
-  const host = useHost();
-  const label = (w.config?.label as string) ?? "Press";
-  const action = (w.config?.action as string) ?? "write";
-  const momentary = (w.config?.momentary as boolean) ?? true;
-  const onValue  = w.config?.onValue  ?? 1;
-  const offValue = w.config?.offValue ?? 0;
-  const icon = w.config?.icon as string | undefined;
-
-  const content = (
-    <span className="flex items-center justify-center gap-1.5">
-      {icon && <span className="text-base leading-none">{icon}</span>}
-      {label}
-    </span>
-  );
-
-  if (action === "navigate") {
-    const targetPage = w.config?.navigateTo as string | undefined;
-    const navColor = (w.config?.btnColor as BtnColor) ?? "purple";
-    return (
-      <button className={btnClass({ ...w.config, btnColor: navColor })}
-              onClick={() => targetPage && host.navigate(targetPage)}>
-        {content}
-      </button>
-    );
-  }
-
-  if (momentary) {
-    const send = (value: unknown) => w.binding && host.write({ binding: w.binding, value, widgetId: w.id });
-    return (
-      <button
-        className={btnClass(w.config)}
-        onPointerDown={() => send(onValue)}
-        onPointerUp={() => send(offValue)}
-        onPointerLeave={() => send(offValue)}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  // Toggle mode — state-aware active styling
-  const on = !!t.value;
-  const nextValue = on ? offValue : onValue;
-  const nextLabel = on ? `OFF (${String(offValue)})` : `ON (${String(onValue)})`;
-  const toggleColor: BtnColor = on
-    ? ((w.config?.toggleOnColor  as BtnColor) ?? "green")
-    : ((w.config?.toggleOffColor as BtnColor) ?? "zinc");
+/** A button only draws: what it does is its events (see Interaction). A
+ *  button with a toggle action shows its tag's state. */
+function ButtonWidget({ w }: WP<"button">) {
+  const p = w.props ?? {};
+  const t = useTag(w.bindings?.value);
+  const clicks = w.events?.onClick ?? [];
+  const toggles = clicks.some((a) => a.type === "toggle");
+  const navigates = clicks.some((a) => a.type === "navigate");
+  const on = toggles && !!t.value;
+  const color: ButtonColor = toggles
+    ? (on ? p.toggleOnColor as ButtonColor | undefined ?? "green" : p.toggleOffColor as ButtonColor | undefined ?? "zinc")
+    : p.btnColor ?? (navigates ? "purple" : "blue");
   return (
-    <button
-      className={btnClass({ ...w.config, btnColor: toggleColor }, on)}
-      onClick={() => w.binding && host.requestWrite({ binding: w.binding, value: nextValue, label: nextLabel, widgetId: w.id })}
-    >
-      {content}
+    <button className={btnClass(p.btnVariant, color, p.btnRounded, on)}>
+      <span className="flex items-center justify-center gap-1.5">
+        {p.icon && <span className="text-base leading-none">{p.icon}</span>}
+        {p.label ?? "Press"}
+      </span>
     </button>
   );
 }
 
-function NumericInputWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
+function NumericInputWidget({ w }: WP<"numericInput">) {
+  const p = w.props ?? {};
+  const tag = w.bindings?.value;
+  const t = useTag(tag);
   const host = useHost();
   const [open, setOpen] = useState(false);
   const cur = typeof t.value === "number" ? t.value : 0;
@@ -470,17 +435,17 @@ function NumericInputWidget({ w }: { w: Widget }) {
         className="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none"
       >
         {fmt(t.value)}
-        {w.config?.unit ? <span className="text-base text-zinc-500 ml-1">{w.config.unit as string}</span> : null}
+        {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
       </div>
       <div className={`text-[10px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>
-        {(w.config?.showQuality ?? true) ? t.quality : "tap to enter value"}
+        {(p.showQuality ?? true) ? t.quality : "tap to enter value"}
       </div>
       {open && (
         <KeypadModal
           initial={cur}
-          label={w.config?.label as string | undefined}
-          unit={w.config?.unit as string | undefined}
-          onConfirm={(n) => { if (w.binding) host.requestWrite({ binding: w.binding, value: n, widgetId: w.id }); setOpen(false); }}
+          label={p.label}
+          unit={p.unit}
+          onConfirm={(n) => { if (tag) host.requestWrite({ binding: tag, value: n, widgetId: w.id }); setOpen(false); }}
           onCancel={() => setOpen(false)}
         />
       )}
@@ -488,15 +453,16 @@ function NumericInputWidget({ w }: { w: Widget }) {
   );
 }
 
-function TextInputWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
+function TextInputWidget({ w }: WP<"textInput">) {
+  const tag = w.bindings?.value;
+  const t = useTag(tag);
   const host = useHost();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
   const startEdit = () => { setDraft(fmt(t.value)); setEditing(true); };
   const commit = () => {
-    if (w.binding) host.requestWrite({ binding: w.binding, value: draft, widgetId: w.id });
+    if (tag) host.requestWrite({ binding: tag, value: draft, widgetId: w.id });
     setEditing(false);
   };
 
@@ -523,12 +489,14 @@ function TextInputWidget({ w }: { w: Widget }) {
 
 // ── Setpoint slider ────────────────────────────────────────────────────────
 
-function SetpointWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
+function SetpointWidget({ w }: WP<"setpoint">) {
+  const p = w.props ?? {};
+  const tag = w.bindings?.value;
+  const t = useTag(tag);
   const host = useHost();
-  const min = (w.config?.min as number) ?? 0;
-  const max = (w.config?.max as number) ?? 100;
-  const step = (w.config?.step as number) ?? 1;
+  const min = p.min ?? 0;
+  const max = p.max ?? 100;
+  const step = p.step ?? 1;
 
   // Local draft so the slider feels snappy while the write propagates.
   const [draft, setDraft] = useState<number | null>(null);
@@ -536,14 +504,14 @@ function SetpointWidget({ w }: { w: Widget }) {
 
   const commit = (n: number) => {
     setDraft(null);
-    if (w.binding) host.requestWrite({ binding: w.binding, value: n, widgetId: w.id });
+    if (tag) host.requestWrite({ binding: tag, value: n, widgetId: w.id });
   };
 
   return (
     <div className="flex flex-col h-full justify-center gap-2">
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-semibold tabular-nums">{displayVal.toFixed(step < 1 ? 1 : 0)}</span>
-        {(w.config?.unit as string | undefined) && <span className="text-xs text-zinc-500">{w.config!.unit as string}</span>}
+        {p.unit && <span className="text-xs text-zinc-500">{p.unit}</span>}
       </div>
       <input
         type="range"
@@ -556,7 +524,7 @@ function SetpointWidget({ w }: { w: Widget }) {
       />
       <div className="flex justify-between text-[9px] text-zinc-600">
         <span>{min}</span>
-        {(w.config?.showQuality ?? true) && (
+        {(p.showQuality ?? true) && (
           <span className={qualityColor[t.quality] ?? "text-zinc-600"}>{t.quality}</span>
         )}
         <span>{max}</span>
@@ -567,9 +535,7 @@ function SetpointWidget({ w }: { w: Widget }) {
 
 // ── Trend (multi-series) ───────────────────────────────────────────────────
 
-type Sample      = { ts: number; v: number };
-type TrendSeries = { binding: string; color: string; label?: string; fill?: boolean; yMin?: number; yMax?: number };
-type RefLine     = { value: number; color: string; label?: string };
+type Sample = { ts: number; v: number };
 const SERIES_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4"];
 
 /** Tracks one time-series: fetches history + appends live updates. */
@@ -616,9 +582,9 @@ const TREND_WINDOWS = [
   { label: "1h",  sec: 3600 },
 ];
 
-function TrendWidget({ w }: { w: Widget }) {
-  const cfgDuration = (w.config?.duration as number) ?? 300;
-  const [windowSec, setWindowSec] = useState(cfgDuration);
+function TrendWidget({ w }: WP<"trend">) {
+  const p = w.props ?? {};
+  const [windowSec, setWindowSec] = useState(p.duration ?? 300);
   const [paused, setPaused]       = useState(false);
   const [pausedAt, setPausedAt]   = useState(0);
   const [panOffsetMs, setPanOffsetMs] = useState(0);
@@ -630,10 +596,9 @@ function TrendWidget({ w }: { w: Widget }) {
 
   const duration = windowSec * 1000;
 
-  // Build series list: config.tags[] for multi-series, or fall back to w.binding.
-  const cfgTags = w.config?.tags as TrendSeries[] | undefined;
-  const series: TrendSeries[] = cfgTags?.length ? cfgTags
-    : w.binding ? [{ binding: w.binding, color: SERIES_COLORS[0]! }] : [];
+  // Series: props.tags for multi-series, or the widget's value tag.
+  const series: TrendSeries[] = p.tags?.length ? p.tags
+    : w.bindings?.value ? [{ binding: w.bindings.value, color: SERIES_COLORS[0]! }] : [];
 
   // Fixed-count hooks — up to 6 series.
   const s0 = useSeries(series[0]?.binding, duration);
@@ -645,20 +610,18 @@ function TrendWidget({ w }: { w: Widget }) {
   const allPts = [s0, s1, s2, s3, s4, s5].slice(0, series.length);
   const flat = allPts.flat();
 
-  const liveMax = flat.length ? Math.max(...flat.map((p) => p.ts)) : Date.now();
+  const liveMax = flat.length ? Math.max(...flat.map((q) => q.ts)) : Date.now();
   const tMax = (paused ? pausedAt : liveMax) - panOffsetMs;
   const tMin = tMax - duration;
 
-  const refLines = (w.config?.refLines as RefLine[]) ?? [];
-  const xFormat = (w.config?.xFormat as string) ?? "time";
+  const refLines = p.refLines ?? [];
+  const xFormat = p.xFormat ?? "time";
 
   // Per-series Y scales — each series can have its own yMin/yMax
   const yScales = allPts.map((pts, i) => {
     const s = series[i]!;
-    const cfgMin = w.config?.min as number | undefined;
-    const cfgMax = w.config?.max as number | undefined;
-    const lo = s.yMin ?? cfgMin ?? (pts.length ? Math.min(...pts.map((p) => p.v)) : 0);
-    const hi = s.yMax ?? cfgMax ?? (pts.length ? Math.max(...pts.map((p) => p.v)) : 100);
+    const lo = s.yMin ?? p.min ?? (pts.length ? Math.min(...pts.map((q) => q.v)) : 0);
+    const hi = s.yMax ?? p.max ?? (pts.length ? Math.max(...pts.map((q) => q.v)) : 100);
     return { lo, hi, range: (hi - lo) || 1 };
   });
 
@@ -667,13 +630,13 @@ function TrendWidget({ w }: { w: Widget }) {
   const toYi  = (v: number, i: number) => { const { lo, range } = yScales[i] ?? { lo: 0, range: 1 }; return 100 - (v - lo) / range * 100; };
 
   const toPolyline = (pts: Sample[], i: number) => pts.length < 2 ? "" :
-    pts.filter((p) => p.ts >= tMin - duration * 0.05 && p.ts <= tMax + duration * 0.05)
-      .map((p) => `${toX(p.ts).toFixed(2)},${toYi(p.v, i).toFixed(2)}`).join(" ");
+    pts.filter((q) => q.ts >= tMin - duration * 0.05 && q.ts <= tMax + duration * 0.05)
+      .map((q) => `${toX(q.ts).toFixed(2)},${toYi(q.v, i).toFixed(2)}`).join(" ");
 
   const toFillPoly = (pts: Sample[], i: number) => {
-    const vis = pts.filter((p) => p.ts >= tMin - duration * 0.05 && p.ts <= tMax + duration * 0.05);
+    const vis = pts.filter((q) => q.ts >= tMin - duration * 0.05 && q.ts <= tMax + duration * 0.05);
     if (vis.length < 2) return "";
-    const line = vis.map((p) => `${toX(p.ts).toFixed(2)},${toYi(p.v, i).toFixed(2)}`).join(" ");
+    const line = vis.map((q) => `${toX(q.ts).toFixed(2)},${toYi(q.v, i).toFixed(2)}`).join(" ");
     return `${toX(vis[0]!.ts).toFixed(2)},100 ${line} ${toX(vis[vis.length-1]!.ts).toFixed(2)},100`;
   };
 
@@ -681,7 +644,7 @@ function TrendWidget({ w }: { w: Widget }) {
   const hoverTime = hoverFrac != null ? tMin + hoverFrac * duration : null;
   const nearestPt = (pts: Sample[]) => {
     if (hoverTime == null || !pts.length) return null;
-    return pts.reduce((b, p) => Math.abs(p.ts - hoverTime!) < Math.abs(b.ts - hoverTime!) ? p : b);
+    return pts.reduce((b, q) => Math.abs(q.ts - hoverTime!) < Math.abs(b.ts - hoverTime!) ? q : b);
   };
 
   // X-axis tick formatter
@@ -818,7 +781,7 @@ function TrendWidget({ w }: { w: Widget }) {
             {/* Lines + live dot */}
             {allPts.map((pts, i) => {
               const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-              const vis   = pts.filter((p) => p.ts >= tMin && p.ts <= tMax);
+              const vis   = pts.filter((q) => q.ts >= tMin && q.ts <= tMax);
               const last  = vis.at(-1);
               return (
                 <g key={i}>
@@ -919,29 +882,30 @@ function TrendWidget({ w }: { w: Widget }) {
 
 // ── History log ────────────────────────────────────────────────────────────
 
-function HistoryLogWidget({ w }: { w: Widget }) {
+function HistoryLogWidget({ w }: WP<"historyLog">) {
   const { apiFetch } = useHost();
+  const tag = w.bindings?.value;
   const [rows, setRows] = useState<Array<{ ts: number; value: unknown }>>([]);
 
-  const pageSize = (w.config?.pageSize as number) ?? 100;
+  const pageSize = w.props?.pageSize ?? 100;
   useEffect(() => {
-    if (!w.binding) return;
+    if (!tag) return;
     const from = (Date.now() - 3600_000) * 1e6;
-    apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=${pageSize}`)
+    apiFetch(`/api/v1/history?path=${encodeURIComponent(tag)}&from=${from}&limit=${pageSize}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: unknown) => setRows(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [w.binding, pageSize, apiFetch]);
+  }, [tag, pageSize, apiFetch]);
 
   // A plain link can't send the token, so fetch the file and save it.
   const downloadCSV = async () => {
-    if (!w.binding) return;
+    if (!tag) return;
     const from = (Date.now() - 3600_000) * 1e6;
-    const r = await apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=10000&format=csv`).catch(() => null);
+    const r = await apiFetch(`/api/v1/history?path=${encodeURIComponent(tag)}&from=${from}&limit=10000&format=csv`).catch(() => null);
     if (!r?.ok) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(await r.blob());
-    a.download = `${w.binding.replace(/[:/]/g, "_")}.csv`;
+    a.download = `${tag.replace(/[:/]/g, "_")}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
@@ -970,12 +934,9 @@ function HistoryLogWidget({ w }: { w: Widget }) {
 
 // ── MultiState ─────────────────────────────────────────────────────────────
 
-type StateEntry = { value: number | string; label: string; color: string; textColor?: string };
-
-
-function MultiStateWidget({ w }: { w: Widget }) {
-  const t = useTag(w.binding);
-  const states: StateEntry[] = (w.config?.states as StateEntry[]) ?? DEFAULT_STATES;
+function MultiStateWidget({ w }: WP<"multiState">) {
+  const t = useTag(w.bindings?.value);
+  const states: StateEntry[] = w.props?.states ?? DEFAULT_STATES;
   const raw = t.value;
   // Match by loose equality (handles numeric string vs number).
   const match = states.find((s) => String(s.value) === String(raw));
@@ -1003,9 +964,24 @@ export function rewriteBinding(binding: string | undefined, params: Record<strin
   return binding.replace(/\{(\w+)\}/g, (_, key: string) => params[key] ?? `{${key}}`);
 }
 
-function FaceplateWidget({ w }: { w: Widget }) {
-  const fpId = w.config?.faceplateId as string | undefined;
-  const params = (w.config?.params ?? {}) as Record<string, string>;
+/** A faceplate's inner widget with the instance's parameters filled into its
+ *  tags (bindings, action tags and dynamics). */
+function resolveInner(fw: FaceplateWidget, params: Record<string, string>): Widget {
+  const rb = (b: string | undefined) => rewriteBinding(b, params);
+  const bindings: WidgetBindings | undefined = fw.bindings && {
+    value: rb(fw.bindings.value), visible: rb(fw.bindings.visible), color: rb(fw.bindings.color),
+  };
+  const events: WidgetEvents | undefined = fw.events && Object.fromEntries(
+    Object.entries(fw.events).map(([k, list]) => [k, (list as Action[]).map((a) => (a.tag ? { ...a, tag: rb(a.tag) } : a))]),
+  );
+  const dynamics = fw.dynamics?.map((d) => (d.binding ? { ...d, binding: rb(d.binding) } : d));
+  const { localId, ...rest } = fw;
+  return { ...rest, id: localId, bindings, events, dynamics } as Widget;
+}
+
+function FaceplateWidget({ w }: WP<"faceplate">) {
+  const fpId = w.props?.faceplateId;
+  const params = w.props?.params ?? {};
   const fp = useHost().useFaceplate(fpId);
 
   if (!fp) {
@@ -1024,16 +1000,13 @@ function FaceplateWidget({ w }: { w: Widget }) {
       </div>
       <div className="absolute inset-0 pt-5">
         {fp.widgets.map((fw) => {
-          const resolved = { ...fw, id: fw.localId, binding: rewriteBinding(fw.binding, params) } as Widget;
-          const Renderer = renderers[fw.type];
-          if (!Renderer) return null;
           const left   = `${((fw.x / (w.w || 1)) * 100).toFixed(1)}%`;
           const top    = `${((fw.y / (w.h || 1)) * 100).toFixed(1)}%`;
           const width  = `${((fw.w / (w.w || 1)) * 100).toFixed(1)}%`;
           const height = `${((fw.h / (w.h || 1)) * 100).toFixed(1)}%`;
           return (
             <div key={fw.localId} className="absolute" style={{ left, top, width, height }}>
-              <Renderer w={resolved} />
+              <WidgetRenderer w={resolveInner(fw, params)} />
             </div>
           );
         })}
@@ -1044,15 +1017,11 @@ function FaceplateWidget({ w }: { w: Widget }) {
 
 // ── Table ──────────────────────────────────────────────────────────────────
 
-type TableRow = { label: string; binding: string; unit?: string };
-
-const NO_ROWS: TableRow[] = [];
-
-function TableWidget({ w }: { w: Widget }) {
-  const rows: TableRow[] = (w.config?.rows as TableRow[]) ?? NO_ROWS;
-  const bindings = useMemo(() => rows.map((r) => r.binding).filter(Boolean), [rows]);
+function TableWidget({ w }: WP<"table">) {
+  const rows = w.props?.rows;
+  const bindings = useMemo(() => (rows ?? []).map((r) => r.binding).filter(Boolean), [rows]);
   const tags = useTags(bindings);
-  const showQuality = w.config?.showQuality as boolean | undefined;
+  const showQuality = w.props?.showQuality;
 
   return (
     <div className="h-full overflow-auto">
@@ -1065,10 +1034,10 @@ function TableWidget({ w }: { w: Widget }) {
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && (
+          {!rows?.length && (
             <tr><td colSpan={3} className="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td></tr>
           )}
-          {rows.map((row, i) => {
+          {(rows ?? []).map((row, i) => {
             const t = tags[row.binding];
             return (
               <tr key={i} className="border-b border-zinc-800/60 hover:bg-zinc-800/30">
@@ -1095,9 +1064,8 @@ function TableWidget({ w }: { w: Widget }) {
 
 // ── Image ──────────────────────────────────────────────────────────────────
 
-function ImageWidget({ w }: { w: Widget }) {
-  const src = (w.config?.src as string | undefined) ?? "";
-  const fit = imageFit(w.config);
+function ImageWidget({ w }: WP<"image">) {
+  const src = w.props?.src ?? "";
   // "lib:<id>" refers to the project image library.
   const libId = src.startsWith("lib:") ? src.slice(4) : "";
   const libSrc = useHost().useImage(libId);
@@ -1115,9 +1083,9 @@ function ImageWidget({ w }: { w: Widget }) {
   return (
     <img
       src={resolved}
-      alt={(w.config?.label as string) ?? ""}
+      alt={w.props?.label ?? ""}
       className="w-full h-full"
-      style={{ objectFit: fit }}
+      style={{ objectFit: w.props?.fit ?? "contain" }}
       draggable={false}
     />
   );
@@ -1125,9 +1093,9 @@ function ImageWidget({ w }: { w: Widget }) {
 
 // ── Symbol ─────────────────────────────────────────────────────────────────
 
-function SymbolWidget({ w }: { w: Widget }) {
-  const stroke = (w.config?.stroke as string | undefined) ?? "#d4d4d8";
-  const sym = SYMBOLS.find((s) => s.id === w.config?.symbolId);
+function SymbolWidget({ w }: WP<"symbol">) {
+  const stroke = w.props?.stroke ?? "#d4d4d8";
+  const sym = SYMBOLS.find((s) => s.id === w.props?.symbolId);
   if (!sym) {
     return (
       <div className="flex items-center justify-center h-full text-zinc-600 text-xs">?sym</div>
@@ -1138,10 +1106,8 @@ function SymbolWidget({ w }: { w: Widget }) {
       <div className="flex-1 min-h-0 flex items-center justify-center w-full">
         <SymbolSVG svg={sym.svg} stroke={stroke} size={0} />
       </div>
-      {(w.config?.label as string | undefined) && (
-        <span className="text-[9px] text-zinc-400 truncate max-w-full shrink-0">
-          {w.config!.label as string}
-        </span>
+      {w.props?.label && (
+        <span className="text-[9px] text-zinc-400 truncate max-w-full shrink-0">{w.props.label}</span>
       )}
     </div>
   );
@@ -1157,10 +1123,10 @@ const sevBg: Record<string, string> = {
 };
 const SEV_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
 
-function AlarmBannerWidget({ w }: { w: Widget }) {
+function AlarmBannerWidget({ w }: WP<"alarmBanner">) {
   const { alarms, ack } = useHost().useAlarms();
-  const maxRows = (w.config?.maxRows as number) ?? 5;
-  const showAcked = !!(w.config?.showAcked as boolean);
+  const maxRows = w.props?.maxRows ?? 5;
+  const showAcked = !!w.props?.showAcked;
   const visible = alarms
     .filter((a) => a.active || showAcked)
     .sort((a, b) => (SEV_ORDER[a.severity] ?? 9) - (SEV_ORDER[b.severity] ?? 9))
@@ -1190,7 +1156,7 @@ function AlarmBannerWidget({ w }: { w: Widget }) {
 
 // ── Renderer map ───────────────────────────────────────────────────────────
 
-const renderers: Record<string, React.ComponentType<{ w: Widget }>> = {
+const renderers: { [K in WidgetType]: React.ComponentType<WP<K>> } = {
   gauge:          GaugeWidget,
   numericDisplay: NumericDisplayWidget,
   textDisplay:    TextDisplayWidget,
@@ -1214,28 +1180,67 @@ const renderers: Record<string, React.ComponentType<{ w: Widget }>> = {
 export const RENDERED_TYPES: readonly string[] = Object.keys(renderers);
 
 function VisibilityGate({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const t = useTag(w.visibleBinding);
-  if (w.visibleBinding && !t.value) return null;
+  const t = useTag(w.bindings?.visible);
+  if (w.bindings?.visible && !t.value) return null;
   return <>{children}</>;
 }
 
-// ── Dynamics applicator ────────────────────────────────────────────────────
+// ── Actions ────────────────────────────────────────────────────────────────
 
-/** The value a toggle action writes: the opposite of the current one, as a
- *  bool for a bool tag and as 0/1 otherwise. */
+/** The value a toggle without on/off values writes: the opposite of the
+ *  current one, as a bool for a bool tag and as 0/1 otherwise. */
 export function toggled(cur: unknown): unknown {
   return typeof cur === "boolean" ? !cur : cur ? 0 : 1;
 }
 
+/** The write an action makes, given the current tag values, or undefined
+ *  for an action that writes nothing (navigate, openUrl, or no tag). */
+export function actionWrite(a: Action, w: Widget, values: Record<string, TagState>): WriteRequest | undefined {
+  const tag = a.tag || w.bindings?.value;
+  if (!tag) return undefined;
+  const cur = values[tag]?.value;
+  switch (a.type) {
+    case "write":
+      return { binding: tag, value: a.value, widgetId: w.id };
+    case "toggle": {
+      if (a.on === undefined && a.off === undefined) return { binding: tag, value: toggled(cur), widgetId: w.id };
+      const isOn = !!cur;
+      const value = isOn ? (a.off ?? 0) : (a.on ?? 1);
+      return { binding: tag, value, label: `${isOn ? "OFF" : "ON"} (${String(value)})`, widgetId: w.id };
+    }
+    case "increment":
+      return { binding: tag, value: (typeof cur === "number" ? cur : 0) + (a.step ?? 1), widgetId: w.id };
+    default:
+      return undefined;
+  }
+}
+
+/** Every tag a widget's actions read or write. */
+function actionTags(w: Widget): string[] {
+  const out: string[] = [];
+  for (const list of [w.events?.onClick, w.events?.onPress, w.events?.onRelease]) {
+    for (const a of list ?? []) {
+      const tag = a.tag || w.bindings?.value;
+      if (tag && (a.type === "write" || a.type === "toggle" || a.type === "increment")) out.push(tag);
+    }
+  }
+  return out;
+}
+
+// ── Dynamics and events ────────────────────────────────────────────────────
+
 const NO_DYNAMICS: Dynamic[] = [];
 
+/** Applies a widget's visual dynamics and runs its events: onPress and
+ *  onRelease write at once (momentary), onClick goes through requestWrite. */
 function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactNode }) {
   const dynamics = w.dynamics ?? NO_DYNAMICS;
   const host = useHost();
+  const pressed = useRef(false);
 
   const bindings = useMemo(() =>
-    [...new Set(dynamics.flatMap((d) => [d.binding, d.writeTo].filter(Boolean) as string[]))],
-    [dynamics]
+    [...new Set([...dynamics.map((d) => d.binding).filter(Boolean) as string[], ...actionTags(w)])],
+    [dynamics, w]
   );
   const tagVals = useTags(bindings);
 
@@ -1282,23 +1287,24 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
   }
 
   // Callbacks must be declared unconditionally before any early return (Rules of Hooks)
-  const hasClick    = dynamics.some((d) => d.kind === "onClick");
-  const hasPressed  = dynamics.some((d) => d.kind === "onPressed");
-  const hasReleased = dynamics.some((d) => d.kind === "onReleased");
-
-  const execAction = useCallback((kind: string) => {
-    for (const d of dynamics.filter((d) => d.kind === kind)) {
-      if (d.actionType === "navigate" && d.pageId) host.navigate(d.pageId);
-      else if (d.actionType === "openUrl" && d.url) window.open(d.url, "_blank", "noopener");
-      else if ((d.actionType === "writeValue" || d.actionType === "toggleValue" || d.actionType === "incrementValue") && d.writeTo) {
-        const cur = tagVals[d.writeTo]?.value;
-        const value = d.actionType === "toggleValue" ? toggled(cur)
-          : d.actionType === "incrementValue" ? (typeof cur === "number" ? cur : 0) + (d.step ?? 1)
-          : d.writeValue;
-        host.requestWrite({ binding: d.writeTo, value, widgetId: w.id });
+  const events = w.events;
+  const run = useCallback((actions: Action[] | undefined, momentary: boolean) => {
+    for (const a of actions ?? []) {
+      if (a.type === "navigate" && a.page) host.navigate(a.page);
+      else if (a.type === "openUrl" && a.url) window.open(a.url, "_blank", "noopener");
+      else {
+        const req = actionWrite(a, w, tagVals);
+        if (req) (momentary ? host.write : host.requestWrite)(req);
       }
     }
-  }, [dynamics, tagVals, host, w.id]);
+  }, [w, tagVals, host]);
+  const release = () => {
+    if (!pressed.current) return;
+    pressed.current = false;
+    run(events?.onRelease, true);
+  };
+  const hasClick = !!events?.onClick?.length;
+  const hasPress = !!(events?.onPress?.length || events?.onRelease?.length);
 
   if (hidden) return null;
 
@@ -1310,15 +1316,16 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
           transform: rotationDeg ? `rotate(${rotationDeg.toFixed(1)}deg)` : undefined,
           opacity: blinkDyn && !blinkVisible ? 0 : 1,
           pointerEvents: disabled ? "none" : undefined,
-          cursor: (hasClick || hasPressed) ? "pointer" : undefined,
+          cursor: (hasClick || hasPress) ? "pointer" : undefined,
           outline: ringColor ? `2px solid ${ringColor}` : undefined,
           outlineOffset: "-2px",
           borderRadius: "0.5rem",
           transition: "opacity 0.05s, outline-color 0.2s",
         }}
-        onClick={hasClick ? () => execAction("onClick") : undefined}
-        onPointerDown={hasPressed ? () => execAction("onPressed") : undefined}
-        onPointerUp={hasReleased ? () => execAction("onReleased") : undefined}
+        onClick={hasClick ? () => run(events?.onClick, false) : undefined}
+        onPointerDown={hasPress ? () => { pressed.current = true; run(events?.onPress, true); } : undefined}
+        onPointerUp={hasPress ? release : undefined}
+        onPointerLeave={hasPress ? release : undefined}
       >
         {disabled && <div className="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none" />}
         {children}
@@ -1328,7 +1335,7 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
 }
 
 export function WidgetRenderer({ w }: { w: Widget }) {
-  const R = renderers[w.type] ?? (() => (
+  const R = (renderers[w.type] as React.ComponentType<{ w: Widget }> | undefined) ?? (() => (
     <div className="flex items-center justify-center h-full text-zinc-500 text-xs">{w.type}</div>
   ));
   return (

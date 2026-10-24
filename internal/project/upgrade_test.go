@@ -14,6 +14,7 @@ import (
 func TestUpgradeGolden(t *testing.T) {
 	notes := map[string][]string{
 		"all-rules": {
+			`dropped the project's users list: users live on the runtime`,
 			`page "Main", widget g1 (gauge): dropped setting decimals, which no widget reads`,
 			`page "Main", widget g1 (gauge): dropped setting momentary, which this widget type does not have`,
 			`page "Main", widget b3 (button): dropped setting min, which this widget type does not have`,

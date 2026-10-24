@@ -1,16 +1,13 @@
 // One manifest per widget type, plus the frame settings every widget has.
 // Defaults here match what the widgets draw when a setting is unset.
 import type { WidgetType } from "@speths-screens/shared-types";
-import type { Field, WidgetManifest } from "./manifest";
+import type { BindingSlot, Field, WidgetManifest } from "./manifest";
 
 type Config = Record<string, unknown>;
 
-/** A titled group of settings in the properties panel. */
-export type SettingsGroup = { title: string; fields: Field[] };
-
-const isNavigate = (c: Config) => c.action === "navigate";
-const isWrite = (c: Config) => c.action !== "navigate";
-const isToggle = (c: Config) => isWrite(c) && c.momentary === false;
+/** A titled group of settings in the properties panel, with the tag slots
+ *  it edits shown first. */
+export type SettingsGroup = { title: string; slots?: BindingSlot[]; fields: Field[] };
 
 const range = (note?: string): Field[] => [
   { key: "min", label: "Min", kind: "number", blank: "auto", half: true, note },
@@ -66,21 +63,18 @@ export const MANIFESTS: WidgetManifest[] = [
     ...range(), unit,
     { key: "thresholds", label: "Fill color thresholds", kind: "list", item: thresholdItem, newItem: nextThreshold, empty: "No thresholds — default fill color" },
   ]),
+  // What a button does is its events; new buttons write 1 while pressed.
   widget("button", "Button", 3, 2, [
-    { key: "action", label: "Action", kind: "choice", default: "write", options: [{ value: "write" }, { value: "navigate" }] },
-    { key: "navigateTo", label: "Target page", kind: "page", showIf: isNavigate },
-    { key: "momentary", label: "Momentary (off: toggle)", kind: "boolean", default: true, showIf: isWrite },
-    { key: "onValue", label: "ON value", kind: "value", default: 1, half: true, showIf: isWrite },
-    { key: "offValue", label: "OFF value", kind: "value", default: 0, half: true, showIf: isWrite },
     { key: "btnVariant", label: "Variant", kind: "choice", default: "filled",
       options: ["filled", "outlined", "ghost", "flat", "industrial"].map((value) => ({ value })) },
     { key: "btnColor", label: "Color", kind: "choice", display: "swatches", default: "blue", options: BUTTON_SWATCHES },
     { key: "btnRounded", label: "Corners", kind: "choice", default: "md",
       options: ["none", "sm", "md", "lg", "full"].map((value) => ({ value })) },
     { key: "icon", label: "Icon (emoji or symbol)", kind: "text", placeholder: "e.g. ▶ 🔴 ⚙" },
-    { key: "toggleOnColor", label: "Toggle ON color", kind: "choice", display: "swatches", default: "green", options: BUTTON_SWATCHES, showIf: isToggle },
-    { key: "toggleOffColor", label: "Toggle OFF color", kind: "choice", display: "swatches", default: "zinc", options: BUTTON_SWATCHES, showIf: isToggle },
-  ]),
+    { key: "toggleOnColor", label: "Toggle ON color", kind: "choice", display: "swatches", default: "green", options: BUTTON_SWATCHES,
+      note: "Used when the button has a toggle action" },
+    { key: "toggleOffColor", label: "Toggle OFF color", kind: "choice", display: "swatches", default: "zinc", options: BUTTON_SWATCHES },
+  ], { defaults: { events: { onPress: [{ type: "write", value: 1 }], onRelease: [{ type: "write", value: 0 }] } } }),
   widget("setpoint", "Setpoint", 4, 2, [
     ...range(), unit,
     { key: "step", label: "Step", kind: "number", default: 1, min: 0.01, step: 0.1 },
@@ -103,7 +97,7 @@ export const MANIFESTS: WidgetManifest[] = [
     ] },
     ...range("Leave blank for auto-scale"),
     { key: "tags", label: "Series", kind: "list", max: 6,
-      seed: (w) => (w.binding ? [{ binding: w.binding, color: SERIES_COLORS[0]! }] : []),
+      seed: (w) => (w.bindings?.value ? [{ binding: w.bindings.value, color: SERIES_COLORS[0]! }] : []),
       item: [
         { key: "binding", label: "Tag", kind: "binding" },
         { key: "label", label: "Label", kind: "text", half: true },
@@ -121,7 +115,7 @@ export const MANIFESTS: WidgetManifest[] = [
       ],
       newItem: () => ({ value: 0, color: "#ef4444", label: "" }) },
   ]),
-  widget("numericInput", "Numeric In", 3, 2, [unit]),
+  widget("numericInput", "Numeric In", 3, 2, [...range("The runtime refuses writes outside it"), unit]),
   widget("textInput", "Text In", 3, 2, []),
   widget("historyLog", "History", 6, 4, [
     { key: "pageSize", label: "Rows to fetch", kind: "number", default: 100, min: 10, max: 500 },
@@ -162,8 +156,7 @@ export function manifestFor(type: string): WidgetManifest | undefined {
 
 /** Settings of the frame around every widget. */
 export const FRAME_SETTINGS: SettingsGroup[] = [
-  { title: "Frame border color", fields: [
-    { key: "colorBinding", label: "Source tag", kind: "binding", note: "Blank uses the widget's tag" },
+  { title: "Frame border color", slots: [{ name: "color", label: "Source tag (blank uses the widget's tag)" }], fields: [
     { key: "colorThresholds", label: "Thresholds", kind: "list", item: thresholdItem, newItem: nextThreshold, empty: "No thresholds — default border" },
   ] },
   { title: "Appearance", fields: [
@@ -186,7 +179,3 @@ export const FRAME_SETTINGS: SettingsGroup[] = [
     { key: "textColor", label: "Text color", kind: "color", optional: true, default: "#e4e4e7" },
   ] },
 ];
-
-/** WidgetConfig keys in schema.json that no widget reads. Schema v2 (Phase 2
- *  step 3) drops them; until then the panel does not offer them. */
-export const UNUSED_CONFIG_KEYS = ["format", "decimals", "placeholder"] as const;

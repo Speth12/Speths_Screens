@@ -3,7 +3,7 @@
 // palette and properties panel are built from them. schema.json stays the
 // contract for the settings themselves; a manifest only adds how to edit them
 // (tests hold the two together).
-import type { Widget, WidgetType } from "@speths-screens/shared-types";
+import type { Widget, WidgetEvents, WidgetType } from "@speths-screens/shared-types";
 
 type Config = Record<string, unknown>;
 
@@ -59,8 +59,9 @@ export type Field = FieldBase & (
 
 export type FieldKind = Field["kind"];
 
-/** A tag the widget reads. In the v1 format only "value" exists: w.binding. */
-export type BindingSlot = { name: "value"; label: string };
+/** A tag slot of a widget (w.bindings). Every widget has visible and color;
+ *  a manifest lists value when the widget shows or writes a tag. */
+export type BindingSlot = { name: "value" | "visible" | "color"; label: string };
 
 export type WidgetEvent = "onClick" | "onPress" | "onRelease";
 
@@ -73,4 +74,6 @@ export interface WidgetManifest {
   bindings: BindingSlot[];
   events: WidgetEvent[];
   settings: Field[];
+  /** What a widget added from the palette starts with. */
+  defaults?: { props?: Record<string, unknown>; events?: WidgetEvents };
 }

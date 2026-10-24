@@ -104,7 +104,11 @@ func TestParseWidget(t *testing.T) {
 	if w.Type != "gauge" {
 		t.Errorf("type: got %q want gauge", w.Type)
 	}
-	if w.Binding == nil || *w.Binding != "opcua:ns=2;s=PLCnext.iTest" {
-		t.Errorf("binding: got %v", w.Binding)
+	// A v1 file: Parse upgrades its binding to bindings.value.
+	if w.Bindings == nil || w.Bindings.Value == nil || *w.Bindings.Value != "opcua:ns=2;s=PLCnext.iTest" {
+		t.Errorf("bindings: got %+v", w.Bindings)
+	}
+	if p.SchemaVersion != CurrentSchemaVersion {
+		t.Errorf("schemaVersion %d, want %d", p.SchemaVersion, CurrentSchemaVersion)
 	}
 }

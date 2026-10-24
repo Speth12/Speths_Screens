@@ -5,6 +5,7 @@ import { PositionEditor } from "./Canvas";
 import { FRAME_SETTINGS, manifestFor } from "@speths-screens/widgets";
 import { BindingInput, LiveTagPreview } from "./BindingInput";
 import { SettingsFields, inp } from "./SettingsEditor";
+import { EventsEditor } from "./EventsEditor";
 
 
 function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string } }) {
@@ -65,7 +66,7 @@ function PageProperties({ page }: { page: { id: string; name: string; background
 }
 
 export function Properties() {
-  const { project, activePageId, selectedWidgetId, updateWidget } = useProject();
+  const { project, activePageId, selectedWidgetId, updateWidget, setWidgetTag } = useProject();
   const page = project.pages.find((p) => p.id === activePageId);
   const w = page?.widgets.find((x) => x.id === selectedWidgetId);
 
@@ -75,15 +76,23 @@ export function Properties() {
       : <div className="p-3 text-xs text-zinc-500">No page selected.</div>;
   }
 
-  const config = w.config ?? {};
-  const setConfig = (k: string, v: unknown) => {
-    const next = { ...config };
+  const props: Record<string, unknown> = w.props ?? {};
+  const setProp = (k: string, v: unknown) => {
+    const next = { ...props };
     if (v === undefined) delete next[k];
     else next[k] = v;
-    updateWidget(page.id, w.id, { config: next });
+    updateWidget(page.id, w.id, { props: Object.keys(next).length ? next : undefined });
   };
   const manifest = manifestFor(w.type);
   const readsTag = manifest ? manifest.bindings.some((b) => b.name === "value") : true;
+  const tagInput = (slot: "value" | "visible" | "color", placeholder = "ds:tagPath or ns:path") => (
+    <BindingInput
+      value={w.bindings?.[slot] ?? ""}
+      onChange={(v) => setWidgetTag(page.id, w.id, slot, v)}
+      placeholder={placeholder}
+      className={`${inp} font-mono w-full`}
+    />
+  );
 
   return (
     <div className="p-3 space-y-4 overflow-auto">
@@ -98,37 +107,43 @@ export function Properties() {
       {readsTag && (
         <div>
           <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{manifest?.bindings[0]?.label ?? "Binding"}</div>
-          <BindingInput
-            value={w.binding ?? ""}
-            onChange={(v) => updateWidget(page.id, w.id, { binding: v || undefined })}
-            placeholder="ds:tagPath or ns:path"
-            className={`${inp} font-mono w-full`}
-          />
+          {tagInput("value")}
           <div className="text-[10px] text-zinc-600 mt-0.5">Drag tag from browser → widget</div>
-          <LiveTagPreview binding={w.binding} />
+          <LiveTagPreview binding={w.bindings?.value} />
         </div>
       )}
 
       {/* Settings from the widget's manifest */}
       {manifest && manifest.settings.length > 0 && (
         <SettingsGroupBox title={`${manifest.label} settings`}>
-          <SettingsFields fields={manifest.settings} config={config} set={setConfig} w={w} />
+          <SettingsFields fields={manifest.settings} config={props} set={setProp} w={w} />
         </SettingsGroupBox>
       )}
 
-      {/* Dynamics */}
+      {/* Events: what the widget does when touched */}
+      <EventsEditor w={w} onChange={(events) => updateWidget(page.id, w.id, { events })} />
+
+      {/* Dynamics: tag-driven looks */}
       <DynamicsEditor w={w} pageId={page.id} />
 
       {/* Layout */}
       <div>
         <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Layout</div>
         <PositionEditor pageId={page.id} widgetId={w.id} />
+        <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
+        {tagInput("visible", "blank: always visible")}
       </div>
 
       {/* Frame settings every widget has */}
       {FRAME_SETTINGS.map((g) => (
         <SettingsGroupBox key={g.title} title={g.title}>
-          <SettingsFields fields={g.fields} config={config} set={setConfig} w={w} />
+          {g.slots?.map((slot) => (
+            <div key={slot.name} className="mb-2">
+              <div className="text-[10px] text-zinc-500 mb-0.5">{slot.label}</div>
+              {tagInput(slot.name)}
+            </div>
+          ))}
+          <SettingsFields fields={g.fields} config={props} set={setProp} w={w} />
         </SettingsGroupBox>
       ))}
     </div>
@@ -146,38 +161,26 @@ function SettingsGroupBox({ title, children }: { title: string; children: React.
 
 // ── Dynamics editor ───────────────────────────────────────────────────────
 
-const DYN_KINDS: { kind: Dynamic["kind"]; label: string; group: "property" | "action" | "script" }[] = [
+// Tag-driven looks. What a widget does when touched is its events (EventsEditor).
+const DYN_KINDS: { kind: Dynamic["kind"]; label: string; group: "property" | "script" }[] = [
   { kind: "visibility", label: "Visibility",   group: "property" },
   { kind: "colorFill",  label: "Color / Fill", group: "property" },
   { kind: "blink",      label: "Blink",        group: "property" },
   { kind: "rotation",   label: "Rotation",     group: "property" },
   { kind: "disable",    label: "Disable",      group: "property" },
   { kind: "script",     label: "Script / Expression", group: "script" },
-  { kind: "onClick",    label: "On Click",     group: "action"   },
-  { kind: "onPressed",  label: "On Pressed",   group: "action"   },
-  { kind: "onReleased", label: "On Released",  group: "action"   },
-];
-
-const ACTION_TYPES: { value: string; label: string }[] = [
-  { value: "writeValue",    label: "Write value"    },
-  { value: "toggleValue",   label: "Toggle value"   },
-  { value: "incrementValue",label: "Increment value"},
-  { value: "navigate",      label: "Navigate page"  },
-  { value: "openUrl",       label: "Open URL"       },
 ];
 
 function uid() { return Math.random().toString(36).slice(2, 8); }
 
-function DynamicCard({ d, onUpdate, onRemove, pages, inp, numInp }: {
+function DynamicCard({ d, onUpdate, onRemove, inp, numInp }: {
   d: Dynamic;
   onUpdate: (patch: Partial<Dynamic>) => void;
   onRemove: () => void;
-  pages: { id: string; name: string }[];
   inp: string; numInp: string;
 }) {
   const [open, setOpen] = useState(true);
   const meta = DYN_KINDS.find((k) => k.kind === d.kind);
-  const isAction = meta?.group === "action";
 
   return (
     <div className="border border-zinc-700/60 rounded-lg overflow-hidden">
@@ -196,7 +199,7 @@ function DynamicCard({ d, onUpdate, onRemove, pages, inp, numInp }: {
       {open && (
         <div className="p-2 space-y-2 bg-zinc-900/40">
           {/* Property dynamics — binding */}
-          {!isAction && (
+          {d.kind !== "script" && (
             <div>
               <div className="text-[10px] text-zinc-500 mb-0.5">Binding</div>
               <BindingInput
@@ -324,65 +327,6 @@ function DynamicCard({ d, onUpdate, onRemove, pages, inp, numInp }: {
             </div>
           )}
 
-          {/* action dynamics */}
-          {isAction && (
-            <>
-              <div>
-                <div className="text-[10px] text-zinc-500 mb-0.5">Action</div>
-                <select value={d.actionType ?? ""}
-                  onChange={(e) => onUpdate({ actionType: e.target.value as Dynamic["actionType"] || undefined })}
-                  className={inp}>
-                  <option value="">— choose —</option>
-                  {ACTION_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
-                </select>
-              </div>
-
-              {d.actionType === "navigate" && (
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">Target page</div>
-                  <select value={d.pageId ?? ""} onChange={(e) => onUpdate({ pageId: e.target.value })} className={inp}>
-                    <option value="">— select —</option>
-                    {pages.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {d.actionType === "openUrl" && (
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">URL</div>
-                  <input value={d.url ?? ""} onChange={(e) => onUpdate({ url: e.target.value })} placeholder="https://…" className={inp} />
-                </div>
-              )}
-
-              {(d.actionType === "writeValue" || d.actionType === "toggleValue" || d.actionType === "incrementValue") && (
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">Write to binding</div>
-                  <BindingInput
-                    value={d.writeTo ?? ""}
-                    onChange={(v) => onUpdate({ writeTo: v || undefined })}
-                    placeholder="ds:tagPath or ns:path"
-                    className={`${inp} font-mono text-[10px] w-full`}
-                  />
-                </div>
-              )}
-
-              {d.actionType === "writeValue" && (
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">Value</div>
-                  <input value={String(d.writeValue ?? "")}
-                    onChange={(e) => onUpdate({ writeValue: isNaN(Number(e.target.value)) ? e.target.value : Number(e.target.value) })}
-                    placeholder="0" className={numInp} />
-                </div>
-              )}
-
-              {d.actionType === "incrementValue" && (
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">Step</div>
-                  <input type="number" value={d.step ?? 1} onChange={(e) => onUpdate({ step: Number(e.target.value) })} className={numInp} />
-                </div>
-              )}
-            </>
-          )}
         </div>
       )}
     </div>
@@ -390,10 +334,9 @@ function DynamicCard({ d, onUpdate, onRemove, pages, inp, numInp }: {
 }
 
 function DynamicsEditor({ w, pageId }: { w: import("../store/projectStore").Widget; pageId: string }) {
-  const { project, updateWidget } = useProject();
+  const { updateWidget } = useProject();
   const [addOpen, setAddOpen] = useState(false);
   const dynamics = w.dynamics ?? [];
-  const pages = project.pages.map((p) => ({ id: p.id, name: p.name }));
 
   const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
   const numInp = `${inp} font-mono`;
@@ -433,12 +376,6 @@ function DynamicsEditor({ w, pageId }: { w: import("../store/projectStore").Widg
                 <button key={k.kind} onClick={() => add(k.kind)}
                   className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-700 text-zinc-200">{k.label}</button>
               ))}
-              <div className="border-t border-zinc-700 my-1" />
-              <div className="text-[9px] text-zinc-500 px-3 py-1 uppercase tracking-wider">Action</div>
-              {DYN_KINDS.filter((k) => k.group === "action").map((k) => (
-                <button key={k.kind} onClick={() => add(k.kind)}
-                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-700 text-zinc-200">{k.label}</button>
-              ))}
             </div>
           )}
         </div>
@@ -450,7 +387,7 @@ function DynamicsEditor({ w, pageId }: { w: import("../store/projectStore").Widg
         <div className="space-y-2">
           {dynamics.map((d) => (
             <DynamicCard key={d.id} d={d} onUpdate={(p) => update(d.id, p)} onRemove={() => remove(d.id)}
-              pages={pages} inp={inp} numInp={numInp} />
+              inp={inp} numInp={numInp} />
           ))}
         </div>
       )}

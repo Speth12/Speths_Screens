@@ -3,13 +3,36 @@
  * Generates a single self-contained HTML file containing the project JSON
  * and a minimal vanilla-JS runtime that connects to the Speth's Screens runtime.
  */
-import type { Project } from "./projectStore";
+import type { Project, Widget } from "./projectStore";
 
 /** The active alarms in a GET /api/v1/alarms reply (an array of events).
  *  The exported page embeds this function's source. */
 export function activeAlarms(data: unknown): { severity: string; message: string }[] {
   const events = Array.isArray(data) ? data : [];
   return events.filter((a) => a && typeof a === "object" && a.active === true);
+}
+
+/** The view of a widget the exported page's script reads: its value tag as
+ *  binding, its props as config, and a button's events as the action
+ *  settings the script knows. The page embeds this function's source; the
+ *  export is rebuilt on the widget library in Phase 2 step 7. */
+export function exportView(w: Widget): Widget & { binding?: string; config: Record<string, unknown> } {
+  const config: Record<string, unknown> = { ...(w.props ?? {}) };
+  const click = w.events?.onClick?.[0];
+  if (w.type === "button") {
+    if (click?.type === "navigate") {
+      config.action = "navigate";
+      config.navigateTo = click.page;
+    } else if (click?.type === "toggle") {
+      config.momentary = false;
+      config.onValue = click.on ?? 1;
+      config.offValue = click.off ?? 0;
+    } else {
+      config.onValue = w.events?.onPress?.[0]?.value ?? 1;
+      config.offValue = w.events?.onRelease?.[0]?.value ?? 0;
+    }
+  }
+  return { ...w, binding: w.bindings?.value, config };
 }
 
 export function generateStandaloneHtml(project: Project, targetUrl: string): string {
@@ -55,6 +78,8 @@ input[type=range]{width:100%;accent-color:#3b82f6}
 </div>
 <script>
 const PROJECT = ${projectJson};
+const exportView = ${exportView.toString()};
+PROJECT.pages.forEach(p => { p.widgets = p.widgets.map(exportView); });
 
 // ── State ─────────────────────────────────────────────────────────────────
 let activePage = PROJECT.pages[0]?.id ?? "";

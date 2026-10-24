@@ -83,11 +83,11 @@ function RuleForm({ initial, onSave, onCancel }: {
         <select value={binding} onChange={(e) => setBinding(e.target.value)} className={`mt-0.5 ${inputCls}`}>
           <option value="">— pick a tag —</option>
           {project.pages.flatMap((p) =>
-            p.widgets.filter((w) => w.binding).map((w) => (
-              <option key={w.id} value={w.binding!}>{w.binding}</option>
+            p.widgets.filter((w) => w.bindings?.value).map((w) => (
+              <option key={w.id} value={w.bindings!.value!}>{w.bindings!.value}</option>
             ))
           )}
-          {binding && !project.pages.some((p) => p.widgets.some((w) => w.binding === binding)) && (
+          {binding && !project.pages.some((p) => p.widgets.some((w) => w.bindings?.value === binding)) && (
             <option value={binding}>{binding}</option>
           )}
         </select>

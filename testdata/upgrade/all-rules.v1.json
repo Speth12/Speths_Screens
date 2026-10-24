@@ -2,6 +2,7 @@
   "version": "0.1.0",
   "name": "Every v1-to-v2 upgrade rule",
   "datasources": [{ "id": "plc", "label": "PLC", "type": "rest", "config": { "endpoint": "https://10.0.0.210" } }],
+  "users": [{ "id": "u1", "name": "op", "role": "operator", "passwordHash": "$2a$10$abcdefghijklmnopqrstuv" }],
   "pages": [
     {
       "id": "p1",

@@ -24,7 +24,7 @@ export function SymbolLibrary() {
       id: newWidgetId(),
       type: "symbol",
       x: 0, y: 0, w: 3, h: 3,
-      config: { symbolId: id, label: sym?.name ?? id, stroke: "#d4d4d8" },
+      props: { symbolId: id, label: sym?.name ?? id, stroke: "#d4d4d8" },
     });
   };
 

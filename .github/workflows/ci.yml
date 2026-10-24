@@ -49,7 +49,7 @@ jobs:
       - run: npm ci
       - run: npm run gen:types
       - name: Generated types match schema.json
-        run: git diff --exit-code -- internal/project/types.go packages/shared-types/src/project.ts
+        run: git diff --exit-code -- internal/project/types.go internal/project/widgets.go packages/shared-types/src/project.ts packages/shared-types/src/widgets.ts
 
   secrets:
     runs-on: ubuntu-latest

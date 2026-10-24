@@ -20,39 +20,39 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 	}{
 		{
 			name:   "widget binding",
-			p:      project.Project{Pages: []project.Page{{Widgets: []project.Widget{{Binding: strp("plc:A")}}}}},
+			p:      project.Project{Pages: []project.Page{{Widgets: []project.Widget{{Bindings: &project.WidgetBindings{Value: strp("plc:A")}}}}}},
 			source: SourceScreens, want: "plc:A",
 		},
 		{
 			name:   "visible binding",
-			p:      project.Project{Pages: []project.Page{{Widgets: []project.Widget{{VisibleBinding: strp("plc:V")}}}}},
+			p:      project.Project{Pages: []project.Page{{Widgets: []project.Widget{{Bindings: &project.WidgetBindings{Visible: strp("plc:V")}}}}}},
 			source: SourceScreens, want: "plc:V",
 		},
 		{
 			name: "color binding",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Config: &project.WidgetConfig{ColorBinding: strp("plc:C")},
+				Bindings: &project.WidgetBindings{Color: strp("plc:C")},
 			}}}}},
 			source: SourceScreens, want: "plc:C",
 		},
 		{
 			name: "trend pen",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Config: &project.WidgetConfig{Tags: []project.TrendSeries{{Binding: "plc:T", Color: "#fff"}}},
+				Props: &project.WidgetProps{Tags: []project.TrendSeries{{Binding: "plc:T", Color: "#fff"}}},
 			}}}}},
 			source: SourceScreens, want: "plc:T",
 		},
 		{
 			name: "table row",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Config: &project.WidgetConfig{Rows: []project.TableRow{{Label: "r", Binding: "plc:R"}}},
+				Props: &project.WidgetProps{Rows: []project.TableRow{{Label: "r", Binding: "plc:R"}}},
 			}}}}},
 			source: SourceScreens, want: "plc:R",
 		},
 		{
 			name: "faceplate instance param",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Config: &project.WidgetConfig{Params: map[string]string{"state": "plc:P"}},
+				Props: &project.WidgetProps{Params: map[string]string{"state": "plc:P"}},
 			}}}}},
 			source: SourceScreens, want: "plc:P",
 		},
@@ -64,16 +64,24 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			source: SourceScreens, want: "plc:D",
 		},
 		{
-			name: "dynamic writeTo",
+			name: "action tag",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Dynamics: []project.DynamicElement{{ID: "d", Kind: project.OnClick, WriteTo: strp("plc:W")}},
+				Events: &project.WidgetEvents{OnClick: []project.Action{{Type: project.Write, Tag: strp("plc:W")}}},
 			}}}}},
 			source: SourceScreens, want: "plc:W",
 		},
 		{
+			name: "action on the widget's own tag",
+			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
+				Type: project.Button, Bindings: &project.WidgetBindings{Value: strp("plc:B")},
+				Events: &project.WidgetEvents{OnPress: []project.Action{{Type: project.Write}}},
+			}}}}},
+			source: SourceScreens, want: "plc:B",
+		},
+		{
 			name: "fixed binding inside a faceplate",
 			p: project.Project{Faceplates: []project.FaceplateElement{{
-				Widgets: []project.FaceplateWidget{{Binding: strp("plc:F")}},
+				Widgets: []project.FaceplateWidget{{Bindings: &project.WidgetBindings{Value: strp("plc:F")}}},
 			}}},
 			source: SourceScreens, want: "plc:F",
 		},

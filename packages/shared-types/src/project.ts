@@ -35,6 +35,10 @@ export interface Project {
     pin?:     string;
     recipes?: Recipe[];
     /**
+     * Project file format. A file without it is format 1 and is upgraded when opened
+     */
+    schemaVersion: number;
+    /**
      * Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
      * in the project
      */
@@ -200,260 +204,64 @@ export interface FaceplateParam {
  * A widget inside a faceplate. Same as Widget, but identified by localId
  */
 export interface FaceplateWidget {
+    bindings?: WidgetBindings;
+    dynamics?: Dynamic[];
+    events?:   WidgetEvents;
     /**
-     * May contain {param} placeholders
+     * IDE-only: widgets with the same groupId move together
      */
-    binding?:        string;
-    config?:         WidgetConfig;
-    dynamics?:       Dynamic[];
-    groupId?:        string;
-    h:               number;
-    localId:         string;
-    locked?:         boolean;
-    type:            WidgetType;
-    visibleBinding?: string;
-    w:               number;
-    x:               number;
-    y:               number;
+    groupId?: string;
+    /**
+     * Height in grid units
+     */
+    h:       number;
+    localId: string;
+    /**
+     * IDE-only: widget cannot be moved or resized
+     */
+    locked?: boolean;
+    /**
+     * This widget type's settings (see TypedProps)
+     */
+    props?: FaceplateWidgetProps;
+    type:   WidgetType;
+    /**
+     * Width in grid units
+     */
+    w: number;
+    /**
+     * Grid column
+     */
+    x: number;
+    /**
+     * Grid row
+     */
+    y: number;
 }
 
 /**
- * Per-widget configuration. Fields depend on type.
+ * The tags a widget reads, by slot. Values are ds:path or ns:path (faceplate widgets may
+ * use {param})
  */
-export interface WidgetConfig {
-    action?:      ButtonAction;
-    bgColor?:     string;
-    borderColor?: string;
-    btnColor?:    ButtonColor;
-    btnRounded?:  ButtonRounded;
-    btnVariant?:  ButtonVariant;
+export interface WidgetBindings {
     /**
-     * Tag path for color threshold evaluation
+     * Tag the frame's color thresholds read; missing means the value tag
      */
-    colorBinding?: string;
+    color?: string;
     /**
-     * Color threshold rules applied to colorBinding
+     * The tag the widget shows or writes
      */
-    colorThresholds?: Threshold[];
+    value?: string;
     /**
-     * Decimal places. Found in existing projects; not read by either app yet
+     * BOOL tag: the widget is hidden while it is 0/false
      */
-    decimals?: number;
-    /**
-     * Trend history window in seconds
-     */
-    duration?: number;
-    /**
-     * Faceplate widget: id of the faceplate to show
-     */
-    faceplateId?: string;
-    /**
-     * LED color when false
-     */
-    falseColor?: string;
-    /**
-     * LED text when false
-     */
-    falseLabel?: string;
-    /**
-     * Image object-fit, as set by the properties panel
-     */
-    fit?:      ImageFit;
-    fontBold?: boolean;
-    /**
-     * mono | sans | serif; empty means the theme font
-     */
-    fontFamily?: string;
-    fontItalic?: boolean;
-    /**
-     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-     */
-    fontSize?:      string;
-    fontUnderline?: boolean;
-    /**
-     * printf-style format, e.g. '%.2f'
-     */
-    format?: string;
-    /**
-     * Button icon (emoji or short text)
-     */
-    icon?:  string;
-    label?: string;
-    max?:   number;
-    /**
-     * AlarmBanner max visible rows
-     */
-    maxRows?: number;
-    min?:     number;
-    /**
-     * Button: true=momentary, false=toggle
-     */
-    momentary?: boolean;
-    /**
-     * Button navigate: target page id
-     */
-    navigateTo?: string;
-    noPadding?:  boolean;
-    /**
-     * Image object-fit, as set when dropped from the image library
-     */
-    objectFit?: ImageFit;
-    /**
-     * Button off/release value
-     */
-    offValue?: any;
-    /**
-     * Button on-press value
-     */
-    onValue?: any;
-    /**
-     * HistoryLog rows per page
-     */
-    pageSize?: number;
-    /**
-     * Faceplate widget: parameter name → binding
-     */
-    params?: { [key: string]: string };
-    /**
-     * TextInput/NumericInput placeholder
-     */
-    placeholder?: string;
-    /**
-     * Trend horizontal reference lines
-     */
-    refLines?: RefLine[];
-    /**
-     * Table widget rows
-     */
-    rows?: TableRow[];
-    /**
-     * AlarmBanner: show acknowledged alarms
-     */
-    showAcked?: boolean;
-    /**
-     * Show the tag quality indicator
-     */
-    showQuality?: boolean;
-    /**
-     * Image: data-URL, URL or 'lib:<imageId>'
-     */
-    src?: string;
-    /**
-     * MultiState value→label→color map
-     */
-    states?: StateEntry[];
-    /**
-     * TextDisplay: fixed text shown instead of a tag value
-     */
-    staticText?: string;
-    /**
-     * Setpoint slider step
-     */
-    step?: number;
-    /**
-     * Symbol: stroke color
-     */
-    stroke?: string;
-    /**
-     * Symbol: id from a symbol pack
-     */
-    symbolId?: string;
-    /**
-     * Trend multi-series config
-     */
-    tags?:       TrendSeries[];
-    textAlign?:  TextAlign;
-    textColor?:  string;
-    thresholds?: Threshold[];
-    /**
-     * Toggle button color when off
-     */
-    toggleOffColor?: string;
-    /**
-     * Toggle button color when on
-     */
-    toggleOnColor?: string;
-    /**
-     * LED color when true
-     */
-    trueColor?: string;
-    /**
-     * LED text when true
-     */
-    trueLabel?: string;
-    unit?:      string;
-    xFormat?:   TrendXFormat;
-    [property: string]: any;
-}
-
-export type ButtonAction = "write" | "navigate";
-
-export type ButtonColor = "blue" | "green" | "red" | "amber" | "zinc" | "purple" | "orange" | "white";
-
-export type ButtonRounded = "none" | "sm" | "md" | "lg" | "full";
-
-export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
-
-export interface Threshold {
-    /**
-     * CSS color, e.g. '#22c55e'
-     */
-    color: string;
-    /**
-     * Optional upper bound (exclusive). If set, matches value >= value && value < toValue. If
-     * missing, matches value >= value (open-ended, highest match wins)
-     */
-    toValue?: number;
-    value:    number;
+    visible?: string;
 }
 
 /**
- * Image object-fit, as set by the properties panel
- *
- * Image object-fit, as set when dropped from the image library
- */
-export type ImageFit = "contain" | "cover" | "fill";
-
-export interface RefLine {
-    color:  string;
-    label?: string;
-    value:  number;
-}
-
-export interface TableRow {
-    binding: string;
-    label:   string;
-    unit?:   string;
-}
-
-export interface StateEntry {
-    color:      string;
-    label:      string;
-    textColor?: string;
-    value:      any;
-}
-
-export interface TrendSeries {
-    binding: string;
-    color:   string;
-    fill?:   boolean;
-    label?:  string;
-    yMax?:   number;
-    yMin?:   number;
-}
-
-export type TextAlign = "left" | "center" | "right";
-
-/**
- * Trend X-axis label format
- */
-export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
-
-/**
- * A dynamic behavior on a widget. Which fields apply depends on kind
+ * A tag-driven look on a widget (actions are events). Which fields apply depends on kind
  */
 export interface Dynamic {
-    actionType?: DynamicActionType;
     /**
      * Tag the dynamic reacts to
      */
@@ -495,15 +303,7 @@ export interface Dynamic {
     /**
      * rotation: tag value mapped to minAngle
      */
-    minValue?: number;
-    /**
-     * navigate action: target page id
-     */
-    pageId?: string;
-    /**
-     * incrementValue action: amount to add
-     */
-    step?:       number;
+    minValue?:   number;
     targetProp?: DynamicTargetProp;
     /**
      * colorFill: color when the tag is truthy
@@ -513,25 +313,286 @@ export interface Dynamic {
      * script: applied to targetProp when the expression is truthy
      */
     trueValue?: string;
+}
+
+export type DynamicKind = "visibility" | "colorFill" | "blink" | "rotation" | "disable" | "script";
+
+export type DynamicTargetProp = "bgColor" | "borderColor" | "textColor" | "visible";
+
+/**
+ * What a widget does when touched. onPress and onRelease write at once (momentary); onClick
+ * actions may be confirmed
+ */
+export interface WidgetEvents {
+    onClick?:   Action[];
+    onPress?:   Action[];
+    onRelease?: Action[];
+}
+
+/**
+ * One thing a widget does when an event happens
+ */
+export interface Action {
     /**
-     * openUrl action: URL to open
+     * toggle: the value written when the tag is on; missing means 0 (false for a bool tag)
+     */
+    off?: any;
+    /**
+     * toggle: the value written when the tag is off; missing means 1 (true for a bool tag)
+     */
+    on?: any;
+    /**
+     * navigate: target page id
+     */
+    page?: string;
+    /**
+     * increment: the amount added; missing means 1
+     */
+    step?: number;
+    /**
+     * write, toggle, increment: the tag; missing means the widget's value tag
+     */
+    tag?: string;
+    type: ActionType;
+    /**
+     * openUrl: the URL
      */
     url?: string;
     /**
-     * Action: binding to write to (may differ from binding)
+     * write: the value
      */
-    writeTo?: string;
-    /**
-     * writeValue action: value to write
-     */
-    writeValue?: any;
+    value?: any;
 }
 
-export type DynamicActionType = "writeValue" | "toggleValue" | "incrementValue" | "navigate" | "openUrl";
+export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUrl";
 
-export type DynamicKind = "visibility" | "colorFill" | "blink" | "rotation" | "disable" | "onClick" | "onPressed" | "onReleased" | "script";
+/**
+ * This widget type's settings (see TypedProps)
+ *
+ * Settings of a gauge widget
+ *
+ * Settings of the frame every widget is drawn in. Each widget type's settings include
+ * these
+ *
+ * Settings of a numericDisplay widget
+ *
+ * Settings of a textDisplay widget
+ *
+ * Settings of a led widget
+ *
+ * Settings of a tank widget
+ *
+ * Settings of a button widget
+ *
+ * Settings of a setpoint widget
+ *
+ * Settings of a multiState widget
+ *
+ * Settings of a trend widget
+ *
+ * Settings of a numericInput widget
+ *
+ * Settings of a textInput widget
+ *
+ * Settings of a historyLog widget
+ *
+ * Settings of a alarmBanner widget
+ *
+ * Settings of a image widget
+ *
+ * Settings of a symbol widget
+ *
+ * Settings of a faceplate widget
+ *
+ * Settings of a table widget
+ */
+export interface FaceplateWidgetProps {
+    max?:         number;
+    min?:         number;
+    thresholds?:  Threshold[];
+    unit?:        string;
+    bgColor?:     string;
+    borderColor?: string;
+    /**
+     * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+     */
+    colorThresholds?: Threshold[];
+    fontBold?:        boolean;
+    /**
+     * mono | sans | serif; empty means the theme font
+     */
+    fontFamily?: string;
+    fontItalic?: boolean;
+    /**
+     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+     */
+    fontSize?:      string;
+    fontUnderline?: boolean;
+    label?:         string;
+    noPadding?:     boolean;
+    /**
+     * Show the tag quality indicator
+     */
+    showQuality?: boolean;
+    textAlign?:   TextAlign;
+    textColor?:   string;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value
+     */
+    staticText?: string;
+    /**
+     * LED color when false
+     */
+    falseColor?: string;
+    /**
+     * LED text when false
+     */
+    falseLabel?: string;
+    /**
+     * LED color when true
+     */
+    trueColor?: string;
+    /**
+     * LED text when true
+     */
+    trueLabel?:  string;
+    btnColor?:   ButtonColor;
+    btnRounded?: ButtonRounded;
+    btnVariant?: ButtonVariant;
+    /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
+     * Toggle button color when off
+     */
+    toggleOffColor?: string;
+    /**
+     * Toggle button color when on
+     */
+    toggleOnColor?: string;
+    /**
+     * Setpoint slider step
+     */
+    step?: number;
+    /**
+     * MultiState value→label→color map
+     */
+    states?: StateEntry[];
+    /**
+     * Trend history window in seconds
+     */
+    duration?: number;
+    /**
+     * Trend horizontal reference lines
+     */
+    refLines?: RefLine[];
+    /**
+     * Trend multi-series config
+     */
+    tags?:    TrendSeries[];
+    xFormat?: TrendXFormat;
+    /**
+     * HistoryLog rows per page
+     */
+    pageSize?: number;
+    /**
+     * AlarmBanner max visible rows
+     */
+    maxRows?: number;
+    /**
+     * AlarmBanner: show acknowledged alarms
+     */
+    showAcked?: boolean;
+    /**
+     * Image object-fit, as set by the properties panel
+     */
+    fit?: ImageFit;
+    /**
+     * Image: data-URL, URL or 'lib:<imageId>'
+     */
+    src?: string;
+    /**
+     * Symbol: stroke color
+     */
+    stroke?: string;
+    /**
+     * Symbol: id from a symbol pack
+     */
+    symbolId?: string;
+    /**
+     * Faceplate widget: id of the faceplate to show
+     */
+    faceplateId?: string;
+    /**
+     * Faceplate widget: parameter name → binding
+     */
+    params?: { [key: string]: string };
+    /**
+     * Table widget rows
+     */
+    rows?: TableRow[];
+    [property: string]: any;
+}
 
-export type DynamicTargetProp = "bgColor" | "borderColor" | "textColor" | "visible";
+export type ButtonColor = "blue" | "green" | "red" | "amber" | "zinc" | "purple" | "orange" | "white";
+
+export type ButtonRounded = "none" | "sm" | "md" | "lg" | "full";
+
+export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
+
+export interface Threshold {
+    /**
+     * CSS color, e.g. '#22c55e'
+     */
+    color: string;
+    /**
+     * Optional upper bound (exclusive). If set, matches value >= value && value < toValue. If
+     * missing, matches value >= value (open-ended, highest match wins)
+     */
+    toValue?: number;
+    value:    number;
+}
+
+/**
+ * Image object-fit, as set by the properties panel
+ */
+export type ImageFit = "contain" | "cover" | "fill";
+
+export interface RefLine {
+    color:  string;
+    label?: string;
+    value:  number;
+}
+
+export interface TableRow {
+    binding: string;
+    label:   string;
+    unit?:   string;
+}
+
+export interface StateEntry {
+    color:      string;
+    label:      string;
+    textColor?: string;
+    value:      any;
+}
+
+export interface TrendSeries {
+    binding: string;
+    color:   string;
+    fill?:   boolean;
+    label?:  string;
+    yMax?:   number;
+    yMin?:   number;
+}
+
+export type TextAlign = "left" | "center" | "right";
+
+/**
+ * Trend X-axis label format
+ */
+export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
 
 export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table";
 
@@ -631,12 +692,9 @@ export interface Page {
 }
 
 export interface Widget {
-    /**
-     * datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.iTest'
-     */
-    binding?:  string;
-    config?:   WidgetConfig;
+    bindings?: WidgetBindings;
     dynamics?: Dynamic[];
+    events?:   WidgetEvents;
     /**
      * IDE-only: widgets with the same groupId move together
      */
@@ -650,11 +708,11 @@ export interface Widget {
      * IDE-only: widget cannot be moved or resized
      */
     locked?: boolean;
-    type:    WidgetType;
     /**
-     * BOOL tag — widget hidden when value is 0/false
+     * This widget type's settings (see TypedProps)
      */
-    visibleBinding?: string;
+    props?: WidgetProps;
+    type:   WidgetType;
     /**
      * Width in grid units
      */
@@ -667,6 +725,175 @@ export interface Widget {
      * Grid row
      */
     y: number;
+}
+
+/**
+ * This widget type's settings (see TypedProps)
+ *
+ * Settings of a gauge widget
+ *
+ * Settings of the frame every widget is drawn in. Each widget type's settings include
+ * these
+ *
+ * Settings of a numericDisplay widget
+ *
+ * Settings of a textDisplay widget
+ *
+ * Settings of a led widget
+ *
+ * Settings of a tank widget
+ *
+ * Settings of a button widget
+ *
+ * Settings of a setpoint widget
+ *
+ * Settings of a multiState widget
+ *
+ * Settings of a trend widget
+ *
+ * Settings of a numericInput widget
+ *
+ * Settings of a textInput widget
+ *
+ * Settings of a historyLog widget
+ *
+ * Settings of a alarmBanner widget
+ *
+ * Settings of a image widget
+ *
+ * Settings of a symbol widget
+ *
+ * Settings of a faceplate widget
+ *
+ * Settings of a table widget
+ */
+export interface WidgetProps {
+    max?:         number;
+    min?:         number;
+    thresholds?:  Threshold[];
+    unit?:        string;
+    bgColor?:     string;
+    borderColor?: string;
+    /**
+     * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+     */
+    colorThresholds?: Threshold[];
+    fontBold?:        boolean;
+    /**
+     * mono | sans | serif; empty means the theme font
+     */
+    fontFamily?: string;
+    fontItalic?: boolean;
+    /**
+     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+     */
+    fontSize?:      string;
+    fontUnderline?: boolean;
+    label?:         string;
+    noPadding?:     boolean;
+    /**
+     * Show the tag quality indicator
+     */
+    showQuality?: boolean;
+    textAlign?:   TextAlign;
+    textColor?:   string;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value
+     */
+    staticText?: string;
+    /**
+     * LED color when false
+     */
+    falseColor?: string;
+    /**
+     * LED text when false
+     */
+    falseLabel?: string;
+    /**
+     * LED color when true
+     */
+    trueColor?: string;
+    /**
+     * LED text when true
+     */
+    trueLabel?:  string;
+    btnColor?:   ButtonColor;
+    btnRounded?: ButtonRounded;
+    btnVariant?: ButtonVariant;
+    /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
+     * Toggle button color when off
+     */
+    toggleOffColor?: string;
+    /**
+     * Toggle button color when on
+     */
+    toggleOnColor?: string;
+    /**
+     * Setpoint slider step
+     */
+    step?: number;
+    /**
+     * MultiState value→label→color map
+     */
+    states?: StateEntry[];
+    /**
+     * Trend history window in seconds
+     */
+    duration?: number;
+    /**
+     * Trend horizontal reference lines
+     */
+    refLines?: RefLine[];
+    /**
+     * Trend multi-series config
+     */
+    tags?:    TrendSeries[];
+    xFormat?: TrendXFormat;
+    /**
+     * HistoryLog rows per page
+     */
+    pageSize?: number;
+    /**
+     * AlarmBanner max visible rows
+     */
+    maxRows?: number;
+    /**
+     * AlarmBanner: show acknowledged alarms
+     */
+    showAcked?: boolean;
+    /**
+     * Image object-fit, as set by the properties panel
+     */
+    fit?: ImageFit;
+    /**
+     * Image: data-URL, URL or 'lib:<imageId>'
+     */
+    src?: string;
+    /**
+     * Symbol: stroke color
+     */
+    stroke?: string;
+    /**
+     * Symbol: id from a symbol pack
+     */
+    symbolId?: string;
+    /**
+     * Faceplate widget: id of the faceplate to show
+     */
+    faceplateId?: string;
+    /**
+     * Faceplate widget: parameter name → binding
+     */
+    params?: { [key: string]: string };
+    /**
+     * Table widget rows
+     */
+    rows?: TableRow[];
+    [property: string]: any;
 }
 
 export interface Recipe {

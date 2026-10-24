@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 function project(extra: Partial<Project> = {}): Project {
-  return { version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
+  return { schemaVersion: 2, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
 }
 
 function Screen({ p, w, alarms = [], ack = () => {} }: { p: Project; w: Widget; alarms?: AlarmEvent[]; ack?: (id: string) => void }) {
@@ -38,7 +38,7 @@ const widget = (type: string, extra: Partial<Widget> = {}): Widget =>
 it("history log refetches with the token when the page size changes", async () => {
   const calls = stubFetch();
   setToken("tok");
-  const hist = (pageSize: number) => widget("historyLog", { binding: "plc:temp", config: { pageSize } });
+  const hist = (pageSize: number) => widget("historyLog", { bindings: { value: "plc:temp" }, props: { pageSize } });
   const { rerender } = render(<Screen p={project()} w={hist(100)} />);
   await waitFor(() => expect(calls("/api/v1/history").some(([u]) => u.includes("limit=100"))).toBe(true));
   rerender(<Screen p={project()} w={hist(25)} />);
@@ -49,7 +49,8 @@ it("history log refetches with the token when the page size changes", async () =
 });
 
 describe("momentary button", () => {
-  const button = widget("button", { binding: "plc:Start", config: { label: "Start", momentary: true } });
+  const button = widget("button", { bindings: { value: "plc:Start" }, props: { label: "Start" },
+    events: { onPress: [{ type: "write", value: 1 }], onRelease: [{ type: "write", value: 0 }] } });
   const cases = [
     { name: "writes press and release with the widget id", viewOnly: false, writes: 2 },
     { name: "a view-only project writes nothing", viewOnly: true, writes: 0 },
@@ -71,7 +72,7 @@ describe("momentary button", () => {
 it("image widget shows a project library image", () => {
   stubFetch();
   const p = project({ images: [{ id: "img1", name: "logo", dataUrl: "data:image/png;base64,AAAA" } as NonNullable<Project["images"]>[number]] });
-  render(<Screen p={p} w={widget("image", { config: { src: "lib:img1", label: "logo" } })} />);
+  render(<Screen p={p} w={widget("image", { props: { src: "lib:img1", label: "logo" } })} />);
   expect((screen.getByAltText("logo") as HTMLImageElement).src).toBe("data:image/png;base64,AAAA");
 });
 

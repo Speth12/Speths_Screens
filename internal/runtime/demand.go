@@ -188,44 +188,16 @@ func (r *Runtime) resolveBinding(b string) (driverID, path string, ok bool) {
 // projectDemand returns the bindings each project source needs.
 func projectDemand(p *project.Project) map[string][]string {
 	var screens []string
-	addWidget := func(binding, visible *string, cfg *project.WidgetConfig, dyns []project.DynamicElement) {
-		for _, b := range []*string{binding, visible} {
-			if b != nil {
-				screens = append(screens, *b)
-			}
-		}
-		if cfg != nil {
-			if cfg.ColorBinding != nil {
-				screens = append(screens, *cfg.ColorBinding)
-			}
-			for _, s := range cfg.Tags {
-				screens = append(screens, s.Binding)
-			}
-			for _, row := range cfg.Rows {
-				screens = append(screens, row.Binding)
-			}
-			for _, b := range cfg.Params { // faceplate instance: param → binding
-				screens = append(screens, b)
-			}
-		}
-		for _, d := range dyns {
-			for _, b := range []*string{d.Binding, d.WriteTo} {
-				if b != nil {
-					screens = append(screens, *b)
-				}
-			}
-		}
-	}
+	// Every tag a widget reads or writes; inside faceplates the "{param}"
+	// templates do not resolve, since the instance params cover them.
 	for _, pg := range p.Pages {
 		for _, w := range pg.Widgets {
-			addWidget(w.Binding, w.VisibleBinding, w.Config, w.Dynamics)
+			screens = append(screens, w.View().Tags()...)
 		}
 	}
-	// Bindings inside faceplates; "{param}" templates are skipped when
-	// resolving, since the instance params above cover them.
 	for _, fp := range p.Faceplates {
 		for _, w := range fp.Widgets {
-			addWidget(w.Binding, w.VisibleBinding, w.Config, w.Dynamics)
+			screens = append(screens, w.View().Tags()...)
 		}
 	}
 
