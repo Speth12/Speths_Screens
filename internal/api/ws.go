@@ -58,6 +58,11 @@ type wsUpdate struct {
 var wsConnSeq atomic.Uint64
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
+	user, role, authErr := s.wsUser(r)
+	if authErr != "" {
+		writeErr(w, 401, authErr) // with security.mode "login", reading needs a login too
+		return
+	}
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		// for dev IDE on different port — Day 5+ may tighten this
 		InsecureSkipVerify: true,
@@ -83,10 +88,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	watcher := s.rt.Store.Watch()
 	defer watcher.Close()
 
-	// Writes need a user: the token is sent when the connection opens
-	// (?token=, since browsers cannot set headers on a WebSocket). Reading
-	// needs none until defect 9.
-	writer := s.wsWriter(r)
+	writer := s.wsWriter(r, user, role)
 	writes := make(chan struct{}, wsMaxWrites)
 
 	// reader goroutine: parse subscribe/unsubscribe requests
@@ -170,6 +172,10 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 // handleAlarmWS streams alarm events to clients over WebSocket.
 // On connect it sends all current events, then pushes incremental changes.
 func (s *Server) handleAlarmWS(w http.ResponseWriter, r *http.Request) {
+	if _, _, authErr := s.wsUser(r); authErr != "" {
+		writeErr(w, 401, authErr)
+		return
+	}
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
 	if err != nil {
 		log.Printf("[WS/alarms] accept: %v", err)
@@ -256,25 +262,29 @@ func (s *Server) handleEventsWS(w http.ResponseWriter, r *http.Request) {
 // for tests — verify the JSON shapes are what we promise
 var _ = json.Marshal
 
-// wsWriter returns the function that handles a WebSocket write for the user
-// of this connection. Dev mode and a runtime without security count as
-// Admin; otherwise the token sent when the connection opened decides.
-func (s *Server) wsWriter(r *http.Request) func(context.Context, wsWrite) wsWriteReply {
-	user, role, authErr := "anonymous", security.RoleAdmin, ""
-	if s.rt.Security != nil && !s.DevMode {
-		user, role = "", ""
-		if tok := r.URL.Query().Get("token"); tok == "" {
-			authErr = "writes need a login token (?token= when connecting)"
-		} else if u, rl, err := s.rt.Security.VerifyToken(tok); err != nil {
-			authErr = "invalid or expired token"
-		} else {
-			user, role = u, rl
-		}
+// wsUser returns who is on a WebSocket. Browsers cannot set headers on a
+// WebSocket, so the token comes as ?token= when the connection opens.
+// Without loginRequired everyone is an anonymous Admin; with it, a missing
+// or invalid token gives authErr.
+func (s *Server) wsUser(r *http.Request) (user string, role security.Role, authErr string) {
+	if !s.loginRequired() {
+		return "anonymous", security.RoleAdmin, ""
 	}
+	tok := r.URL.Query().Get("token")
+	if tok == "" {
+		return "", "", "login required (?token= when connecting)"
+	}
+	u, rl, err := s.rt.Security.VerifyToken(tok)
+	if err != nil {
+		return "", "", "invalid or expired token"
+	}
+	return u, rl, ""
+}
+
+// wsWriter returns the function that handles a WebSocket write for the user
+// of this connection.
+func (s *Server) wsWriter(r *http.Request, user string, role security.Role) func(context.Context, wsWrite) wsWriteReply {
 	return func(ctx context.Context, wr wsWrite) wsWriteReply {
-		if authErr != "" {
-			return wsWriteReply{ID: wr.ID, Status: runtime.WriteFailed, Reason: authErr, Code: 401}
-		}
 		if !security.HasPermission(role, security.PermWriteTag) {
 			return wsWriteReply{ID: wr.ID, Status: runtime.WriteFailed, Reason: "forbidden", Code: 403}
 		}

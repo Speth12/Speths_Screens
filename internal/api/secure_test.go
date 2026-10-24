@@ -55,7 +55,18 @@ func newSecureServer(t *testing.T) *secureServer {
 	t.Cleanup(func() { _ = vs.Close() })
 	hs := httptest.NewServer(New(rt, nil, vs).Handler())
 	t.Cleanup(hs.Close)
-	return &secureServer{hs: hs, rt: rt, adminToken: tokens["admin"], opToken: tokens["op"]}
+	s := &secureServer{hs: hs, rt: rt, adminToken: tokens["admin"], opToken: tokens["op"]}
+	// A fresh runtime has no project, so no login yet: the first deploy is
+	// open. It turns logins on.
+	if code, body := s.do(t, "POST", "/api/v1/project", "", loginProject(writeTestProject)); code != 200 {
+		t.Fatalf("first deploy: %d %s", code, body)
+	}
+	return s
+}
+
+// loginProject adds security.mode "login" to a project document.
+func loginProject(doc string) string {
+	return strings.Replace(doc, `"version": "0.1.0",`, `"version": "0.1.0", "security": {"mode": "login"},`, 1)
 }
 
 // do sends a request with an optional token and returns status and body.
@@ -112,7 +123,8 @@ const secretDeploy = `{
   "version": "0.1.0",
   "datasources": [{"id": "plc", "label": "plc", "type": "rest",
     "config": {"endpoint": "http://127.0.0.1:1", "username": "hmi", "password": "plc-secret-pass", "bearerToken": "plc-secret-token"}}],
-  "pages": [{"id": "p1", "name": "Main", "widgets": []}]
+  "pages": [{"id": "p1", "name": "Main", "widgets": []}],
+  "security": {"mode": "login"}
 }`
 
 // Datasource passwords and tokens stay on the runtime.
@@ -123,9 +135,9 @@ func TestProjectSecretsStayOnTheRuntime(t *testing.T) {
 	}
 
 	_, project := s.do(t, "GET", "/api/v1/project", s.adminToken, "")
-	_, version := s.do(t, "GET", "/api/v1/versions/1", s.adminToken, "")
+	_, version := s.do(t, "GET", "/api/v1/versions/2", s.adminToken, "") // 1 is the setup deploy
 	_, mcpProject := s.do(t, "POST", "/mcp", s.adminToken, `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"xhmi://project"}}`)
-	for name, body := range map[string]string{"GET /project": project, "GET /versions/1": version, "MCP project": mcpProject} {
+	for name, body := range map[string]string{"GET /project": project, "GET /versions/2": version, "MCP project": mcpProject} {
 		if strings.Contains(body, "plc-secret") {
 			t.Errorf("%s returned a datasource secret: %s", name, body)
 		}
@@ -147,9 +159,6 @@ func TestProjectSecretsStayOnTheRuntime(t *testing.T) {
 // MCP writes go through the write pipeline.
 func TestMCPWritesUseThePipeline(t *testing.T) {
 	s := newSecureServer(t)
-	if code, body := s.do(t, "POST", "/api/v1/project", s.adminToken, writeTestProject); code != 200 {
-		t.Fatalf("deploy: %d %s", code, body)
-	}
 	call := func(binding string, value float64) map[string]any {
 		body, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": 1, "method": "tools/call",
 			"params": map[string]any{"name": "write_tag", "arguments": map[string]any{"binding": binding, "value": value}}})
@@ -168,5 +177,38 @@ func TestMCPWritesUseThePipeline(t *testing.T) {
 	}
 	if r := call("calc:sp", 500); r["isError"] != true {
 		t.Errorf("value above the widget's maximum was written over MCP: %v", r)
+	}
+}
+
+// security.mode decides whether the API needs a login.
+func TestSecurityModeDecidesLogin(t *testing.T) {
+	s := newSecureServer(t) // security.mode "login"
+	tests := []struct {
+		name, method, path, token, body string
+		wantCode                        int
+	}{
+		{"project needs a login", "GET", "/api/v1/project", "", "", 401},
+		{"project with a token", "GET", "/api/v1/project", s.opToken, "", 200},
+		{"tag read needs a login", "GET", "/api/v1/tag/calc:sp", "", "", 401},
+		{"write needs a login", "POST", "/api/v1/tag/sp", "", `{"datasource":"calc","value":1}`, 401},
+		{"deploy needs a login", "POST", "/api/v1/project", "", writeTestProject, 401},
+		{"deploy as operator is forbidden", "POST", "/api/v1/project", s.opToken, writeTestProject, 403},
+		{"alive is open", "GET", "/api/v1/alive", "", "", 200},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if code, body := s.do(t, tc.method, tc.path, tc.token, tc.body); code != tc.wantCode {
+				t.Errorf("HTTP %d %s, want %d", code, body, tc.wantCode)
+			}
+		})
+	}
+
+	// Switching to security.mode "none" needs a logged-in deploy; after it,
+	// no login is needed.
+	if code, body := s.do(t, "POST", "/api/v1/project", s.adminToken, writeTestProject); code != 200 {
+		t.Fatalf("admin deploy without logins: %d %s", code, body)
+	}
+	if code, body := s.do(t, "GET", "/api/v1/project", "", ""); code != 200 {
+		t.Errorf("security.mode none: GET /project without a token: %d %s", code, body)
 	}
 }

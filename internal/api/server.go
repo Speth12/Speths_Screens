@@ -63,7 +63,6 @@ func (s *Server) routes(assets http.Handler) {
 
 	// Public: login, read-only IDE endpoints (no session needed)
 	r.Post("/api/v1/auth/login", s.handleLogin)
-	r.Get("/api/v1/project", s.handleGetProject)
 	r.Get("/api/v1/alive", s.handleAlive)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -73,6 +72,7 @@ func (s *Server) routes(assets http.Handler) {
 		r.Get("/whoami", s.handleWhoAmI)
 		r.Get("/debug/demand", s.handleDebugDemand)
 
+		r.Get("/project", s.handleGetProject)
 		r.With(s.requirePerm("project.deploy")).Post("/project", s.handlePostProject)
 
 		r.Route("/datasources", func(r chi.Router) {

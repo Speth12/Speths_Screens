@@ -75,45 +75,55 @@ func TestWebSocketWriteWithoutSecurity(t *testing.T) {
 	}
 }
 
-func TestWebSocketWriteNeedsToken(t *testing.T) {
-	sec := newSecureServer(t)
-	hs, opToken, ctx := sec.hs, sec.opToken, context.Background()
-	if code, body := sec.do(t, "POST", "/api/v1/project", sec.adminToken, writeTestProject); code != 200 {
-		t.Fatalf("deploy as admin: %d %s", code, body)
-	}
+func TestWebSocketLogin(t *testing.T) {
+	sec := newSecureServer(t) // security.mode "login"
+	wsURL := strings.Replace(sec.hs.URL, "http://", "ws://", 1)
 
-	tests := []struct {
-		name       string
-		token      string
-		wantStatus string
-		wantCode   int
-	}{
-		{"no token", "", runtime.WriteFailed, 401},
-		{"invalid token", "not-a-token", runtime.WriteFailed, 401},
-		{"operator token", opToken, runtime.WriteConfirmed, 200},
-	}
-	for _, tc := range tests {
+	// With logins on, the connection itself needs a valid token.
+	for _, tc := range []struct{ name, query string }{
+		{"no token", ""},
+		{"invalid token", "?token=not-a-token"},
+	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := wsWriteOnce(t, hs.URL, tc.token, wsWrite{ID: "b1", Path: "calc:sp", Value: 7.0})
-			if got.Status != tc.wantStatus || got.Code != tc.wantCode {
-				t.Errorf("got %+v, want status %s code %d", got, tc.wantStatus, tc.wantCode)
+			for _, path := range []string{"/ws/tags", "/ws/alarms"} {
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				conn, resp, err := websocket.Dial(ctx, wsURL+path+tc.query, nil)
+				cancel()
+				if err == nil {
+					conn.Close(websocket.StatusNormalClosure, "")
+					t.Errorf("%s: connected without a valid token", path)
+				} else if resp == nil || resp.StatusCode != 401 {
+					t.Errorf("%s: err %v, want HTTP 401", path, err)
+				}
 			}
 		})
 	}
 
-	// Reading still works without a token (until defect 9).
-	cctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	// An operator token can read and write.
+	got := wsWriteOnce(t, sec.hs.URL, sec.opToken, wsWrite{ID: "b1", Path: "calc:sp", Value: 7.0})
+	if got.Status != runtime.WriteConfirmed || got.Code != 200 {
+		t.Errorf("operator write: %+v", got)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	conn, _, err := websocket.Dial(cctx, strings.Replace(hs.URL, "http://", "ws://", 1)+"/ws/tags", nil)
+	conn, _, err := websocket.Dial(ctx, wsURL+"/ws/tags?token="+url.QueryEscape(sec.opToken), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
-	if err := wsjson.Write(cctx, conn, map[string][]string{"subscribe": {"calc:sp"}}); err != nil {
+	if err := wsjson.Write(ctx, conn, map[string][]string{"subscribe": {"calc:sp"}}); err != nil {
 		t.Fatal(err)
 	}
 	var u map[string]any
-	if err := wsjson.Read(cctx, conn, &u); err != nil || u["path"] != "calc:sp" {
-		t.Errorf("subscribe without a token: %v %v", u, err)
+	if err := wsjson.Read(ctx, conn, &u); err != nil || u["path"] != "calc:sp" {
+		t.Errorf("operator subscribe: %v %v", u, err)
+	}
+
+	// Deploying a project without logins (as admin) opens everything again.
+	if code, body := sec.do(t, "POST", "/api/v1/project", sec.adminToken, writeTestProject); code != 200 {
+		t.Fatalf("deploy without logins: %d %s", code, body)
+	}
+	if got := wsWriteOnce(t, sec.hs.URL, "", wsWrite{ID: "b2", Path: "calc:sp", Value: 8.0}); got.Status != runtime.WriteConfirmed {
+		t.Errorf("write without a token, security.mode none: %+v", got)
 	}
 }

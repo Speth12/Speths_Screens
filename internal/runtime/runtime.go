@@ -238,6 +238,9 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		}
 	}
 	r.setDemands(projectDemand(p))
+	if p.Security == nil || p.Security.Mode != project.Login {
+		log.Printf("[SECURITY] WARNING: security.mode is not \"login\": no login is needed and everyone has full access, including writes and deploys")
+	}
 	return nil
 }
 
@@ -455,4 +458,13 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 		cfg.Extra["tags"] = *c.Tags
 	}
 	return cfg
+}
+
+// LoginRequired reports whether the loaded project asks for logins
+// (security.mode "login"). A missing mode, "none" and no project at all
+// mean no login.
+func (r *Runtime) LoginRequired() bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.project != nil && r.project.Security != nil && r.project.Security.Mode == project.Login
 }

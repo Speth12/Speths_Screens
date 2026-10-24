@@ -28,11 +28,18 @@ func claimedRole(r *http.Request) security.Role {
 	return v
 }
 
-// jwtMiddleware validates Bearer tokens.  If Security is nil or DevMode is
-// true it injects "anonymous" / "admin" so all routes remain accessible.
+// loginRequired reports whether requests need a token: the loaded project
+// asks for logins (security.mode "login"), the runtime has a user store, and
+// it is not in dev mode (which listens on 127.0.0.1 only).
+func (s *Server) loginRequired() bool {
+	return !s.DevMode && s.rt.Security != nil && s.rt.LoginRequired()
+}
+
+// jwtMiddleware validates Bearer tokens. Without loginRequired it injects
+// "anonymous" / "admin" so all routes remain accessible.
 func (s *Server) jwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.rt.Security == nil || s.DevMode {
+		if !s.loginRequired() {
 			ctx := context.WithValue(r.Context(), ctxUser, "anonymous")
 			ctx = context.WithValue(ctx, ctxRole, security.RoleAdmin)
 			next.ServeHTTP(w, r.WithContext(ctx))
