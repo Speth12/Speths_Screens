@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { WidgetRenderer, ProjectImagesProvider } from "./widgets";
-import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./writeContext";
-import { writeTag, onWriteResult } from "./writeTag";
+import { WidgetHostProvider, WidgetRenderer } from "@speths-screens/widgets";
+import { useOperatorHost } from "./widgetHost";
+import { onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
 import { applyAlarmMessage } from "./alarmMessages";
@@ -298,11 +298,7 @@ export function App() {
     if (idx >= 0) setActivePage(idx);
   }, [project]);
 
-  /** Write handler — blocked in viewOnly mode, executes immediately otherwise. */
-  const requestWrite = useCallback(async (req: WriteRequest) => {
-    if (project?.viewOnly) return;
-    await writeTag(req.binding, req.value, req.widgetId);
-  }, [project?.viewOnly]);
+  const widgetHost = useOperatorHost(project, navigateToPage);
 
   // Tell the operator when a write did not go through.
   const [writeNotice, setWriteNotice] = useState<string | null>(null);
@@ -371,10 +367,8 @@ export function App() {
   const securityOff = project.security?.mode !== "login";
 
   return (
-    <ProjectImagesProvider value={project.images ?? []}>
     <AlarmContext.Provider value={{ alarms, ack }}>
-    <NavigateContext.Provider value={navigateToPage}>
-    <WriteConfirmContext.Provider value={requestWrite}>
+    <WidgetHostProvider value={widgetHost}>
       {isKiosk && project.security?.mode !== "login" && (
         <div className="fixed top-1 right-1 z-50 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
           Security off
@@ -566,10 +560,8 @@ export function App() {
           onClose={() => setShowAlarmLog(false)}
         />
       )}
-    </WriteConfirmContext.Provider>
-    </NavigateContext.Provider>
+    </WidgetHostProvider>
     </AlarmContext.Provider>
-    </ProjectImagesProvider>
   );
 }
 

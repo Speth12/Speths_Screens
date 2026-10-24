@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The shared widget library lives outside this app; Tailwind must scan it too. */
+@source "../../widgets/src";
 
 html, body, #root { height: 100%; }
 

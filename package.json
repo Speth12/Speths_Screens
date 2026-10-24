@@ -4,6 +4,7 @@
   "private": true,
   "workspaces": [
     "packages/shared-types",
+    "packages/widgets",
     "packages/ide",
     "packages/operator"
   ],
@@ -12,9 +13,9 @@
     "dev": "npm run dev --workspace=packages/ide",
     "dev:operator": "npm run dev --workspace=packages/operator",
     "dev:all": "concurrently --names 'runtime,ide,operator' --prefix-colors 'cyan,green,yellow' 'go run ./cmd/speths-screens --mode=dev --project=demo.xhmi.json' 'npm run dev --workspace=packages/ide' 'npm run dev --workspace=packages/operator'",
-    "build": "npm run build --workspace=packages/ide && npm run build --workspace=packages/operator",
+    "build": "npm run build --workspace=packages/widgets && npm run build --workspace=packages/ide && npm run build --workspace=packages/operator",
     "test": "npm run test --workspace=packages/ide",
-    "lint": "npm run lint --workspace=packages/ide && npm run lint --workspace=packages/operator"
+    "lint": "npm run lint --workspace=packages/widgets && npm run lint --workspace=packages/ide && npm run lint --workspace=packages/operator"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
