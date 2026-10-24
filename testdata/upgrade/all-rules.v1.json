@@ -1,0 +1,56 @@
+{
+  "version": "0.1.0",
+  "name": "Every v1-to-v2 upgrade rule",
+  "datasources": [{ "id": "plc", "label": "PLC", "type": "rest", "config": { "endpoint": "https://10.0.0.210" } }],
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Main",
+      "widgets": [
+        { "id": "g1", "type": "gauge", "x": 0, "y": 0, "w": 4, "h": 3,
+          "binding": "plc:Temp", "visibleBinding": "plc:Show",
+          "config": { "label": "Temp", "min": 0, "max": 120, "unit": "°C", "colorBinding": "plc:Alarm",
+                      "colorThresholds": [{ "value": 1, "color": "#ef4444" }],
+                      "thresholds": [{ "value": 80, "toValue": 100, "color": "#f59e0b" }],
+                      "momentary": true, "decimals": 2, "textAlign": "", "bgColor": "" } },
+        { "id": "t1", "type": "textDisplay", "x": 0, "y": 3, "w": 4, "h": 1, "binding": "Pump status" },
+        { "id": "t2", "type": "textDisplay", "x": 4, "y": 3, "w": 4, "h": 1, "binding": "Ignored literal", "config": { "staticText": "Kept" } },
+        { "id": "t3", "type": "textDisplay", "x": 8, "y": 3, "w": 4, "h": 1, "binding": "ns:plant.mixer.state" },
+        { "id": "b1", "type": "button", "x": 0, "y": 4, "w": 3, "h": 2, "binding": "plc:Start",
+          "config": { "label": "Start", "onValue": 5, "btnColor": "green" } },
+        { "id": "b2", "type": "button", "x": 3, "y": 4, "w": 3, "h": 2, "binding": "plc:Run",
+          "config": { "label": "Run", "momentary": false, "toggleOnColor": "green" },
+          "dynamics": [{ "id": "d1", "kind": "onClick", "actionType": "writeValue", "writeTo": "plc:Log", "writeValue": "clicked" }] },
+        { "id": "b3", "type": "button", "x": 6, "y": 4, "w": 3, "h": 2,
+          "config": { "label": "Next", "action": "navigate", "navigateTo": "p2", "min": 3 } },
+        { "id": "b4", "type": "button", "x": 9, "y": 4, "w": 3, "h": 2, "config": { "action": "navigate" } },
+        { "id": "i1", "type": "image", "x": 0, "y": 6, "w": 3, "h": 3, "config": { "src": "lib:logo", "objectFit": "cover" } },
+        { "id": "i2", "type": "image", "x": 3, "y": 6, "w": 3, "h": 3, "config": { "src": "lib:logo", "fit": "fill", "objectFit": "cover", "placeholder": "x" } },
+        { "id": "n1", "type": "numericDisplay", "x": 6, "y": 6, "w": 3, "h": 2, "binding": "plc:Count",
+          "dynamics": [
+            { "id": "v", "kind": "visibility", "binding": "plc:Show", "writeTo": "plc:Stray", "actionType": "writeValue" },
+            { "id": "c", "kind": "onClick", "actionType": "incrementValue", "writeTo": "plc:Count", "step": 2 },
+            { "id": "p", "kind": "onPressed", "actionType": "writeValue", "writeTo": "plc:Horn", "writeValue": true },
+            { "id": "r", "kind": "onReleased", "actionType": "toggleValue", "writeTo": "plc:Lamp" },
+            { "id": "nav", "kind": "onClick", "actionType": "navigate", "pageId": "p2" },
+            { "id": "url", "kind": "onClick", "actionType": "openUrl", "url": "https://example.com/help" },
+            { "id": "bad", "kind": "onClick", "actionType": "writeValue", "writeValue": 1 },
+            { "id": "s", "kind": "script", "binding": "plc:Count", "expression": "value > 5", "targetProp": "bgColor", "trueValue": "#ef4444", "falseValue": "" }
+          ] },
+        { "id": "e1", "type": "led", "x": 9, "y": 6, "w": 2, "h": 2, "config": {} },
+        { "id": "f1", "type": "faceplate", "x": 0, "y": 9, "w": 4, "h": 4,
+          "config": { "faceplateId": "fp1", "params": { "pump": "plc:P1" }, "label": "Pump 1" } }
+      ]
+    },
+    { "id": "p2", "name": "Second", "widgets": [] }
+  ],
+  "faceplates": [
+    { "id": "fp1", "name": "Pump", "params": [{ "name": "pump" }],
+      "widgets": [
+        { "localId": "speed", "type": "numericInput", "x": 0, "y": 0, "w": 2, "h": 1,
+          "binding": "{pump}.speed", "config": { "min": 0, "max": 1500, "unit": "rpm" } },
+        { "localId": "run", "type": "button", "x": 2, "y": 0, "w": 2, "h": 1, "binding": "{pump}.run",
+          "config": { "momentary": false, "onValue": true, "offValue": false } }
+      ] }
+  ]
+}

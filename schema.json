@@ -633,6 +633,1006 @@
       "title": "CanvasSnap",
       "type": "string",
       "enum": ["grid", "pixel"]
+    },
+    "FrameProps": {
+      "title": "FrameProps",
+      "type": "object",
+      "description": "Settings of the frame every widget is drawn in. Each widget type's settings include these",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "bgColor": {
+          "type": "string"
+        },
+        "borderColor": {
+          "type": "string"
+        },
+        "textColor": {
+          "type": "string"
+        },
+        "noPadding": {
+          "type": "boolean"
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "mono | sans | serif; empty means the theme font"
+        },
+        "fontSize": {
+          "type": "string",
+          "description": "xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base"
+        },
+        "fontBold": {
+          "type": "boolean"
+        },
+        "fontItalic": {
+          "type": "boolean"
+        },
+        "fontUnderline": {
+          "type": "boolean"
+        },
+        "textAlign": {
+          "$ref": "#/$defs/TextAlign"
+        },
+        "showQuality": {
+          "type": "boolean",
+          "description": "Show the tag quality indicator"
+        },
+        "colorThresholds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Threshold"
+          },
+          "description": "Color threshold rules applied to colorBinding"
+        }
+      }
+    },
+    "GaugeProps": {
+      "title": "GaugeProps",
+      "type": "object",
+      "description": "Settings of a gauge widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "thresholds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Threshold"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "NumericDisplayProps": {
+      "title": "NumericDisplayProps",
+      "type": "object",
+      "description": "Settings of a numericDisplay widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TextDisplayProps": {
+      "title": "TextDisplayProps",
+      "type": "object",
+      "description": "Settings of a textDisplay widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "staticText": {
+          "type": "string",
+          "description": "TextDisplay: fixed text shown instead of a tag value"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "LedProps": {
+      "title": "LedProps",
+      "type": "object",
+      "description": "Settings of a led widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "trueColor": {
+          "type": "string",
+          "description": "LED color when true"
+        },
+        "falseColor": {
+          "type": "string",
+          "description": "LED color when false"
+        },
+        "trueLabel": {
+          "type": "string",
+          "description": "LED text when true"
+        },
+        "falseLabel": {
+          "type": "string",
+          "description": "LED text when false"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TankProps": {
+      "title": "TankProps",
+      "type": "object",
+      "description": "Settings of a tank widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "thresholds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Threshold"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "ButtonProps": {
+      "title": "ButtonProps",
+      "type": "object",
+      "description": "Settings of a button widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "btnVariant": {
+          "$ref": "#/$defs/ButtonVariant"
+        },
+        "btnColor": {
+          "$ref": "#/$defs/ButtonColor"
+        },
+        "btnRounded": {
+          "$ref": "#/$defs/ButtonRounded"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Button icon (emoji or short text)"
+        },
+        "toggleOnColor": {
+          "type": "string",
+          "description": "Toggle button color when on"
+        },
+        "toggleOffColor": {
+          "type": "string",
+          "description": "Toggle button color when off"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "SetpointProps": {
+      "title": "SetpointProps",
+      "type": "object",
+      "description": "Settings of a setpoint widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "step": {
+          "type": "number",
+          "description": "Setpoint slider step"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "MultiStateProps": {
+      "title": "MultiStateProps",
+      "type": "object",
+      "description": "Settings of a multiState widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "states": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StateEntry"
+          },
+          "description": "MultiState value→label→color map"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TrendProps": {
+      "title": "TrendProps",
+      "type": "object",
+      "description": "Settings of a trend widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "duration": {
+          "type": "integer",
+          "description": "Trend history window in seconds"
+        },
+        "xFormat": {
+          "$ref": "#/$defs/TrendXFormat"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TrendSeries"
+          },
+          "description": "Trend multi-series config"
+        },
+        "refLines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RefLine"
+          },
+          "description": "Trend horizontal reference lines"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "NumericInputProps": {
+      "title": "NumericInputProps",
+      "type": "object",
+      "description": "Settings of a numericInput widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TextInputProps": {
+      "title": "TextInputProps",
+      "type": "object",
+      "description": "Settings of a textInput widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {},
+      "unevaluatedProperties": false
+    },
+    "HistoryLogProps": {
+      "title": "HistoryLogProps",
+      "type": "object",
+      "description": "Settings of a historyLog widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "pageSize": {
+          "type": "integer",
+          "description": "HistoryLog rows per page"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "AlarmBannerProps": {
+      "title": "AlarmBannerProps",
+      "type": "object",
+      "description": "Settings of a alarmBanner widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "maxRows": {
+          "type": "integer",
+          "description": "AlarmBanner max visible rows"
+        },
+        "showAcked": {
+          "type": "boolean",
+          "description": "AlarmBanner: show acknowledged alarms"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "ImageProps": {
+      "title": "ImageProps",
+      "type": "object",
+      "description": "Settings of a image widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "src": {
+          "type": "string",
+          "description": "Image: data-URL, URL or 'lib:<imageId>'"
+        },
+        "fit": {
+          "$ref": "#/$defs/ImageFit",
+          "description": "Image object-fit, as set by the properties panel"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "SymbolProps": {
+      "title": "SymbolProps",
+      "type": "object",
+      "description": "Settings of a symbol widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "symbolId": {
+          "type": "string",
+          "description": "Symbol: id from a symbol pack"
+        },
+        "stroke": {
+          "type": "string",
+          "description": "Symbol: stroke color"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "FaceplateProps": {
+      "title": "FaceplateProps",
+      "type": "object",
+      "description": "Settings of a faceplate widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "faceplateId": {
+          "type": "string",
+          "description": "Faceplate widget: id of the faceplate to show"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Faceplate widget: parameter name → binding"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TableProps": {
+      "title": "TableProps",
+      "type": "object",
+      "description": "Settings of a table widget",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TableRow"
+          },
+          "description": "Table widget rows"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "TypedProps": {
+      "title": "TypedProps",
+      "description": "Ties a widget's type to the settings type its props must follow",
+      "oneOf": [
+        {
+          "properties": {
+            "type": {
+              "const": "gauge"
+            },
+            "props": {
+              "$ref": "#/$defs/GaugeProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "numericDisplay"
+            },
+            "props": {
+              "$ref": "#/$defs/NumericDisplayProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "textDisplay"
+            },
+            "props": {
+              "$ref": "#/$defs/TextDisplayProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "led"
+            },
+            "props": {
+              "$ref": "#/$defs/LedProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "tank"
+            },
+            "props": {
+              "$ref": "#/$defs/TankProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "button"
+            },
+            "props": {
+              "$ref": "#/$defs/ButtonProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "setpoint"
+            },
+            "props": {
+              "$ref": "#/$defs/SetpointProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "multiState"
+            },
+            "props": {
+              "$ref": "#/$defs/MultiStateProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "trend"
+            },
+            "props": {
+              "$ref": "#/$defs/TrendProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "numericInput"
+            },
+            "props": {
+              "$ref": "#/$defs/NumericInputProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "textInput"
+            },
+            "props": {
+              "$ref": "#/$defs/TextInputProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "historyLog"
+            },
+            "props": {
+              "$ref": "#/$defs/HistoryLogProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "alarmBanner"
+            },
+            "props": {
+              "$ref": "#/$defs/AlarmBannerProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "image"
+            },
+            "props": {
+              "$ref": "#/$defs/ImageProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "symbol"
+            },
+            "props": {
+              "$ref": "#/$defs/SymbolProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "faceplate"
+            },
+            "props": {
+              "$ref": "#/$defs/FaceplateProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "table"
+            },
+            "props": {
+              "$ref": "#/$defs/TableProps"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        }
+      ]
+    },
+    "WidgetBindings": {
+      "title": "WidgetBindings",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The tags a widget reads, by slot. Values are ds:path or ns:path (faceplate widgets may use {param})",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "The tag the widget shows or writes"
+        },
+        "visible": {
+          "type": "string",
+          "description": "BOOL tag: the widget is hidden while it is 0/false"
+        },
+        "color": {
+          "type": "string",
+          "description": "Tag the frame's color thresholds read; missing means the value tag"
+        }
+      }
+    },
+    "ActionType": {
+      "title": "ActionType",
+      "type": "string",
+      "enum": [
+        "write",
+        "toggle",
+        "increment",
+        "navigate",
+        "openUrl"
+      ]
+    },
+    "Action": {
+      "title": "Action",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "One thing a widget does when an event happens",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ActionType"
+        },
+        "tag": {
+          "type": "string",
+          "description": "write, toggle, increment: the tag; missing means the widget's value tag"
+        },
+        "value": {
+          "description": "write: the value"
+        },
+        "on": {
+          "description": "toggle: the value written when the tag is off; missing means 1 (true for a bool tag)"
+        },
+        "off": {
+          "description": "toggle: the value written when the tag is on; missing means 0 (false for a bool tag)"
+        },
+        "step": {
+          "type": "number",
+          "description": "increment: the amount added; missing means 1"
+        },
+        "page": {
+          "type": "string",
+          "description": "navigate: target page id"
+        },
+        "url": {
+          "type": "string",
+          "description": "openUrl: the URL"
+        }
+      }
+    },
+    "WidgetEvents": {
+      "title": "WidgetEvents",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What a widget does when touched. onPress and onRelease write at once (momentary); onClick actions may be confirmed",
+      "properties": {
+        "onClick": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        },
+        "onPress": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        },
+        "onRelease": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        }
+      }
+    },
+    "DynamicKindV2": {
+      "title": "DynamicKindV2",
+      "type": "string",
+      "enum": [
+        "visibility",
+        "colorFill",
+        "blink",
+        "rotation",
+        "disable",
+        "script"
+      ]
+    },
+    "DynamicV2": {
+      "title": "DynamicV2",
+      "type": "object",
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "description": "A tag-driven look on a widget (actions are events). Which fields apply depends on kind",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/DynamicKindV2"
+        },
+        "binding": {
+          "type": "string",
+          "description": "Tag the dynamic reacts to"
+        },
+        "trueColor": {
+          "type": "string",
+          "description": "colorFill: color when the tag is truthy"
+        },
+        "falseColor": {
+          "type": "string",
+          "description": "colorFill: color when the tag is falsy"
+        },
+        "blinkPeriodMs": {
+          "type": "integer",
+          "description": "blink: period in milliseconds"
+        },
+        "blinkColor": {
+          "type": "string",
+          "description": "blink: flash color"
+        },
+        "minValue": {
+          "type": "number",
+          "description": "rotation: tag value mapped to minAngle"
+        },
+        "maxValue": {
+          "type": "number",
+          "description": "rotation: tag value mapped to maxAngle"
+        },
+        "minAngle": {
+          "type": "number",
+          "description": "rotation: angle in degrees"
+        },
+        "maxAngle": {
+          "type": "number",
+          "description": "rotation: angle in degrees"
+        },
+        "expression": {
+          "type": "string",
+          "description": "script: expression evaluated with `value` = tag value, e.g. 'value > 5000'"
+        },
+        "targetProp": {
+          "$ref": "#/$defs/DynamicTargetProp"
+        },
+        "trueValue": {
+          "type": "string",
+          "description": "script: applied to targetProp when the expression is truthy"
+        },
+        "falseValue": {
+          "type": "string",
+          "description": "script: applied to targetProp when the expression is falsy"
+        }
+      }
+    },
+    "WidgetV2": {
+      "title": "WidgetV2",
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/WidgetType"
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid column"
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid row"
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Width in grid units"
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Height in grid units"
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "IDE-only: widget cannot be moved or resized"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "IDE-only: widgets with the same groupId move together"
+        },
+        "props": {
+          "type": "object",
+          "description": "This widget type's settings (see TypedProps)"
+        },
+        "bindings": {
+          "$ref": "#/$defs/WidgetBindings"
+        },
+        "events": {
+          "$ref": "#/$defs/WidgetEvents"
+        },
+        "dynamics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DynamicV2"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/TypedProps"
+        }
+      ]
+    },
+    "FaceplateWidgetV2": {
+      "title": "FaceplateWidgetV2",
+      "type": "object",
+      "description": "A widget inside a faceplate. Same as Widget, but identified by localId",
+      "required": [
+        "localId",
+        "type",
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "localId": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/WidgetType"
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid column"
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Grid row"
+        },
+        "w": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Width in grid units"
+        },
+        "h": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Height in grid units"
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "IDE-only: widget cannot be moved or resized"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "IDE-only: widgets with the same groupId move together"
+        },
+        "props": {
+          "type": "object",
+          "description": "This widget type's settings (see TypedProps)"
+        },
+        "bindings": {
+          "$ref": "#/$defs/WidgetBindings"
+        },
+        "events": {
+          "$ref": "#/$defs/WidgetEvents"
+        },
+        "dynamics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DynamicV2"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/TypedProps"
+        }
+      ]
     }
   }
 }
