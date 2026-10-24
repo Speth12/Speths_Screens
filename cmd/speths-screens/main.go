@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -136,7 +137,10 @@ func main() {
 	rt := runtime.New(store, hist)
 	rt.AlarmStore = alarmSt
 
-	// Security — always on; auto-seeds admin/admin on first run.
+	// Security: the user store is always open. Whether logins are needed
+	// comes from the project's security.mode; the first admin is created
+	// when a project asks for logins and there are no users (see
+	// runtime.LoadProject), with its password in a file next to the store.
 	{
 		secret := []byte(*jwtSecret)
 		if len(secret) == 0 {
@@ -148,16 +152,14 @@ func main() {
 		}
 		defer secSt.Close()
 		rt.Security = secSt
-		// First-run: seed a default admin so the operator login works immediately.
-		users, _ := secSt.ListUsers(context.Background())
-		if len(users) == 0 {
-			_, err := secSt.CreateUser(context.Background(), "admin", "admin", security.RoleAdmin)
-			if err != nil {
-				log.Printf("[Speth's Screens] security: could not seed admin: %v", err)
-			} else {
-				log.Printf("[Speth's Screens] *** FIRST RUN: created admin user — username: admin  password: admin ***")
-			}
+		rt.InitialAdminFile = filepath.Join(filepath.Dir(*securityDB), "initial-admin-password")
+		// Earlier builds created admin/admin on first run; make it change.
+		if flagged, err := secSt.FlagDefaultPassword(context.Background()); err != nil {
+			log.Printf("[Speth's Screens] security: %v", err)
+		} else if flagged {
+			log.Printf("[SECURITY] WARNING: user \"admin\" still has the default password \"admin\"; it must be changed at next login")
 		}
+		users, _ := secSt.ListUsers(context.Background())
 		log.Printf("[Speth's Screens] security DB: %s (%d users)", *securityDB, len(users))
 	}
 

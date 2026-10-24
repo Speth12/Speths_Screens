@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	_ "modernc.org/sqlite"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 // Role is the access level granted to a user.
@@ -71,6 +71,9 @@ type User struct {
 	Role      Role      `json:"role"`
 	Enabled   bool      `json:"enabled"`
 	CreatedAt time.Time `json:"createdAt"`
+	// MustChangePassword is set by Login for a user who must change their
+	// password before doing anything else.
+	MustChangePassword bool `json:"mustChangePassword,omitempty"`
 }
 
 // Store manages users and sessions in SQLite.
@@ -109,7 +112,10 @@ func (s *Store) migrate() error {
 		expires_at TEXT    NOT NULL,
 		revoked    INTEGER NOT NULL DEFAULT 0
 	);`)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.addMustChange()
 }
 
 // CreateUser creates a new user. Returns an error if the username is taken.
@@ -191,14 +197,16 @@ func (s *Store) ChangePassword(ctx context.Context, username, newPassword string
 	return err
 }
 
-// Login verifies credentials and returns a signed JWT on success.
+// Login verifies credentials and returns a signed JWT on success. A user
+// who must change their password gets a token that only allows that
+// (user.MustChangePassword is set).
 func (s *Store) Login(ctx context.Context, username, password string) (string, *User, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, username, hash, role, enabled, created_at FROM users WHERE username=?`, username)
+		`SELECT id, username, hash, role, enabled, created_at, must_change FROM users WHERE username=?`, username)
 	var u User
 	var hash, createdStr string
-	var enabled int
-	err := row.Scan(&u.ID, &u.Username, &hash, &u.Role, &enabled, &createdStr)
+	var enabled, mustChange int
+	err := row.Scan(&u.ID, &u.Username, &hash, &u.Role, &enabled, &createdStr, &mustChange)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil, errors.New("security: invalid credentials")
 	}
@@ -213,6 +221,7 @@ func (s *Store) Login(ctx context.Context, username, password string) (string, *
 	}
 	u.CreatedAt, _ = time.Parse(time.RFC3339, createdStr)
 	u.Enabled = true
+	u.MustChangePassword = mustChange != 0
 
 	now := time.Now().UTC()
 	claims := jwt.MapClaims{
@@ -222,6 +231,9 @@ func (s *Store) Login(ctx context.Context, username, password string) (string, *
 		"iat":  now.Unix(),
 		"exp":  now.Add(8 * time.Hour).Unix(),
 	}
+	if u.MustChangePassword {
+		claims["pwc"] = true
+	}
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := tok.SignedString(s.secret)
 	if err != nil {
@@ -230,8 +242,22 @@ func (s *Store) Login(ctx context.Context, username, password string) (string, *
 	return signed, &u, nil
 }
 
-// VerifyToken parses and validates a JWT, returning the claims.
+// VerifyToken parses and validates a JWT, returning the claims. A token
+// that only allows a password change is refused; see VerifyTokenAllowChange.
 func (s *Store) VerifyToken(tokenStr string) (username string, role Role, err error) {
+	username, role, mustChange, err := s.VerifyTokenAllowChange(tokenStr)
+	if err == nil && mustChange {
+		return "", "", ErrPasswordChangeRequired
+	}
+	return username, role, err
+}
+
+// ErrPasswordChangeRequired: the token only allows changing the password.
+var ErrPasswordChangeRequired = errors.New("security: password change required")
+
+// VerifyTokenAllowChange is VerifyToken that also accepts a token that only
+// allows a password change, and reports whether it is one.
+func (s *Store) VerifyTokenAllowChange(tokenStr string) (username string, role Role, mustChange bool, err error) {
 	tok, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("security: unexpected signing method")
@@ -239,15 +265,16 @@ func (s *Store) VerifyToken(tokenStr string) (username string, role Role, err er
 		return s.secret, nil
 	}, jwt.WithExpirationRequired())
 	if err != nil {
-		return "", "", err
+		return "", "", false, err
 	}
 	claims, ok := tok.Claims.(jwt.MapClaims)
 	if !ok || !tok.Valid {
-		return "", "", errors.New("security: invalid token")
+		return "", "", false, errors.New("security: invalid token")
 	}
 	username, _ = claims["sub"].(string)
 	roleStr, _ := claims["role"].(string)
-	return username, Role(roleStr), nil
+	mustChange, _ = claims["pwc"].(bool)
+	return username, Role(roleStr), mustChange, nil
 }
 
 // HasPermission returns true if role is allowed to perform perm.

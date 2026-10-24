@@ -63,6 +63,7 @@ func (s *Server) routes(assets http.Handler) {
 
 	// Public: login, read-only IDE endpoints (no session needed)
 	r.Post("/api/v1/auth/login", s.handleLogin)
+	r.Post("/api/v1/auth/password", s.handleChangePassword)
 	r.Get("/api/v1/alive", s.handleAlive)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -145,7 +146,7 @@ func (s *Server) routes(assets http.Handler) {
 			r.With(s.requirePerm("users.manage")).Put("/{username}/role", s.handleSetUserRole)
 			r.With(s.requirePerm("users.manage")).Put("/{username}/enabled", s.handleSetUserEnabled)
 			r.With(s.requirePerm("users.manage")).Delete("/{username}", s.handleDeleteUser)
-			r.Post("/{username}/password", s.handleChangePassword)
+			r.With(s.requirePerm("users.manage")).Post("/{username}/password", s.handleSetUserPassword)
 		})
 	})
 

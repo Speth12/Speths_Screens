@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -275,6 +276,9 @@ func (s *Server) wsUser(r *http.Request) (user string, role security.Role, authE
 		return "", "", "login required (?token= when connecting)"
 	}
 	u, rl, err := s.rt.Security.VerifyToken(tok)
+	if errors.Is(err, security.ErrPasswordChangeRequired) {
+		return "", "", "password change required"
+	}
 	if err != nil {
 		return "", "", "invalid or expired token"
 	}

@@ -69,6 +69,11 @@ type Runtime struct {
 	// writeConfirm is how long WriteTag waits for a written value to come
 	// back (see write.go). Tests shorten it.
 	writeConfirm time.Duration
+
+	// InitialAdminFile is where the first admin's password is written when
+	// a project asks for logins and there are no users yet; empty means no
+	// first-run user is created.
+	InitialAdminFile string
 }
 
 // New returns an initialised runtime with the given store and historian.
@@ -240,6 +245,14 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	r.setDemands(projectDemand(p))
 	if p.Security == nil || p.Security.Mode != project.Login {
 		log.Printf("[SECURITY] WARNING: security.mode is not \"login\": no login is needed and everyone has full access, including writes and deploys")
+	} else if r.Security != nil && r.InitialAdminFile != "" {
+		created, err := r.Security.EnsureInitialAdmin(ctx, r.InitialAdminFile)
+		switch {
+		case err != nil:
+			log.Printf("[SECURITY] could not create the first admin: %v", err)
+		case created:
+			log.Printf("[SECURITY] FIRST RUN: created user \"admin\"; its password is in %s and must be changed at first login", r.InitialAdminFile)
+		}
 	}
 	return nil
 }
