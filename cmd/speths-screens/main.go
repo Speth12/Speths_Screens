@@ -67,7 +67,7 @@ func spaHandler() http.Handler {
 func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
 	mode := flag.String("mode", "dev", "dev | runtime")
-	addr := flag.String("addr", "", "listen address (default :3001 dev / :8080 runtime)")
+	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
 	historyDB := flag.String("history", "history.db", "SQLite WAL file (use ':memory:' to disable persistence)")
 	historyRetention := flag.Duration("history-retention", 7*24*time.Hour, "how long to keep history (e.g. 48h, 7d)")

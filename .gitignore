@@ -35,3 +35,6 @@ cmd/speths-screens/ui/
 # Vite / tsc build cache
 *.tsbuildinfo
 packages/ide/vite.config.js
+
+# soak test output (scripts/soak/run-soak.ps1)
+soak-runs/
