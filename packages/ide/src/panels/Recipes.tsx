@@ -3,7 +3,7 @@
 // Use for: startup/shutdown sequences, parameter sets, product changeovers.
 import { useState } from "react";
 import { useProject, type Recipe, type RecipeEntry } from "../store/projectStore";
-import { apiBase } from "../store/runtimeTarget";
+import { apiFetch } from "../store/runtimeAuth";
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
@@ -15,6 +15,22 @@ function newEntry(): RecipeEntry {
   return { binding: "", value: 0 };
 }
 
+/** Apply a deployed recipe on the active runtime. Never throws. */
+export async function applyOnRuntime(id: string): Promise<{ errors: string[]; applied: number }> {
+  try {
+    const r = await apiFetch(`/api/v1/recipes/${encodeURIComponent(id)}/apply`, { method: "POST" });
+    const body = (await r.json().catch(() => ({}))) as { applied?: number; errors?: string[] };
+    const applied = body.applied ?? 0;
+    if (r.status === 200) return { errors: [], applied };
+    if (r.status === 207) return { errors: body.errors ?? [], applied };
+    if (r.status === 404) return { errors: ["the runtime doesn't have this recipe; deploy the project first"], applied: 0 };
+    if (r.status === 401 || r.status === 403) return { errors: ["not allowed: log in as a user who can apply recipes"], applied: 0 };
+    return { errors: [`HTTP ${r.status}`], applied: 0 };
+  } catch (e) {
+    return { errors: [(e as Error).message], applied: 0 };
+  }
+}
+
 export function Recipes() {
   const { project, addRecipe, updateRecipe, removeRecipe } = useProject();
   const recipes = project.recipes ?? [];
@@ -22,32 +38,12 @@ export function Recipes() {
   const [applyState, setApplyState] = useState<Record<string, "idle" | "busy" | "ok" | "err">>({});
   const [applyMsg, setApplyMsg] = useState<Record<string, string>>({});
 
+  // The runtime applies the deployed copy of the recipe, through the write
+  // pipeline, with its recipe.apply check and recipe history.
   const apply = async (recipe: Recipe) => {
     setApplyState((s) => ({ ...s, [recipe.id]: "busy" }));
     setApplyMsg((m) => ({ ...m, [recipe.id]: "" }));
-    const errors: string[] = [];
-    let applied = 0;
-
-    await Promise.all(
-      recipe.entries.map(async (entry) => {
-        if (!entry.binding) return;
-        const sep = entry.binding.indexOf(":");
-        if (sep < 0) { errors.push(`bad binding: ${entry.binding}`); return; }
-        const datasource = entry.binding.slice(0, sep);
-        const path = entry.binding.slice(sep + 1);
-        try {
-          const r = await fetch(`${apiBase}/api/v1/tag/${encodeURIComponent(path)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ datasource, value: entry.value }),
-          });
-          if (r.ok) { applied++; }
-          else { errors.push(`${path}: HTTP ${r.status}`); }
-        } catch (e) {
-          errors.push(`${path}: ${(e as Error).message}`);
-        }
-      })
-    );
+    const { errors, applied } = await applyOnRuntime(recipe.id);
 
     if (errors.length === 0) {
       setApplyState((s) => ({ ...s, [recipe.id]: "ok" }));

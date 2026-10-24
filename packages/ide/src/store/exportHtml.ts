@@ -109,7 +109,17 @@ function writeTag(binding, value) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ datasource: ds, value }),
-  }).catch(() => {});
+  }).then(r => { if (r.status === 401) showLoginNotice(); }).catch(() => {});
+}
+
+// This page has no login. A runtime with security.mode "login" refuses it.
+function showLoginNotice() {
+  if (document.getElementById("login-notice")) return;
+  const d = document.createElement("div");
+  d.id = "login-notice";
+  d.textContent = "This runtime needs a login, which an exported page can't do. Use the operator screen instead.";
+  d.style.cssText = "position:fixed;top:0;left:0;right:0;padding:8px 12px;background:#7f1d1d;color:#fff;font:13px sans-serif;text-align:center;z-index:1000";
+  document.body.appendChild(d);
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────
@@ -326,6 +336,7 @@ async function pollAlarms() {
   if (!base) return;
   try {
     const r = await fetch(base + "/api/v1/alarms");
+    if (r.status === 401) { showLoginNotice(); return; }
     if (!r.ok) return;
     const data = await r.json();
     window._clientAlarms = (data?.alarms ?? []).filter(a => a.active);

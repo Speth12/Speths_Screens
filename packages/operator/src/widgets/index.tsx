@@ -6,6 +6,7 @@ import { useTags } from "../hooks/useTags";
 import { useWriteConfirm, useNavigate } from "../writeContext";
 import { writeTag } from "../writeTag";
 import { useAlarms } from "../alarmContext";
+import { apiFetch } from "../auth";
 
 import type { Dynamic, Widget, WidgetType } from "@speths-screens/shared-types";
 
@@ -434,7 +435,7 @@ function useSeries(binding: string | undefined, duration: number): Sample[] {
   useEffect(() => {
     if (!binding) { setPts([]); ptsRef.current = []; return; }
     const from = (Date.now() - duration) * 1e6;
-    fetch(`/api/v1/history?path=${encodeURIComponent(binding)}&from=${from}&limit=500`)
+    apiFetch(`/api/v1/history?path=${encodeURIComponent(binding)}&from=${from}&limit=500`)
       .then((r) => (r.ok ? r.json() : []))
       .then((samples: Array<{ ts: number; value: unknown }>) => {
         const loaded: Sample[] = samples.filter((s) => typeof s.value === "number")
@@ -761,20 +762,25 @@ function TrendWidget({ w }: { w: Widget }) {
 
 function HistoryLogWidget({ w }: { w: Widget }) {
   const [rows, setRows] = useState<Array<{ ts: number; value: unknown }>>([]);
+  const pageSize = (w.config?.pageSize as number) ?? 100;
   useEffect(() => {
     if (!w.binding) return;
     const from = (Date.now() - 3600_000) * 1e6;
-    fetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=${(w.config?.pageSize as number) ?? 100}`)
+    apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=${pageSize}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then(setRows).catch(() => {});
-  }, [w.binding]);
-  const downloadCSV = () => {
+      .then((data: unknown) => setRows(Array.isArray(data) ? data : [])).catch(() => {});
+  }, [w.binding, pageSize]);
+  // A plain link can't send the token, so fetch the file and save it.
+  const downloadCSV = async () => {
     if (!w.binding) return;
     const from = (Date.now() - 3600_000) * 1e6;
+    const r = await apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=10000&format=csv`).catch(() => null);
+    if (!r?.ok) return;
     const a = document.createElement("a");
-    a.href = `/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=10000&format=csv`;
+    a.href = URL.createObjectURL(await r.blob());
     a.download = `${w.binding.replace(/[:/]/g, "_")}.csv`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   return (
     <div className="h-full flex flex-col">
@@ -966,8 +972,10 @@ export function WidgetRenderer({ w }: { w: Widget }) {
 
 // ── DynamicsApplicator ─────────────────────────────────────────────────────
 
+const NO_DYNAMICS: Dynamic[] = [];
+
 function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const dynamics: Dynamic[] = w.dynamics ?? [];
+  const dynamics = w.dynamics ?? NO_DYNAMICS;
   const navigate = useNavigate();
   const confirm  = useWriteConfirm();
 

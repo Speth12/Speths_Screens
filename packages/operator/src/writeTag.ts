@@ -63,6 +63,7 @@ async function post(binding: string, value: unknown, widgetId?: string): Promise
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
   try {
+    // eslint-disable-next-line local/api-token -- token set on headers above (auth.ts pushes it in via setWriteToken)
     const resp = await fetch(`/api/v1/tag/${encodeURIComponent(path)}`, {
       method: "POST",
       headers,

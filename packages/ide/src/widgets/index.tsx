@@ -5,7 +5,7 @@ import type { Widget, Dynamic } from "../store/projectStore";
 import { useProject } from "../store/projectStore";
 import { useTag } from "../hooks/useTag";
 import { useTags } from "../hooks/useTags";
-import { apiBase } from "../store/runtimeTarget";
+import { apiFetch } from "../store/runtimeAuth";
 import { registerWidget } from "./widgetRegistry";
 import { imageFit } from "./imageFit";
 
@@ -33,7 +33,7 @@ async function writeTag(binding: string, value: unknown): Promise<void> {
   const datasource = binding.slice(0, sep);
   const path = binding.slice(sep + 1);
   try {
-    await fetch(`${apiBase}/api/v1/tag/${encodeURIComponent(path)}`, {
+    await apiFetch(`/api/v1/tag/${encodeURIComponent(path)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ datasource, value }),
@@ -586,7 +586,7 @@ function useSeries(binding: string | undefined, duration: number): Sample[] {
   useEffect(() => {
     if (!binding) { setPts([]); ptsRef.current = []; return; }
     const from = (Date.now() - duration) * 1e6;
-    fetch(`${apiBase}/api/v1/history?path=${encodeURIComponent(binding)}&from=${from}&limit=500`)
+    apiFetch(`/api/v1/history?path=${encodeURIComponent(binding)}&from=${from}&limit=500`)
       .then((r) => (r.ok ? r.json() : []))
       .then((samples: Array<{ ts: number; value: unknown }>) => {
         const loaded: Sample[] = samples
@@ -777,23 +777,27 @@ function TrendWidget({ w }: { w: Widget }) {
 function HistoryLogWidget({ w }: { w: Widget }) {
   const [rows, setRows] = useState<Array<{ ts: number; value: unknown; quality: string }>>([]);
 
+  const pageSize = (w.config?.pageSize as number) ?? 100;
   useEffect(() => {
     if (!w.binding) return;
     const from = (Date.now() - 3600_000) * 1e6;
-    fetch(`${apiBase}/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=${(w.config?.pageSize as number) ?? 100}`)
+    apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=${pageSize}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: unknown) => setRows(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [w.binding]);
+  }, [w.binding, pageSize]);
 
-  const downloadCSV = () => {
+  // A plain link can't send the token, so fetch the file and save it.
+  const downloadCSV = async () => {
     if (!w.binding) return;
     const from = (Date.now() - 3600_000) * 1e6;
-    const url = `${apiBase}/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=10000&format=csv`;
+    const r = await apiFetch(`/api/v1/history?path=${encodeURIComponent(w.binding)}&from=${from}&limit=10000&format=csv`).catch(() => null);
+    if (!r?.ok) return;
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(await r.blob());
     a.download = `${w.binding.replace(/[:/]/g, "_")}.csv`;
     a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   return (
@@ -906,8 +910,10 @@ function FaceplateWidget({ w }: { w: Widget }) {
 
 type TableRow = { label: string; binding: string; unit?: string };
 
+const NO_ROWS: TableRow[] = [];
+
 function TableWidget({ w }: { w: Widget }) {
-  const rows: TableRow[] = (w.config?.rows as TableRow[]) ?? [];
+  const rows: TableRow[] = (w.config?.rows as TableRow[]) ?? NO_ROWS;
   const bindings = useMemo(() => rows.map((r) => r.binding).filter(Boolean), [rows]);
   const tags = useTags(bindings);
   const showQuality = w.config?.showQuality as boolean | undefined;
@@ -1121,15 +1127,17 @@ async function execDynAction(d: Dynamic, tagVals: Record<string, { value: unknow
   } else {
     value = d.writeValue;
   }
-  await fetch(`${apiBase}/api/v1/tag/${encodeURIComponent(binding.slice(sep + 1))}`, {
+  await apiFetch(`/api/v1/tag/${encodeURIComponent(binding.slice(sep + 1))}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ datasource: binding.slice(0, sep), value }),
   }).catch(() => {});
 }
 
+const NO_DYNAMICS: Dynamic[] = [];
+
 function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const dynamics = w.dynamics ?? [];
+  const dynamics = w.dynamics ?? NO_DYNAMICS;
   const { setActivePage } = useProject();
 
   const bindings = useMemo(() =>

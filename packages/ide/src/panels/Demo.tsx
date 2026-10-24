@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { apiBase } from "../store/runtimeTarget";
+import { authHeader } from "../store/runtimeAuth";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -220,7 +221,7 @@ function useFetch<T>(url: string, deps: unknown[] = []) {
 
   useEffect(() => {
     setLoading(true); setError(undefined);
-    fetch(url)
+    fetch(url, { headers: authHeader(apiBase) })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => { setData(d); setLoading(false); })
       .catch(() => { setError("runtime not connected — run `go run ./cmd/speths-screens`"); setLoading(false); });

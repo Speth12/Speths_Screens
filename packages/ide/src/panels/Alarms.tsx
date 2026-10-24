@@ -1,8 +1,8 @@
 // Alarms panel: rule editor + live events (Live tab) + persisted history (History tab).
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useProject, type AlarmCondition, type AlarmRule, type AlarmSeverity } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
-import { authHeader, getToken } from "../store/runtimeAuth";
+import { apiFetch, authHeader, getToken } from "../store/runtimeAuth";
 import { applyAlarmMessage } from "../store/alarmMessages";
 import { useClientAlarms } from "../store/alarmEngine";
 
@@ -153,13 +153,13 @@ function AlarmHistory() {
   const [windowMs, setWindowMs] = useState(HISTORY_WINDOWS[1]!.ms);
   const [severity, setSeverity] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const from = (Date.now() - windowMs) * 1_000_000; // ns
-      let url = `${apiBase}/api/v1/alarms/history?from=${from}&limit=200`;
+      let url = `/api/v1/alarms/history?from=${from}&limit=200`;
       if (severity) url += `&severity=${severity}`;
-      const r = await fetch(url);
+      const r = await apiFetch(url);
       if (!r.ok) { setEvents([]); return; }
       const data: AlarmEvent[] | null = await r.json();
       setEvents(data ?? []);
@@ -168,9 +168,9 @@ function AlarmHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [windowMs, severity]);
 
-  useEffect(() => { void load(); }, [windowMs, severity]);
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <div className="flex flex-col h-full">
@@ -415,7 +415,7 @@ export function AlarmBadge() {
   useEffect(() => {
     const poll = async () => {
       try {
-        const r = await fetch(`${apiBase}/api/v1/alarms`);
+        const r = await apiFetch(`/api/v1/alarms`);
         if (!r.ok) return;
         const events: AlarmEvent[] = await r.json();
         const active = events.filter((e) => e.active && !e.acked);
