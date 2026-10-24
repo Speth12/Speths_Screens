@@ -3,13 +3,13 @@
 package memory
 
 import (
-	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"context"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 func init() {
