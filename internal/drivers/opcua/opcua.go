@@ -556,11 +556,11 @@ func (d *Driver) emit(ctx context.Context, out chan<- tagstore.TagUpdate, path s
 // data type (a JSON number written to a PLCnext REAL becomes a Float).
 func (d *Driver) Write(ctx context.Context, path string, value any) error {
 	if d.state.Load() == stateOffline {
-		return fmt.Errorf("opcua: not connected: %s", d.lastError())
+		return drivers.Mark(fmt.Errorf("opcua: not connected: %s", d.lastError()), drivers.ErrNotConnected)
 	}
 	nid, err := ua.ParseNodeID(path)
 	if err != nil {
-		return fmt.Errorf("opcua: bad node id %q: %w", path, err)
+		return drivers.Mark(fmt.Errorf("opcua: bad node id %q: %w", path, err), drivers.ErrUnknownTag)
 	}
 	dataType, err := d.dataType(ctx, path, nid)
 	if err != nil {
@@ -568,7 +568,7 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 	}
 	converted, err := convertForType(value, dataType)
 	if err != nil {
-		return fmt.Errorf("opcua: %s: %w", path, err)
+		return drivers.Mark(fmt.Errorf("opcua: %s: %w", path, err), drivers.ErrBadValue)
 	}
 	v, err := ua.NewVariant(converted)
 	if err != nil {
@@ -583,12 +583,23 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 	}
 	res, err := d.writeNow(ctx, req)
 	if err != nil {
-		return err
+		return drivers.Mark(err, drivers.ErrNotConnected)
 	}
 	if len(res.Results) > 0 && res.Results[0] != ua.StatusOK {
-		return fmt.Errorf("opcua: write status %v", res.Results[0])
+		return drivers.Mark(fmt.Errorf("opcua: write status %v", res.Results[0]), writeStatusKind(res.Results[0]))
 	}
 	return nil
+}
+
+// writeStatusKind classifies a node status from a read or write.
+func writeStatusKind(s ua.StatusCode) error {
+	switch s {
+	case ua.StatusBadNodeIDUnknown, ua.StatusBadNodeIDInvalid, ua.StatusBadAttributeIDInvalid:
+		return drivers.ErrUnknownTag
+	case ua.StatusBadTypeMismatch, ua.StatusBadOutOfRange:
+		return drivers.ErrBadValue
+	}
+	return drivers.ErrRejected
 }
 
 // dataType returns the node's DataType attribute, read once and cached.
@@ -603,14 +614,14 @@ func (d *Driver) dataType(ctx context.Context, path string, nid *ua.NodeID) (*ua
 		{NodeID: nid, AttributeID: ua.AttributeIDDataType},
 	}})
 	if err != nil {
-		return nil, fmt.Errorf("opcua: read data type of %s: %w", path, err)
+		return nil, drivers.Mark(fmt.Errorf("opcua: read data type of %s: %w", path, err), drivers.ErrNotConnected)
 	}
 	if len(res.Results) == 0 || res.Results[0].Status != ua.StatusOK || res.Results[0].Value == nil {
 		status := ua.StatusBad
 		if len(res.Results) > 0 {
 			status = res.Results[0].Status
 		}
-		return nil, fmt.Errorf("opcua: read data type of %s: %v", path, status)
+		return nil, drivers.Mark(fmt.Errorf("opcua: read data type of %s: %v", path, status), writeStatusKind(status))
 	}
 	dt, ok = res.Results[0].Value.Value().(*ua.NodeID)
 	if !ok {

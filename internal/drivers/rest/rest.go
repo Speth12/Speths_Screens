@@ -715,7 +715,7 @@ func (d *Driver) readOne(ctx context.Context, path string) (tagstore.TagState, e
 // Write PUTs {"value": value} (generic) or POSTs PLCnext format.
 func (d *Driver) Write(ctx context.Context, path string, value any) error {
 	if d.state.Load() == stateOffline {
-		return fmt.Errorf("rest: not connected: %s", d.lastError())
+		return drivers.Mark(fmt.Errorf("rest: not connected: %s", d.lastError()), drivers.ErrNotConnected)
 	}
 	if d.isPXC {
 		return d.pxcWrite(ctx, path, value)
@@ -726,7 +726,7 @@ func (d *Driver) Write(ctx context.Context, path string, value any) error {
 func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
 	varURL := d.varURL()
 	if varURL == "" {
-		return fmt.Errorf("rest: not connected yet")
+		return drivers.Mark(fmt.Errorf("rest: not connected yet"), drivers.ErrNotConnected)
 	}
 	body, err := json.Marshal(map[string]any{
 		"variables": []map[string]any{{"path": path, "value": value}},
@@ -736,11 +736,11 @@ func (d *Driver) pxcWrite(ctx context.Context, path string, value any) error {
 	}
 	status, respBody, err := d.send(ctx, http.MethodPut, varURL, body)
 	if err != nil {
-		return err
+		return writeSendError(err)
 	}
 	if status/100 != 2 {
 		log.Printf("[DRIVER] rest: pxc write status %d body=%s url=%s payload=%s", status, respBody, varURL, body)
-		return fmt.Errorf("rest: pxc write status %d: %s", status, respBody)
+		return drivers.Mark(fmt.Errorf("rest: pxc write status %d: %s", status, respBody), drivers.ErrRejected)
 	}
 	return pxcWriteError(path, respBody)
 }
@@ -782,17 +782,42 @@ func pxcWriteError(path string, body []byte) error {
 		return nil
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return fmt.Errorf("rest: pxc write %s: unreadable response: %w", path, err)
+		return drivers.Mark(fmt.Errorf("rest: pxc write %s: unreadable response: %w", path, err), drivers.ErrRejected)
 	}
 	if resp.Error != nil {
-		return fmt.Errorf("rest: pxc write %s rejected: %s", path, resp.Error)
+		return drivers.Mark(fmt.Errorf("rest: pxc write %s rejected: %s", path, resp.Error), drivers.ErrRejected)
 	}
 	for _, v := range resp.Variables {
 		if v.Error != nil {
-			return fmt.Errorf("rest: pxc write %s rejected: %s", v.Path, v.Error)
+			return drivers.Mark(fmt.Errorf("rest: pxc write %s rejected: %s", v.Path, v.Error), v.Error.kind())
 		}
 	}
 	return nil
+}
+
+// kind classifies a per-variable write error: NotExists is an unknown tag,
+// TypeMismatch a value the variable cannot take, anything else a refusal.
+func (e *pxcError) kind() error {
+	reason := e.Reason
+	if reason == "" && len(e.Details) > 0 {
+		reason = e.Details[0].Reason
+	}
+	switch reason {
+	case "NotExists":
+		return drivers.ErrUnknownTag
+	case "TypeMismatch":
+		return drivers.ErrBadValue
+	}
+	return drivers.ErrRejected
+}
+
+// writeSendError marks a failed write request: no answer means the device
+// is out of reach; anything else is reported as is.
+func writeSendError(err error) error {
+	if _, ok := drivers.NetReason("", err); ok {
+		return drivers.Mark(err, drivers.ErrNotConnected)
+	}
+	return err
 }
 
 func (d *Driver) genericWrite(ctx context.Context, path string, value any) error {
@@ -804,10 +829,13 @@ func (d *Driver) genericWrite(ctx context.Context, path string, value any) error
 	}
 	status, _, err := d.send(ctx, http.MethodPut, reqURL, body)
 	if err != nil {
-		return err
+		return writeSendError(err)
 	}
-	if status/100 != 2 {
-		return fmt.Errorf("rest: PUT %s status %d", reqURL, status)
+	switch {
+	case status == http.StatusNotFound:
+		return drivers.Mark(fmt.Errorf("rest: PUT %s status %d", reqURL, status), drivers.ErrUnknownTag)
+	case status/100 != 2:
+		return drivers.Mark(fmt.Errorf("rest: PUT %s status %d", reqURL, status), drivers.ErrRejected)
 	}
 	return nil
 }

@@ -2,12 +2,14 @@ package opcua
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/Speth12/Speths_Screens/internal/drivers"
 	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 )
@@ -201,6 +203,41 @@ func TestWriteErrors(t *testing.T) {
 			err := newTypedDriver(f).Write(context.Background(), tc.path, tc.value)
 			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Errorf("err = %v, want it to contain %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+// Each failure is marked with the kind the write pipeline uses.
+func TestWriteErrorKinds(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		value   any
+		status  ua.StatusCode
+		offline bool
+		want    error
+	}{
+		{"value cannot be converted", "ns=6;s=A", 1.5, 0, false, drivers.ErrBadValue},
+		{"node unknown", "ns=6;s=Missing", 1.0, 0, false, drivers.ErrUnknownTag},
+		{"bad node id", "ns=x;s=A", 1.0, 0, false, drivers.ErrUnknownTag},
+		{"server refuses", "ns=6;s=A", 1.0, ua.StatusBadUserAccessDenied, false, drivers.ErrRejected},
+		{"server says wrong type", "ns=6;s=A", 1.0, ua.StatusBadTypeMismatch, false, drivers.ErrBadValue},
+		{"driver offline", "ns=6;s=A", 1.0, 0, true, drivers.ErrNotConnected},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeTypedServer{
+				types:  map[string]*ua.NodeID{"ns=6;s=A": ua.NewNumericNodeID(0, id.Int16)},
+				status: tc.status,
+			}
+			d := newTypedDriver(f)
+			if tc.offline {
+				d.state.Store(stateOffline)
+			}
+			err := d.Write(context.Background(), tc.path, tc.value)
+			if !errors.Is(err, tc.want) {
+				t.Errorf("err = %v, want it marked %v", err, tc.want)
 			}
 		})
 	}

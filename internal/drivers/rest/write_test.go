@@ -2,11 +2,14 @@ package rest
 
 import (
 	"context"
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/drivers"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
@@ -72,5 +75,62 @@ func TestPXCWriteReportsControllerErrors(t *testing.T) {
 				t.Errorf("request body %s does not name %s", gotBody, path)
 			}
 		})
+	}
+}
+
+// Each controller answer is marked with the kind the write pipeline uses.
+func TestPXCWriteErrorKinds(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		body   string
+		want   error
+	}{
+		{"variable does not exist", 200, `{"variables":[{"path":"X","error":{"domain":"variables","reason":"NotExists"}}]}`, drivers.ErrUnknownTag},
+		{"wrong type", 200, `{"variables":[{"path":"X","error":{"domain":"variables","reason":"TypeMismatch"}}]}`, drivers.ErrBadValue},
+		{"error on the response", 200, `{"error":{"code":400,"details":[{"domain":"protocol","reason":"invalidCommand"}]}}`, drivers.ErrRejected},
+		{"HTTP error", 403, `forbidden`, drivers.ErrRejected},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tc.status)
+				_, _ = io.WriteString(w, tc.body)
+			}))
+			defer srv.Close()
+			d := New()
+			if err := d.Connect(context.Background(), drivers.DriverConfig{
+				Endpoint: srv.URL,
+				Extra:    map[string]string{"basePath": "/_pxc_api/v1.14"},
+			}, make(chan tagstore.TagUpdate, 1)); err != nil {
+				t.Fatal(err)
+			}
+			defer d.Disconnect()
+			err := d.Write(context.Background(), "Arp.Plc.Eclr/X", 1)
+			if !errors.Is(err, tc.want) {
+				t.Errorf("err = %v, want it marked %v", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestWriteToUnreachableControllerIsNotConnected(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := l.Addr().String()
+	l.Close()
+	d := New()
+	d.backoffMin = time.Hour // stay "starting": the write itself must fail
+	if err := d.Connect(context.Background(), drivers.DriverConfig{
+		Endpoint: "http://" + addr,
+		Extra:    map[string]string{"basePath": "/_pxc_api/v1.14"},
+	}, make(chan tagstore.TagUpdate, 1)); err != nil {
+		t.Fatal(err)
+	}
+	defer d.Disconnect()
+	if err := d.Write(context.Background(), "Arp.Plc.Eclr/X", 1); !errors.Is(err, drivers.ErrNotConnected) {
+		t.Errorf("err = %v, want it marked not connected", err)
 	}
 }

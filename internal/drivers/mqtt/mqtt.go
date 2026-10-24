@@ -281,8 +281,8 @@ func (d *Driver) discover(_ mqttlib.Client, msg mqttlib.Message) {
 // Write publishes value as the payload to topic path.
 func (d *Driver) Write(ctx context.Context, path string, value any) error {
 	c := d.getClient()
-	if c == nil {
-		return fmt.Errorf("mqtt: not connected")
+	if c == nil || !d.connected.Load() {
+		return drivers.Mark(fmt.Errorf("mqtt: not connected"), drivers.ErrNotConnected)
 	}
 	payload := toPayload(value)
 	tok := c.Publish(path, 0, false, payload)
