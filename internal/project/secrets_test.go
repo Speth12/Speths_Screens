@@ -79,3 +79,18 @@ func deref(s *string) string {
 	}
 	return *s
 }
+
+// Users moved to the runtime (defect 9); project files that still list
+// them keep loading and the list is ignored.
+func TestProjectWithUsersStillLoads(t *testing.T) {
+	doc := `{"version":"0.1.0","pages":[],"datasources":[],
+	  "users":[{"id":"u1","name":"op","role":"operator","passwordHash":"$2a$10$abcdefghijklmnopqrstuv"}]}`
+	p, err := Parse(json.RawMessage(doc))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	b, _ := json.Marshal(p)
+	if strings.Contains(string(b), "passwordHash") {
+		t.Errorf("users survived the round trip: %s", b)
+	}
+}

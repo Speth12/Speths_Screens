@@ -314,7 +314,7 @@ export function LeftPanel({ width }: { width?: number }) {
         </TreeSection>
 
         {/* Users */}
-        <TreeSection label="Users" count={project.users?.length}>
+        <TreeSection label="Users">
           <Users />
         </TreeSection>
 
