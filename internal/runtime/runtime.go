@@ -353,7 +353,7 @@ func (r *Runtime) pump(ctx context.Context) {
 func (r *Runtime) process(u tagstore.TagUpdate) {
 	r.Store.Update(u.Path, u.State)
 	if r.Historian != nil {
-		_ = r.Historian.Record(u)
+		r.Historian.Enqueue(u) // never blocks; stores changes only
 	}
 	r.Alarms.Evaluate(u.Path, u.State.Value)
 	// Forward update to any namespace alias paths (ns:foo).

@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
@@ -47,10 +48,17 @@ type AggSample struct {
 type Historian struct {
 	db         *sql.DB
 	retention  time.Duration
-	mu         sync.Mutex
+	mu         sync.Mutex // one writer at a time
 	stop       chan struct{}
 	wg         sync.WaitGroup
 	insertStmt *sql.Stmt
+
+	// Enqueue and recordLoop (see recorder.go).
+	queue    chan tagstore.TagUpdate
+	flushReq chan chan struct{}
+	dropped  atomic.Int64
+	batches  atomic.Int64     // transactions written; for tests
+	now      func() time.Time // replaced in tests
 }
 
 // Open initialises a SQLite database at path (use ":memory:" for tests).
@@ -90,24 +98,25 @@ func Open(path string) (*Historian, error) {
 		retention:  defaultRetention,
 		stop:       make(chan struct{}),
 		insertStmt: stmt,
+		queue:      make(chan tagstore.TagUpdate, queueSize),
+		flushReq:   make(chan chan struct{}),
+		now:        time.Now,
 	}
-	h.wg.Add(1)
+	h.wg.Add(2)
 	go h.trimLoop()
+	go h.recordLoop()
 	return h, nil
 }
 
 // SetRetention configures how far back history is kept.
 func (h *Historian) SetRetention(d time.Duration) { h.retention = d }
 
-// Record stores one tag update.
+// Record stores one tag update at once, unfiltered. The runtime pump uses
+// Enqueue instead, which never blocks and stores changes only.
 func (h *Historian) Record(u tagstore.TagUpdate) error {
-	val, err := json.Marshal(u.State.Value)
-	if err != nil {
-		val = []byte(fmt.Sprintf("%q", fmt.Sprint(u.State.Value)))
-	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	_, err = h.insertStmt.Exec(u.Path, u.State.TS, string(val), u.State.Quality)
+	_, err := h.insertStmt.Exec(u.Path, u.State.TS, encodeValue(u.State.Value), u.State.Quality)
 	return err
 }
 
@@ -231,7 +240,7 @@ func (h *Historian) QueryMultiAggregated(ctx context.Context, paths []string, fr
 	return out, nil
 }
 
-// Close flushes and shuts down.
+// Close writes the updates still queued and shuts down.
 func (h *Historian) Close() error {
 	close(h.stop)
 	h.wg.Wait()
