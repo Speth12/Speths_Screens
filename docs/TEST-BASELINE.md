@@ -1,4 +1,23 @@
-# Test baseline — Phase 0
+# Test baseline
+
+## Phase 1 — 2026-10-24
+
+Recorded on branch `phase-1-followups` (Phase 1 is PR #2 plus these follow-ups). Same machine as below: Windows 11, Go 1.27.0, Node 24.20.0.
+
+| Command | Result |
+| --- | --- |
+| `go vet ./...` | Passes |
+| `go test ./...` | Passes — 245 tests passed, 1 skipped (`TestOPCUALive`, needs a live server), 0 failed, across 22 packages with tests |
+| `go test -race ./...` | Not run locally (no CGO); passes in CI on Linux |
+| `npm run build` | Passes (IDE and operator) |
+| `npm run lint` | Passes — 0 errors; 12 `react-hooks/exhaustive-deps` warnings (10 IDE, 2 operator) left for a careful review |
+| `npm test --workspace=packages/ide -- --run` | Passes — 2 files, 12 tests |
+| `npm test --workspace=packages/operator -- --run` | Passes — 4 files, 32 tests |
+| `npm audit` | 18 vulnerabilities (2 low, 5 moderate, 7 high, 4 critical), unchanged since Phase 0 |
+
+Live checks against the AXC F 3152 (10.0.0.210): cable-unplug test for REST and OPC UA, the write pipeline, the runtime-mode security flow, and the Phase 1 soak test (`scripts/soak/run-soak.ps1`; 24-hour run started 2026-10-24).
+
+## Phase 0
 
 Recorded 2026-10-23 on branch `phase-0-cleanup` (on top of `v0.7.0`, commit `0b74bcd`), before any Phase 0 code fixes.
 
