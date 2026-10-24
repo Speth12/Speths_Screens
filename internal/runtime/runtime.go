@@ -65,6 +65,10 @@ type Runtime struct {
 	// Uncertain; checked every staleEvery (see stale.go). Tests shorten both.
 	staleAfter time.Duration
 	staleEvery time.Duration
+
+	// writeConfirm is how long WriteTag waits for a written value to come
+	// back (see write.go). Tests shorten it.
+	writeConfirm time.Duration
 }
 
 // New returns an initialised runtime with the given store and historian.
@@ -86,6 +90,8 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 
 		staleAfter: 10 * time.Second,
 		staleEvery: time.Second,
+
+		writeConfirm: 3 * time.Second,
 	}
 }
 

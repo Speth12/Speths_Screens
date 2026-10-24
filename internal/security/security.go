@@ -58,7 +58,7 @@ const (
 
 // defaultPermissions maps roles to their allowed permissions.
 var defaultPermissions = map[Role][]Permission{
-	RoleOperator:   {PermReadTag, PermAckAlarm},
+	RoleOperator:   {PermReadTag, PermWriteTag, PermAckAlarm},
 	RoleSupervisor: {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe},
 	RoleEngineer:   {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermDeploy},
 	RoleAdmin:      {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermDeploy, PermManageUsers},
