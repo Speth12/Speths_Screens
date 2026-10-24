@@ -3,6 +3,8 @@ package api
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/Speth12/Speths_Screens/internal/mcp"
 	"github.com/Speth12/Speths_Screens/internal/runtime"
@@ -17,6 +19,16 @@ type Server struct {
 	versions *versionstore.Store
 	router   chi.Router
 	DevMode  bool // when true, JWT auth is bypassed (IDE / local dev)
+
+	// AllowedOrigins are the web origins (scheme://host:port) other than
+	// the runtime's own that may call the API and open WebSockets.
+	AllowedOrigins []string
+}
+
+// DefaultAllowedOrigins are the IDE and operator dev servers on this machine.
+var DefaultAllowedOrigins = []string{
+	"http://localhost:5173", "http://127.0.0.1:5173", // IDE
+	"http://localhost:7001", "http://127.0.0.1:7001", // operator
 }
 
 // New builds a configured Server. assets and vs may be nil.
@@ -24,9 +36,9 @@ func New(rt *runtime.Runtime, assets http.Handler, vs ...*versionstore.Store) *S
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(corsMiddleware)
 
-	s := &Server{rt: rt, router: r}
+	s := &Server{rt: rt, router: r, AllowedOrigins: DefaultAllowedOrigins}
+	r.Use(s.corsMiddleware)
 	if len(vs) > 0 {
 		s.versions = vs[0]
 	}
@@ -39,20 +51,45 @@ func New(rt *runtime.Runtime, assets http.Handler, vs ...*versionstore.Store) *S
 	return s
 }
 
-// corsMiddleware allows cross-origin requests from any origin so the IDE
-// (localhost:5173) can deploy directly to a remote runtime (e.g. PLC at
-// 10.0.0.210:8080) without a proxy.
-func corsMiddleware(next http.Handler) http.Handler {
+// corsMiddleware lets the allowed origins call the API from a browser, so
+// the IDE (localhost:5173) can deploy to a remote runtime (e.g. a PLC at
+// 10.0.0.210:8080). Other origins get no CORS headers, so browsers refuse
+// to let their pages read the answers.
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if origin := r.Header.Get("Origin"); origin != "" && s.originAllowed(origin) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		}
+		w.Header().Add("Vary", "Origin")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) originAllowed(origin string) bool {
+	for _, o := range s.AllowedOrigins {
+		if strings.EqualFold(o, origin) {
+			return true
+		}
+	}
+	return false
+}
+
+// originPatterns gives the WebSocket library the allowed origins' hosts;
+// it always allows the runtime's own origin and clients sending none.
+func (s *Server) originPatterns() []string {
+	var out []string
+	for _, o := range s.AllowedOrigins {
+		if u, err := url.Parse(o); err == nil && u.Host != "" {
+			out = append(out, u.Host)
+		}
+	}
+	return out
 }
 
 // Handler returns the http.Handler for use by net/http.

@@ -64,10 +64,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 401, authErr) // with security.mode "login", reading needs a login too
 		return
 	}
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		// for dev IDE on different port — Day 5+ may tighten this
-		InsecureSkipVerify: true,
-	})
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: s.originPatterns()})
 	if err != nil {
 		log.Printf("[WS] accept: %v", err)
 		return
@@ -177,7 +174,7 @@ func (s *Server) handleAlarmWS(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 401, authErr)
 		return
 	}
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: s.originPatterns()})
 	if err != nil {
 		log.Printf("[WS/alarms] accept: %v", err)
 		return
@@ -225,7 +222,11 @@ func (s *Server) handleAlarmWS(w http.ResponseWriter, r *http.Request) {
 // Used by the preview/runtime viewer to receive navigate_page commands and
 // other runtime-to-client broadcasts without polling.
 func (s *Server) handleEventsWS(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
+	if _, _, authErr := s.wsUser(r); authErr != "" {
+		writeErr(w, 401, authErr)
+		return
+	}
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: s.originPatterns()})
 	if err != nil {
 		log.Printf("[WS/events] accept: %v", err)
 		return

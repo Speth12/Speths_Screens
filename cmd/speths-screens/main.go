@@ -10,12 +10,15 @@ import (
 	"embed"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -73,6 +76,7 @@ func main() {
 	securityDB := flag.String("security-db", "security.db", "SQLite file for users and sessions")
 	auditDB := flag.String("audit-db", "", "SQLite file for audit log (empty = disabled)")
 	recipeDB := flag.String("recipe-db", "recipes.db", "SQLite file for recipe history and approvals")
+	corsOrigins := flag.String("cors-origins", "", "comma-separated extra web origins (scheme://host:port) allowed to call the API")
 	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (random 32+ bytes); auto-generated if empty")
 	flag.Parse()
 
@@ -108,7 +112,12 @@ func main() {
 		case "runtime":
 			*addr = ":8080"
 		default:
-			*addr = ":3001"
+			*addr = "127.0.0.1:3001"
+		}
+	}
+	if *mode == "dev" {
+		if err := checkDevAddr(*addr); err != nil {
+			log.Fatalf("[Speth's Screens] %v", err)
 		}
 	}
 
@@ -213,6 +222,7 @@ func main() {
 	}
 	srv := api.New(rt, assets, versionSt)
 	srv.DevMode = *mode == "dev"
+	srv.AllowedOrigins = append(append([]string(nil), api.DefaultAllowedOrigins...), splitList(*corsOrigins)...)
 
 	httpSrv := &http.Server{
 		Addr:              *addr,
@@ -244,4 +254,32 @@ func generateSecret() []byte {
 	}
 	log.Println("[Speth's Screens] WARNING: JWT secret auto-generated; tokens will be invalidated on restart. Pass --jwt-secret for persistence.")
 	return b
+}
+
+// checkDevAddr refuses a dev-mode listen address that is not on this
+// machine: dev mode skips logins, so it must not be reachable from the
+// network.
+func checkDevAddr(addr string) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("dev mode: bad listen address %q: %w", addr, err)
+	}
+	if host == "localhost" {
+		return nil
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return nil
+	}
+	return fmt.Errorf("dev mode skips logins, so it listens on this machine only; use --addr=127.0.0.1:<port> (got %q), or --mode=runtime", addr)
+}
+
+// splitList splits a comma-separated flag value, dropping empty items.
+func splitList(v string) []string {
+	var out []string
+	for _, item := range strings.Split(v, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
 }
