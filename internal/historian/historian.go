@@ -47,7 +47,8 @@ type AggSample struct {
 // Historian persists tag updates and serves time-range queries.
 type Historian struct {
 	db         *sql.DB
-	retention  time.Duration
+	retention  atomic.Int64 // time.Duration; see retentionNow
+	rules      atomic.Pointer[ruleSet]
 	mu         sync.Mutex // one writer at a time
 	stop       chan struct{}
 	wg         sync.WaitGroup
@@ -95,21 +96,23 @@ func Open(path string) (*Historian, error) {
 	}
 	h := &Historian{
 		db:         db,
-		retention:  defaultRetention,
 		stop:       make(chan struct{}),
 		insertStmt: stmt,
 		queue:      make(chan tagstore.TagUpdate, queueSize),
 		flushReq:   make(chan chan struct{}),
 		now:        time.Now,
 	}
+	h.retention.Store(int64(defaultRetention))
+	h.rules.Store(compile(Rules{}))
 	h.wg.Add(2)
 	go h.trimLoop()
 	go h.recordLoop()
 	return h, nil
 }
 
-// SetRetention configures how far back history is kept.
-func (h *Historian) SetRetention(d time.Duration) { h.retention = d }
+// SetRetention configures how far back history is kept, unless the
+// project's rules set their own retention.
+func (h *Historian) SetRetention(d time.Duration) { h.retention.Store(int64(d)) }
 
 // Record stores one tag update at once, unfiltered. The runtime pump uses
 // Enqueue instead, which never blocks and stores changes only.
@@ -266,7 +269,7 @@ func (h *Historian) trimLoop() {
 
 // trim deletes samples older than the configured retention window.
 func (h *Historian) trim() error {
-	cutoff := time.Now().Add(-h.retention).UnixNano()
+	cutoff := time.Now().Add(-h.retentionNow()).UnixNano()
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	_, err := h.db.Exec(`DELETE FROM history WHERE ts < ?`, cutoff)

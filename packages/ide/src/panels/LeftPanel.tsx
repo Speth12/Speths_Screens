@@ -7,6 +7,7 @@ import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
 import { generateStandaloneHtml } from "../store/exportHtml";
 import { AuditTrail } from "./AuditTrail";
+import { HistorySettings } from "./HistorySettings";
 import { AssetModel } from "./AssetModel";
 import { Faceplates } from "./Faceplates";
 import { Namespace } from "./Namespace";
@@ -352,6 +353,7 @@ export function LeftPanel({ width }: { width?: number }) {
                 </label>
               </div>
             </div>
+            <HistorySettings value={project.historian} onChange={(historian) => setProp({ historian })} />
             <CanvasSettings />
             <SymbolPacksSettings />
           </div>

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
@@ -25,6 +26,8 @@ type lastSample struct {
 	value   string // JSON
 	quality string
 	at      time.Time // wall time it was stored
+	num     float64   // the value as a number, when isNum
+	isNum   bool
 }
 
 // row is one sample ready to insert.
@@ -38,7 +41,9 @@ type row struct {
 // Enqueue hands one tag update to the historian. It never blocks: when the
 // queue is full (the disk is far behind), the update is dropped and counted.
 // The update is stored if its value or quality changed, if it is the first
-// for its path, or if the path was last stored heartbeat ago.
+// for its path, or if the path was last stored heartbeat ago. A number that
+// stays within its deadband (see Rules) of the last stored value counts as
+// unchanged; tags a rule skips are never stored.
 func (h *Historian) Enqueue(u tagstore.TagUpdate) {
 	select {
 	case h.queue <- u:
@@ -115,14 +120,26 @@ func (h *Historian) recordLoop() {
 }
 
 // keep decides whether u is stored and records it as the path's last sample.
+// The deadband compares with the last stored value, not the last seen one,
+// so a slow drift is stored once it adds up.
 func (h *Historian) keep(last map[string]lastSample, u tagstore.TagUpdate) (row, bool) {
-	val := encodeValue(u.State.Value)
-	now := h.now()
-	prev, seen := last[u.Path]
-	if seen && prev.value == val && prev.quality == u.State.Quality && now.Sub(prev.at) < heartbeat {
+	pol := h.rules.Load().forPath(u.Path)
+	if pol.skip {
 		return row{}, false
 	}
-	last[u.Path] = lastSample{value: val, quality: u.State.Quality, at: now}
+	val := encodeValue(u.State.Value)
+	num, isNum := deadbandNumber(u.State.Value)
+	now := h.now()
+	prev, seen := last[u.Path]
+	if seen && prev.quality == u.State.Quality && now.Sub(prev.at) < heartbeat {
+		if prev.value == val {
+			return row{}, false
+		}
+		if pol.deadband > 0 && isNum && prev.isNum && math.Abs(num-prev.num) <= pol.deadband {
+			return row{}, false
+		}
+	}
+	last[u.Path] = lastSample{value: val, quality: u.State.Quality, at: now, num: num, isNum: isNum}
 	return row{path: u.Path, ts: u.State.TS, value: val, quality: u.State.Quality}, true
 }
 
@@ -160,4 +177,13 @@ func encodeValue(v any) string {
 		return fmt.Sprintf("%q", fmt.Sprint(v))
 	}
 	return string(b)
+}
+
+// deadbandNumber returns v as a number for the deadband. true/false are not
+// numbers here: any change of a bool is stored.
+func deadbandNumber(v any) (float64, bool) {
+	if _, ok := v.(bool); ok {
+		return 0, false
+	}
+	return tagstore.Number(v)
 }

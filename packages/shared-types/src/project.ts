@@ -13,7 +13,12 @@ export interface Project {
      */
     enabledSymbolPacks?: string[];
     faceplates?:         Faceplate[];
-    images?:             ImageAsset[];
+    /**
+     * What the historian stores and for how long. Missing means every change, plus one sample
+     * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+     */
+    historian?: HistorianSettings;
+    images?:    ImageAsset[];
     /**
      * Human-readable project name
      */
@@ -510,6 +515,42 @@ export type DynamicKind = "visibility" | "colorFill" | "blink" | "rotation" | "d
 export type DynamicTargetProp = "bgColor" | "borderColor" | "textColor" | "visible";
 
 export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table";
+
+/**
+ * What the historian stores and for how long. Missing means every change, plus one sample
+ * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+ */
+export interface HistorianSettings {
+    /**
+     * Default deadband in each tag's own units: a number is stored when it moves more than this
+     * from the last stored value. 0 stores any change. Text and true/false values ignore it
+     */
+    deadband?: number;
+    /**
+     * Days of history kept. Overrides the runtime's --history-retention
+     */
+    retentionDays?: number;
+    /**
+     * Rules for single tags or groups; the most specific rule wins
+     */
+    tags?: HistorianTagRule[];
+}
+
+export interface HistorianTagRule {
+    /**
+     * Deadband for these tags; missing uses the default
+     */
+    deadband?: number;
+    /**
+     * Tag as datasource:path, e.g. 'plc1:Arp.Plc.Eclr/rTemp'. Ending in * matches every tag
+     * starting with the rest
+     */
+    path: string;
+    /**
+     * false leaves these tags out of the history (default true)
+     */
+    store?: boolean;
+}
 
 export interface ImageAsset {
     /**

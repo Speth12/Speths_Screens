@@ -155,6 +155,9 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		})
 	}
 	r.Alarms.SetRules(rules)
+	if r.Historian != nil {
+		r.Historian.SetRules(historianRules(p))
+	}
 
 	// Load namespace from project JSON (replaces previous tree contents).
 	// Round-trips through JSON so Tree.UnmarshalJSON keeps doing the replace.

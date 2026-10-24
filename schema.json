@@ -47,6 +47,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/Recipe" }
     },
+    "historian": {
+      "$ref": "#/$defs/HistorianSettings",
+      "description": "What the historian stores and for how long. Missing means every change, plus one sample per tag every 60 s, kept for the runtime's --history-retention (default 7 days)"
+    },
     "namespace": {
       "type": "array",
       "items": { "$ref": "#/$defs/NamespaceNode" },
@@ -426,6 +430,27 @@
       "title": "AlarmSeverity",
       "type": "string",
       "enum": ["critical", "warning", "info"]
+    },
+    "HistorianSettings": {
+      "title": "HistorianSettings",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deadband":      { "type": "number", "minimum": 0, "description": "Default deadband in each tag's own units: a number is stored when it moves more than this from the last stored value. 0 stores any change. Text and true/false values ignore it" },
+        "retentionDays": { "type": "integer", "minimum": 1, "description": "Days of history kept. Overrides the runtime's --history-retention" },
+        "tags":          { "type": "array", "items": { "$ref": "#/$defs/HistorianTagRule" }, "description": "Rules for single tags or groups; the most specific rule wins" }
+      }
+    },
+    "HistorianTagRule": {
+      "title": "HistorianTagRule",
+      "type": "object",
+      "required": ["path"],
+      "additionalProperties": false,
+      "properties": {
+        "path":     { "type": "string", "description": "Tag as datasource:path, e.g. 'plc1:Arp.Plc.Eclr/rTemp'. Ending in * matches every tag starting with the rest" },
+        "deadband": { "type": "number", "minimum": 0, "description": "Deadband for these tags; missing uses the default" },
+        "store":    { "type": "boolean", "description": "false leaves these tags out of the history (default true)" }
+      }
     },
     "Recipe": {
       "title": "Recipe",

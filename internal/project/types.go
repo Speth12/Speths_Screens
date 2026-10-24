@@ -11,7 +11,10 @@ type Types struct {
 	// Symbol pack ids shown in the IDE symbol library. Missing means all packs
 	EnabledSymbolPacks []string           `json:"enabledSymbolPacks,omitempty"`
 	Faceplates         []FaceplateElement `json:"faceplates,omitempty"`
-	Images             []ImageAsset       `json:"images,omitempty"`
+	// What the historian stores and for how long. Missing means every change, plus one sample
+	// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+	Historian *HistorianSettings `json:"historian,omitempty"`
+	Images    []ImageAsset       `json:"images,omitempty"`
 	// Human-readable project name
 	Name *string `json:"name,omitempty"`
 	// Unified Namespace — flat list of folders, assets and tags. Tags with driverId+driverAddr
@@ -298,6 +301,28 @@ type DynamicElement struct {
 	WriteTo *string `json:"writeTo,omitempty"`
 	// writeValue action: value to write
 	WriteValue interface{} `json:"writeValue,omitempty"`
+}
+
+// What the historian stores and for how long. Missing means every change, plus one sample
+// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+type HistorianSettings struct {
+	// Default deadband in each tag's own units: a number is stored when it moves more than this
+	// from the last stored value. 0 stores any change. Text and true/false values ignore it
+	Deadband *float64 `json:"deadband,omitempty"`
+	// Days of history kept. Overrides the runtime's --history-retention
+	RetentionDays *int64 `json:"retentionDays,omitempty"`
+	// Rules for single tags or groups; the most specific rule wins
+	Tags []HistorianTagRule `json:"tags,omitempty"`
+}
+
+type HistorianTagRule struct {
+	// Deadband for these tags; missing uses the default
+	Deadband *float64 `json:"deadband,omitempty"`
+	// Tag as datasource:path, e.g. 'plc1:Arp.Plc.Eclr/rTemp'. Ending in * matches every tag
+	// starting with the rest
+	Path string `json:"path"`
+	// false leaves these tags out of the history (default true)
+	Store *bool `json:"store,omitempty"`
 }
 
 type ImageAsset struct {
