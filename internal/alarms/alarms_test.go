@@ -104,3 +104,38 @@ func TestClosedSubscriptionGetsNothing(t *testing.T) {
 		t.Errorf("%d subscriptions left after Close", n)
 	}
 }
+
+// Alarms fire on every number type a driver delivers; OPC UA gives PLC
+// integers in their own sizes (INT as int16, WORD as uint16, ...).
+func TestAlarmOnEveryNumberType(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+		fires bool
+	}{
+		{"LREAL float64", float64(150), true},
+		{"REAL float32", float32(150), true},
+		{"SINT int8", int8(120), true},
+		{"INT int16", int16(150), true},
+		{"DINT int32", int32(150), true},
+		{"LINT int64", int64(150), true},
+		{"BYTE uint8", uint8(150), true},
+		{"WORD uint16", uint16(150), true},
+		{"DWORD uint32", uint32(150), true},
+		{"ULINT uint64", uint64(150), true},
+		{"int", 150, true},
+		{"uint", uint(150), true},
+		{"INT below the threshold", int16(50), false},
+		{"text is not evaluated", "150", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			e := highTemp()
+			e.Evaluate("plc:T", tc.value)
+			evs := e.Events()
+			if fired := len(evs) == 1 && evs[0].Active; fired != tc.fires {
+				t.Errorf("value %v (%T): fired %v, want %v", tc.value, tc.value, fired, tc.fires)
+			}
+		})
+	}
+}

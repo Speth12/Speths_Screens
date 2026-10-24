@@ -290,26 +290,10 @@ func (d *Driver) Status() drivers.DriverStatus {
 	}
 }
 
+// toFloat reads an input as a number; text and missing values count as 0.
 func toFloat(v any) float64 {
-	switch x := v.(type) {
-	case float64:
-		return x
-	case float32:
-		return float64(x)
-	case int:
-		return float64(x)
-	case int32:
-		return float64(x)
-	case int64:
-		return float64(x)
-	case bool:
-		if x {
-			return 1
-		}
-		return 0
-	default:
-		return 0
-	}
+	f, _ := tagstore.Number(v)
+	return f
 }
 
 func init() {

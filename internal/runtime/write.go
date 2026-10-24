@@ -13,6 +13,7 @@ import (
 
 	"github.com/Speth12/Speths_Screens/internal/drivers"
 	"github.com/Speth12/Speths_Screens/internal/project"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 // Write results.
@@ -288,36 +289,17 @@ func (l limits) check(v any) error {
 	return nil
 }
 
-// number reads v as a float64: numbers and numeric strings.
+// number reads v as a float64: numbers and numeric strings (not bools,
+// which a limit should not accept as 0 or 1).
 func number(v any) (float64, bool) {
 	switch x := v.(type) {
-	case float64:
-		return x, true
-	case float32:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case int8:
-		return float64(x), true
-	case int16:
-		return float64(x), true
-	case int32:
-		return float64(x), true
-	case int64:
-		return float64(x), true
-	case uint8:
-		return float64(x), true
-	case uint16:
-		return float64(x), true
-	case uint32:
-		return float64(x), true
-	case uint64:
-		return float64(x), true
+	case bool:
+		return 0, false
 	case string:
 		f, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
 		return f, err == nil
 	}
-	return 0, false
+	return tagstore.Number(v)
 }
 
 // valuesEqual compares a written value with what the device reports.

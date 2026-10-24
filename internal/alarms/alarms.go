@@ -4,6 +4,7 @@
 package alarms
 
 import (
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"sync"
 	"time"
 )
@@ -301,26 +302,9 @@ func eval(cond Condition, value, threshold float64) bool {
 	return false
 }
 
-func toFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case float32:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case int32:
-		return float64(x), true
-	case int64:
-		return float64(x), true
-	case bool:
-		if x {
-			return 1, true
-		}
-		return 0, true
-	}
-	return 0, false
-}
+// toFloat reads a tag value as a number (every Go number type a driver
+// delivers; see tagstore.Number).
+func toFloat(v any) (float64, bool) { return tagstore.Number(v) }
 
 // fanOut hands a change to every subscriber. The caller holds e.mu.
 func (e *Engine) fanOut(ev Event) {
