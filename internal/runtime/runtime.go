@@ -253,27 +253,41 @@ func (r *Runtime) startFanIn(dsID string) chan<- tagstore.TagUpdate {
 	return fanCh
 }
 
-// TestDatasource creates a temporary driver, attempts to connect within 10 s,
-// returns its status, then disconnects. Safe to call concurrently.
+// testDatasourceWait is how long TestDatasource waits for a driver to come
+// online or report an error; tests shorten it.
+var testDatasourceWait = 10 * time.Second
+
+// TestDatasource creates a temporary driver, connects it, waits until it is
+// online or reports an error (drivers connect in the background), returns
+// its status, then disconnects. Safe to call concurrently.
 func (r *Runtime) TestDatasource(ctx context.Context, ds project.Datasource) drivers.DriverStatus {
 	drv, err := r.buildDriver(ds.Type)
 	if err != nil {
 		return drivers.DriverStatus{LastError: err.Error()}
 	}
-	tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	tctx, cancel := context.WithTimeout(ctx, testDatasourceWait)
 	defer cancel()
 	cfg := buildConfig(ds)
 	if err := drv.Connect(tctx, cfg, nil); err != nil {
 		return drivers.DriverStatus{LastError: err.Error()}
 	}
-	// Give driver a moment to fully handshake (especially MQTT).
-	select {
-	case <-time.After(500 * time.Millisecond):
-	case <-tctx.Done():
+	defer drv.Disconnect()
+	tick := time.NewTicker(50 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		st := drv.Status()
+		if st.Connected || st.LastError != "" {
+			return st
+		}
+		select {
+		case <-tick.C:
+		case <-tctx.Done():
+			if st.LastError == "" {
+				st.LastError = "no answer within " + testDatasourceWait.String()
+			}
+			return st
+		}
 	}
-	st := drv.Status()
-	_ = drv.Disconnect()
-	return st
 }
 
 // Project returns the currently loaded project (may be nil).

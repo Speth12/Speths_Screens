@@ -214,11 +214,15 @@ func TestRetriesBackOff(t *testing.T) {
 	_ = d.Disconnect()
 
 	times := f.requestTimes()
-	// Expected waits: 50, 100, 200, 200, 200 ms (±20%), so about 6 requests.
-	if len(times) < 4 || len(times) > 8 {
-		t.Fatalf("%d requests in 1.3 s, want about 6", len(times))
+	var gaps []string
+	for i := 1; i < len(times); i++ {
+		gaps = append(gaps, times[i].Sub(times[i-1]).Round(time.Millisecond).String())
 	}
-	want := []time.Duration{50, 100, 200, 200, 200, 200, 200}
+	// Expected waits: 50, 100, then 200 ms (±20%): about 8 requests in 1.3 s.
+	if len(times) < 6 || len(times) > 10 {
+		t.Fatalf("%d requests in 1.3 s, want about 8; gaps %v", len(times), gaps)
+	}
+	want := []time.Duration{50, 100, 200, 200, 200, 200, 200, 200, 200, 200}
 	for i := 1; i < len(times); i++ {
 		gap := times[i].Sub(times[i-1])
 		w := want[i-1] * time.Millisecond

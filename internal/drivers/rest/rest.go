@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"slices"
@@ -411,22 +410,21 @@ func (d *Driver) output() chan<- tagstore.TagUpdate {
 func (d *Driver) run(ctx context.Context) {
 	defer d.wg.Done()
 	d.last = map[string]tagstore.TagState{}
-	wait := d.backoffMin
+	retry := drivers.Backoff{Min: d.backoffMin, Max: d.backoffMax}
 	for {
 		err := d.contact(ctx)
 		if err == nil {
 			d.setOnline()
-			wait = d.backoffMin
+			retry.Reset()
 			err = d.pollUntilFailure(ctx)
 		}
 		if ctx.Err() != nil {
 			return
 		}
 		d.setOffline(ctx, err)
-		if !sleepCtx(ctx, jitter(wait)) {
+		if !drivers.SleepCtx(ctx, retry.Next()) {
 			return
 		}
-		wait = min(2*wait, d.backoffMax)
 	}
 }
 
@@ -560,23 +558,6 @@ func (d *Driver) emit(ctx context.Context, out chan<- tagstore.TagUpdate, path s
 	case <-ctx.Done():
 		return false
 	}
-}
-
-// sleepCtx waits for d or until ctx is done; it reports whether d passed.
-func sleepCtx(ctx context.Context, d time.Duration) bool {
-	t := time.NewTimer(d)
-	defer t.Stop()
-	select {
-	case <-t.C:
-		return true
-	case <-ctx.Done():
-		return false
-	}
-}
-
-// jitter spreads d by ±20% so many runtimes do not retry in step.
-func jitter(d time.Duration) time.Duration {
-	return time.Duration(float64(d) * (0.8 + 0.4*rand.Float64()))
 }
 
 // pxcEntry is one variable in a PLCnext read reply.
