@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useTag } from "../hooks/useTag";
 import { useTags } from "../hooks/useTags";
 import { useWriteConfirm, useNavigate } from "../writeContext";
+import { writeTag } from "../writeTag";
 import { useAlarms } from "../alarmContext";
 
 import type { Dynamic, Widget, WidgetType } from "@speths-screens/shared-types";
@@ -71,20 +72,6 @@ const qualityColor: Record<string, string> = {
   Uncertain: "text-amber-400",
   Unknown: "text-zinc-500",
 };
-
-async function writeTag(binding: string, value: unknown): Promise<void> {
-  const sep = binding.indexOf(":");
-  if (sep < 0) return;
-  const datasource = binding.slice(0, sep);
-  const path = binding.slice(sep + 1);
-  try {
-    await fetch(`/api/v1/tag/${encodeURIComponent(path)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasource, value }),
-    });
-  } catch { /* ignore */ }
-}
 
 // ── Color threshold helper ─────────────────────────────────────────────────
 
@@ -329,9 +316,9 @@ function ButtonWidget({ w }: { w: Widget }) {
     return (
       <button
         className="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 active:scale-95 text-sm font-medium transition-all"
-        onPointerDown={() => w.binding && writeTag(w.binding, onValue)}
-        onPointerUp={()   => w.binding && writeTag(w.binding, offValue)}
-        onPointerLeave={()=> w.binding && writeTag(w.binding, offValue)}
+        onPointerDown={() => w.binding && writeTag(w.binding, onValue, w.id)}
+        onPointerUp={()   => w.binding && writeTag(w.binding, offValue, w.id)}
+        onPointerLeave={()=> w.binding && writeTag(w.binding, offValue, w.id)}
       >
         {label}
       </button>
@@ -345,7 +332,7 @@ function ButtonWidget({ w }: { w: Widget }) {
       className={`w-full h-full rounded-md text-sm font-medium transition-all active:scale-95 ${
         on ? "bg-emerald-600 hover:bg-emerald-500" : "bg-zinc-700 hover:bg-zinc-600"
       }`}
-      onClick={() => w.binding && confirm({ binding: w.binding, value: nextValue, label: nextLabel })}
+      onClick={() => w.binding && confirm({ binding: w.binding, value: nextValue, label: nextLabel, widgetId: w.id })}
     >
       {label}
     </button>
@@ -368,7 +355,7 @@ function NumericInputWidget({ w }: { w: Widget }) {
   const commit = () => {
     const n = parseFloat(draft);
     if (!isNaN(n) && w.binding) {
-      confirm({ binding: w.binding, value: n });
+      confirm({ binding: w.binding, value: n, widgetId: w.id });
     }
     setEditing(false);
   };
@@ -412,7 +399,7 @@ function TextInputWidget({ w }: { w: Widget }) {
   const [draft, setDraft] = useState("");
   const startEdit = () => { setDraft(fmt(t.value)); setEditing(true); };
   const commit = () => {
-    if (w.binding) confirm({ binding: w.binding, value: draft });
+    if (w.binding) confirm({ binding: w.binding, value: draft, widgetId: w.id });
     setEditing(false);
   };
   return (
@@ -820,7 +807,7 @@ function SetpointWidget({ w }: { w: Widget }) {
 
   const commit = (n: number) => {
     setDraft(null);
-    if (w.binding) confirm({ binding: w.binding, value: n });
+    if (w.binding) confirm({ binding: w.binding, value: n, widgetId: w.id });
   };
 
   return (
@@ -1044,7 +1031,7 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
         const val = d.actionType === "toggleValue" ? !cur
           : d.actionType === "incrementValue" ? (typeof cur === "number" ? cur + (d.step ?? 1) : (d.step ?? 1))
           : d.writeValue;
-        confirm({ binding: d.writeTo, value: val });
+        confirm({ binding: d.writeTo, value: val, widgetId: w.id });
       }
     }
   }, [dynamics, tagVals, navigate, confirm]); // eslint-disable-line react-hooks/exhaustive-deps

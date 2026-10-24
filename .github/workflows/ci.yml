@@ -30,6 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test --workspace=packages/ide -- --run
+      - run: npm test --workspace=packages/operator -- --run
 
   gen-types:
     runs-on: ubuntu-latest

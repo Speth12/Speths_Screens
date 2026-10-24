@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { WidgetRenderer, ProjectImagesProvider, type Widget } from "./widgets";
 import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./writeContext";
+import { writeTag, onWriteResult } from "./writeTag";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
 import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/themes";
 
@@ -299,17 +300,21 @@ export function App() {
   /** Write handler — blocked in viewOnly mode, executes immediately otherwise. */
   const requestWrite = useCallback(async (req: WriteRequest) => {
     if (project?.viewOnly) return;
-    const sep = req.binding.indexOf(":");
-    if (sep < 0) return;
-    const datasource = req.binding.slice(0, sep);
-    const path = req.binding.slice(sep + 1);
-    try {
-      await fetch(`/api/v1/tag/${encodeURIComponent(path)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ datasource, value: req.value }),
-      });
-    } catch { /* swallow */ }
+    await writeTag(req.binding, req.value, req.widgetId);
+  }, [project?.viewOnly]);
+
+  // Tell the operator when a write did not go through.
+  const [writeNotice, setWriteNotice] = useState<string | null>(null);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const off = onWriteResult((r) => {
+      if (r.status !== "failed" && r.status !== "not_confirmed") return;
+      const what = r.status === "failed" ? "failed" : "was not confirmed";
+      setWriteNotice(`Write of ${JSON.stringify(r.value)} to ${r.binding} ${what}${r.reason ? `: ${r.reason}` : ""}`);
+      clearTimeout(timer);
+      timer = setTimeout(() => setWriteNotice(null), 6000);
+    });
+    return () => { off(); clearTimeout(timer); };
   }, []);
 
   const activeAlarms = alarms.filter((a) => a.active && !a.acked);
@@ -366,6 +371,12 @@ export function App() {
     <AlarmContext.Provider value={{ alarms, ack }}>
     <NavigateContext.Provider value={navigateToPage}>
     <WriteConfirmContext.Provider value={requestWrite}>
+      {writeNotice && (
+        <div role="alert"
+             className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] rounded-md bg-red-900/90 text-red-100 text-sm px-4 py-2 shadow-lg">
+          {writeNotice}
+        </div>
+      )}
       <div
         className={`${isKiosk ? "h-screen overflow-hidden" : "min-h-screen"} flex flex-col`}
         style={{ background: "var(--background)", color: "var(--foreground)" }}

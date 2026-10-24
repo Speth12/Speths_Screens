@@ -64,11 +64,7 @@ func (r *Runtime) WriteTag(ctx context.Context, req WriteRequest) WriteResult {
 	if len(writers) == 0 && !nsTag && !req.Recipe && !inRecipe(p, key, r.resolveBinding) {
 		return writeFailed(404, "%s is not writable in this project", req.Binding)
 	}
-	lim, err := limitsFor(writers, req.WidgetID)
-	if err != nil {
-		return writeFailed(400, "%v", err)
-	}
-	if err := lim.check(req.Value); err != nil {
+	if err := limitsFor(writers, req.WidgetID).check(req.Value); err != nil {
 		return writeFailed(400, "%v", err)
 	}
 
@@ -246,19 +242,18 @@ func inRecipe(p *project.Project, key string, resolve func(string) (string, stri
 // limits bounds a numeric write; nil means no bound.
 type limits struct{ min, max *float64 }
 
-// limitsFor gives the named widget's limits, or without a name the widest
-// limits of all writers: a side is bounded only if every writer bounds it.
-func limitsFor(ws []writer, widgetID string) (limits, error) {
-	if widgetID != "" {
-		for _, w := range ws {
-			if w.widgetID == widgetID {
-				return limits{w.min, w.max}, nil
-			}
+// limitsFor gives the named widget's limits, or the widest limits of all
+// writers when no widget is named or the name is not one of them (widgets
+// inside a faceplate carry their own ids): a side is bounded only if every
+// writer bounds it.
+func limitsFor(ws []writer, widgetID string) limits {
+	for _, w := range ws {
+		if widgetID != "" && w.widgetID == widgetID {
+			return limits{w.min, w.max}
 		}
-		return limits{}, fmt.Errorf("widget %s does not write this tag", widgetID)
 	}
 	if len(ws) == 0 {
-		return limits{}, nil
+		return limits{}
 	}
 	l := limits{ws[0].min, ws[0].max}
 	for _, w := range ws[1:] {
@@ -273,7 +268,7 @@ func limitsFor(ws []writer, widgetID string) (limits, error) {
 			l.max = w.max
 		}
 	}
-	return l, nil
+	return l
 }
 
 func (l limits) check(v any) error {
