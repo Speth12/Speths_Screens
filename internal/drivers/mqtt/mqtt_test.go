@@ -89,6 +89,7 @@ func TestConnectAndSubscribe(t *testing.T) {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
+	waitConnected(t, d)
 	if !d.Status().Connected {
 		t.Fatal("expected Connected=true")
 	}
@@ -129,6 +130,7 @@ func TestBrowseReturnsSeenTopics(t *testing.T) {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
+	waitConnected(t, d)
 
 	if err := d.SetTags([]string{"#"}); err != nil {
 		t.Fatalf("SetTags: %v", err)

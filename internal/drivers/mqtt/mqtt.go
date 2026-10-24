@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -18,6 +19,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/drivers"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
+	"github.com/eclipse/paho.mqtt.golang/packets"
 )
 
 const (
@@ -33,67 +35,87 @@ type Driver struct {
 	done      chan struct{} // closed by Disconnect; unblocks message handlers
 	seenTopic sync.Map      // map[string]struct{}
 
-	// subMu serializes SetTags; subs holds the topics subscribed for tags.
+	// subMu serializes SetTags and the subscribing after each connect. want
+	// holds the tag topics asked for, subs those subscribed on the current
+	// connection. connected only changes to true under subMu, so SetTags
+	// either runs before a connect (which subscribes want) or after it.
 	subMu sync.Mutex
+	want  map[string]bool
 	subs  map[string]bool
 
 	// sendMu orders what goes to out: the Bad burst after a lost connection
-	// and the messages after the reconnect. gen counts connections; lost is
-	// set from a lost connection until the next connect. last holds the
-	// newest value per topic so a Bad update can keep it.
+	// and the messages after the reconnect. gen counts connections. last
+	// holds the newest value per topic so a Bad update can keep it.
 	sendMu sync.Mutex
 	gen    atomic.Uint64
-	lost   atomic.Bool
 	last   sync.Map // map[string]any
 
 	connected atomic.Bool
 	lastErr   atomic.Pointer[string]
 	tagCount  atomic.Int32
+
+	// cancel stops the first-connect loop; wg waits for it.
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
+	backoffMin time.Duration
+	backoffMax time.Duration
 }
 
 // New returns an unconnected driver.
-func New() *Driver { return &Driver{} }
+func New() *Driver { return &Driver{backoffMin: time.Second, backoffMax: 30 * time.Second} }
 
 func (d *Driver) ID() string { return driverID }
 
-// Connect dials the MQTT broker.
+// Connect checks the config and starts connecting in the background; it
+// never waits for the broker. Until the first connect succeeds the driver
+// retries with backoff (1 s doubling to 30 s), its exact-topic tags are Bad
+// with the reason and writes fail at once. After that, paho's auto-reconnect
+// handles lost connections, capped at the same 30 s.
 //
 // cfg.Endpoint:           tcp://host:port  or  ssl://host:port
 // cfg.Username/Password:  optional auth
 // cfg.Extra["clientId"]:  optional client id (default: x-hmi-<unix-nano>)
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
+func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("mqtt: endpoint is required")
 	}
-	d.mu.Lock()
-	d.out = out
-	d.mu.Unlock()
+	endpoint := cfg.Endpoint
+	if !strings.Contains(endpoint, "://") {
+		endpoint = "tcp://" + endpoint // a project's host and port arrive as host:port
+	}
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Host == "" {
+		return fmt.Errorf("mqtt: endpoint %q is not host:port, tcp://host:port or ssl://host:port", cfg.Endpoint)
+	}
 	clientID := cfg.Extra["clientId"]
 	if clientID == "" {
 		clientID = fmt.Sprintf("x-hmi-%d", time.Now().UnixNano())
 	}
+	runCtx, cancel := context.WithCancel(context.Background())
 
 	opts := mqttlib.NewClientOptions().
-		AddBroker(cfg.Endpoint).
+		AddBroker(endpoint).
 		SetClientID(clientID).
 		SetAutoReconnect(true).
+		SetMaxReconnectInterval(d.backoffMax).
 		SetConnectTimeout(connTimeout).
 		SetCleanSession(true).
 		SetOnConnectHandler(func(c mqttlib.Client) {
+			if runCtx.Err() != nil {
+				return // connected just as Disconnect ran
+			}
 			log.Printf("[DRIVER] mqtt: connected to %s", cfg.Endpoint)
 			d.gen.Add(1)
-			d.connected.Store(true)
-			d.lastErr.Store(strPtr(""))
-			if d.lost.Swap(false) {
-				d.resubscribe(c)
-			}
+			d.subscribeAll(c)
 		}).
 		SetConnectionLostHandler(func(_ mqttlib.Client, err error) {
+			if runCtx.Err() != nil {
+				return
+			}
 			log.Printf("[DRIVER] mqtt: connection lost: %v", err)
 			d.connected.Store(false)
 			s := err.Error()
 			d.lastErr.Store(&s)
-			d.lost.Store(true)
 			d.markLost(d.gen.Load(), "mqtt: connection lost: "+s)
 		})
 	if cfg.Username != "" {
@@ -102,40 +124,80 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	}
 
 	c := mqttlib.NewClient(opts)
-	tok := c.Connect()
-	if !waitToken(ctx, tok) {
-		return d.fail(fmt.Errorf("mqtt: connect: %w", tok.Error()))
-	}
-
 	d.mu.Lock()
+	d.out = out
 	d.client = c
 	d.done = make(chan struct{})
+	d.cancel = cancel
 	d.mu.Unlock()
-
-	// Subscribe to # (all topics) for passive discovery.
-	// This lets Browse() return topics without any SetTags() calls.
-	// Use QoS 0 and don't block startup on failure.
-	tok = c.Subscribe("#", 0, d.discover)
-	_ = tok.WaitTimeout(2 * time.Second)
-	log.Printf("[DRIVER] mqtt: wildcard discovery subscription active")
-
+	d.lastErr.Store(strPtr(""))
+	d.wg.Add(1)
+	go d.connectLoop(runCtx, c, u.Host)
 	return nil
+}
+
+// connectLoop makes the first connection, retrying with backoff. A failure
+// marks the exact-topic tags Bad once and is kept as the status reason.
+func (d *Driver) connectLoop(ctx context.Context, c mqttlib.Client, host string) {
+	defer d.wg.Done()
+	retry := drivers.Backoff{Min: d.backoffMin, Max: d.backoffMax}
+	marked := ""
+	for {
+		tok := c.Connect()
+		select {
+		case <-tok.Done():
+		case <-ctx.Done():
+			<-tok.Done() // bounded by connTimeout; Disconnect then closes a settled client
+			return
+		}
+		if tok.Error() == nil {
+			return // from here paho's auto-reconnect owns the connection
+		}
+		reason := connectReason(host, tok.Error())
+		d.lastErr.Store(&reason)
+		if reason != marked {
+			log.Printf("[DRIVER] mqtt: %s; retrying", reason)
+			d.markLost(d.gen.Load(), reason)
+			marked = reason
+		}
+		if !drivers.SleepCtx(ctx, retry.Next()) {
+			return
+		}
+	}
+}
+
+// connectReason gives a short reason for a failed connect.
+func connectReason(host string, err error) string {
+	if r, ok := drivers.NetReason(host, err); ok {
+		return r
+	}
+	if errors.Is(err, packets.ErrorRefusedBadUsernameOrPassword) || errors.Is(err, packets.ErrorRefusedNotAuthorised) {
+		return host + " refused the login"
+	}
+	return fmt.Sprintf("cannot connect to %s: %v", host, err)
 }
 
 func (d *Driver) Disconnect() error {
 	d.mu.Lock()
 	c := d.client
 	d.client = nil
+	cancel := d.cancel
+	d.cancel = nil
 	if d.done != nil {
 		close(d.done)
 		d.done = nil
 	}
 	d.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+	d.wg.Wait()
 	if c != nil {
 		c.Disconnect(250)
 	}
 	d.subMu.Lock()
 	d.subs = nil
+	d.want = nil
 	d.subMu.Unlock()
 	d.connected.Store(false)
 	return nil
@@ -154,22 +216,27 @@ func (d *Driver) Browse(ctx context.Context) ([]drivers.TagDefinition, error) {
 // SetTags makes the tag subscriptions match paths. Wildcards (+, #) are
 // supported. It is idempotent: topics already subscribed are left alone, new
 // ones are subscribed and removed ones unsubscribed. An empty set removes all
-// tag subscriptions (the "#" discovery subscription stays).
+// tag subscriptions (the "#" discovery subscription stays). Before the first
+// connect it only records the topics; the connect subscribes them.
 func (d *Driver) SetTags(paths []string) error {
 	c := d.getClient()
 	if c == nil {
-		return fmt.Errorf("mqtt: not connected")
+		return fmt.Errorf("mqtt: not started")
 	}
 	d.subMu.Lock()
 	defer d.subMu.Unlock()
-	if d.subs == nil {
-		d.subs = map[string]bool{}
-	}
-
 	want := map[string]bool{}
 	for _, p := range drivers.NormalizePaths(paths) {
 		want[p] = true
 	}
+	d.want = want
+	if !d.connected.Load() {
+		return nil
+	}
+	if d.subs == nil {
+		d.subs = map[string]bool{}
+	}
+
 	var errs []error
 	for topic := range d.subs {
 		if want[topic] {
@@ -227,13 +294,13 @@ func (d *Driver) send(topic string, st tagstore.TagState) bool {
 	}
 }
 
-// markLost marks every subscribed topic without wildcards Bad, keeping its
-// last value. It stops if the client reconnects meanwhile (gen changes), so
-// a Bad update never follows a fresh value.
+// markLost marks every wanted topic without wildcards Bad, keeping its last
+// value. It stops if the client reconnects meanwhile (gen changes), so a Bad
+// update never follows a fresh value.
 func (d *Driver) markLost(gen uint64, reason string) {
 	d.subMu.Lock()
 	var topics []string
-	for t := range d.subs {
+	for t := range d.want {
 		if !strings.ContainsAny(t, "+#") {
 			topics = append(topics, t)
 		}
@@ -253,23 +320,29 @@ func (d *Driver) markLost(gen uint64, reason string) {
 	}
 }
 
-// resubscribe restores the subscriptions after a reconnect. With a clean
-// session the broker has forgotten them. A topic that fails is dropped from
-// subs so the next SetTags tries it again.
-func (d *Driver) resubscribe(c mqttlib.Client) {
+// subscribeAll runs after every connect, first or not: with a clean session
+// the broker holds no subscriptions. It subscribes "#" for discovery and
+// every wanted topic, then marks the driver connected (under subMu, see
+// Driver). A topic that fails stays out of subs so the next SetTags tries it
+// again.
+func (d *Driver) subscribeAll(c mqttlib.Client) {
 	if tok := c.Subscribe("#", 0, d.discover); !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
-		log.Printf("[DRIVER] mqtt: resubscribe #: %v", tok.Error())
+		log.Printf("[DRIVER] mqtt: subscribe #: %v", tok.Error())
 	}
 	d.subMu.Lock()
 	defer d.subMu.Unlock()
-	for topic := range d.subs {
+	d.subs = map[string]bool{}
+	for topic := range d.want {
 		tok := c.Subscribe(topic, 0, d.onMessage)
 		if !tok.WaitTimeout(connTimeout) || tok.Error() != nil {
-			log.Printf("[DRIVER] mqtt: resubscribe %s: %v", topic, tok.Error())
-			delete(d.subs, topic)
+			log.Printf("[DRIVER] mqtt: subscribe %s: %v", topic, tok.Error())
+			continue
 		}
+		d.subs[topic] = true
 	}
-	log.Printf("[DRIVER] mqtt: resubscribed %d topics", len(d.subs))
+	d.lastErr.Store(strPtr(""))
+	d.connected.Store(true)
+	log.Printf("[DRIVER] mqtt: subscribed %d topics", len(d.subs))
 }
 
 // discover records a topic seen on the "#" subscription, for Browse.
@@ -317,12 +390,6 @@ func (d *Driver) countSeen() int {
 }
 
 func strPtr(s string) *string { return &s }
-
-func (d *Driver) fail(err error) error {
-	s := err.Error()
-	d.lastErr.Store(&s)
-	return err
-}
 
 // parsePayload converts an MQTT payload to a typed value.
 // Tries JSON decode first (handles numbers, booleans, objects).

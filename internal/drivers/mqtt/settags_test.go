@@ -20,6 +20,7 @@ func connectBroker(t *testing.T, out chan<- tagstore.TagUpdate) *Driver {
 		t.Fatalf("Connect: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Disconnect() })
+	waitConnected(t, d)
 	return d
 }
 
