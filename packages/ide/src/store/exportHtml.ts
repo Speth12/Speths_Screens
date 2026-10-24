@@ -5,6 +5,13 @@
  */
 import type { Project } from "./projectStore";
 
+/** The active alarms in a GET /api/v1/alarms reply (an array of events).
+ *  The exported page embeds this function's source. */
+export function activeAlarms(data: unknown): { severity: string; message: string }[] {
+  const events = Array.isArray(data) ? data : [];
+  return events.filter((a) => a && typeof a === "object" && a.active === true);
+}
+
 export function generateStandaloneHtml(project: Project, targetUrl: string): string {
   const projectJson = JSON.stringify(project);
   const escapedUrl  = targetUrl.replace(/"/g, "&quot;");
@@ -330,16 +337,16 @@ function promptWrite(binding, el) {
   writeTag(binding, isNaN(n) ? val : n);
 }
 
-// Poll alarms from runtime every 5s
+// Poll alarms from runtime every 5s. No target means this page's own host.
+const activeAlarms = ${activeAlarms.toString()};
 async function pollAlarms() {
   const base = document.getElementById("target-input").value.trim();
-  if (!base) return;
   try {
     const r = await fetch(base + "/api/v1/alarms");
     if (r.status === 401) { showLoginNotice(); return; }
     if (!r.ok) return;
     const data = await r.json();
-    window._clientAlarms = (data?.alarms ?? []).filter(a => a.active);
+    window._clientAlarms = activeAlarms(data);
     render();
   } catch {}
 }

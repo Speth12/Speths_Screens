@@ -1063,6 +1063,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [virtualRows, setVirtualRows]       = useState<{ path: string; formula: string }[]>([
     { path: "tagA", formula: "{rest:tagPath} * 1.0" },
   ]);
+  const [username, setUsername]             = useState("");
+  const [password, setPassword]             = useState("");
   const [certCheck, setCertCheck]           = useState<CERTCheck>("pinned");
   const [certFp, setCertFp]                 = useState("");
   const [testing, setTesting]  = useState(false);
@@ -1070,6 +1072,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [seenFp, setSeenFp] = useState("");
   // REST always uses https; OPC UA has a certificate only with security on.
   const hasCert = type === "rest" || (type === "opcua" && securityMode !== "None");
+  const hasLogin = type === "rest" || type === "opcua" || type === "mqtt";
 
   const changeType = (t: DatasourceType) => { setType(t); setId(TYPE_DEFAULTS[t].id); setLabel(TYPE_DEFAULTS[t].label); setTestResult(null); };
 
@@ -1090,6 +1093,10 @@ export function AddDatasourceModal({ onClose, onAdd }: {
       config.endpoint = `https://${ip}`;
       config.basePath = basePath;
       if (bearerToken) config.bearerToken = bearerToken;
+    }
+    if (hasLogin && username.trim()) {
+      config.username = username.trim();
+      config.password = password;
     }
     if (hasCert) {
       config.certCheck = certCheck;
@@ -1165,6 +1172,17 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <label className={lblCls}>Base path<input value={basePath} onChange={(e) => setBasePath(e.target.value)} className={inpCls} /></label>
           <label className={lblCls}>Bearer token <span className="text-zinc-600">(optional)</span><input value={bearerToken} onChange={(e) => setBearerToken(e.target.value)} placeholder="leave blank if not required" className={inpCls} /></label>
         </>)}
+
+        {hasLogin && (
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-[11px] text-zinc-400">Username <span className="text-zinc-600">(if the device needs a login)</span>
+              <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="off" className="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs" />
+            </label>
+            <label className="text-[11px] text-zinc-400">Password
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={!username.trim()} className="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs disabled:opacity-50" />
+            </label>
+          </div>
+        )}
 
         {hasCert && <CertCheckField mode={certCheck} fingerprint={certFp} onMode={setCertCheck} onFingerprint={setCertFp} />}
 
