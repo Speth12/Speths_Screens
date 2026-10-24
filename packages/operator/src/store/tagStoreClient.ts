@@ -1,6 +1,8 @@
 // TagStoreClient — single WebSocket connection to /ws/tags with a per-path
 // subscriber registry. Caches the last value so re-mounts hydrate immediately.
 
+import { onTokenChange, wsURL } from "../auth";
+
 export type TagState = {
   value: unknown;
   quality: "Good" | "Bad" | "Uncertain" | "Unknown";
@@ -60,12 +62,7 @@ class Client {
     if (this.connected || this.connecting) return;
     this.connecting = true;
 
-    const url =
-      (location.protocol === "https:" ? "wss://" : "ws://") +
-      location.host +
-      "/ws/tags";
-
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(wsURL("/ws/tags"));
     this.ws = ws;
 
     ws.addEventListener("open", () => {
@@ -102,6 +99,11 @@ class Client {
     ws.addEventListener("error", reconnect);
   }
 
+  /** Reconnects, e.g. with a new login token. */
+  restart(): void {
+    this.ws?.close();
+  }
+
   private send(msg: Outgoing): void {
     if (this.connected && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
@@ -110,3 +112,4 @@ class Client {
 }
 
 export const tagStoreClient = new Client();
+onTokenChange(() => tagStoreClient.restart());

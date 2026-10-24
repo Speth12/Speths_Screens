@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { WidgetRenderer, ProjectImagesProvider, type Widget } from "./widgets";
 import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./writeContext";
 import { writeTag, onWriteResult } from "./writeTag";
+import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
+import { LoginScreen } from "./LoginScreen";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
 import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/themes";
 
@@ -96,7 +98,7 @@ function RecipesPanel({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/v1/recipes")
+    apiFetch("/api/v1/recipes")
       .then((r) => (r.ok ? r.json() : []))
       .then((data: Recipe[]) => setRecipes(Array.isArray(data) ? data : []))
       .catch(() => {});
@@ -106,7 +108,7 @@ function RecipesPanel({ onClose }: { onClose: () => void }) {
     setApplying(r.id);
     setResult(null);
     try {
-      const res = await fetch(`/api/v1/recipes/${encodeURIComponent(r.id)}/apply`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/recipes/${encodeURIComponent(r.id)}/apply`, { method: "POST" });
       const data = (await res.json()) as { ok: boolean; applied?: number; errors?: string[] };
       setResult({ id: r.id, ok: data.ok, msg: data.ok ? `Applied ${data.applied ?? "?"} tag${(data.applied ?? 1) !== 1 ? "s" : ""}` : (data.errors?.join(", ") ?? "Error") });
     } catch {
@@ -217,12 +219,23 @@ export function App() {
   // Kiosk mode: ?kiosk or ?kiosk=1 hides nav bar and page switcher.
   const isKiosk = new URLSearchParams(location.search).has("kiosk");
 
+  // Login: with security.mode "login" the runtime answers 401 without a
+  // token (403 for a token that only allows a password change).
+  const [needLogin, setNeedLogin] = useState(false);
+  const [tokenRev, setTokenRev] = useState(0);
+  useEffect(() => onTokenChange(() => setTokenRev((v) => v + 1)), []);
+
   // Load project every 5 s
   useEffect(() => {
     const load = () =>
-      fetch("/api/v1/project")
-        .then((r) => r.json())
+      apiFetch("/api/v1/project")
+        .then((r) => {
+          if (r.status === 401 || r.status === 403) { setNeedLogin(true); return null; }
+          setNeedLogin(false);
+          return r.json();
+        })
         .then((p) => {
+          if (p === null) return;
           if (p && p.pages) { setProject(p); setError(""); }
           else setError("No project deployed to this runtime.");
         })
@@ -231,12 +244,12 @@ export function App() {
     load();
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [tokenRev]);
 
   // Datasource status — poll every 5 s
   useEffect(() => {
     const poll = () =>
-      fetch("/api/v1/datasources")
+      apiFetch("/api/v1/datasources")
         .then((r) => (r.ok ? r.json() : []))
         .then((data: Array<{ id: string; connected: boolean; tagCount: number }>) => {
           if (Array.isArray(data)) setDsStatus(data);
@@ -245,12 +258,14 @@ export function App() {
     poll();
     const t = setInterval(poll, 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [tokenRev]);
 
-  // Alarm WebSocket
+  // Alarm WebSocket (reconnects with a new token)
   useEffect(() => {
+    let stopped = false;
     const connect = () => {
-      const ws = new WebSocket(`ws://${location.host}/ws/alarms`);
+      if (stopped) return;
+      const ws = new WebSocket(wsURL("/ws/alarms"));
       wsAlarmRef.current = ws;
 
       ws.onmessage = (e) => {
@@ -272,11 +287,11 @@ export function App() {
       ws.onerror = () => ws.close();
     };
     connect();
-    return () => { wsAlarmRef.current?.close(); };
-  }, []);
+    return () => { stopped = true; wsAlarmRef.current?.close(); };
+  }, [tokenRev]);
 
   const ack = async (eventId: string) => {
-    try { await fetch(`/api/v1/alarms/${encodeURIComponent(eventId)}/ack`, { method: "POST" }); }
+    try { await apiFetch(`/api/v1/alarms/${encodeURIComponent(eventId)}/ack`, { method: "POST" }); }
     catch { /* ignore */ }
   };
 
@@ -325,6 +340,8 @@ export function App() {
     ? "warning"
     : activeAlarms.length > 0 ? "info" : null;
 
+  if (needLogin) return <LoginScreen />;
+
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
@@ -365,12 +382,18 @@ export function App() {
   }
 
   const page = project.pages[activePage] ?? project.pages[0];
+  const securityOff = project.security?.mode !== "login";
 
   return (
     <ProjectImagesProvider value={project.images ?? []}>
     <AlarmContext.Provider value={{ alarms, ack }}>
     <NavigateContext.Provider value={navigateToPage}>
     <WriteConfirmContext.Provider value={requestWrite}>
+      {isKiosk && project.security?.mode !== "login" && (
+        <div className="fixed top-1 right-1 z-50 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+          Security off
+        </div>
+      )}
       {writeNotice && (
         <div role="alert"
              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] rounded-md bg-red-900/90 text-red-100 text-sm px-4 py-2 shadow-lg">
@@ -391,6 +414,16 @@ export function App() {
                 : <>Speth's Screens <span className="text-zinc-500 font-normal">Operator</span></>
               }
             </span>
+            {securityOff ? (
+              <span title="security.mode is not &quot;login&quot;: anyone who reaches this runtime can read and write"
+                    className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                Security off
+              </span>
+            ) : getToken() && (
+              <button onClick={() => setToken(null)} className="text-[11px] text-zinc-400 hover:text-zinc-200 underline">
+                Log out
+              </button>
+            )}
             {/* Datasource connection status dots */}
             {dsStatus.length > 0 && (
               <div className="flex gap-1.5 items-center">
