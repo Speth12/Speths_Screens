@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/security"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )
@@ -17,7 +19,31 @@ import (
 type wsRequest struct {
 	Subscribe   []string `json:"subscribe,omitempty"`
 	Unsubscribe []string `json:"unsubscribe,omitempty"`
+	Write       *wsWrite `json:"write,omitempty"`
 }
+
+// wsWrite asks for one write; the answer is a wsWriteResult with the same id.
+type wsWrite struct {
+	ID       string `json:"id"`
+	Path     string `json:"path"` // binding: "ds:path" or "ns:path"
+	Value    any    `json:"value"`
+	WidgetID string `json:"widgetId,omitempty"`
+}
+
+type wsWriteResult struct {
+	WriteResult wsWriteReply `json:"writeResult"`
+}
+
+type wsWriteReply struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+	Value  any    `json:"value,omitempty"`
+	Code   int    `json:"code"`
+}
+
+// wsMaxWrites caps the writes one connection has waiting for read-back.
+const wsMaxWrites = 8
 
 // wsUpdate is the outbound format pushed to clients.
 type wsUpdate struct {
@@ -57,6 +83,12 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	watcher := s.rt.Store.Watch()
 	defer watcher.Close()
 
+	// Writes need a user: the token is sent when the connection opens
+	// (?token=, since browsers cannot set headers on a WebSocket). Reading
+	// needs none until defect 9.
+	writer := s.wsWriter(r)
+	writes := make(chan struct{}, wsMaxWrites)
+
 	// reader goroutine: parse subscribe/unsubscribe requests
 	go func() {
 		subs := map[string]struct{}{} // only this goroutine touches it
@@ -86,6 +118,25 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 			if len(removed) > 0 {
 				watcher.Remove(removed...)
 				s.rt.RemoveDemand(demandSrc, removed...)
+			}
+			if req.Write != nil {
+				select {
+				case writes <- struct{}{}:
+					go func(wr wsWrite) {
+						defer func() { <-writes }()
+						reply := writer(ctx, wr)
+						wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
+						defer wcancel()
+						_ = wsjson.Write(wctx, conn, wsWriteResult{WriteResult: reply})
+					}(*req.Write)
+				default:
+					wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
+					_ = wsjson.Write(wctx, conn, wsWriteResult{WriteResult: wsWriteReply{
+						ID: req.Write.ID, Status: runtime.WriteFailed, Code: 429,
+						Reason: fmt.Sprintf("more than %d writes waiting on this connection", wsMaxWrites),
+					}})
+					wcancel()
+				}
 			}
 		}
 	}()
@@ -204,3 +255,33 @@ func (s *Server) handleEventsWS(w http.ResponseWriter, r *http.Request) {
 
 // for tests — verify the JSON shapes are what we promise
 var _ = json.Marshal
+
+// wsWriter returns the function that handles a WebSocket write for the user
+// of this connection. Dev mode and a runtime without security count as
+// Admin; otherwise the token sent when the connection opened decides.
+func (s *Server) wsWriter(r *http.Request) func(context.Context, wsWrite) wsWriteReply {
+	user, role, authErr := "anonymous", security.RoleAdmin, ""
+	if s.rt.Security != nil && !s.DevMode {
+		user, role = "", ""
+		if tok := r.URL.Query().Get("token"); tok == "" {
+			authErr = "writes need a login token (?token= when connecting)"
+		} else if u, rl, err := s.rt.Security.VerifyToken(tok); err != nil {
+			authErr = "invalid or expired token"
+		} else {
+			user, role = u, rl
+		}
+	}
+	return func(ctx context.Context, wr wsWrite) wsWriteReply {
+		if authErr != "" {
+			return wsWriteReply{ID: wr.ID, Status: runtime.WriteFailed, Reason: authErr, Code: 401}
+		}
+		if !security.HasPermission(role, security.PermWriteTag) {
+			return wsWriteReply{ID: wr.ID, Status: runtime.WriteFailed, Reason: "forbidden", Code: 403}
+		}
+		// writeTag audits under the request's user, so give it one.
+		rctx := context.WithValue(ctx, ctxUser, user)
+		rctx = context.WithValue(rctx, ctxRole, role)
+		res := s.writeTag(r.WithContext(rctx), runtime.WriteRequest{Binding: wr.Path, Value: wr.Value, WidgetID: wr.WidgetID})
+		return wsWriteReply{ID: wr.ID, Status: res.Status, Reason: res.Reason, Value: res.Value, Code: res.Code}
+	}
+}
