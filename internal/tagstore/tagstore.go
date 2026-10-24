@@ -28,10 +28,12 @@ type TagUpdate struct {
 type TagStore struct {
 	data sync.Map // map[string]TagState
 
-	// mu guards watchers and orders each Update's store-and-notify, so two
-	// updates of one path never leave a watcher holding the older value.
+	// mu guards watchers and seen, and orders each Update's store-and-notify,
+	// so two updates of one path never leave a watcher holding the older
+	// value.
 	mu       sync.Mutex
 	watchers map[string]map[*Watcher]struct{} // path → watchers
+	seen     map[string]int64                 // path → when Update last received it (Unix nano)
 
 	stopped chan struct{}
 	once    sync.Once
@@ -41,6 +43,7 @@ type TagStore struct {
 func New() *TagStore {
 	return &TagStore{
 		watchers: map[string]map[*Watcher]struct{}{},
+		seen:     map[string]int64{},
 		stopped:  make(chan struct{}),
 	}
 }
@@ -50,6 +53,12 @@ func New() *TagStore {
 func (ts *TagStore) Update(path string, state TagState) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
+	ts.seen[path] = time.Now().UnixNano()
+	ts.put(path, state)
+}
+
+// put stores state and notifies the watchers of path. Caller holds ts.mu.
+func (ts *TagStore) put(path string, state TagState) {
 	ts.data.Store(path, state)
 	for w := range ts.watchers[path] {
 		w.mb.Put(TagUpdate{Path: path, State: state})
@@ -155,18 +164,38 @@ func (w *Watcher) Close() {
 	w.closed = true
 }
 
-// MarkStale sets quality to "Uncertain" for all tags not updated within maxAge.
-// Intended to be called on a timer by the runtime.
-func (ts *TagStore) MarkStale(maxAge time.Duration) {
-	now := time.Now().UnixNano()
-	ts.data.Range(func(k, v any) bool {
-		state := v.(TagState)
-		if now-state.TS > maxAge.Nanoseconds() && state.Quality == "Good" {
-			state.Quality = "Uncertain"
-			ts.Update(k.(string), state)
+// MarkStale marks Good tags Uncertain when Update has not received them for
+// maxAge, keeping their value, with a reason. Staleness is measured from
+// when the store last received the tag, not from the value's own
+// timestamp: an OPC UA source timestamp stays old while the value does not
+// change. Only paths for which include returns true are checked; include is
+// called with the store locked, so it must not call the store or take
+// locks. The next Update makes a tag Good again. It returns how many tags
+// it marked. The runtime calls it on a timer.
+func (ts *TagStore) MarkStale(maxAge time.Duration, include func(path string) bool) int {
+	return ts.markStale(time.Now().UnixNano(), maxAge, include)
+}
+
+func (ts *TagStore) markStale(now int64, maxAge time.Duration, include func(path string) bool) int {
+	// One critical section for check and mark, so an Update cannot land in
+	// between and be overwritten by the stale copy.
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	reason := "no update for " + maxAge.String()
+	marked := 0
+	for path, at := range ts.seen {
+		if now-at <= maxAge.Nanoseconds() || !include(path) {
+			continue
 		}
-		return true
-	})
+		state, ok := ts.Get(path)
+		if !ok || state.Quality != "Good" {
+			continue
+		}
+		state.Quality, state.Reason = "Uncertain", reason
+		ts.put(path, state)
+		marked++
+	}
+	return marked
 }
 
 // Stop signals that the TagStore is shutting down. Idempotent.

@@ -60,6 +60,11 @@ type Runtime struct {
 	pumpBox   *tagstore.Mailbox // fan-ins → pump; never blocks, newest value per tag
 	wg        sync.WaitGroup
 	project   *project.Project
+
+	// Tags from polled datasources that get no update for staleAfter turn
+	// Uncertain; checked every staleEvery (see stale.go). Tests shorten both.
+	staleAfter time.Duration
+	staleEvery time.Duration
 }
 
 // New returns an initialised runtime with the given store and historian.
@@ -78,6 +83,9 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 		fanStop:   make(map[string]context.CancelFunc),
 		demand:    demand{sources: map[string]map[string]struct{}{}},
 		pumpBox:   tagstore.NewMailbox(),
+
+		staleAfter: 10 * time.Second,
+		staleEvery: time.Second,
 	}
 }
 
@@ -92,6 +100,8 @@ func (r *Runtime) Start(ctx context.Context) {
 		r.wg.Add(1)
 		go r.persistAlarms(pumpCtx)
 	}
+	r.wg.Add(1)
+	go r.markStaleLoop(pumpCtx)
 }
 
 // Stop disconnects all drivers and stops the pump.
