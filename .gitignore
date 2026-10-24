@@ -14,10 +14,6 @@ x-hmi.exe~
 x-hmi.exe.bak
 x-hmi-*
 
-# tsc transpiled JS alongside .ts/.tsx sources
-packages/ide/src/**/*.js
-packages/operator/src/**/*.js
-
 # generated TLS certs
 *.pem
 
