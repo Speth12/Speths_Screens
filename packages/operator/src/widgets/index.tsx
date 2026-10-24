@@ -921,7 +921,9 @@ function AlarmBannerWidget({ w }: { w: Widget }) {
 
 function ImageWidget({ w }: { w: Widget }) {
   const rawSrc = w.config?.src as string | undefined;
-  const fit = (w.config?.fit as string) ?? "contain";
+  // Same rule as the IDE (packages/ide/src/widgets/imageFit.ts): the
+  // properties panel saves `fit`, a library drop saves `objectFit`.
+  const fit = (w.config?.fit as string) ?? (w.config?.objectFit as string) ?? "contain";
   const libId = rawSrc?.startsWith("lib:") ? rawSrc.slice(4) : undefined;
   const libData = useProjectImage(libId ?? "");
   const src = libId ? libData : rawSrc;
