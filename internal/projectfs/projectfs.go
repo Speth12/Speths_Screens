@@ -38,6 +38,8 @@ type Manifest struct {
 	Name        *string `json:"name,omitempty"`
 	Description string  `json:"description,omitempty"`
 	Format      string  `json:"format"` // always "directory/v1"
+	// SchemaVersion is the project format of the pieces; missing means 1.
+	SchemaVersion int64 `json:"schemaVersion,omitempty"`
 }
 
 // Save writes a project to a directory tree.
@@ -49,9 +51,10 @@ func Save(dir string, p *project.Project) error {
 
 	// manifest
 	manifest := Manifest{
-		Version: p.Version,
-		Name:    p.Name,
-		Format:  "directory/v1",
+		Version:       p.Version,
+		Name:          p.Name,
+		Format:        "directory/v1",
+		SchemaVersion: p.SchemaVersion,
 	}
 	if err := writeJSON(filepath.Join(dir, "project.json"), manifest); err != nil {
 		return err
@@ -105,56 +108,65 @@ func Save(dir string, p *project.Project) error {
 	return nil
 }
 
-// Load reads a project from a directory tree produced by Save.
+// Load reads a project from a directory tree produced by Save. The pieces
+// are put together as one project document and read with project.Parse, so
+// an older format is upgraded and the result is checked against schema.json.
 func Load(dir string) (*project.Project, error) {
-	// manifest
 	var manifest Manifest
 	if err := readJSON(filepath.Join(dir, "project.json"), &manifest); err != nil {
 		return nil, fmt.Errorf("projectfs: manifest: %w", err)
 	}
-	p := &project.Project{
-		Version: manifest.Version,
-		Name:    manifest.Name, // *string — nil is fine
+	doc := map[string]any{"version": manifest.Version}
+	if manifest.Name != nil {
+		doc["name"] = *manifest.Name
+	}
+	if manifest.SchemaVersion != 0 {
+		doc["schemaVersion"] = manifest.SchemaVersion
 	}
 
-	// pages/
-	pageFiles, _ := filepath.Glob(filepath.Join(dir, "pages", "*.json"))
-	for _, f := range pageFiles {
-		var pg project.Page
-		if err := readJSON(f, &pg); err != nil {
-			return nil, fmt.Errorf("projectfs: page %s: %w", f, err)
+	pieces := func(sub string) ([]json.RawMessage, error) {
+		files, _ := filepath.Glob(filepath.Join(dir, sub, "*.json"))
+		out := []json.RawMessage{}
+		for _, f := range files {
+			var raw json.RawMessage
+			if err := readJSON(f, &raw); err != nil {
+				return nil, fmt.Errorf("projectfs: %s: %w", f, err)
+			}
+			out = append(out, raw)
 		}
-		p.Pages = append(p.Pages, pg)
+		return out, nil
 	}
-
-	// drivers/
-	driverFiles, _ := filepath.Glob(filepath.Join(dir, "drivers", "*.json"))
-	for _, f := range driverFiles {
-		var ds project.Datasource
-		if err := readJSON(f, &ds); err != nil {
-			return nil, fmt.Errorf("projectfs: driver %s: %w", f, err)
-		}
-		p.Datasources = append(p.Datasources, ds)
+	var err error
+	if doc["pages"], err = pieces("pages"); err != nil {
+		return nil, err
 	}
-
-	// alarms/rules.json
+	if doc["datasources"], err = pieces("drivers"); err != nil {
+		return nil, err
+	}
+	recipes, err := pieces("recipes")
+	if err != nil {
+		return nil, err
+	}
+	if len(recipes) > 0 {
+		doc["recipes"] = recipes
+	}
 	rulesPath := filepath.Join(dir, "alarms", "rules.json")
 	if _, err := os.Stat(rulesPath); err == nil {
-		if err := readJSON(rulesPath, &p.AlarmRules); err != nil {
+		var rules json.RawMessage
+		if err := readJSON(rulesPath, &rules); err != nil {
 			return nil, fmt.Errorf("projectfs: alarms: %w", err)
 		}
+		doc["alarmRules"] = rules
 	}
 
-	// recipes/
-	recipeFiles, _ := filepath.Glob(filepath.Join(dir, "recipes", "*.json"))
-	for _, f := range recipeFiles {
-		var rec project.Recipe
-		if err := readJSON(f, &rec); err != nil {
-			return nil, fmt.Errorf("projectfs: recipe %s: %w", f, err)
-		}
-		p.Recipes = append(p.Recipes, rec)
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, fmt.Errorf("projectfs: %w", err)
 	}
-
+	p, err := project.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("projectfs: %w", err)
+	}
 	return p, nil
 }
 

@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 const historyLog = (pageSize: number): Widget =>
-  ({ id: "h1", type: "historyLog", x: 0, y: 0, w: 6, h: 4, binding: "plc:temp", config: { pageSize } }) as Widget;
+  ({ id: "h1", type: "historyLog", x: 0, y: 0, w: 6, h: 4, bindings: { value: "plc:temp" }, props: { pageSize } }) as Widget;
 
 it("refetches with the token when the page size changes", async () => {
   const f = vi.fn(async () => new Response("[]"));

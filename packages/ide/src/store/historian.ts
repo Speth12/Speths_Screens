@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { tagStoreClient } from "./tagStoreClient";
 import { useProject } from "./projectStore";
+import { typed, type Widget } from "@speths-screens/shared-types";
 
 export type HistorianSample = { ts: number; value: number };
 
@@ -68,9 +69,9 @@ export function bootHistorian(): void {
     const bindings = new Set<string>();
     for (const page of state.project.pages) {
       for (const w of page.widgets) {
-        if (w.binding) bindings.add(w.binding);
-        if (w.config?.tags && Array.isArray(w.config.tags)) {
-          for (const t of w.config.tags as Array<{ binding?: string }>) {
+        if (w.bindings?.value) bindings.add(w.bindings.value);
+        if (w.type === "trend") {
+          for (const t of typed(w as Widget & { type: "trend" }).props?.tags ?? []) {
             if (t.binding) bindings.add(t.binding);
           }
         }

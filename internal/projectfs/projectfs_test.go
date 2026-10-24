@@ -12,8 +12,9 @@ import (
 func sampleProject() *project.Project {
 	name := "Test Plant"
 	p := &project.Project{
-		Version: "0.1.0",
-		Name:    &name,
+		SchemaVersion: project.CurrentSchemaVersion,
+		Version:       "0.1.0",
+		Name:          &name,
 		Datasources: []project.Datasource{
 			{ID: "virt", Label: "Virtual", Type: "virtual"},
 		},
@@ -104,4 +105,38 @@ func TestJSONIsHumanReadable(t *testing.T) {
 func mustMarshalCompact(v any) []byte {
 	b, _ := json.Marshal(v)
 	return b
+}
+
+// A directory saved before widget format v2 loads upgraded: its page pieces
+// are read as part of one document, so the v1 binding becomes bindings.value
+// instead of being dropped as an unknown field.
+func TestLoadUpgradesV1Pieces(t *testing.T) {
+	dir := t.TempDir()
+	write := func(rel, content string) {
+		t.Helper()
+		path := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("project.json", `{"version":"0.1.0","format":"directory/v1"}`)
+	write("pages/main.json", `{"id":"p1","name":"Main","widgets":[
+		{"id":"w1","type":"numericInput","x":0,"y":0,"w":2,"h":1,"binding":"plc:SP","config":{"unit":"rpm"}}]}`)
+	p, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := p.Pages[0].Widgets[0]
+	if w.Bindings == nil || w.Bindings.Value == nil || *w.Bindings.Value != "plc:SP" {
+		t.Errorf("bindings %+v, want value plc:SP", w.Bindings)
+	}
+	if w.Props == nil || w.Props.Unit == nil || *w.Props.Unit != "rpm" {
+		t.Errorf("props %+v, want unit rpm", w.Props)
+	}
+	if p.SchemaVersion != project.CurrentSchemaVersion {
+		t.Errorf("schemaVersion %d", p.SchemaVersion)
+	}
 }

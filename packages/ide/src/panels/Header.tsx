@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useProject } from "../store/projectStore";
+import { openProject, openSummary } from "../store/openProject";
+import { validateProject } from "../store/validateProject";
 import { useShallow } from "zustand/react/shallow";
 import { setApiBase } from "../store/runtimeTarget";
 import { tagStoreClient } from "../store/tagStoreClient";
@@ -252,6 +254,8 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
   }, [activeTarget.url]);
 
   const doDeploy = async () => {
+    const problems = validateProject(useProject.getState().project);
+    if (problems.length) { setMsg(`not deployed: ${problems.join("; ")}`); return; }
     setBusy("deploy"); setMsg("");
     try {
       const r = await fetch(`${activeTarget.url}/api/v1/project`, {
@@ -290,8 +294,12 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      try { loadProject(JSON.parse(reader.result as string)); setMsg(`loaded ${file.name}`); }
-      catch { setMsg("invalid file"); }
+      let raw: unknown;
+      try { raw = JSON.parse(reader.result as string); }
+      catch { setMsg(`could not open ${file.name}: not JSON`); return; }
+      const o = openProject(raw);
+      if (o.ok) loadProject(o.project);
+      setMsg(openSummary(file.name, o));
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -306,8 +314,10 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
       if (r.status === 401) { setBusy("none"); setShowLogin(true); return; }
       if (!r.ok) throw new Error();
       const p = await r.json();
-      if (p) { loadProject(p); setMsg(`pulled from ${activeTarget.name}`); }
-      else setMsg("runtime has no project");
+      if (!p) { setMsg("runtime has no project"); return; }
+      const o = openProject(p);
+      if (o.ok) loadProject(o.project);
+      setMsg(openSummary(`the project from ${activeTarget.name}`, o));
     } catch { setMsg("pull failed"); }
     finally { setBusy("none"); }
   };

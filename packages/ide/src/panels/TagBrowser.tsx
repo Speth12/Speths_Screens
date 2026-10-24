@@ -375,7 +375,7 @@ export function TagBrowser() {
 // ── By-Source browser ──────────────────────────────────────────────────────
 
 function SourceBrowser() {
-  const { project, selectedWidgetId, activePageId, updateWidget, upsertNamespaceNode } = useProject();
+  const { project, selectedWidgetId, activePageId, setWidgetTag, upsertNamespaceNode } = useProject();
   const [byDS, setByDS]             = useState<Record<string, TagDef[]>>({});
   const [statusByDS, setStatusByDS] = useState<Record<string, DSStatus | null>>({});
   const [busy, setBusy]             = useState(false);
@@ -440,7 +440,7 @@ function SourceBrowser() {
 
   const bind = (dsId: string, path: string) => {
     if (!selectedWidgetId) return;
-    updateWidget(activePageId, selectedWidgetId, { binding: `${dsId}:${path}` });
+    setWidgetTag(activePageId, selectedWidgetId, "value", `${dsId}:${path}`);
   };
 
   const openNS = (tagKey: string, tagPath: string, dsLabel: string) => {
@@ -630,7 +630,7 @@ function SourceBrowser() {
 // Not rendered anywhere yet: wire it in or delete it.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NamespaceBrowser() {
-  const { selectedWidgetId, activePageId, updateWidget } = useProject();
+  const { selectedWidgetId, activePageId, setWidgetTag } = useProject();
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<NSNode[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -649,7 +649,7 @@ function NamespaceBrowser() {
   const bindNSNode = (node: NSNode) => {
     if (!selectedWidgetId) return;
     if (node.type !== "tag" && node.type !== "virtual") return;
-    updateWidget(activePageId, selectedWidgetId, { binding: `ns:${node.path}` });
+    setWidgetTag(activePageId, selectedWidgetId, "value", `ns:${node.path}`);
   };
 
   const subscribeTag = useCallback((path: string) => {

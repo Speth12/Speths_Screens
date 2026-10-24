@@ -41,6 +41,11 @@ export function upgradeProject(input: unknown): UpgradeResult {
 }
 
 function v1ToV2(doc: Obj, notes: string[]) {
+  if ("users" in doc) {
+    // Users moved to the runtime's security.db (Phase 1, defect 9).
+    delete doc.users;
+    notes.push("dropped the project's users list: users live on the runtime");
+  }
   for (const pg of objects(doc.pages)) {
     for (const w of objects(pg.widgets)) widget(w, `page ${quote(pg.name)}, widget ${String(w.id)}`, notes);
   }

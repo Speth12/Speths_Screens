@@ -10,7 +10,7 @@ import (
 )
 
 // TestProjectFilesRoundTrip loads each committed project file through the
-// generated types and writes it back. Every field must survive: the runtime
+// generated types and writes it back, after upgrading it to the current format. Every field must survive: the runtime
 // serves the project to the operator from these structs, so a key missing
 // from schema.json would be silently dropped.
 func TestProjectFilesRoundTrip(t *testing.T) {
@@ -23,9 +23,13 @@ func TestProjectFilesRoundTrip(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			raw, err := os.ReadFile(filepath.Join("..", "..", tc.path))
+			file, err := os.ReadFile(filepath.Join("..", "..", tc.path))
 			if err != nil {
 				t.Fatalf("read: %v", err)
+			}
+			raw, _, err := Upgrade(file)
+			if err != nil {
+				t.Fatalf("upgrade: %v", err)
 			}
 
 			// Strict decode: a key that schema.json does not define fails here.

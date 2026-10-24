@@ -1,11 +1,17 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Project",
   "description": "Speth's Screens project file — single source of truth. Generated types: internal/project/types.go + packages/shared-types/src/project.ts",
   "type": "object",
-  "required": ["version", "datasources", "pages"],
+  "required": ["schemaVersion", "version", "datasources", "pages"],
   "additionalProperties": false,
   "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 2,
+      "description": "Project file format. A file without it is format 1 and is upgraded when opened"
+    },
     "version": {
       "type": "string",
       "description": "Schema version, e.g. '0.1.0'"
@@ -169,26 +175,6 @@
         "script":          { "type": "string", "description": "Page script (JavaScript source)" }
       }
     },
-    "Widget": {
-      "title": "Widget",
-      "type": "object",
-      "required": ["id", "type", "x", "y", "w", "h"],
-      "additionalProperties": false,
-      "properties": {
-        "id":             { "type": "string" },
-        "type":           { "$ref": "#/$defs/WidgetType" },
-        "x":              { "type": "integer", "minimum": 0, "description": "Grid column" },
-        "y":              { "type": "integer", "minimum": 0, "description": "Grid row" },
-        "w":              { "type": "integer", "minimum": 1, "description": "Width in grid units" },
-        "h":              { "type": "integer", "minimum": 1, "description": "Height in grid units" },
-        "binding":        { "type": "string", "description": "datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.iTest'" },
-        "visibleBinding": { "type": "string", "description": "BOOL tag — widget hidden when value is 0/false" },
-        "locked":         { "type": "boolean", "description": "IDE-only: widget cannot be moved or resized" },
-        "groupId":        { "type": "string", "description": "IDE-only: widgets with the same groupId move together" },
-        "config":         { "$ref": "#/$defs/WidgetConfig" },
-        "dynamics":       { "type": "array", "items": { "$ref": "#/$defs/Dynamic" } }
-      }
-    },
     "WidgetType": {
       "title": "WidgetType",
       "type": "string",
@@ -212,78 +198,11 @@
         "table"
       ]
     },
-    "WidgetConfig": {
-      "title": "WidgetConfig",
-      "type": "object",
-      "description": "Per-widget configuration. Fields depend on type.",
-      "additionalProperties": true,
-      "properties": {
-        "label":          { "type": "string" },
-        "min":            { "type": "number" },
-        "max":            { "type": "number" },
-        "unit":           { "type": "string" },
-        "format":         { "type": "string", "description": "printf-style format, e.g. '%.2f'" },
-        "decimals":       { "type": "integer", "minimum": 0, "description": "Decimal places. Found in existing projects; not read by either app yet" },
-        "thresholds":     { "type": "array", "items": { "$ref": "#/$defs/Threshold" } },
-        "momentary":      { "type": "boolean", "description": "Button: true=momentary, false=toggle" },
-        "onValue":        { "description": "Button on-press value" },
-        "offValue":       { "description": "Button off/release value" },
-        "trueColor":      { "type": "string", "description": "LED color when true" },
-        "falseColor":     { "type": "string", "description": "LED color when false" },
-        "trueLabel":      { "type": "string", "description": "LED text when true" },
-        "falseLabel":     { "type": "string", "description": "LED text when false" },
-        "duration":       { "type": "integer", "description": "Trend history window in seconds" },
-        "xFormat":        { "$ref": "#/$defs/TrendXFormat" },
-        "tags":           { "type": "array", "items": { "$ref": "#/$defs/TrendSeries" }, "description": "Trend multi-series config" },
-        "refLines":       { "type": "array", "items": { "$ref": "#/$defs/RefLine" }, "description": "Trend horizontal reference lines" },
-        "pageSize":       { "type": "integer", "description": "HistoryLog rows per page" },
-        "step":           { "type": "number", "description": "Setpoint slider step" },
-        "states":         { "type": "array", "items": { "$ref": "#/$defs/StateEntry" }, "description": "MultiState value→label→color map" },
-        "maxRows":        { "type": "integer", "description": "AlarmBanner max visible rows" },
-        "showAcked":      { "type": "boolean", "description": "AlarmBanner: show acknowledged alarms" },
-        "action":         { "$ref": "#/$defs/ButtonAction" },
-        "navigateTo":     { "type": "string", "description": "Button navigate: target page id" },
-        "btnColor":       { "$ref": "#/$defs/ButtonColor" },
-        "btnVariant":     { "$ref": "#/$defs/ButtonVariant" },
-        "btnRounded":     { "$ref": "#/$defs/ButtonRounded" },
-        "icon":           { "type": "string", "description": "Button icon (emoji or short text)" },
-        "toggleOnColor":  { "type": "string", "description": "Toggle button color when on" },
-        "toggleOffColor": { "type": "string", "description": "Toggle button color when off" },
-        "src":            { "type": "string", "description": "Image: data-URL, URL or 'lib:<imageId>'" },
-        "fit":            { "$ref": "#/$defs/ImageFit", "description": "Image object-fit, as set by the properties panel" },
-        "objectFit":      { "$ref": "#/$defs/ImageFit", "description": "Image object-fit, as set when dropped from the image library" },
-        "symbolId":       { "type": "string", "description": "Symbol: id from a symbol pack" },
-        "stroke":         { "type": "string", "description": "Symbol: stroke color" },
-        "colorBinding":   { "type": "string", "description": "Tag path for color threshold evaluation" },
-        "colorThresholds":{ "type": "array", "items": { "$ref": "#/$defs/Threshold" }, "description": "Color threshold rules applied to colorBinding" },
-        "staticText":     { "type": "string", "description": "TextDisplay: fixed text shown instead of a tag value" },
-        "placeholder":    { "type": "string", "description": "TextInput/NumericInput placeholder" },
-        "textAlign":      { "$ref": "#/$defs/TextAlign" },
-        "textColor":      { "type": "string" },
-        "bgColor":        { "type": "string" },
-        "borderColor":    { "type": "string" },
-        "noPadding":      { "type": "boolean" },
-        "fontFamily":     { "type": "string", "description": "mono | sans | serif; empty means the theme font" },
-        "fontSize":       { "type": "string", "description": "xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base" },
-        "fontBold":       { "type": "boolean" },
-        "fontItalic":     { "type": "boolean" },
-        "fontUnderline":  { "type": "boolean" },
-        "faceplateId":    { "type": "string", "description": "Faceplate widget: id of the faceplate to show" },
-        "params":         { "type": "object", "additionalProperties": { "type": "string" }, "description": "Faceplate widget: parameter name → binding" },
-        "rows":           { "type": "array", "items": { "$ref": "#/$defs/TableRow" }, "description": "Table widget rows" },
-        "showQuality":    { "type": "boolean", "description": "Show the tag quality indicator" }
-      }
-    },
     "TrendXFormat": {
       "title": "TrendXFormat",
       "type": "string",
       "enum": ["time", "time-short", "relative", "datetime"],
       "description": "Trend X-axis label format"
-    },
-    "ButtonAction": {
-      "title": "ButtonAction",
-      "type": "string",
-      "enum": ["write", "navigate"]
     },
     "ButtonColor": {
       "title": "ButtonColor",
@@ -368,46 +287,6 @@
         "binding": { "type": "string" },
         "unit":    { "type": "string" }
       }
-    },
-    "Dynamic": {
-      "title": "Dynamic",
-      "type": "object",
-      "description": "A dynamic behavior on a widget. Which fields apply depends on kind",
-      "required": ["id", "kind"],
-      "additionalProperties": false,
-      "properties": {
-        "id":            { "type": "string" },
-        "kind":          { "$ref": "#/$defs/DynamicKind" },
-        "binding":       { "type": "string", "description": "Tag the dynamic reacts to" },
-        "trueColor":     { "type": "string", "description": "colorFill: color when the tag is truthy" },
-        "falseColor":    { "type": "string", "description": "colorFill: color when the tag is falsy" },
-        "blinkPeriodMs": { "type": "integer", "description": "blink: period in milliseconds" },
-        "blinkColor":    { "type": "string", "description": "blink: flash color" },
-        "minValue":      { "type": "number", "description": "rotation: tag value mapped to minAngle" },
-        "maxValue":      { "type": "number", "description": "rotation: tag value mapped to maxAngle" },
-        "minAngle":      { "type": "number", "description": "rotation: angle in degrees" },
-        "maxAngle":      { "type": "number", "description": "rotation: angle in degrees" },
-        "actionType":    { "$ref": "#/$defs/DynamicActionType" },
-        "writeTo":       { "type": "string", "description": "Action: binding to write to (may differ from binding)" },
-        "writeValue":    { "description": "writeValue action: value to write" },
-        "step":          { "type": "number", "description": "incrementValue action: amount to add" },
-        "pageId":        { "type": "string", "description": "navigate action: target page id" },
-        "url":           { "type": "string", "description": "openUrl action: URL to open" },
-        "expression":    { "type": "string", "description": "script: expression evaluated with `value` = tag value, e.g. 'value > 5000'" },
-        "targetProp":    { "$ref": "#/$defs/DynamicTargetProp" },
-        "trueValue":     { "type": "string", "description": "script: applied to targetProp when the expression is truthy" },
-        "falseValue":    { "type": "string", "description": "script: applied to targetProp when the expression is falsy" }
-      }
-    },
-    "DynamicKind": {
-      "title": "DynamicKind",
-      "type": "string",
-      "enum": ["visibility", "colorFill", "blink", "rotation", "disable", "onClick", "onPressed", "onReleased", "script"]
-    },
-    "DynamicActionType": {
-      "title": "DynamicActionType",
-      "type": "string",
-      "enum": ["writeValue", "toggleValue", "incrementValue", "navigate", "openUrl"]
     },
     "DynamicTargetProp": {
       "title": "DynamicTargetProp",
@@ -525,27 +404,6 @@
       "properties": {
         "name":        { "type": "string", "description": "Used as {name} in bindings inside the faceplate" },
         "description": { "type": "string" }
-      }
-    },
-    "FaceplateWidget": {
-      "title": "FaceplateWidget",
-      "type": "object",
-      "description": "A widget inside a faceplate. Same as Widget, but identified by localId",
-      "required": ["localId", "type", "x", "y", "w", "h"],
-      "additionalProperties": false,
-      "properties": {
-        "localId":        { "type": "string" },
-        "type":           { "$ref": "#/$defs/WidgetType" },
-        "x":              { "type": "integer", "minimum": 0 },
-        "y":              { "type": "integer", "minimum": 0 },
-        "w":              { "type": "integer", "minimum": 1 },
-        "h":              { "type": "integer", "minimum": 1 },
-        "binding":        { "type": "string", "description": "May contain {param} placeholders" },
-        "visibleBinding": { "type": "string" },
-        "locked":         { "type": "boolean" },
-        "groupId":        { "type": "string" },
-        "config":         { "$ref": "#/$defs/WidgetConfig" },
-        "dynamics":       { "type": "array", "items": { "$ref": "#/$defs/Dynamic" } }
       }
     },
     "ImageAsset": {
@@ -683,7 +541,7 @@
           "items": {
             "$ref": "#/$defs/Threshold"
           },
-          "description": "Color threshold rules applied to colorBinding"
+          "description": "Frame border color rules, applied to the color tag (bindings.color, else the value tag)"
         }
       }
     },
@@ -1412,8 +1270,8 @@
         }
       }
     },
-    "DynamicKindV2": {
-      "title": "DynamicKindV2",
+    "DynamicKind": {
+      "title": "DynamicKind",
       "type": "string",
       "enum": [
         "visibility",
@@ -1424,8 +1282,8 @@
         "script"
       ]
     },
-    "DynamicV2": {
-      "title": "DynamicV2",
+    "Dynamic": {
+      "title": "Dynamic",
       "type": "object",
       "required": [
         "id",
@@ -1438,7 +1296,7 @@
           "type": "string"
         },
         "kind": {
-          "$ref": "#/$defs/DynamicKindV2"
+          "$ref": "#/$defs/DynamicKind"
         },
         "binding": {
           "type": "string",
@@ -1493,8 +1351,8 @@
         }
       }
     },
-    "WidgetV2": {
-      "title": "WidgetV2",
+    "Widget": {
+      "title": "Widget",
       "type": "object",
       "required": [
         "id",
@@ -1553,7 +1411,7 @@
         "dynamics": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/DynamicV2"
+            "$ref": "#/$defs/Dynamic"
           }
         }
       },
@@ -1563,8 +1421,8 @@
         }
       ]
     },
-    "FaceplateWidgetV2": {
-      "title": "FaceplateWidgetV2",
+    "FaceplateWidget": {
+      "title": "FaceplateWidget",
       "type": "object",
       "description": "A widget inside a faceplate. Same as Widget, but identified by localId",
       "required": [
@@ -1624,7 +1482,7 @@
         "dynamics": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/DynamicV2"
+            "$ref": "#/$defs/Dynamic"
           }
         }
       },

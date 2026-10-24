@@ -89,8 +89,8 @@ describe("field kinds", () => {
   it("list: seeds from the widget, adds, edits and removes items", () => {
     const fields = MANIFESTS.find((m) => m.type === "trend")!.settings.filter((f) => f.key === "tags");
     const set = vi.fn();
-    render(<SettingsFields fields={fields} config={{}} set={set} w={{ ...w, binding: "plc:T" }} />);
-    // Seeded with the widget's binding as series 0.
+    render(<SettingsFields fields={fields} config={{}} set={set} w={{ ...w, bindings: { value: "plc:T" } }} />);
+    // Seeded with the widget's value tag as series 0.
     expect((screen.getAllByPlaceholderText("ds:tagPath or ns:path")[0] as HTMLInputElement).value).toBe("plc:T");
     fireEvent.click(screen.getByText("+ add"));
     expect(set).toHaveBeenLastCalledWith("tags", [{ binding: "plc:T", color: "#3b82f6" }, { binding: "", color: "#22c55e", label: "" }]);
@@ -103,7 +103,7 @@ describe("field kinds", () => {
 
 describe("properties panel", () => {
   const project = (widgets: Widget[]): Project => ({
-    version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets }],
+    schemaVersion: 2, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets }],
   });
 
   for (const m of MANIFESTS) {
@@ -118,15 +118,15 @@ describe("properties panel", () => {
     });
   }
 
-  it("an edit lands in the widget's config, and clearing removes the key", () => {
-    const wid = { id: "x", type: "historyLog", x: 0, y: 0, w: 2, h: 2, config: { pageSize: 100 } } as Widget;
+  it("an edit lands in the widget's props, and clearing the last one removes props", () => {
+    const wid = { id: "x", type: "historyLog", x: 0, y: 0, w: 2, h: 2, props: { pageSize: 100 } } as Widget;
     useProject.getState().loadProject(project([wid]));
     useProject.getState().selectWidget("x");
     render(<Properties />);
-    const cfg = () => useProject.getState().project.pages[0]!.widgets[0]!.config;
+    const props = () => useProject.getState().project.pages[0]!.widgets[0]!.props;
     fireEvent.change(screen.getByLabelText("Rows to fetch"), { target: { value: "250" } });
-    expect(cfg()).toEqual({ pageSize: 250 });
+    expect(props()).toEqual({ pageSize: 250 });
     fireEvent.change(screen.getByLabelText("Rows to fetch"), { target: { value: "" } });
-    expect(cfg()).toEqual({});
+    expect(props()).toBeUndefined();
   });
 });

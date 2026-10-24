@@ -1,5 +1,5 @@
 import { newWidgetId, useProject } from "../store/projectStore";
-import { MANIFESTS } from "@speths-screens/widgets";
+import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
 
 /** The palette: every widget type except symbols, which the symbol library adds. */
 const PALETTE = MANIFESTS.filter((m) => m.palette !== false);
@@ -7,13 +7,13 @@ const PALETTE = MANIFESTS.filter((m) => m.palette !== false);
 function useAddWidget() {
   const { activePageId, addWidget, project } = useProject();
   const page = project.pages.find((p) => p.id === activePageId);
-  return (type: string, w: number, h: number) => {
+  return (m: WidgetManifest) => {
     if (!page) return;
     const { project: latest } = useProject.getState();
     const latestPage = latest.pages.find((p) => p.id === activePageId) ?? page;
     const nextY = latestPage.widgets.reduce((max, wg) => Math.max(max, wg.y + wg.h), 0);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    addWidget(page.id, { id: newWidgetId(), type: type as any, x: 0, y: nextY, w, h });
+    // A new widget starts with its manifest's defaults (a button writes 1 while pressed).
+    addWidget(page.id, { id: newWidgetId(), type: m.type, x: 0, y: nextY, w: m.defaultSize.w, h: m.defaultSize.h, ...structuredClone(m.defaults) });
   };
 }
 
@@ -25,7 +25,7 @@ export function Palette() {
       {PALETTE.map((it) => (
         <button
           key={it.type}
-          onClick={() => add(it.type, it.defaultSize.w, it.defaultSize.h)}
+          onClick={() => add(it)}
           className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 whitespace-nowrap shrink-0 transition-colors"
         >
           {it.label}
@@ -42,7 +42,7 @@ export function WidgetPalette() {
       {PALETTE.map((it) => (
         <button
           key={it.type}
-          onClick={() => add(it.type, it.defaultSize.w, it.defaultSize.h)}
+          onClick={() => add(it)}
           className="w-full text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
         >
           {it.label}

@@ -69,6 +69,11 @@ func (u *upgrader) note(format string, args ...any) {
 
 // v1ToV2 moves every widget, on pages and in faceplates, to the v2 format.
 func (u *upgrader) v1ToV2(doc map[string]any) {
+	if _, ok := doc["users"]; ok {
+		// Users moved to the runtime's security.db (Phase 1, defect 9).
+		delete(doc, "users")
+		u.note("dropped the project's users list: users live on the runtime")
+	}
 	for _, pg := range objects(doc["pages"]) {
 		for _, w := range objects(pg["widgets"]) {
 			u.widget(w, fmt.Sprintf("page %q, widget %v", str(pg["name"]), w["id"]))

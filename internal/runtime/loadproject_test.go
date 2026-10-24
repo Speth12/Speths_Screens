@@ -99,7 +99,7 @@ func testProject(t *testing.T, datasources []string, tags ...string) *project.Pr
 	for i, tag := range tags {
 		b := "plc:" + tag
 		page.Widgets = append(page.Widgets, project.Widget{
-			ID: tag, Type: project.NumericDisplay, X: int64(i), W: 1, H: 1, Binding: &b,
+			ID: tag, Type: project.NumericDisplay, X: int64(i), W: 1, H: 1, Bindings: &project.WidgetBindings{Value: &b},
 		})
 	}
 	p.Pages = []project.Page{page}

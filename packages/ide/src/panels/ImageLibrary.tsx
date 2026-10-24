@@ -85,7 +85,7 @@ function ImageCard({
       id: newWidgetId(),
       type: "image",
       x: 0, y: 0, w: 4, h: 3,
-      config: { src: `lib:${asset.id}`, label: asset.name, objectFit: "contain" },
+      props: { src: `lib:${asset.id}`, label: asset.name, fit: "contain" },
     });
   };
 
