@@ -35,6 +35,13 @@ func TestOPCUALive(t *testing.T) {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
+	// The driver connects in the background.
+	for !d.Status().Connected {
+		if ctx.Err() != nil {
+			t.Fatalf("not connected: %+v", d.Status())
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	defs, err := d.Browse(ctx)
 	if err != nil {

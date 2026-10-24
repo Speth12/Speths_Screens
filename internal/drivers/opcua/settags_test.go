@@ -59,6 +59,7 @@ func startFake(t *testing.T, out chan<- tagstore.TagUpdate) (*Driver, *fakeServe
 	f := &fakeServer{}
 	d := New()
 	d.pollEvery = testPoll
+	d.dial = func(context.Context) error { return nil }
 	d.read = f.read
 	d.out = out
 	d.startLoop()
