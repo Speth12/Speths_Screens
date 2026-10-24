@@ -64,7 +64,7 @@ func TestWebSocketChecksOrigin(t *testing.T) {
 				conn, _, err := websocket.Dial(ctx, wsURL+path, &websocket.DialOptions{HTTPHeader: h})
 				cancel()
 				if err == nil {
-					conn.CloseNow() // /ws/alarms and /ws/events never read, so a clean close would wait 5 s
+					conn.CloseNow()
 				}
 				if (err == nil) != tc.ok {
 					t.Errorf("%s: err = %v, want ok=%v", path, err, tc.ok)

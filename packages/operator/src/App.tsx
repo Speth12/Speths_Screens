@@ -4,6 +4,7 @@ import { WriteConfirmContext, NavigateContext, type WriteRequest } from "./write
 import { writeTag, onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
+import { applyAlarmMessage } from "./alarmMessages";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
 import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/themes";
 
@@ -270,16 +271,8 @@ export function App() {
 
       ws.onmessage = (e) => {
         try {
-          const ev: AlarmEvent = JSON.parse(e.data);
-          setAlarms((prev) => {
-            const idx = prev.findIndex((x) => x.id === ev.id);
-            if (idx >= 0) {
-              const next = [...prev];
-              next[idx] = ev;
-              return next;
-            }
-            return [...prev, ev];
-          });
+          const msg: unknown = JSON.parse(e.data);
+          setAlarms((prev) => applyAlarmMessage(prev, msg));
         } catch { /* ignore */ }
       };
 

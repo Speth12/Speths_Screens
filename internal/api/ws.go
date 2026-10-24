@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Speth12/Speths_Screens/internal/alarms"
 	"github.com/Speth12/Speths_Screens/internal/runtime"
 	"github.com/Speth12/Speths_Screens/internal/security"
 	"github.com/coder/websocket"
@@ -181,37 +182,48 @@ func (s *Server) handleAlarmWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close(websocket.StatusInternalError, "shutting down")
 
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+	// CloseRead reads (and drops) client messages, so a disconnect cancels
+	// ctx at once and the close handshake is answered.
+	ctx := conn.CloseRead(r.Context())
 
 	log.Printf("[WS/alarms] client connected from %s", r.RemoteAddr)
 
-	// Send snapshot of current events.
-	snapshot := s.rt.Alarms.Events()
-	for _, ev := range snapshot {
+	// Subscribe before the snapshot, so no change falls between the two.
+	sub := s.rt.Alarms.Subscribe()
+	defer sub.Close()
+	send := func(v any) bool {
 		wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
-		_ = wsjson.Write(wctx, conn, ev)
-		wcancel()
+		defer wcancel()
+		if err := wsjson.Write(wctx, conn, v); err != nil {
+			log.Printf("[WS/alarms] write: %v", err)
+			return false
+		}
+		return true
 	}
-
-	// Subscribe for changes.
-	ch := s.rt.Alarms.Subscribe()
-	defer s.rt.Alarms.Unsubscribe(ch)
-
+	sendAll := func(evs []alarms.Event) bool {
+		for _, ev := range evs {
+			if !send(ev) {
+				return false
+			}
+		}
+		return true
+	}
+	if !sendAll(s.rt.Alarms.Events()) {
+		return
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			conn.Close(websocket.StatusNormalClosure, "bye")
 			return
-		case ev, ok := <-ch:
-			if !ok {
+		case <-sub.C():
+			changes, resync := sub.Next()
+			// The client fell behind and changes were dropped: it replaces
+			// its alarm list with the snapshot that follows.
+			if resync && (!send(map[string]bool{"resync": true}) || !sendAll(s.rt.Alarms.Events())) {
 				return
 			}
-			wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
-			err := wsjson.Write(wctx, conn, ev)
-			wcancel()
-			if err != nil {
-				log.Printf("[WS/alarms] write: %v", err)
+			if !sendAll(changes) {
 				return
 			}
 		}
@@ -233,29 +245,36 @@ func (s *Server) handleEventsWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close(websocket.StatusInternalError, "shutting down")
 
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+	ctx := conn.CloseRead(r.Context()) // see handleAlarmWS
 
 	log.Printf("[WS/events] client connected from %s", r.RemoteAddr)
 
-	ch, unsub := s.rt.Events.SubscribeAll()
-	defer unsub()
-
+	sub := s.rt.Events.Subscribe() // every type
+	defer sub.Close()
+	send := func(v any) bool {
+		wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
+		defer wcancel()
+		if err := wsjson.Write(wctx, conn, v); err != nil {
+			log.Printf("[WS/events] write: %v", err)
+			return false
+		}
+		return true
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			conn.Close(websocket.StatusNormalClosure, "bye")
 			return
-		case ev, ok := <-ch:
-			if !ok {
+		case <-sub.C():
+			evs, dropped := sub.Next()
+			// Events have no snapshot to fetch again; say how many went.
+			if dropped > 0 && !send(map[string]any{"type": "overflow", "payload": map[string]int{"dropped": dropped}}) {
 				return
 			}
-			wctx, wcancel := context.WithTimeout(ctx, 2*time.Second)
-			err := wsjson.Write(wctx, conn, ev)
-			wcancel()
-			if err != nil {
-				log.Printf("[WS/events] write: %v", err)
-				return
+			for _, ev := range evs {
+				if !send(ev) {
+					return
+				}
 			}
 		}
 	}

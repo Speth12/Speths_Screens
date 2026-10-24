@@ -108,8 +108,11 @@ func (r *Runtime) Start(ctx context.Context) {
 	r.wg.Add(1)
 	go r.pump(pumpCtx)
 	if r.AlarmStore != nil {
+		// Subscribe here, not in the goroutine, so no change made right
+		// after Start is missed.
+		sub := r.Alarms.SubscribeN(alarmHistoryQueue)
 		r.wg.Add(1)
-		go r.persistAlarms(pumpCtx)
+		go r.persistAlarms(pumpCtx, sub)
 	}
 	r.wg.Add(1)
 	go r.markStaleLoop(pumpCtx)
@@ -405,24 +408,37 @@ func (r *Runtime) RebuildNSAliases() {
 
 // persistAlarms subscribes to the alarm engine and writes every state
 // transition to the AlarmStore so history survives restarts.
-func (r *Runtime) persistAlarms(ctx context.Context) {
+// persistAlarms writes every alarm change to the alarm store. If the store
+// falls so far behind that changes were dropped, it writes the full current
+// state; the store upserts by event id, so nothing that matters is lost.
+func (r *Runtime) persistAlarms(ctx context.Context, sub *alarms.Subscription) {
 	defer r.wg.Done()
-	ch := r.Alarms.Subscribe()
-	defer r.Alarms.Unsubscribe(ch)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case ev, ok := <-ch:
-			if !ok {
-				return
-			}
+	defer sub.Close()
+	record := func(evs []alarms.Event) {
+		for _, ev := range evs {
 			if err := r.AlarmStore.Record(ev); err != nil {
 				log.Printf("[RUNTIME] alarm persist: %v", err)
 			}
 		}
 	}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-sub.C():
+			changes, resync := sub.Next()
+			if resync {
+				log.Printf("[RUNTIME] alarm history fell behind; writing the current alarm state")
+				record(r.Alarms.Events())
+			}
+			record(changes)
+		}
+	}
 }
+
+// alarmHistoryQueue is how many alarm changes the history writer can fall
+// behind by before it writes a snapshot instead. Tests lower it.
+var alarmHistoryQueue = 4096
 
 func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDriver, error) {
 	if r.newDriver != nil {
