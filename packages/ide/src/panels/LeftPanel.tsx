@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
 import type { CERTCheck } from "@speths-screens/shared-types";
-import { SYMBOL_PACKS, SYMBOLS } from "../data/symbols";
+import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
 import { Users } from "./Users";

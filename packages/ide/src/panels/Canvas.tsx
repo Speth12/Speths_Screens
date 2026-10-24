@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
-import { SYMBOLS } from "../data/symbols";
+import { SYMBOLS } from "@speths-screens/widgets";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 
