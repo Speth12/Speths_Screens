@@ -9,6 +9,7 @@ import { useHost, useTag, useTags } from "./host";
 import { imageFit } from "./imageFit";
 import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
+import { DEFAULT_STATES } from "./manifests";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -971,11 +972,6 @@ function HistoryLogWidget({ w }: { w: Widget }) {
 
 type StateEntry = { value: number | string; label: string; color: string; textColor?: string };
 
-const DEFAULT_STATES: StateEntry[] = [
-  { value: 0, label: "OFF",     color: "#27272a", textColor: "#a1a1aa" },
-  { value: 1, label: "RUNNING", color: "#14532d", textColor: "#4ade80" },
-  { value: 2, label: "FAULT",   color: "#450a0a", textColor: "#f87171" },
-];
 
 function MultiStateWidget({ w }: { w: Widget }) {
   const t = useTag(w.binding);

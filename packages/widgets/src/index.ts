@@ -8,3 +8,5 @@ export {
 export { SymbolSVG } from "./SymbolSVG";
 export * from "./symbols";
 export { imageFit } from "./imageFit";
+export type { Field, FieldKind, WidgetManifest, BindingSlot, WidgetEvent } from "./manifest";
+export { MANIFESTS, FRAME_SETTINGS, UNUSED_CONFIG_KEYS, DEFAULT_STATES, manifestFor, type SettingsGroup } from "./manifests";
