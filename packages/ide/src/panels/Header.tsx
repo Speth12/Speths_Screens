@@ -178,8 +178,13 @@ function RuntimeLoginModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: user, password: pass }),
       });
-      const data = (await r.json()) as { token?: string; error?: string };
+      const data = (await r.json()) as { token?: string; error?: string; mustChangePassword?: boolean };
       if (!r.ok || !data.token) { setErr(data.error ?? "Login failed"); return; }
+      if (data.mustChangePassword) {
+        // The token only allows a password change; the operator screen does that.
+        setErr(`${user} must choose a new password first: open ${targetUrl || "the runtime"} in a browser and log in there.`);
+        return;
+      }
       setToken(targetUrl, data.token);
       onSuccess();
       onClose();

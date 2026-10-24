@@ -13,6 +13,7 @@ import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
 import { apiBase } from "../store/runtimeTarget";
+import { authHeader } from "../store/runtimeAuth";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -23,7 +24,7 @@ function useDSStatus(dsIds: string[]) {
       const next: Record<string, DSStatus> = {};
       await Promise.all(dsIds.map(async (id) => {
         try {
-          const r = await fetch(`${apiBase}/api/v1/datasources/${encodeURIComponent(id)}/status`);
+          const r = await fetch(`${apiBase}/api/v1/datasources/${encodeURIComponent(id)}/status`, { headers: authHeader(apiBase) });
           if (!r.ok) { next[id] = "disconnected"; return; }
           const data = await r.json() as { connected: boolean };
           next[id] = data.connected ? "connected" : "disconnected";
@@ -115,7 +116,7 @@ export function LeftPanel({ width }: { width?: number }) {
     try {
       const r = await fetch(`${apiBase}/api/v1/project`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader(apiBase) },
         body: exportJSON(),
       });
       const data = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number };
@@ -313,7 +314,7 @@ export function LeftPanel({ width }: { width?: number }) {
         </TreeSection>
 
         {/* Users */}
-        <TreeSection label="Users" count={project.users?.length}>
+        <TreeSection label="Users">
           <Users />
         </TreeSection>
 
@@ -1068,7 +1069,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
     setTesting(true); setTestResult(null);
     const { type: dsType, config } = buildPayload();
     try {
-      const r = await fetch(`${apiBase}/api/v1/datasources/test`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: "test", type: dsType, label: "test", config }) });
+      const r = await fetch(`${apiBase}/api/v1/datasources/test`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeader(apiBase) }, body: JSON.stringify({ id: "test", type: dsType, label: "test", config }) });
       const data = (await r.json()) as { connected: boolean; lastError?: string; tagCount?: number };
       setTestResult(data.connected ? { ok: true, msg: `Connected${data.tagCount ? ` · ${data.tagCount} tags` : ""}` } : { ok: false, msg: data.lastError ?? "Connection failed" });
     } catch (e) { setTestResult({ ok: false, msg: (e as Error).message }); }

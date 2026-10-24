@@ -23,6 +23,7 @@ func TestOPCUALive(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
+	ch := make(chan tagstore.TagUpdate, 64)
 	d := New()
 	if err := d.Connect(ctx, drivers.DriverConfig{
 		Endpoint: endpoint,
@@ -30,10 +31,17 @@ func TestOPCUALive(t *testing.T) {
 			"securityMode":   os.Getenv("X_HMI_OPCUA_MODE"),   // default SignAndEncrypt
 			"securityPolicy": os.Getenv("X_HMI_OPCUA_POLICY"), // default Basic256Sha256
 		},
-	}); err != nil {
+	}, ch); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
+	// The driver connects in the background.
+	for !d.Status().Connected {
+		if ctx.Err() != nil {
+			t.Fatalf("not connected: %+v", d.Status())
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	defs, err := d.Browse(ctx)
 	if err != nil {
@@ -54,9 +62,8 @@ func TestOPCUALive(t *testing.T) {
 		paths[i] = defs[i].Path
 	}
 
-	ch := make(chan tagstore.TagUpdate, 64)
-	if err := d.Subscribe(ctx, paths, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags(paths); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	deadline := time.After(15 * time.Second)

@@ -98,9 +98,6 @@ func (s *Server) handleNSCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.rt.RebuildNSAliases()
-	if n.DriverID != "" && n.DriverAddr != "" {
-		s.rt.EnsureNSTagSubscribed(n.DriverID, n.DriverAddr)
-	}
 	writeJSON(w, status, n)
 }
 
@@ -158,9 +155,6 @@ func (s *Server) handleNSUpdate(w http.ResponseWriter, r *http.Request) {
 		n.Meta = body.Meta
 	}
 	s.rt.RebuildNSAliases()
-	if n.DriverID != "" && n.DriverAddr != "" {
-		s.rt.EnsureNSTagSubscribed(n.DriverID, n.DriverAddr)
-	}
 	writeJSON(w, 200, n)
 }
 

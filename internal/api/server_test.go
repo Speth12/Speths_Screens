@@ -205,6 +205,49 @@ func TestWebSocketSubscribe(t *testing.T) {
 	}
 }
 
+// The tag message carries "reason" only when the runtime has one.
+func TestWebSocketSendsReason(t *testing.T) {
+	tests := []struct {
+		name  string
+		state tagstore.TagState
+		want  any // nil: no "reason" key
+	}{
+		{"good value has no reason", tagstore.TagState{Value: 1.0, Quality: "Good"}, nil},
+		{"bad value has its reason", tagstore.TagState{Value: 1.0, Quality: "Bad", Reason: "HTTP 503"}, "HTTP 503"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, rt, hs := newTestServer(t)
+			wsURL := strings.Replace(hs.URL, "http://", "ws://", 1) + "/ws/tags"
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			conn, _, err := websocket.Dial(ctx, wsURL, nil)
+			if err != nil {
+				t.Fatalf("Dial: %v", err)
+			}
+			defer conn.Close(websocket.StatusNormalClosure, "")
+			if err := wsjson.Write(ctx, conn, map[string][]string{"subscribe": {"sensor.r"}}); err != nil {
+				t.Fatalf("Write: %v", err)
+			}
+			time.Sleep(50 * time.Millisecond)
+			tc.state.TS = time.Now().UnixNano()
+			rt.Store.Update("sensor.r", tc.state)
+
+			var got map[string]any
+			if err := wsjson.Read(ctx, conn, &got); err != nil {
+				t.Fatalf("Read: %v", err)
+			}
+			reason, has := got["reason"]
+			if tc.want == nil && has {
+				t.Errorf("got reason %v, want none", reason)
+			}
+			if tc.want != nil && reason != tc.want {
+				t.Errorf("reason = %v, want %v", reason, tc.want)
+			}
+		})
+	}
+}
+
 // ── alarms ─────────────────────────────────────────────────────────────────
 
 func TestAlarmTriggersAndAck(t *testing.T) {

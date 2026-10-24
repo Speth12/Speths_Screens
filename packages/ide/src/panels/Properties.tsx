@@ -1487,7 +1487,7 @@ function ImageProps({ setConfig, cfgStr, inp, label }: PropertiesPanelProps) {
       <ImageUploadEditor setConfig={setConfig} cfgStr={cfgStr} inp={inp} label={label} />
       <div>
         {label("Fit")}
-        <select value={cfgStr("fit", "contain")} onChange={(e) => setConfig("fit", e.target.value)} className={inp}>
+        <select value={cfgStr("fit", cfgStr("objectFit", "contain"))} onChange={(e) => setConfig("fit", e.target.value)} className={inp}>
           <option value="contain">Contain</option>
           <option value="cover">Cover</option>
           <option value="fill">Fill</option>

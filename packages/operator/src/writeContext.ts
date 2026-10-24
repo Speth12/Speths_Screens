@@ -1,11 +1,14 @@
 // Shared context so widgets can request a write through the confirmation dialog.
 import { createContext, useContext } from "react";
+import { writeTag } from "./writeTag";
 
 export type WriteRequest = {
   binding: string;
   value: unknown;
   /** Optional human-readable description of the value (e.g. button label). */
   label?: string;
+  /** The writing widget, so its min/max apply on the runtime. */
+  widgetId?: string;
 };
 
 export type WriteConfirmFn = (req: WriteRequest) => void;
@@ -14,17 +17,7 @@ export type WriteConfirmFn = (req: WriteRequest) => void;
 export const WriteConfirmContext = createContext<WriteConfirmFn>(
   // Default: write directly without confirmation (used in standalone widget tests).
   async (req: WriteRequest) => {
-    const sep = req.binding.indexOf(":");
-    if (sep < 0) return;
-    const datasource = req.binding.slice(0, sep);
-    const path = req.binding.slice(sep + 1);
-    try {
-      await fetch(`/api/v1/tag/${encodeURIComponent(path)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ datasource, value: req.value }),
-      });
-    } catch { /* ignore */ }
+    await writeTag(req.binding, req.value, req.widgetId);
   },
 );
 

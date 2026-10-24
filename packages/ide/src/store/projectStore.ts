@@ -6,14 +6,14 @@ import type {
   AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Dynamic, DynamicActionType, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe,
-  RecipeEntry, Udt, UDTField, User, UserRole, Widget, WidgetType,
+  RecipeEntry, Udt, UDTField, Widget, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
   AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam, FaceplateWidget,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe, RecipeEntry,
-  UDTField, User, UserRole, Widget, WidgetType,
+  UDTField, Widget, WidgetType,
 };
 export type UDT = Udt;
 export type DynActionType = DynamicActionType;

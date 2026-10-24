@@ -28,12 +28,7 @@
     },
     "security": {
       "$ref": "#/$defs/Security",
-      "description": "Login settings. Missing means mode 'none'"
-    },
-    "users": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/User" },
-      "description": "Users who can log in when security.mode is 'login'"
+      "description": "Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not in the project"
     },
     "datasources": {
       "type": "array",
@@ -101,23 +96,6 @@
       "type": "string",
       "enum": ["none", "login"],
       "description": "none: no login, anyone who reaches the runtime can read and write. login: every user must log in"
-    },
-    "User": {
-      "title": "User",
-      "type": "object",
-      "required": ["id", "name", "role", "passwordHash"],
-      "additionalProperties": false,
-      "properties": {
-        "id":           { "type": "string" },
-        "name":         { "type": "string", "description": "Login name" },
-        "role":         { "$ref": "#/$defs/UserRole" },
-        "passwordHash": { "type": "string", "description": "bcrypt hash ($2a$/$2b$). Never a plain-text password" }
-      }
-    },
-    "UserRole": {
-      "title": "UserRole",
-      "type": "string",
-      "enum": ["admin", "operator", "viewer"]
     },
     "Datasource": {
       "title": "Datasource",
