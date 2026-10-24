@@ -1,5 +1,8 @@
 import { newWidgetId, useProject } from "../store/projectStore";
-import { allWidgets } from "../widgets/widgetRegistry";
+import { MANIFESTS } from "@speths-screens/widgets";
+
+/** The palette: every widget type except symbols, which the symbol library adds. */
+const PALETTE = MANIFESTS.filter((m) => m.palette !== false);
 
 function useAddWidget() {
   const { activePageId, addWidget, project } = useProject();
@@ -16,14 +19,13 @@ function useAddWidget() {
 
 export function Palette() {
   const add = useAddWidget();
-  const items = allWidgets();
   return (
     <div className="flex items-center gap-1 px-2 py-1.5 border-b border-zinc-800 bg-zinc-900/80 overflow-x-auto shrink-0">
       <span className="text-[9px] uppercase tracking-widest text-zinc-600 mr-1 shrink-0">Add</span>
-      {items.map((it) => (
+      {PALETTE.map((it) => (
         <button
           key={it.type}
-          onClick={() => add(it.type, it.defaultW, it.defaultH)}
+          onClick={() => add(it.type, it.defaultSize.w, it.defaultSize.h)}
           className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 whitespace-nowrap shrink-0 transition-colors"
         >
           {it.label}
@@ -35,13 +37,12 @@ export function Palette() {
 
 export function WidgetPalette() {
   const add = useAddWidget();
-  const items = allWidgets();
   return (
     <div className="p-2 space-y-1">
-      {items.map((it) => (
+      {PALETTE.map((it) => (
         <button
           key={it.type}
-          onClick={() => add(it.type, it.defaultW, it.defaultH)}
+          onClick={() => add(it.type, it.defaultSize.w, it.defaultSize.h)}
           className="w-full text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
         >
           {it.label}

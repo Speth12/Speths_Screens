@@ -1,5 +1,5 @@
 // The IDE's side of the widget library (@speths-screens/widgets): the
-// host the canvas and preview draw with, and the palette registrations.
+// host the canvas and preview draw with.
 import { useMemo } from "react";
 import {
   WidgetHostProvider, WidgetRenderer as LibraryRenderer,
@@ -11,7 +11,6 @@ import { useTag } from "../hooks/useTag";
 import { useTags } from "../hooks/useTags";
 import { apiFetch } from "../store/runtimeAuth";
 import { useClientAlarms } from "../store/alarmEngine";
-import { registerWidget } from "./widgetRegistry";
 
 /** POST a value to the runtime's write pipeline. Binding is "dsId:tagPath".
  *  Failures show up as the value not changing; a view-only project writes nothing. */
@@ -70,23 +69,3 @@ export function WidgetRenderer({ w }: { w: Widget }) {
     </WidgetHostProvider>
   );
 }
-
-// ── registrations ─────────────────────────────────────────────────────────
-// Palette metadata. PropertiesPanel is registered separately in Properties.tsx.
-
-registerWidget({ type: "gauge",          label: "Gauge",       defaultW: 4, defaultH: 3 });
-registerWidget({ type: "numericDisplay", label: "Numeric",     defaultW: 3, defaultH: 2 });
-registerWidget({ type: "textDisplay",    label: "Text",        defaultW: 4, defaultH: 2 });
-registerWidget({ type: "led",            label: "LED",         defaultW: 2, defaultH: 2 });
-registerWidget({ type: "tank",           label: "Tank",        defaultW: 2, defaultH: 4 });
-registerWidget({ type: "button",         label: "Button",      defaultW: 3, defaultH: 2 });
-registerWidget({ type: "setpoint",       label: "Setpoint",    defaultW: 4, defaultH: 2 });
-registerWidget({ type: "multiState",     label: "Multi-State", defaultW: 3, defaultH: 2 });
-registerWidget({ type: "trend",          label: "Trend",       defaultW: 6, defaultH: 4 });
-registerWidget({ type: "numericInput",   label: "Numeric In",  defaultW: 3, defaultH: 2 });
-registerWidget({ type: "textInput",      label: "Text In",     defaultW: 3, defaultH: 2 });
-registerWidget({ type: "historyLog",     label: "History",     defaultW: 6, defaultH: 4 });
-registerWidget({ type: "alarmBanner",    label: "Alarms",      defaultW: 6, defaultH: 3 });
-registerWidget({ type: "image",          label: "Image",       defaultW: 4, defaultH: 3 });
-registerWidget({ type: "faceplate",      label: "Faceplate",   defaultW: 4, defaultH: 4 });
-registerWidget({ type: "table",          label: "Table",       defaultW: 4, defaultH: 4 });
