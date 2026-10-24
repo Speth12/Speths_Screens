@@ -1,0 +1,813 @@
+{
+  "version": "0.1.0",
+  "name": "Speth's Screens Feature Showcase — Pump Station",
+  "datasources": [
+    {
+      "id": "sim",
+      "type": "virtual",
+      "label": "Simulation",
+      "config": {
+        "tags": "[{\"path\":\"pressure\",\"formula\":\"50 + sin({sim:phase}) * 18\"},{\"path\":\"temperature\",\"formula\":\"65 + cos({sim:phase}) * 10\"},{\"path\":\"flow\",\"formula\":\"clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)\"},{\"path\":\"level\",\"formula\":\"clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)\"},{\"path\":\"phase\",\"formula\":\"({sim:phase} + 0.012) % 6.283\"},{\"path\":\"pump1_running\",\"formula\":\"clamp(sign(sin({sim:phase}) + 0.3), 0, 1)\"},{\"path\":\"pump2_running\",\"formula\":\"clamp(sign(cos({sim:phase})), 0, 1)\"},{\"path\":\"fault_active\",\"formula\":\"clamp(sign({sim:pressure} - 64), 0, 1)\"},{\"path\":\"pressure_psi\",\"formula\":\"{sim:pressure} * 14.504\"},{\"path\":\"temp_f\",\"formula\":\"{sim:temperature} * 9/5 + 32\"},{\"path\":\"efficiency\",\"formula\":\"clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)\"}]"
+      }
+    }
+  ],
+  "namespace": [
+    {"path":"plant",            "type":"folder"},
+    {"path":"plant.process",    "type":"folder"},
+    {"path":"plant.vessel",     "type":"folder"},
+    {"path":"plant.pump1",      "type":"asset"},
+    {"path":"plant.pump2",      "type":"asset"},
+    {"path":"plant.system",     "type":"folder"},
+    {"path":"plant.process.pressure",     "type":"tag","driverId":"sim","driverAddr":"pressure",     "unit":"bar", "dataType":"float","description":"Inlet pressure"},
+    {"path":"plant.process.temperature",  "type":"tag","driverId":"sim","driverAddr":"temperature",  "unit":"°C",  "dataType":"float","description":"Process temperature"},
+    {"path":"plant.process.flow",         "type":"tag","driverId":"sim","driverAddr":"flow",          "unit":"m³/h","dataType":"float","description":"Volumetric flow rate"},
+    {"path":"plant.process.pressure_psi", "type":"tag","driverId":"sim","driverAddr":"pressure_psi", "unit":"psi", "dataType":"float","description":"Pressure (imperial)"},
+    {"path":"plant.process.temp_f",       "type":"tag","driverId":"sim","driverAddr":"temp_f",        "unit":"°F",  "dataType":"float","description":"Temperature (imperial)"},
+    {"path":"plant.vessel.level",         "type":"tag","driverId":"sim","driverAddr":"level",         "unit":"%",   "dataType":"float","description":"Tank fill level"},
+    {"path":"plant.pump1.running",        "type":"tag","driverId":"sim","driverAddr":"pump1_running", "dataType":"bool","description":"Pump 1 run state"},
+    {"path":"plant.pump2.running",        "type":"tag","driverId":"sim","driverAddr":"pump2_running", "dataType":"bool","description":"Pump 2 run state"},
+    {"path":"plant.system.fault",         "type":"tag","driverId":"sim","driverAddr":"fault_active",  "dataType":"bool","description":"High-pressure fault"},
+    {"path":"plant.system.efficiency",    "type":"tag","driverId":"sim","driverAddr":"efficiency",    "unit":"%",   "dataType":"float","description":"Overall pump efficiency"}
+  ],
+  "faceplates": [
+    {
+      "id": "fp-pump-card",
+      "name": "Pump Card",
+      "params": [
+        {"name": "state",  "description": "Pump running state binding (0/1)"},
+        {"name": "flow",   "description": "Flow output binding"}
+      ],
+      "widgets": [
+        {
+          "localId": "fp-ms",
+          "type": "multiState",
+          "x": 0, "y": 0, "w": 4, "h": 3,
+          "binding": "{state}",
+          "config": {
+            "states": [
+              {"value": 0, "label": "STOPPED", "color": "#18181b", "textColor": "#52525b"},
+              {"value": 1, "label": "RUNNING", "color": "#052e16", "textColor": "#4ade80"}
+            ]
+          }
+        },
+        {
+          "localId": "fp-flow",
+          "type": "numericDisplay",
+          "x": 0, "y": 3, "w": 4, "h": 2,
+          "binding": "{flow}",
+          "config": {"label": "Output Flow", "unit": "m³/h"}
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-overview",
+      "name": "Overview",
+      "widgets": [
+        {
+          "id": "w-alarm-top",
+          "type": "alarmBanner",
+          "x": 0, "y": 0, "w": 12, "h": 1,
+          "config": {"maxRows": 3, "label": "Active Alarms"}
+        },
+        {
+          "id": "w-press-gauge",
+          "type": "gauge",
+          "x": 0, "y": 1, "w": 4, "h": 4,
+          "binding": "sim:pressure",
+          "config": {
+            "label": "Inlet Pressure",
+            "min": 0, "max": 80, "unit": "bar",
+            "colorThresholds": [
+              {"value": 0,  "color": "#22c55e"},
+              {"value": 55, "color": "#f59e0b"},
+              {"value": 65, "color": "#ef4444"}
+            ]
+          }
+        },
+        {
+          "id": "w-temp-gauge",
+          "type": "gauge",
+          "x": 4, "y": 1, "w": 4, "h": 4,
+          "binding": "sim:temperature",
+          "config": {
+            "label": "Process Temp",
+            "min": 40, "max": 90, "unit": "°C",
+            "colorThresholds": [
+              {"value": 40, "color": "#22c55e"},
+              {"value": 68, "color": "#f59e0b"},
+              {"value": 76, "color": "#ef4444"}
+            ]
+          }
+        },
+        {
+          "id": "w-pump1-status",
+          "type": "multiState",
+          "x": 8, "y": 1, "w": 2, "h": 2,
+          "binding": "sim:pump1_running",
+          "config": {
+            "label": "Pump 1",
+            "states": [
+              {"value": 0, "label": "STOPPED", "color": "#18181b", "textColor": "#52525b"},
+              {"value": 1, "label": "RUNNING", "color": "#052e16", "textColor": "#4ade80"}
+            ]
+          }
+        },
+        {
+          "id": "w-pump2-status",
+          "type": "multiState",
+          "x": 10, "y": 1, "w": 2, "h": 2,
+          "binding": "sim:pump2_running",
+          "config": {
+            "label": "Pump 2",
+            "states": [
+              {"value": 0, "label": "STOPPED", "color": "#18181b", "textColor": "#52525b"},
+              {"value": 1, "label": "RUNNING", "color": "#052e16", "textColor": "#4ade80"}
+            ]
+          }
+        },
+        {
+          "id": "w-fault-led",
+          "type": "led",
+          "x": 8, "y": 3, "w": 2, "h": 2,
+          "binding": "sim:fault_active",
+          "config": {
+            "label": "System Fault",
+            "trueLabel": "FAULT",
+            "falseLabel": "Normal",
+            "trueColor": "#ef4444",
+            "falseColor": "#166534"
+          },
+          "dynamics": [
+            {
+              "id": "dyn-fault-blink",
+              "kind": "blink",
+              "binding": "sim:fault_active",
+              "blinkPeriodMs": 800,
+              "blinkColor": "#fca5a5"
+            }
+          ]
+        },
+        {
+          "id": "w-efficiency-num",
+          "type": "numericDisplay",
+          "x": 10, "y": 3, "w": 2, "h": 2,
+          "binding": "sim:efficiency",
+          "config": {"label": "Efficiency", "unit": "%"}
+        },
+        {
+          "id": "w-level-tank",
+          "type": "tank",
+          "x": 0, "y": 5, "w": 2, "h": 4,
+          "binding": "sim:level",
+          "config": {
+            "label": "Tank Level",
+            "min": 0, "max": 100, "unit": "%",
+            "colorThresholds": [
+              {"value": 0,  "color": "#ef4444"},
+              {"value": 25, "color": "#f59e0b"},
+              {"value": 40, "color": "#3b82f6"}
+            ]
+          }
+        },
+        {
+          "id": "w-flow-tank",
+          "type": "tank",
+          "x": 2, "y": 5, "w": 2, "h": 4,
+          "binding": "sim:flow",
+          "config": {
+            "label": "Flow Rate",
+            "min": 0, "max": 100, "unit": "m³/h",
+            "colorThresholds": [
+              {"value": 0,  "color": "#22c55e"},
+              {"value": 75, "color": "#f59e0b"},
+              {"value": 90, "color": "#ef4444"}
+            ]
+          }
+        },
+        {
+          "id": "w-main-trend",
+          "type": "trend",
+          "x": 4, "y": 5, "w": 8, "h": 4,
+          "binding": "sim:pressure",
+          "config": {
+            "label": "Live Process Trend",
+            "duration": 120,
+            "tags": [
+              {"binding": "sim:pressure",    "color": "#3b82f6", "label": "Pressure (bar)"},
+              {"binding": "sim:temperature", "color": "#f59e0b", "label": "Temp (°C)"},
+              {"binding": "sim:flow",        "color": "#22c55e", "label": "Flow (m³/h)"},
+              {"binding": "sim:level",       "color": "#a855f7", "label": "Level (%)"}
+            ]
+          }
+        },
+        {
+          "id": "w-nav-trends",
+          "type": "button",
+          "x": 0, "y": 9, "w": 3, "h": 1,
+          "config": {"label": "📈 Trends", "action": "navigate", "navigateTo": "p-trends", "btnColor": "blue", "btnVariant": "flat"}
+        },
+        {
+          "id": "w-nav-control",
+          "type": "button",
+          "x": 3, "y": 9, "w": 3, "h": 1,
+          "config": {"label": "🎛 Control", "action": "navigate", "navigateTo": "p-control", "btnColor": "green", "btnVariant": "flat"}
+        },
+        {
+          "id": "w-nav-ns",
+          "type": "button",
+          "x": 6, "y": 9, "w": 3, "h": 1,
+          "config": {"label": "🌐 Namespace", "action": "navigate", "navigateTo": "p-namespace", "btnColor": "purple", "btnVariant": "flat"}
+        },
+        {
+          "id": "w-nav-alarms",
+          "type": "button",
+          "x": 9, "y": 9, "w": 3, "h": 1,
+          "config": {"label": "🔔 Alarms", "action": "navigate", "navigateTo": "p-alarms", "btnColor": "amber", "btnVariant": "flat"}
+        }
+      ]
+    },
+    {
+      "id": "p-trends",
+      "name": "Trends & History",
+      "widgets": [
+        {
+          "id": "t-press-cur",
+          "type": "numericDisplay",
+          "x": 0, "y": 0, "w": 3, "h": 2,
+          "binding": "sim:pressure",
+          "config": {"label": "Pressure", "unit": "bar"}
+        },
+        {
+          "id": "t-temp-cur",
+          "type": "numericDisplay",
+          "x": 3, "y": 0, "w": 3, "h": 2,
+          "binding": "sim:temperature",
+          "config": {"label": "Temperature", "unit": "°C"}
+        },
+        {
+          "id": "t-flow-cur",
+          "type": "numericDisplay",
+          "x": 6, "y": 0, "w": 3, "h": 2,
+          "binding": "sim:flow",
+          "config": {"label": "Flow Rate", "unit": "m³/h"}
+        },
+        {
+          "id": "t-level-cur",
+          "type": "numericDisplay",
+          "x": 9, "y": 0, "w": 3, "h": 2,
+          "binding": "sim:level",
+          "config": {"label": "Tank Level", "unit": "%"}
+        },
+        {
+          "id": "t-trend-main",
+          "type": "trend",
+          "x": 0, "y": 2, "w": 12, "h": 4,
+          "binding": "sim:pressure",
+          "config": {
+            "label": "Process Variables — 5 min",
+            "duration": 300,
+            "tags": [
+              {"binding": "sim:pressure",    "color": "#3b82f6", "label": "Pressure (bar)"},
+              {"binding": "sim:temperature", "color": "#f59e0b", "label": "Temp (°C)"},
+              {"binding": "sim:flow",        "color": "#22c55e", "label": "Flow (m³/h)"},
+              {"binding": "sim:level",       "color": "#a855f7", "label": "Level (%)"},
+              {"binding": "sim:efficiency",  "color": "#ec4899", "label": "Efficiency (%)"}
+            ]
+          }
+        },
+        {
+          "id": "t-trend-imperial",
+          "type": "trend",
+          "x": 0, "y": 6, "w": 6, "h": 4,
+          "binding": "sim:pressure_psi",
+          "config": {
+            "label": "Imperial Units — 2 min",
+            "duration": 120,
+            "tags": [
+              {"binding": "sim:pressure_psi", "color": "#06b6d4", "label": "Pressure (psi)"},
+              {"binding": "sim:temp_f",        "color": "#f97316", "label": "Temp (°F)"}
+            ]
+          }
+        },
+        {
+          "id": "t-history-log",
+          "type": "historyLog",
+          "x": 6, "y": 6, "w": 6, "h": 4,
+          "binding": "sim:pressure",
+          "config": {"label": "Pressure History Log", "pageSize": 60}
+        },
+        {
+          "id": "t-nav-back",
+          "type": "button",
+          "x": 0, "y": 10, "w": 3, "h": 1,
+          "config": {"label": "← Overview", "action": "navigate", "navigateTo": "p-overview", "btnColor": "zinc", "btnVariant": "flat"}
+        }
+      ]
+    },
+    {
+      "id": "p-control",
+      "name": "Control Panel",
+      "widgets": [
+        {
+          "id": "c-title",
+          "type": "textDisplay",
+          "x": 0, "y": 0, "w": 8, "h": 1,
+          "config": {
+            "staticText": "PUMP STATION — INTERACTIVE CONTROL",
+            "textAlign": "left",
+            "bgColor": "#0f172a",
+            "borderColor": "#334155"
+          }
+        },
+        {
+          "id": "c-fault-indicator",
+          "type": "led",
+          "x": 8, "y": 0, "w": 2, "h": 1,
+          "binding": "sim:fault_active",
+          "config": {"label": "Fault", "trueColor": "#ef4444", "falseColor": "#166534", "trueLabel": "FAULT", "falseLabel": "OK"}
+        },
+        {
+          "id": "c-nav-back",
+          "type": "button",
+          "x": 10, "y": 0, "w": 2, "h": 1,
+          "config": {"label": "← Back", "action": "navigate", "navigateTo": "p-overview", "btnColor": "zinc", "btnVariant": "flat"}
+        },
+        {
+          "id": "c-pump1-btn",
+          "type": "button",
+          "x": 0, "y": 1, "w": 3, "h": 2,
+          "binding": "sim:pump1_running",
+          "config": {
+            "label": "Pump 1 Toggle",
+            "action": "write",
+            "momentary": false,
+            "onValue": 1,
+            "offValue": 0,
+            "toggleOnColor": "green",
+            "toggleOffColor": "zinc",
+            "btnVariant": "industrial"
+          }
+        },
+        {
+          "id": "c-pump2-btn",
+          "type": "button",
+          "x": 3, "y": 1, "w": 3, "h": 2,
+          "binding": "sim:pump2_running",
+          "config": {
+            "label": "Pump 2 Toggle",
+            "action": "write",
+            "momentary": false,
+            "onValue": 1,
+            "offValue": 0,
+            "toggleOnColor": "green",
+            "toggleOffColor": "zinc",
+            "btnVariant": "industrial"
+          }
+        },
+        {
+          "id": "c-fault-reset-btn",
+          "type": "button",
+          "x": 6, "y": 1, "w": 3, "h": 2,
+          "binding": "sim:fault_active",
+          "config": {
+            "label": "⚡ Reset Fault",
+            "action": "write",
+            "momentary": true,
+            "onValue": 0,
+            "offValue": 0,
+            "btnColor": "red",
+            "btnVariant": "industrial"
+          }
+        },
+        {
+          "id": "c-estop-btn",
+          "type": "button",
+          "x": 9, "y": 1, "w": 3, "h": 2,
+          "config": {
+            "label": "🛑 E-STOP",
+            "action": "write",
+            "momentary": true,
+            "onValue": 0,
+            "btnColor": "red",
+            "btnRounded": "full",
+            "btnVariant": "filled"
+          }
+        },
+        {
+          "id": "c-sp-pressure",
+          "type": "setpoint",
+          "x": 0, "y": 3, "w": 6, "h": 2,
+          "binding": "sim:pressure",
+          "config": {"label": "Pressure Setpoint", "min": 0, "max": 80, "step": 0.5, "unit": "bar"}
+        },
+        {
+          "id": "c-sp-flow",
+          "type": "setpoint",
+          "x": 6, "y": 3, "w": 6, "h": 2,
+          "binding": "sim:flow",
+          "config": {"label": "Flow Setpoint", "min": 0, "max": 100, "step": 1, "unit": "m³/h"}
+        },
+        {
+          "id": "c-num-in-pressure",
+          "type": "numericInput",
+          "x": 0, "y": 5, "w": 4, "h": 2,
+          "binding": "sim:pressure",
+          "config": {"label": "Pressure Direct Entry", "unit": "bar"}
+        },
+        {
+          "id": "c-num-in-flow",
+          "type": "numericInput",
+          "x": 4, "y": 5, "w": 4, "h": 2,
+          "binding": "sim:flow",
+          "config": {"label": "Flow Direct Entry", "unit": "m³/h"}
+        },
+        {
+          "id": "c-text-in",
+          "type": "textInput",
+          "x": 8, "y": 5, "w": 4, "h": 2,
+          "binding": "sim:temperature",
+          "config": {"label": "Text Input Demo", "placeholder": "Enter value…"}
+        },
+        {
+          "id": "c-fp-pump1",
+          "type": "faceplate",
+          "x": 0, "y": 7, "w": 4, "h": 5,
+          "config": {
+            "faceplateId": "fp-pump-card",
+            "params": {
+              "state": "sim:pump1_running",
+              "flow":  "sim:flow"
+            }
+          }
+        },
+        {
+          "id": "c-fp-pump2",
+          "type": "faceplate",
+          "x": 4, "y": 7, "w": 4, "h": 5,
+          "config": {
+            "faceplateId": "fp-pump-card",
+            "params": {
+              "state": "sim:pump2_running",
+              "flow":  "sim:flow"
+            }
+          }
+        },
+        {
+          "id": "c-trend-ctrl",
+          "type": "trend",
+          "x": 8, "y": 7, "w": 4, "h": 5,
+          "binding": "sim:pressure",
+          "config": {
+            "label": "Live Feedback",
+            "duration": 60,
+            "tags": [
+              {"binding": "sim:pressure", "color": "#3b82f6", "label": "Pressure"},
+              {"binding": "sim:flow",     "color": "#22c55e", "label": "Flow"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-namespace",
+      "name": "Unified Namespace",
+      "widgets": [
+        {
+          "id": "ns-title",
+          "type": "textDisplay",
+          "x": 0, "y": 0, "w": 8, "h": 1,
+          "config": {
+            "staticText": "UNIFIED NAMESPACE (UNS)  —  driver-agnostic tag paths  —  ns:plant.process.pressure",
+            "textAlign": "left",
+            "bgColor": "#1e1b4b",
+            "borderColor": "#4338ca"
+          }
+        },
+        {
+          "id": "ns-nav-back",
+          "type": "button",
+          "x": 8, "y": 0, "w": 2, "h": 1,
+          "config": {"label": "← Back", "action": "navigate", "navigateTo": "p-overview", "btnColor": "purple", "btnVariant": "flat"}
+        },
+        {
+          "id": "ns-fault-led",
+          "type": "led",
+          "x": 10, "y": 0, "w": 2, "h": 1,
+          "binding": "ns:plant.system.fault",
+          "config": {"label": "System Fault", "trueColor": "#ef4444", "falseColor": "#166534"}
+        },
+        {
+          "id": "ns-pressure",
+          "type": "numericDisplay",
+          "x": 0, "y": 1, "w": 3, "h": 2,
+          "binding": "ns:plant.process.pressure",
+          "config": {"label": "ns:plant.process.pressure", "unit": "bar"}
+        },
+        {
+          "id": "ns-temperature",
+          "type": "numericDisplay",
+          "x": 3, "y": 1, "w": 3, "h": 2,
+          "binding": "ns:plant.process.temperature",
+          "config": {"label": "ns:plant.process.temperature", "unit": "°C"}
+        },
+        {
+          "id": "ns-flow",
+          "type": "numericDisplay",
+          "x": 6, "y": 1, "w": 3, "h": 2,
+          "binding": "ns:plant.process.flow",
+          "config": {"label": "ns:plant.process.flow", "unit": "m³/h"}
+        },
+        {
+          "id": "ns-level",
+          "type": "numericDisplay",
+          "x": 9, "y": 1, "w": 3, "h": 2,
+          "binding": "ns:plant.vessel.level",
+          "config": {"label": "ns:plant.vessel.level", "unit": "%"}
+        },
+        {
+          "id": "ns-pressure-psi",
+          "type": "numericDisplay",
+          "x": 0, "y": 3, "w": 3, "h": 2,
+          "binding": "ns:plant.process.pressure_psi",
+          "config": {"label": "ns:plant.process.pressure_psi", "unit": "psi"}
+        },
+        {
+          "id": "ns-temp-f",
+          "type": "numericDisplay",
+          "x": 3, "y": 3, "w": 3, "h": 2,
+          "binding": "ns:plant.process.temp_f",
+          "config": {"label": "ns:plant.process.temp_f", "unit": "°F"}
+        },
+        {
+          "id": "ns-efficiency",
+          "type": "numericDisplay",
+          "x": 6, "y": 3, "w": 3, "h": 2,
+          "binding": "ns:plant.system.efficiency",
+          "config": {"label": "ns:plant.system.efficiency", "unit": "%"}
+        },
+        {
+          "id": "ns-pump1-led",
+          "type": "led",
+          "x": 9, "y": 3, "w": 3, "h": 2,
+          "binding": "ns:plant.pump1.running",
+          "config": {"label": "ns:plant.pump1.running", "trueColor": "#22c55e", "falseColor": "#3f3f46", "trueLabel": "RUNNING", "falseLabel": "STOPPED"}
+        },
+        {
+          "id": "ns-table",
+          "type": "table",
+          "x": 0, "y": 5, "w": 6, "h": 5,
+          "config": {
+            "label": "All Namespace Tags",
+            "showQuality": true,
+            "rows": [
+              {"label": "Pressure",        "binding": "ns:plant.process.pressure",     "unit": "bar"},
+              {"label": "Temperature",     "binding": "ns:plant.process.temperature",  "unit": "°C"},
+              {"label": "Flow Rate",       "binding": "ns:plant.process.flow",          "unit": "m³/h"},
+              {"label": "Tank Level",      "binding": "ns:plant.vessel.level",          "unit": "%"},
+              {"label": "Pressure (psi)", "binding": "ns:plant.process.pressure_psi",  "unit": "psi"},
+              {"label": "Temp (°F)",      "binding": "ns:plant.process.temp_f",         "unit": "°F"},
+              {"label": "Efficiency",     "binding": "ns:plant.system.efficiency",      "unit": "%"},
+              {"label": "Pump 1 Run",     "binding": "ns:plant.pump1.running"},
+              {"label": "Pump 2 Run",     "binding": "ns:plant.pump2.running"},
+              {"label": "Fault Active",   "binding": "ns:plant.system.fault"}
+            ]
+          }
+        },
+        {
+          "id": "ns-pump2-led",
+          "type": "led",
+          "x": 6, "y": 5, "w": 3, "h": 2,
+          "binding": "ns:plant.pump2.running",
+          "config": {"label": "ns:plant.pump2.running", "trueColor": "#22c55e", "falseColor": "#3f3f46", "trueLabel": "RUNNING", "falseLabel": "STOPPED"}
+        },
+        {
+          "id": "ns-gauge-pressure",
+          "type": "gauge",
+          "x": 9, "y": 5, "w": 3, "h": 4,
+          "binding": "ns:plant.process.pressure",
+          "config": {
+            "label": "ns: Pressure",
+            "min": 0, "max": 80, "unit": "bar",
+            "colorThresholds": [
+              {"value": 0,  "color": "#22c55e"},
+              {"value": 55, "color": "#f59e0b"},
+              {"value": 65, "color": "#ef4444"}
+            ]
+          }
+        },
+        {
+          "id": "ns-trend",
+          "type": "trend",
+          "x": 6, "y": 7, "w": 3, "h": 3,
+          "binding": "ns:plant.process.pressure",
+          "config": {
+            "label": "ns: Trend",
+            "duration": 60,
+            "tags": [
+              {"binding": "ns:plant.process.pressure", "color": "#818cf8", "label": "Pressure (ns:)"},
+              {"binding": "ns:plant.vessel.level",     "color": "#34d399", "label": "Level (ns:)"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-alarms",
+      "name": "Alarms & Status",
+      "widgets": [
+        {
+          "id": "a-nav-back",
+          "type": "button",
+          "x": 0, "y": 0, "w": 2, "h": 1,
+          "config": {"label": "← Overview", "action": "navigate", "navigateTo": "p-overview", "btnColor": "zinc", "btnVariant": "flat"}
+        },
+        {
+          "id": "a-title",
+          "type": "textDisplay",
+          "x": 2, "y": 0, "w": 10, "h": 1,
+          "config": {"staticText": "ALARM MANAGEMENT & SYSTEM STATUS", "textAlign": "left", "bgColor": "#450a0a", "borderColor": "#991b1b"}
+        },
+        {
+          "id": "a-banner",
+          "type": "alarmBanner",
+          "x": 0, "y": 1, "w": 12, "h": 3,
+          "config": {"maxRows": 8, "label": "Active Alarms"}
+        },
+        {
+          "id": "a-pump1-big",
+          "type": "multiState",
+          "x": 0, "y": 4, "w": 4, "h": 3,
+          "binding": "sim:pump1_running",
+          "config": {
+            "label": "Pump 1 Status",
+            "states": [
+              {"value": 0, "label": "STOPPED", "color": "#18181b", "textColor": "#52525b"},
+              {"value": 1, "label": "RUNNING", "color": "#052e16", "textColor": "#4ade80"}
+            ]
+          }
+        },
+        {
+          "id": "a-pump2-big",
+          "type": "multiState",
+          "x": 4, "y": 4, "w": 4, "h": 3,
+          "binding": "sim:pump2_running",
+          "config": {
+            "label": "Pump 2 Status",
+            "states": [
+              {"value": 0, "label": "STOPPED", "color": "#18181b", "textColor": "#52525b"},
+              {"value": 1, "label": "RUNNING", "color": "#052e16", "textColor": "#4ade80"}
+            ]
+          }
+        },
+        {
+          "id": "a-fault-big",
+          "type": "multiState",
+          "x": 8, "y": 4, "w": 4, "h": 3,
+          "binding": "sim:fault_active",
+          "config": {
+            "label": "System Fault",
+            "states": [
+              {"value": 0, "label": "NORMAL",  "color": "#052e16", "textColor": "#4ade80"},
+              {"value": 1, "label": "⚠ FAULT", "color": "#450a0a", "textColor": "#f87171"}
+            ]
+          },
+          "dynamics": [
+            {
+              "id": "dyn-fault-fill",
+              "kind": "colorFill",
+              "binding": "sim:fault_active",
+              "trueColor": "#7f1d1d",
+              "falseColor": "#052e16"
+            }
+          ]
+        },
+        {
+          "id": "a-tag-table",
+          "type": "table",
+          "x": 0, "y": 7, "w": 6, "h": 5,
+          "config": {
+            "label": "All Process Tags — Live Values",
+            "showQuality": true,
+            "rows": [
+              {"label": "Pressure",       "binding": "sim:pressure",       "unit": "bar"},
+              {"label": "Temperature",    "binding": "sim:temperature",     "unit": "°C"},
+              {"label": "Flow Rate",      "binding": "sim:flow",            "unit": "m³/h"},
+              {"label": "Tank Level",     "binding": "sim:level",           "unit": "%"},
+              {"label": "Pressure (psi)","binding": "sim:pressure_psi",    "unit": "psi"},
+              {"label": "Temp (°F)",     "binding": "sim:temp_f",           "unit": "°F"},
+              {"label": "Efficiency",    "binding": "sim:efficiency",       "unit": "%"},
+              {"label": "Pump 1 Run",    "binding": "sim:pump1_running"},
+              {"label": "Pump 2 Run",    "binding": "sim:pump2_running"},
+              {"label": "Fault Active",  "binding": "sim:fault_active"}
+            ]
+          }
+        },
+        {
+          "id": "a-history-log",
+          "type": "historyLog",
+          "x": 6, "y": 7, "w": 6, "h": 5,
+          "binding": "sim:pressure",
+          "config": {"label": "Pressure — Event Log", "pageSize": 100}
+        }
+      ]
+    }
+  ],
+  "alarmRules": [
+    {
+      "id": "alarm-high-pressure",
+      "name": "High Pressure",
+      "binding": "sim:pressure",
+      "condition": "gt",
+      "threshold": 62,
+      "severity": "warning",
+      "message": "Inlet pressure above safe operating range (>62 bar)"
+    },
+    {
+      "id": "alarm-critical-pressure",
+      "name": "Critical Overpressure",
+      "binding": "sim:pressure",
+      "condition": "gt",
+      "threshold": 68,
+      "severity": "critical",
+      "message": "CRITICAL: Overpressure — check relief valve immediately"
+    },
+    {
+      "id": "alarm-high-temp",
+      "name": "High Temperature",
+      "binding": "sim:temperature",
+      "condition": "gt",
+      "threshold": 72,
+      "severity": "warning",
+      "message": "Process temperature elevated above 72°C"
+    },
+    {
+      "id": "alarm-critical-temp",
+      "name": "Critical Temperature",
+      "binding": "sim:temperature",
+      "condition": "gt",
+      "threshold": 78,
+      "severity": "critical",
+      "message": "CRITICAL: Temperature above safe limit (78°C)"
+    },
+    {
+      "id": "alarm-low-level",
+      "name": "Low Tank Level",
+      "binding": "sim:level",
+      "condition": "lt",
+      "threshold": 25,
+      "severity": "critical",
+      "message": "Tank level critically low (<25%) — stop pumps"
+    },
+    {
+      "id": "alarm-low-efficiency",
+      "name": "Low Pump Efficiency",
+      "binding": "sim:efficiency",
+      "condition": "lt",
+      "threshold": 50,
+      "severity": "warning",
+      "message": "Pump efficiency below 50% — maintenance recommended"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "recipe-normal",
+      "name": "Normal Operation",
+      "description": "Standard duty cycle — both pumps at balanced setpoints",
+      "entries": [
+        {"binding": "sim:pressure", "value": 50},
+        {"binding": "sim:flow",     "value": 45}
+      ]
+    },
+    {
+      "id": "recipe-high-demand",
+      "name": "High Demand",
+      "description": "Peak output mode — maximum capacity, monitor alarms",
+      "entries": [
+        {"binding": "sim:pressure", "value": 65},
+        {"binding": "sim:flow",     "value": 82}
+      ]
+    },
+    {
+      "id": "recipe-standby",
+      "name": "Standby / Low Flow",
+      "description": "Minimal flow — single pump, reduced pressure",
+      "entries": [
+        {"binding": "sim:pressure", "value": 28},
+        {"binding": "sim:flow",     "value": 12}
+      ]
+    },
+    {
+      "id": "recipe-maintenance",
+      "name": "Maintenance Mode",
+      "description": "Pumps off, safe pressure for inspection",
+      "entries": [
+        {"binding": "sim:pressure",     "value": 5},
+        {"binding": "sim:flow",         "value": 0},
+        {"binding": "sim:pump1_running","value": 0},
+        {"binding": "sim:pump2_running","value": 0}
+      ]
+    }
+  ]
+}

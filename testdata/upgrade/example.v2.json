@@ -1,0 +1,287 @@
+{
+  "alarmRules": [
+    {
+      "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+      "condition": "gt",
+      "id": "alarm-integer-high",
+      "message": "REST iInteger above 900",
+      "name": "Integer High (REST)",
+      "severity": "warning",
+      "threshold": 900
+    },
+    {
+      "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iInteger",
+      "condition": "gt",
+      "id": "alarm-opcua-integer-high",
+      "message": "OPC UA iInteger above 900",
+      "name": "Integer High (OPC UA)",
+      "severity": "critical",
+      "threshold": 900
+    }
+  ],
+  "datasources": [
+    {
+      "config": {
+        "basePath": "/_pxc_api/v1.14",
+        "endpoint": "https://10.0.0.210"
+      },
+      "id": "rest",
+      "label": "PLCnext REST",
+      "type": "rest"
+    },
+    {
+      "config": {
+        "endpoint": "opc.tcp://10.0.0.210:4840",
+        "password": "",
+        "securityMode": "None",
+        "username": ""
+      },
+      "id": "opcua",
+      "label": "OPC UA",
+      "type": "opcua"
+    }
+  ],
+  "name": "PLCnext AXC F 3152 — Live Demo",
+  "pages": [
+    {
+      "id": "p-demo",
+      "name": "PLC Demo",
+      "widgets": [
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.iInteger"
+          },
+          "h": 3,
+          "id": "w-gauge",
+          "props": {
+            "label": "Integer Value",
+            "max": 1000,
+            "min": 0,
+            "thresholds": [
+              {
+                "color": "#f59e0b",
+                "value": 700
+              },
+              {
+                "color": "#ef4444",
+                "value": 900
+              }
+            ],
+            "unit": "units"
+          },
+          "type": "gauge",
+          "w": 4,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iInteger"
+          },
+          "h": 2,
+          "id": "w-numeric",
+          "props": {
+            "label": "OPC UA iInteger (GDS)",
+            "unit": "cnt"
+          },
+          "type": "numericDisplay",
+          "w": 3,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.xBool_Out"
+          },
+          "h": 2,
+          "id": "w-led",
+          "props": {
+            "falseColor": "#ef4444",
+            "falseLabel": "IDLE",
+            "label": "Bool Out",
+            "trueColor": "#22c55e",
+            "trueLabel": "ACTIVE"
+          },
+          "type": "led",
+          "w": 2,
+          "x": 7,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.xBool_API"
+          },
+          "events": {
+            "onClick": [
+              {
+                "off": false,
+                "on": true,
+                "type": "toggle"
+              }
+            ]
+          },
+          "h": 2,
+          "id": "w-button",
+          "props": {
+            "label": "Toggle API Bool"
+          },
+          "type": "button",
+          "w": 3,
+          "x": 9,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.xBool_Out"
+          },
+          "h": 2,
+          "id": "w-multistate",
+          "props": {
+            "label": "Bool State",
+            "states": [
+              {
+                "color": "#27272a",
+                "label": "OFFLINE",
+                "textColor": "#d4d4d8",
+                "value": false
+              },
+              {
+                "color": "#052e16",
+                "label": "ONLINE",
+                "textColor": "#4ade80",
+                "value": true
+              }
+            ]
+          },
+          "type": "multiState",
+          "w": 3,
+          "x": 4,
+          "y": 2
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.xBool_In"
+          },
+          "h": 2,
+          "id": "w-numinput",
+          "props": {
+            "label": "Write Bool In"
+          },
+          "type": "numericInput",
+          "w": 2,
+          "x": 7,
+          "y": 2
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.xBool_In"
+          },
+          "h": 2,
+          "id": "w-setpoint",
+          "props": {
+            "label": "Bool In Setpoint",
+            "max": 1,
+            "min": 0,
+            "step": 1
+          },
+          "type": "setpoint",
+          "w": 3,
+          "x": 9,
+          "y": 2
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.iInteger"
+          },
+          "h": 4,
+          "id": "w-tank",
+          "props": {
+            "label": "Integer Tank",
+            "max": 1000,
+            "min": 0,
+            "thresholds": [
+              {
+                "color": "#f59e0b",
+                "value": 800
+              },
+              {
+                "color": "#ef4444",
+                "value": 950
+              }
+            ],
+            "unit": "units"
+          },
+          "type": "tank",
+          "w": 2,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.iInteger"
+          },
+          "h": 4,
+          "id": "w-trend",
+          "props": {
+            "duration": 120,
+            "label": "Integer Trend",
+            "tags": [
+              {
+                "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+                "color": "#3b82f6",
+                "label": "iInteger"
+              }
+            ]
+          },
+          "type": "trend",
+          "w": 7,
+          "x": 2,
+          "y": 3
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.sString"
+          },
+          "h": 2,
+          "id": "w-textinput",
+          "props": {
+            "label": "String Value"
+          },
+          "type": "textInput",
+          "w": 3,
+          "x": 9,
+          "y": 3
+        },
+        {
+          "h": 2,
+          "id": "w-alarms",
+          "props": {
+            "label": "Active Alarms",
+            "showAcked": false
+          },
+          "type": "alarmBanner",
+          "w": 3,
+          "x": 9,
+          "y": 5
+        },
+        {
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/MainInstance.iInteger"
+          },
+          "h": 4,
+          "id": "w-history",
+          "props": {
+            "label": "Integer History Log",
+            "pageSize": 25
+          },
+          "type": "historyLog",
+          "w": 12,
+          "x": 0,
+          "y": 7
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 2,
+  "version": "0.1.0"
+}

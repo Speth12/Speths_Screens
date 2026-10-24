@@ -2,6 +2,21 @@
   "name": "@speths-screens/shared-types",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "src/project.ts",
-  "types": "src/project.ts"
+  "types": "src/project.ts",
+  "exports": {
+    ".": "./src/project.ts",
+    "./upgrade": "./src/upgrade.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p .",
+    "test": "vitest",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "eslint": "9.39.5"
+  }
 }

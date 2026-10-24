@@ -30,6 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run lint
+      - run: npm test --workspace=packages/shared-types -- --run
       - run: npm test --workspace=packages/widgets -- --run
       - run: npm test --workspace=packages/ide -- --run
       - run: npm test --workspace=packages/operator -- --run
