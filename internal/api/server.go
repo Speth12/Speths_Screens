@@ -32,9 +32,9 @@ func New(rt *runtime.Runtime, assets http.Handler, vs ...*versionstore.Store) *S
 	}
 	s.routes(assets)
 
-	// MCP server — unauthenticated so Claude Code can connect without JWT.
-	// Bind to a separate sub-path; no CORS restriction needed (local only).
-	r.Mount("/mcp", mcp.New(rt))
+	// MCP server: it can read the project and write tags, so it needs the
+	// same login as the API, at engineer level (project.deploy).
+	r.With(s.jwtMiddleware, s.requirePerm("project.deploy")).Mount("/mcp", mcp.New(rt))
 
 	return s
 }
@@ -65,9 +65,6 @@ func (s *Server) routes(assets http.Handler) {
 	r.Post("/api/v1/auth/login", s.handleLogin)
 	r.Get("/api/v1/project", s.handleGetProject)
 	r.Get("/api/v1/alive", s.handleAlive)
-	r.Post("/api/v1/datasources/test", s.handleTestDatasource)
-	r.Get("/api/v1/datasources/{id}/status", s.handleDatasourceStatus)
-	r.Get("/api/v1/datasources/{id}/tags", s.handleBrowseDatasource)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(s.jwtMiddleware)
@@ -80,7 +77,10 @@ func (s *Server) routes(assets http.Handler) {
 
 		r.Route("/datasources", func(r chi.Router) {
 			r.Get("/", s.handleListDatasources)
-			// status + tags also registered as public routes above (no auth needed for IDE browsing)
+			r.Get("/{id}/status", s.handleDatasourceStatus)
+			r.Get("/{id}/tags", s.handleBrowseDatasource)
+			// Testing makes the runtime connect to any address it is given.
+			r.With(s.requirePerm("project.deploy")).Post("/test", s.handleTestDatasource)
 		})
 
 		r.Route("/tag", func(r chi.Router) {

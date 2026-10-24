@@ -52,6 +52,7 @@ func (s *Server) handleGetVersion(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "version not found")
 		return
 	}
+	v.Project = project.RedactSecretsJSON(v.Project) // versions saved before secrets were kept out
 	writeJSON(w, 200, v)
 }
 
@@ -79,13 +80,14 @@ func (s *Server) handleRestoreVersion(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, "stored project invalid: "+err.Error())
 		return
 	}
+	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
 		writeErr(w, 500, err.Error())
 		return
 	}
 	// Save the restore itself as a new version so the log stays append-only.
 	label := fmt.Sprintf("restore of version %d", id)
-	newID, _ := s.versions.Save(r.Context(), v.Project, label)
+	newID, _ := s.versions.Save(r.Context(), project.RedactSecretsJSON(v.Project), label)
 	writeJSON(w, 200, map[string]any{"ok": true, "restoredFrom": id, "newVersionId": newID})
 }
 
@@ -124,7 +126,9 @@ func (s *Server) handleGetProject(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, nil)
 		return
 	}
-	writeJSON(w, 200, p)
+	// Datasource passwords and tokens never leave the runtime; a deploy
+	// that leaves them blank keeps the stored ones.
+	writeJSON(w, 200, project.RedactSecrets(p))
 }
 
 func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
@@ -139,6 +143,7 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err.Error())
 		return
 	}
+	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
 		writeErr(w, 500, err.Error())
 		return
@@ -146,7 +151,7 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 	var versionID int64
 	if s.versions != nil {
 		label := r.URL.Query().Get("label")
-		versionID, _ = s.versions.Save(r.Context(), raw, label)
+		versionID, _ = s.versions.Save(r.Context(), project.RedactSecretsJSON(raw), label)
 	}
 	s.recordAudit(r, audit.ActionProjectDeploy, "", nil, nil, fmt.Sprintf("pages=%d datasources=%d", len(p.Pages), len(p.Datasources)))
 	writeJSON(w, 200, map[string]any{"ok": true, "datasources": len(p.Datasources), "pages": len(p.Pages), "versionId": versionID})

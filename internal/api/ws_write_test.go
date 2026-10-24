@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -13,8 +11,6 @@ import (
 	"github.com/coder/websocket/wsjson"
 
 	"github.com/Speth12/Speths_Screens/internal/runtime"
-	"github.com/Speth12/Speths_Screens/internal/security"
-	"github.com/Speth12/Speths_Screens/internal/versionstore"
 )
 
 // deployWriteProject loads writeTestProject (calc:sp writable 0..100).
@@ -80,51 +76,10 @@ func TestWebSocketWriteWithoutSecurity(t *testing.T) {
 }
 
 func TestWebSocketWriteNeedsToken(t *testing.T) {
-	// Security is on from the start, so no handler ever sees it change.
-	sec, err := security.Open(":memory:", []byte("test-only-secret"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = sec.Close() })
-	ctx := context.Background()
-	for _, u := range []struct {
-		name string
-		role security.Role
-	}{{"admin", security.RoleAdmin}, {"op", security.RoleOperator}} {
-		if _, err := sec.CreateUser(ctx, u.name, u.name+"-test-pass", u.role); err != nil {
-			t.Fatal(err)
-		}
-	}
-	adminToken, _, err := sec.Login(ctx, "admin", "admin-test-pass")
-	if err != nil {
-		t.Fatal(err)
-	}
-	opToken, _, err := sec.Login(ctx, "op", "op-test-pass")
-	if err != nil {
-		t.Fatal(err)
-	}
-	rt := runtime.New(nil, nil)
-	rt.Security = sec
-	rt.Start(ctx)
-	t.Cleanup(rt.Stop)
-	vs, err := versionstore.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = vs.Close() })
-	hs := httptest.NewServer(New(rt, nil, vs).Handler())
-	t.Cleanup(hs.Close)
-
-	req, _ := http.NewRequest(http.MethodPost, hs.URL+"/api/v1/project", strings.NewReader(writeTestProject))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+adminToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Fatalf("deploy as admin: %d", resp.StatusCode)
+	sec := newSecureServer(t)
+	hs, opToken, ctx := sec.hs, sec.opToken, context.Background()
+	if code, body := sec.do(t, "POST", "/api/v1/project", sec.adminToken, writeTestProject); code != 200 {
+		t.Fatalf("deploy as admin: %d %s", code, body)
 	}
 
 	tests := []struct {
