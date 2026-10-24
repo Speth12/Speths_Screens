@@ -151,7 +151,7 @@ Defect 3 decisions (Dan, 2026-10-23): a `tagstore.Mailbox` (newest value per pat
     - With `security.mode: "login"`, replace the fixed first-run `admin`/`admin` user (July WIP, `cmd/speths-screens/main.go`) with a random first-run password shown once on the console, never written to log files, and force a password change at first login. With `none`, seed no user.
     - Dev mode (`--mode=dev`, which bypasses login) listens on `127.0.0.1` only.
     - Add tests for the dev-mode login bypass and for first-run user creation.
-10. Alarm events (`internal/alarms/alarms.go`, send to subscribers) and the event bus (`internal/eventbus/eventbus.go`) drop events for slow subscribers. These are discrete events, so "newest value wins" is wrong; use a bounded per-client queue and, on overflow, tell the client to re-fetch the alarm snapshot.
+10. ~~Alarm events (`internal/alarms/alarms.go`, send to subscribers) and the event bus (`internal/eventbus/eventbus.go`) drop events for slow subscribers. These are discrete events, so "newest value wins" is wrong; use a bounded per-client queue and, on overflow, tell the client to re-fetch the alarm snapshot.~~ Done. Also fixed: `/ws/alarms` lost changes between its snapshot and subscription; the alarm-history writer subscribed late and could miss start-up changes; `SubscribeAll` leaked goroutines; both endpoints now read from the client.
 
 ## Later phases (one line each)
 
