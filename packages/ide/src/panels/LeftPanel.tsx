@@ -6,7 +6,8 @@ import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
 import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
-import { generateStandaloneHtml } from "../store/exportHtml";
+import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
+import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertCheckField, CertPinModal, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
@@ -135,8 +136,9 @@ export function LeftPanel({ width }: { width?: number }) {
     finally { setDeploying(false); setTimeout(() => setDeployMsg(""), 4000); }
   };
 
-  const exportHtml = () => {
-    const html = generateStandaloneHtml(project, "");
+  // A static snapshot of every page, with the values the IDE has now.
+  const exportHtml = async () => {
+    const html = await generateStandaloneHtml(project, { ...ideLook(), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
     const blob = new Blob([html], { type: "text/html" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -399,7 +401,7 @@ export function LeftPanel({ width }: { width?: number }) {
           {deploying ? "Deploying…" : "Deploy to Runtime"}
         </button>
         <div className="grid grid-cols-3 gap-1">
-          <button onClick={exportHtml} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export standalone HTML">⬇ HTML</button>
+          <button onClick={exportHtml} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export a snapshot of every page as one HTML file (no live values; use the operator screen for those)">⬇ HTML</button>
           <button onClick={() => downloadGitFormat(project)} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export Git format">⬇ Git</button>
           <button onClick={importGit} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Import project">⬆ Import</button>
         </div>
