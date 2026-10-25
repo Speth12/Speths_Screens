@@ -19,6 +19,7 @@ import { openProject, openSummary } from "../store/openProject";
 import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
+import { BindingInput } from "./BindingInput";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -309,14 +310,14 @@ export function LeftPanel({ width }: { width?: number }) {
           </div>
         </TreeSection>
 
-        {/* Tags */}
-        <TreeSection label="Tags">
-          <TagBrowser />
-        </TreeSection>
-
-        {/* Namespace */}
+        {/* Namespace first: widgets bind to ns: paths (Phase 2 step 5) */}
         <TreeSection label="Namespace" count={project.namespace?.length}>
           <Namespace />
+        </TreeSection>
+
+        {/* Raw PLC variables, by datasource */}
+        <TreeSection label="Tags">
+          <TagBrowser />
         </TreeSection>
 
         {/* Alarms */}
@@ -715,10 +716,9 @@ function AlarmRulesEditor() {
               />
               <button onClick={() => removeRule(i)} className="text-zinc-600 hover:text-red-400 text-xs shrink-0">×</button>
             </div>
-            <input
+            <BindingInput
               value={rule.binding}
-              onChange={(e) => updateRule(i, { binding: e.target.value })}
-              placeholder="ds:tagPath"
+              onChange={(v) => updateRule(i, { binding: v })}
               className={`${inp} font-mono text-[10px]`}
             />
             <div className="flex gap-1">

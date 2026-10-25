@@ -1,7 +1,8 @@
-// Tag binding input with ns: suggestions, and a live preview of a tag's value.
+// Tag binding input (namespace paths first), and a live preview of a tag's value.
 import { useEffect, useRef, useState } from "react";
 import { useProject } from "../store/projectStore";
 import { useTag } from "../hooks/useTag";
+import { addToNamespace, nsNodeFor, nsSuggestions, suggestNsPath } from "../store/tagPaths";
 
 const qualityColor: Record<string, string> = {
   Good: "text-emerald-400", Bad: "text-red-400", Uncertain: "text-amber-400",
@@ -15,35 +16,37 @@ const fmt = (v: unknown): string => {
   return String(v);
 };
 
-// ── Binding input with ns: autocomplete ──────────────────────────────────────
+// ── Binding input, namespace first ───────────────────────────────────────────
+// Suggests namespace tags as soon as something is typed (by path, description
+// or PLC address). Holding a raw "datasource:path", it offers the variable's
+// ns: path when the namespace has it, or adds it to the namespace in one step.
 
 export function BindingInput({
   value,
   onChange,
-  placeholder = "ds:tagPath",
+  placeholder = "ns:plant.tag  or  datasource:path",
   className,
+  wrapClassName = "",
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
+  /** Classes for the outer box, e.g. flex-1 in a row. */
+  wrapClassName?: string;
 }) {
-  const { project } = useProject();
+  const { project, upsertNamespaceNode } = useProject();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const nsNodes = project.namespace ?? [];
-
-  // Filter namespace suggestions when user has typed "ns:"
-  const suggestions = (() => {
-    if (!value.startsWith("ns:")) return [];
-    const query = value.slice(3).toLowerCase();
-    return nsNodes
-      .filter((n) => (n.type === "tag" || n.type === "virtual") && n.path.toLowerCase().includes(query))
-      .slice(0, 12);
-  })();
-
+  const suggestions = nsSuggestions(project, value).filter((n) => `ns:${n.path}` !== value);
   const showDrop = open && suggestions.length > 0;
+
+  // A raw binding to a known datasource: its ns: twin, or the offer to add one.
+  const sep = value.indexOf(":");
+  const ds = !value.startsWith("ns:") && sep > 0 ? project.datasources.find((d) => d.id === value.slice(0, sep)) : undefined;
+  const twin = ds ? nsNodeFor(project, value) : undefined;
+  const addAs = ds && !twin && value.length > sep + 1 ? suggestNsPath(project, ds.label || ds.id, value.slice(sep + 1)) : undefined;
 
   // Close on outside click
   useEffect(() => {
@@ -56,7 +59,7 @@ export function BindingInput({
   }, [showDrop]);
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={`relative ${wrapClassName}`}>
       <input
         value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
@@ -64,6 +67,23 @@ export function BindingInput({
         placeholder={placeholder}
         className={className}
       />
+      {twin && (
+        <button
+          onClick={() => onChange(`ns:${twin.path}`)}
+          className="mt-0.5 text-[10px] text-emerald-400 hover:text-emerald-300"
+          title="This variable is in the namespace; bind it by its namespace path"
+        >◆ use ns:{twin.path}</button>
+      )}
+      {addAs && ds && (
+        <button
+          onClick={async () => {
+            const { binding } = await addToNamespace(upsertNamespaceNode, addAs, ds.id, value.slice(sep + 1));
+            onChange(binding);
+          }}
+          className="mt-0.5 text-[10px] text-zinc-400 hover:text-blue-300"
+          title="Add this variable to the namespace and bind it by its namespace path"
+        >⊕ add to namespace as {addAs}</button>
+      )}
       {showDrop && (
         <div className="absolute left-0 right-0 top-full mt-0.5 z-50 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl max-h-48 overflow-y-auto">
           {suggestions.map((n) => (

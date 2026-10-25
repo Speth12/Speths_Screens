@@ -205,7 +205,7 @@ function DynamicCard({ d, onUpdate, onRemove, inp, numInp }: {
               <BindingInput
                 value={d.binding ?? ""}
                 onChange={(v) => onUpdate({ binding: v || undefined })}
-                placeholder="ds:tagPath or ns:path"
+                placeholder="ns:plant.tag  or  datasource:path"
                 className={`${inp} font-mono text-[10px] w-full`}
               />
             </div>
@@ -278,7 +278,7 @@ function DynamicCard({ d, onUpdate, onRemove, inp, numInp }: {
                 <BindingInput
                   value={d.binding ?? ""}
                   onChange={(v) => onUpdate({ binding: v || undefined })}
-                  placeholder="ds:tagPath or ns:path"
+                  placeholder="ns:plant.tag  or  datasource:path"
                   className={`${inp} font-mono text-[10px] w-full`}
                 />
                 <LiveTagPreview binding={d.binding} />

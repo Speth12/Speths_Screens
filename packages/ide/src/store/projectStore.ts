@@ -476,7 +476,8 @@ export const useProject = create<State>((set, get) => {
       set((s) => ({
         project: {
           ...s.project,
-          namespace: (s.project.namespace ?? []).filter((n) => !n.path.startsWith(path)),
+          // The node and its children; "plant.pump1" leaves "plant.pump10" alone.
+          namespace: (s.project.namespace ?? []).filter((n) => n.path !== path && !n.path.startsWith(`${path}.`)),
         },
       }));
     },

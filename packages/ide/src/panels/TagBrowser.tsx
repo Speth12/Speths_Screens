@@ -3,6 +3,7 @@ import { useProject } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
 import { apiFetch, authHeader } from "../store/runtimeAuth";
 import { tagStoreClient, type TagState } from "../store/tagStoreClient";
+import { addToNamespace, nsNodeFor, suggestNsPath } from "../store/tagPaths";
 
 // ── Shared types ───────────────────────────────────────────────────────────
 
@@ -32,17 +33,6 @@ function fmtValue(s: TagState | undefined): string {
 
 function slugify(s: string) {
   return s.replace(/[^a-zA-Z0-9._]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
-}
-
-// ── Publish to namespace helper ────────────────────────────────────────────
-
-async function publishToNS(nsPath: string, driverId: string, driverAddr: string, dataType = "float") {
-  const r = await apiFetch(`/api/v1/namespace`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: nsPath, driverId, driverAddr, dataType }),
-  });
-  if (!r.ok) throw new Error(await r.text());
 }
 
 // ── Tag Scanner Modal ──────────────────────────────────────────────────────
@@ -145,17 +135,15 @@ export function TagScannerModal({
         const mb = item as { addr: string; name: string };
         const nsPath = `${slugify(dsLabel)}.${slugify(mb.name || mb.addr)}`;
         try {
-          await publishToNS(nsPath, dsId, mb.addr);
-          upsertNamespaceNode({ path: nsPath, type: "tag", driverId: dsId, driverAddr: mb.addr });
-          out.push({ path: nsPath, ok: true, msg: "published" });
+          const { runtimeError } = await addToNamespace(upsertNamespaceNode, nsPath, dsId, mb.addr);
+          out.push({ path: nsPath, ok: true, msg: runtimeError ? "added; the runtime gets it on the next deploy" : "added" });
         } catch (e) { out.push({ path: nsPath, ok: false, msg: (e as Error).message }); }
       } else {
         const tag = item as TagDef;
         const nsPath = defaultNSPath(tag);
         try {
-          await publishToNS(nsPath, dsId, tag.Path);
-          upsertNamespaceNode({ path: nsPath, type: "tag", driverId: dsId, driverAddr: tag.Path });
-          out.push({ path: nsPath, ok: true, msg: "published" });
+          const { runtimeError } = await addToNamespace(upsertNamespaceNode, nsPath, dsId, tag.Path);
+          out.push({ path: nsPath, ok: true, msg: runtimeError ? "added; the runtime gets it on the next deploy" : "added" });
         } catch (e) { out.push({ path: nsPath, ok: false, msg: (e as Error).message }); }
       }
     }
@@ -438,34 +426,42 @@ function SourceBrowser() {
     return () => { unsubsRef.current.forEach((u) => u()); unsubsRef.current = []; };
   }, [byDS]);
 
+  // A variable in the namespace binds by its ns: path.
+  const bindingFor = (dsId: string, path: string) => {
+    const n = nsNodeFor(project, `${dsId}:${path}`);
+    return n ? `ns:${n.path}` : `${dsId}:${path}`;
+  };
+
   const bind = (dsId: string, path: string) => {
     if (!selectedWidgetId) return;
-    setWidgetTag(activePageId, selectedWidgetId, "value", `${dsId}:${path}`);
+    setWidgetTag(activePageId, selectedWidgetId, "value", bindingFor(dsId, path));
   };
 
   const openNS = (tagKey: string, tagPath: string, dsLabel: string) => {
     if (nsExpanded === tagKey) { setNsExpanded(null); return; }
     setNsExpanded(tagKey);
     setNsMsg(null);
-    // Pre-fill NS path: dsLabel.last-segment-of-tagPath
-    const last = tagPath.split(/[./\\]/).pop() ?? tagPath;
-    setNsDraft(`${slugify(dsLabel)}.${slugify(last)}`);
+    setNsDraft(suggestNsPath(project, dsLabel, tagPath));
   };
 
+  // One step: into the namespace, and onto the selected widget if there is one.
   const doPublishNS = async (dsId: string, driverAddr: string) => {
-    if (!nsDraft.trim()) return;
+    const nsPath = nsDraft.trim();
+    if (!nsPath) return;
+    if ((project.namespace ?? []).some((n) => n.path === nsPath)) {
+      setNsMsg({ ok: false, text: `${nsPath} is already in the namespace` });
+      return;
+    }
     setNsPublishing(true);
     setNsMsg(null);
-    try {
-      await publishToNS(nsDraft.trim(), dsId, driverAddr);
-      upsertNamespaceNode({ path: nsDraft.trim(), type: "tag", driverId: dsId, driverAddr });
-      setNsMsg({ ok: true, text: "Published!" });
-      setTimeout(() => { setNsExpanded(null); setNsMsg(null); }, 1200);
-    } catch (e) {
-      setNsMsg({ ok: false, text: (e as Error).message });
-    } finally {
-      setNsPublishing(false);
-    }
+    const { binding, runtimeError } = await addToNamespace(upsertNamespaceNode, nsPath, dsId, driverAddr);
+    if (selectedWidgetId) setWidgetTag(activePageId, selectedWidgetId, "value", binding);
+    setNsPublishing(false);
+    setNsMsg({
+      ok: true,
+      text: `Added ${binding}${selectedWidgetId ? " and bound it" : ""}${runtimeError ? "; the runtime gets it on the next deploy" : ""}`,
+    });
+    setTimeout(() => { setNsExpanded(null); setNsMsg(null); }, 1500);
   };
 
   return (
@@ -516,6 +512,7 @@ function SourceBrowser() {
                 .slice(0, 200)
                 .map((t) => {
                   const tagKey = `${ds.id}:${t.Path}`;
+                  const nsNode = nsNodeFor(project, tagKey);
                   const live = liveValues[tagKey];
                   const valueText = fmtValue(live);
                   const isGood = live?.quality === "Good";
@@ -528,17 +525,20 @@ function SourceBrowser() {
                         <button
                           draggable
                           onDragStart={(e) => {
-                            e.dataTransfer.setData("text/x-tag-binding", tagKey);
+                            e.dataTransfer.setData("text/x-tag-binding", bindingFor(ds.id, t.Path));
                             e.dataTransfer.effectAllowed = "link";
                           }}
                           onClick={() => bind(ds.id, t.Path)}
-                          title={`${tagKey} — drag onto a widget to bind`}
+                          title={`${nsNode ? `ns:${nsNode.path} (${tagKey})` : tagKey} — drag onto a widget to bind`}
                           className="flex items-center flex-1 min-w-0 text-left py-0.5 px-1.5 rounded hover:bg-zinc-800 cursor-grab active:cursor-grabbing gap-1.5"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="text-[11px] truncate">{t.Description || t.Path}</div>
                             {t.Description && (
                               <div className="text-[10px] font-mono text-zinc-500 truncate">{t.Path}</div>
+                            )}
+                            {nsNode && (
+                              <div className="text-[10px] font-mono text-emerald-500 truncate">◆ ns:{nsNode.path}</div>
                             )}
                           </div>
                           {valueText && (
@@ -548,7 +548,7 @@ function SourceBrowser() {
                           )}
                         </button>
                         {/* Add to namespace button */}
-                        <button
+                        {!nsNode && <button
                           onClick={() => openNS(tagKey, t.Path, ds.label || ds.id)}
                           title="Add to namespace"
                           className={`shrink-0 opacity-0 group-hover:opacity-100 text-[10px] px-1 py-0.5 rounded transition-all ${
@@ -558,13 +558,15 @@ function SourceBrowser() {
                           }`}
                         >
                           ⊕
-                        </button>
+                        </button>}
                       </div>
 
                       {/* Inline NS path editor */}
                       {nsOpen && (
                         <div className="px-2 pb-2 pt-1 space-y-1.5">
-                          <div className="text-[9px] uppercase tracking-wider text-zinc-500">Publish to namespace</div>
+                          <div className="text-[9px] uppercase tracking-wider text-zinc-500">
+                            Add to namespace{selectedWidgetId ? " and bind" : ""}
+                          </div>
                           <div className="flex gap-1.5 items-center">
                             <input
                               value={nsDraft}
