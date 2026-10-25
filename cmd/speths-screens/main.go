@@ -65,6 +65,9 @@ func spaHandler() http.Handler {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "upgrade" {
+		os.Exit(runUpgrade(os.Args[2:], os.Stdout, os.Stderr))
+	}
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
 	mode := flag.String("mode", "dev", "dev | runtime")
 	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
