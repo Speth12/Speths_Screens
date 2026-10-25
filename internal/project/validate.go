@@ -139,17 +139,17 @@ func describe(inst any, ve *jsonschema.ValidationError) string {
 	return where + ": " + what
 }
 
-// locate names the page and widget (or faceplate widget) a location is in,
+// locate names the page, faceplate or preset and the widget a location is in,
 // and returns the rest of the location within it.
 func locate(inst any, loc []string) (string, []string) {
 	root, _ := inst.(map[string]any)
-	if len(loc) >= 4 && loc[2] == "widgets" && (loc[0] == "pages" || loc[0] == "faceplates") {
+	owners := map[string]string{"pages": "page", "faceplates": "faceplate", "presets": "preset"}
+	if kindName, ok := owners[loc0(loc)]; ok && len(loc) >= 4 && loc[2] == "widgets" {
 		owner := item(root[loc[0]], loc[1])
 		w := item(owner["widgets"], loc[3])
 		id := w["id"]
-		kindName := "page"
 		if loc[0] == "faceplates" {
-			id, kindName = w["localId"], "faceplate"
+			id = w["localId"]
 		}
 		return fmt.Sprintf("%s %q, widget %v (%v)", kindName, str(owner["name"]), id, w["type"]), loc[4:]
 	}
@@ -157,6 +157,13 @@ func locate(inst any, loc []string) (string, []string) {
 		return "", nil
 	}
 	return "/" + strings.Join(loc, "/"), nil
+}
+
+func loc0(loc []string) string {
+	if len(loc) == 0 {
+		return ""
+	}
+	return loc[0]
 }
 
 func item(list any, index string) map[string]any {

@@ -6,14 +6,14 @@ import { openProject } from "./openProject";
 import type {
   Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam,
-  FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe,
+  FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
   RecipeEntry, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
   Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Dynamic, Faceplate, FaceplateParam, FaceplateWidget,
-  ImageAsset, NamespaceNode, NamespaceNodeType, Page, Project, Recipe, RecipeEntry,
+  ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe, RecipeEntry,
   UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 };
 export type UDT = Udt;
@@ -45,6 +45,8 @@ type State = {
   updateDatasource: (id: string, patch: Partial<Datasource>) => void;
 
   addWidget: (pageId: string, w: Widget) => void;
+  /** Several widgets in one undo step (an inserted preset); selects the first. */
+  addWidgets: (pageId: string, ws: Widget[]) => void;
   updateWidget: (pageId: string, id: string, patch: Partial<Widget>) => void;
   /** Sets one tag slot of a widget, keeping the others; "" clears it. */
   setWidgetTag: (pageId: string, id: string, slot: keyof WidgetBindings, tag: string) => void;
@@ -79,6 +81,9 @@ type State = {
   addFaceplate: (fp: Faceplate) => void;
   updateFaceplate: (id: string, patch: Partial<Faceplate>) => void;
   removeFaceplate: (id: string) => void;
+  addPreset: (p: Preset) => void;
+  updatePreset: (id: string, patch: Partial<Preset>) => void;
+  removePreset: (id: string) => void;
 
   upsertNamespaceNode: (node: NamespaceNode) => void;
   removeNamespaceNode: (path: string) => void;
@@ -202,6 +207,17 @@ export const useProject = create<State>((set, get) => {
       }));
     },
 
+    addWidgets: (pageId, ws) => {
+      if (!ws.length) return;
+      pushHistory();
+      set((s) => ({
+        project: {
+          ...s.project,
+          pages: s.project.pages.map((p) => p.id === pageId ? { ...p, widgets: [...p.widgets, ...ws] } : p),
+        },
+        selectedWidgetId: ws[0]!.id,
+      }));
+    },
     addWidget: (pageId, w) => {
       pushHistory();
       set((s) => ({
@@ -460,6 +476,21 @@ export const useProject = create<State>((set, get) => {
       set((s) => ({ project: { ...s.project, faceplates: (s.project.faceplates ?? []).filter((f) => f.id !== id) } }));
     },
 
+    addPreset: (p) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, presets: [...(s.project.presets ?? []), p] } }));
+    },
+    updatePreset: (id, patch) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, presets: (s.project.presets ?? []).map((p) => p.id === id ? { ...p, ...patch } : p) } }));
+    },
+    removePreset: (id) => {
+      pushHistory();
+      set((s) => {
+        const presets = (s.project.presets ?? []).filter((p) => p.id !== id);
+        return { project: { ...s.project, presets: presets.length ? presets : undefined } };
+      });
+    },
     upsertNamespaceNode: (node) => {
       pushHistory();
       set((s) => {

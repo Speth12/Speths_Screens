@@ -1,5 +1,7 @@
 import { newWidgetId, useProject } from "../store/projectStore";
 import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
+import { convertWidget } from "../store/presets";
+import { PresetList } from "./Presets";
 
 /** The palette: every widget type except symbols, which the symbol library adds. */
 const PALETTE = MANIFESTS.filter((m) => m.palette !== false);
@@ -13,7 +15,10 @@ function useAddWidget() {
     const latestPage = latest.pages.find((p) => p.id === activePageId) ?? page;
     const nextY = latestPage.widgets.reduce((max, wg) => Math.max(max, wg.y + wg.h), 0);
     // A new widget starts with its manifest's defaults (a button writes 1 while pressed).
-    addWidget(page.id, { id: newWidgetId(), type: m.type, x: 0, y: nextY, w: m.defaultSize.w, h: m.defaultSize.h, ...structuredClone(m.defaults) });
+    // Default sizes are grid cells; a pixel canvas gets them in pixels.
+    const base = { id: newWidgetId(), type: m.type, x: 0, y: 0, w: m.defaultSize.w, h: m.defaultSize.h };
+    const sized = latest.canvasSnap === "pixel" ? convertWidget(base, "pixel") : base;
+    addWidget(page.id, { ...sized, y: nextY, ...structuredClone(m.defaults) });
   };
 }
 
@@ -38,6 +43,7 @@ export function Palette() {
 export function WidgetPalette() {
   const add = useAddWidget();
   return (
+    <>
     <div className="p-2 space-y-1">
       {PALETTE.map((it) => (
         <button
@@ -49,5 +55,7 @@ export function WidgetPalette() {
         </button>
       ))}
     </div>
+    <PresetList />
+    </>
   );
 }

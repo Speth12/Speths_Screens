@@ -22,7 +22,10 @@ type Types struct {
 	Namespace []NamespaceNode `json:"namespace,omitempty"`
 	Pages     []Page          `json:"pages"`
 	// Operator PIN — operator panel locks behind this if set
-	Pin     *string  `json:"pin,omitempty"`
+	Pin *string `json:"pin,omitempty"`
+	// Widget presets: set-up widgets saved for reuse. Inserting one copies its widgets onto a
+	// page with new ids; nothing links back to the preset. The runtime ignores presets.
+	Presets []Preset `json:"presets,omitempty"`
 	Recipes []Recipe `json:"recipes,omitempty"`
 	// Project file format. A file without it is format 1 and is upgraded when opened
 	SchemaVersion int64 `json:"schemaVersion"`
@@ -555,6 +558,15 @@ type WidgetProps struct {
 	Params map[string]string `json:"params,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
+}
+
+type Preset struct {
+	Description *string `json:"description,omitempty"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	// Ordinary widgets; x and y are relative to the preset's top-left corner, ids are replaced
+	// on insert
+	Widgets []Widget `json:"widgets"`
 }
 
 type Recipe struct {
