@@ -6,21 +6,23 @@ import Ajv2020, { type ErrorObject } from "ajv/dist/2020";
 import schema from "../../../../schema.json";
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
-const check = ajv.compile(schema);
+ajv.addSchema(schema, "project");
+const check = ajv.getSchema("project")!;
 
 type Obj = Record<string, unknown>;
 
-// Which TypedProps branch (oneOf index) holds each widget type.
-const branchOf = new Map<string, number>(
-  (schema.$defs.TypedProps.oneOf as { properties: { type: { const: string } } }[])
-    .map((b, i) => [b.properties.type.const, i]),
+// Each widget type's own settings check, from the TypedProps branches
+// ({ type: { const: "gauge" }, props: { $ref: "#/$defs/GaugeProps" } }).
+const propsCheck = new Map(
+  (schema.$defs.TypedProps.oneOf as { properties: { type: { const: string }; props: { $ref: string } } }[])
+    .map((b) => [b.properties.type.const, ajv.getSchema(`project${b.properties.props.$ref}`)!]),
 );
 
 /** The problems with a project in the current format; empty when it is valid. */
 export function validateProject(project: unknown): string[] {
   if (check(project)) return [];
   const problems: string[] = [];
-  const errors = (check.errors ?? []).filter((e) => relevant(project, e));
+  const errors = widgetAware(project, check.errors ?? []);
   // A setting that fails its own check also counts as unevaluated (JSON
   // Schema 2020-12); report only its own error, not "unknown setting".
   const failed = new Set(errors.map((e) => e.instancePath));
@@ -33,15 +35,24 @@ export function validateProject(project: unknown): string[] {
   return problems;
 }
 
-/** Drops the noise of the widget-type oneOf: the summary error, and errors
- *  from the branches for other widget types. */
-function relevant(project: unknown, e: ErrorObject): boolean {
-  // TypedProps holds the schema's only oneOf; ajv gives its path relative to the definition.
-  const m = e.schemaPath.match(/\/oneOf(?:\/(\d+))?/);
-  if (!m) return true;
-  if (m[1] === undefined) return false; // "must match exactly one schema"
-  const w = widgetAt(project, e.instancePath.split("/").slice(1));
-  return w !== undefined && branchOf.get(String(w.type)) === Number(m[1]);
+/**
+ * The widget-type oneOf tries every widget type's settings, and ajv reports
+ * all of them, with paths relative to each settings type, so they cannot be
+ * told apart. For a widget whose oneOf failed, those errors are replaced by
+ * a check of its settings against its own type's alone.
+ */
+function widgetAware(project: unknown, errors: ErrorObject[]): ErrorObject[] {
+  const failed = new Set<string>(); // instance paths of widgets whose oneOf failed
+  for (const e of errors) if (e.keyword === "oneOf" && widgetAt(project, e.instancePath.split("/").slice(1))) failed.add(e.instancePath);
+  const inFailed = (path: string) => [...failed].some((w) => path === w || path === `${w}/type` || path.startsWith(`${w}/props`));
+  const out = errors.filter((e) => !inFailed(e.instancePath));
+  for (const at of failed) {
+    const w = widgetAt(project, at.split("/").slice(1))!;
+    const own = propsCheck.get(String(w.type));
+    if (!own || w.props === undefined || own(w.props)) continue;
+    for (const e of own.errors ?? []) out.push({ ...e, instancePath: `${at}/props${e.instancePath}` });
+  }
+  return out;
 }
 
 const OWNERS: Record<string, string> = { pages: "page", faceplates: "faceplate", presets: "preset" };
