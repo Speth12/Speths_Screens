@@ -24,7 +24,7 @@ const fmt = (v: unknown): string => {
 export function BindingInput({
   value,
   onChange,
-  placeholder = "ns:plant.tag  or  datasource:path",
+  placeholder = "ns:plant.tag or datasource:path",
   className,
   wrapClassName = "",
 }: {

@@ -91,7 +91,7 @@ describe("field kinds", () => {
     const set = vi.fn();
     render(<SettingsFields fields={fields} config={{}} set={set} w={{ ...w, bindings: { value: "plc:T" } }} />);
     // Seeded with the widget's value tag as series 0.
-    expect((screen.getAllByPlaceholderText("ds:tagPath or ns:path")[0] as HTMLInputElement).value).toBe("plc:T");
+    expect((screen.getAllByPlaceholderText("ns:plant.tag or datasource:path")[0] as HTMLInputElement).value).toBe("plc:T");
     fireEvent.click(screen.getByText("+ add"));
     expect(set).toHaveBeenLastCalledWith("tags", [{ binding: "plc:T", color: "#3b82f6" }, { binding: "", color: "#22c55e", label: "" }]);
     fireEvent.change(screen.getByLabelText("Label"), { target: { value: "Temp" } });

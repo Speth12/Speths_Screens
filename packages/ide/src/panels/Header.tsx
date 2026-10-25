@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useProject } from "../store/projectStore";
 import { openProject, openSummary } from "../store/openProject";
+import { StatusMessage } from "./StatusMessage";
 import { validateProject } from "../store/validateProject";
 import { useShallow } from "zustand/react/shallow";
 import { setApiBase } from "../store/runtimeTarget";
@@ -340,7 +341,7 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
 
       <div className="flex-1" />
 
-      {msg && <span className="text-[11px] text-zinc-400 max-w-[220px] truncate">{msg}</span>}
+      {msg && <StatusMessage text={msg} className="text-[11px] text-zinc-400 max-w-[260px]" />}
 
       {/* Target selector */}
       <div className="flex items-center gap-1 shrink-0">

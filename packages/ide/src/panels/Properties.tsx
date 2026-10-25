@@ -85,7 +85,7 @@ export function Properties() {
   };
   const manifest = manifestFor(w.type);
   const readsTag = manifest ? manifest.bindings.some((b) => b.name === "value") : true;
-  const tagInput = (slot: "value" | "visible" | "color", placeholder = "ds:tagPath or ns:path") => (
+  const tagInput = (slot: "value" | "visible" | "color", placeholder = "ns:plant.tag or datasource:path") => (
     <BindingInput
       value={w.bindings?.[slot] ?? ""}
       onChange={(v) => setWidgetTag(page.id, w.id, slot, v)}
@@ -205,7 +205,7 @@ function DynamicCard({ d, onUpdate, onRemove, inp, numInp }: {
               <BindingInput
                 value={d.binding ?? ""}
                 onChange={(v) => onUpdate({ binding: v || undefined })}
-                placeholder="ns:plant.tag  or  datasource:path"
+                placeholder="ns:plant.tag or datasource:path"
                 className={`${inp} font-mono text-[10px] w-full`}
               />
             </div>
@@ -278,7 +278,7 @@ function DynamicCard({ d, onUpdate, onRemove, inp, numInp }: {
                 <BindingInput
                   value={d.binding ?? ""}
                   onChange={(v) => onUpdate({ binding: v || undefined })}
-                  placeholder="ns:plant.tag  or  datasource:path"
+                  placeholder="ns:plant.tag or datasource:path"
                   className={`${inp} font-mono text-[10px] w-full`}
                 />
                 <LiveTagPreview binding={d.binding} />

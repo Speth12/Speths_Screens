@@ -23,6 +23,6 @@ export function openProject(raw: unknown): Opened {
 
 /** A one-line summary of an open, for the IDE's status messages. */
 export function openSummary(name: string, o: Opened): string {
-  if (!o.ok) return `could not open ${name}: ${o.problems[0]}${o.problems.length > 1 ? ` (and ${o.problems.length - 1} more)` : ""}`;
+  if (!o.ok) return `could not open ${name}: ${o.problems.join("; ")}`;
   return o.notes.length ? `opened ${name}, upgraded (${o.notes.length} change${o.notes.length === 1 ? "" : "s"}: ${o.notes.join("; ")})` : `opened ${name}`;
 }
