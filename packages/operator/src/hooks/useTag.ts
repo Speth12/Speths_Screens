@@ -19,8 +19,8 @@ export function useTag(path: string | undefined): TagState {
       setState(empty);
       return;
     }
-    const cached = tagStoreClient.get(path);
-    if (cached) setState(cached);
+    // A new path starts from its own value, or Unknown: never the old path's.
+    setState(tagStoreClient.get(path) ?? empty);
     return tagStoreClient.subscribe(path, setState);
   }, [path]);
 
