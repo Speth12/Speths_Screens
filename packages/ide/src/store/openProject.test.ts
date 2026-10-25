@@ -28,6 +28,11 @@ describe("validateProject", () => {
       schemaVersion: 2, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
       faceplates: [{ id: "fp", name: "Pump", params: [], widgets: [{ localId: "s", type: "tank", x: 0, y: 0, w: 1, h: 1, props: { step: 1 } }] }],
     }, [`faceplate "Pump", widget s (tank): unknown setting step`]],
+    ["preset widget", widgetDoc(w("led"), {
+      presets: [{ id: "ps", name: "Start/Stop", widgets: [{ id: "b", type: "button", x: 0, y: 0, w: 1, h: 1, props: { min: 1 } }] }],
+    }), [`preset "Start/Stop", widget b (button): unknown setting min`]],
+    ["empty preset", widgetDoc(w("led"), { presets: [{ id: "ps", name: "Empty", widgets: [] }] }),
+      ["/presets/0/widgets: must NOT have fewer than 1 items"]],
   ] as const)("%s", (_, doc, want) => {
     expect(validateProject(doc)).toEqual(want);
   });

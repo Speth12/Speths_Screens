@@ -44,9 +44,11 @@ function relevant(project: unknown, e: ErrorObject): boolean {
   return w !== undefined && branchOf.get(String(w.type)) === Number(m[1]);
 }
 
+const OWNERS: Record<string, string> = { pages: "page", faceplates: "faceplate", presets: "preset" };
+
 function widgetAt(project: unknown, loc: string[]): Obj | undefined {
-  if (loc.length < 4 || loc[2] !== "widgets" || (loc[0] !== "pages" && loc[0] !== "faceplates")) return undefined;
-  const owner = item((project as Obj)[loc[0]], loc[1]!);
+  if (loc.length < 4 || loc[2] !== "widgets" || !OWNERS[loc[0]!]) return undefined;
+  const owner = item((project as Obj)[loc[0]!], loc[1]!);
   return item(owner?.widgets, loc[3]!);
 }
 
@@ -63,7 +65,7 @@ function describe(project: unknown, e: ErrorObject): string {
   if (w) {
     const owner = item((project as Obj)[loc[0]!], loc[1]!);
     const isFp = loc[0] === "faceplates";
-    where = `${isFp ? "faceplate" : "page"} ${JSON.stringify(owner?.name ?? "")}, widget ${String(isFp ? w.localId : w.id)} (${String(w.type)})`;
+    where = `${OWNERS[loc[0]!]} ${JSON.stringify(owner?.name ?? "")}, widget ${String(isFp ? w.localId : w.id)} (${String(w.type)})`;
     rest = loc.slice(4);
   } else if (loc.length) {
     where = "/" + loc.join("/");

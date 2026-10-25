@@ -268,3 +268,22 @@ func TestDemoProjectDemand(t *testing.T) {
 		}
 	}
 }
+
+// Presets are design-time copies: their bindings are polled by no one and
+// make no tag writable until a preset is inserted on a page.
+func TestPresetsCreateNoDemandOrWrites(t *testing.T) {
+	button := project.Widget{ID: "b", Type: project.Button, Bindings: &project.WidgetBindings{Value: strp("plc:FromPreset")}}
+	p := project.Project{
+		Pages:   []project.Page{{ID: "p1", Name: "Main"}},
+		Presets: []project.Preset{{ID: "ps", Name: "Start", Widgets: []project.Widget{button}}},
+	}
+	for source, tags := range projectDemand(&p) {
+		if slices.Contains(tags, "plc:FromPreset") {
+			t.Errorf("source %s polls a preset's tag: %v", source, tags)
+		}
+	}
+	resolve := func(b string) (string, string, bool) { return "plc", "FromPreset", true }
+	if ws, ns := writableBy(&p, "plc:FromPreset", resolve); len(ws) != 0 || ns {
+		t.Errorf("a preset's tag is writable: %v, namespace %v", ws, ns)
+	}
+}

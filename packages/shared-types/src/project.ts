@@ -32,7 +32,12 @@ export interface Project {
     /**
      * Operator PIN — operator panel locks behind this if set
      */
-    pin?:     string;
+    pin?: string;
+    /**
+     * Widget presets: set-up widgets saved for reuse. Inserting one copies its widgets onto a
+     * page with new ids; nothing links back to the preset. The runtime ignores presets.
+     */
+    presets?: Preset[];
     recipes?: Recipe[];
     /**
      * Project file format. A file without it is format 1 and is upgraded when opened
@@ -894,6 +899,17 @@ export interface WidgetProps {
      */
     rows?: TableRow[];
     [property: string]: any;
+}
+
+export interface Preset {
+    description?: string;
+    id:           string;
+    name:         string;
+    /**
+     * Ordinary widgets; x and y are relative to the preset's top-left corner, ids are replaced
+     * on insert
+     */
+    widgets: Widget[];
 }
 
 export interface Recipe {

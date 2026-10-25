@@ -66,6 +66,11 @@
       "type": "array",
       "items": { "$ref": "#/$defs/Faceplate" }
     },
+    "presets": {
+      "type": "array",
+      "description": "Widget presets: set-up widgets saved for reuse. Inserting one copies its widgets onto a page with new ids; nothing links back to the preset. The runtime ignores presets.",
+      "items": { "$ref": "#/$defs/Preset" }
+    },
     "images": {
       "type": "array",
       "items": { "$ref": "#/$defs/ImageAsset" }
@@ -382,6 +387,23 @@
       "title": "NamespaceNodeType",
       "type": "string",
       "enum": ["folder", "asset", "tag", "virtual"]
+    },
+    "Preset": {
+      "title": "Preset",
+      "type": "object",
+      "required": ["id", "name", "widgets"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "widgets": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordinary widgets; x and y are relative to the preset's top-left corner, ids are replaced on insert",
+          "items": { "$ref": "#/$defs/Widget" }
+        }
+      }
     },
     "Faceplate": {
       "title": "Faceplate",

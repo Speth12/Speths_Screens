@@ -16,6 +16,7 @@ import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
+import { convertWidget } from "../store/presets";
 import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
@@ -509,8 +510,6 @@ function CanvasSettings() {
   const [fw, setFw] = useState<number>(res.type === "fixed" ? (res.width ?? 1920) : 1920);
   const [fh, setFh] = useState<number>(res.type === "fixed" ? (res.height ?? 1080) : 1080);
 
-  const COL_W = 80, ROW_H = 64, GAP = 8;
-
   const setPatch = (patch: Partial<typeof project>) => {
     const p = JSON.parse(exportJSON());
     loadProject({ ...p, ...patch });
@@ -521,32 +520,10 @@ function CanvasSettings() {
   const setSnap = (s: CanvasSnap) => {
     if (s === snap) return;
     const p = JSON.parse(exportJSON());
-    // Convert all widget positions so they appear in the same place after the switch.
-    const pages = p.pages.map((pg: typeof project.pages[number]) => ({
-      ...pg,
-      widgets: pg.widgets.map((w: typeof project.pages[number]["widgets"][number]) => {
-        if (s === "pixel") {
-          // grid → pixel
-          return {
-            ...w,
-            x: Math.round((w.x ?? 0) * (COL_W + GAP)),
-            y: Math.round((w.y ?? 0) * (ROW_H + GAP)),
-            w: Math.max(40, Math.round(w.w * (COL_W + GAP) - GAP)),
-            h: Math.max(40, Math.round(w.h * (ROW_H + GAP) - GAP)),
-          };
-        } else {
-          // pixel → grid
-          return {
-            ...w,
-            x: Math.max(0, Math.round((w.x ?? 0) / (COL_W + GAP))),
-            y: Math.max(0, Math.round((w.y ?? 0) / (ROW_H + GAP))),
-            w: Math.max(1, Math.round((w.w + GAP) / (COL_W + GAP))),
-            h: Math.max(1, Math.round((w.h + GAP) / (ROW_H + GAP))),
-          };
-        }
-      }),
-    }));
-    loadProject({ ...p, pages, canvasSnap: s });
+    // Convert every widget, pages and presets, so it looks the same after the switch.
+    const pages = (p.pages as typeof project.pages).map((pg) => ({ ...pg, widgets: pg.widgets.map((w) => convertWidget(w, s)) }));
+    const presets = (p.presets as typeof project.presets)?.map((ps) => ({ ...ps, widgets: ps.widgets.map((w) => convertWidget(w, s)) }));
+    loadProject({ ...p, pages, presets, canvasSnap: s });
   };
 
   const numCls = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-zinc-500";
