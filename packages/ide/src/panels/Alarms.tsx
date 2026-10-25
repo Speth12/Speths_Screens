@@ -5,6 +5,7 @@ import { apiBase } from "../store/runtimeTarget";
 import { apiFetch, authHeader, getToken } from "../store/runtimeAuth";
 import { applyAlarmMessage } from "../store/alarmMessages";
 import { useClientAlarms } from "../store/alarmEngine";
+import { BindingInput } from "./BindingInput";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,10 +92,9 @@ function RuleForm({ initial, onSave, onCancel }: {
             <option value={binding}>{binding}</option>
           )}
         </select>
-        <input
+        <BindingInput
           value={binding}
-          onChange={(e) => setBinding(e.target.value)}
-          placeholder="ds:tagPath"
+          onChange={setBinding}
           className={`mt-1 ${inputCls} font-mono text-[10px]`}
         />
       </label>

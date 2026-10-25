@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
+import { preferNs } from "../store/tagPaths";
 import { SYMBOLS } from "@speths-screens/widgets";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
@@ -379,7 +380,7 @@ export function Canvas() {
       const target = isPixel
         ? page.widgets.find(w => pxX >= w.x && pxX < w.x + w.w && pxY >= w.y && pxY < w.y + w.h)
         : page.widgets.find(w => col >= (w.x ?? 0) && col < (w.x ?? 0) + w.w && row >= (w.y ?? 0) && row < (w.y ?? 0) + w.h);
-      if (target) updateWidget(activePageId, target.id, { bindings: { ...target.bindings, value: tagBinding } });
+      if (target) updateWidget(activePageId, target.id, { bindings: { ...target.bindings, value: preferNs(project, tagBinding) } });
       return;
     }
 
