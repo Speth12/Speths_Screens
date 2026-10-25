@@ -62,3 +62,28 @@ describe("useTag", () => {
     expect(result.current.quality).toBe("Unknown");
   });
 });
+
+describe("changing the path", () => {
+  beforeEach(() => tsc.__reset());
+
+  it.each([
+    ["to a tag with no value yet shows Unknown, not the old value", undefined, null, "Unknown"],
+    ["to a tag with a value shows that value", { value: 7, quality: "Good", ts: 2 }, 7, "Good"],
+  ])("%s", (_, next, value, quality) => {
+    act(() => tsc.__push("plc:A", { value: 75, quality: "Good", ts: 1 }));
+    if (next) act(() => tsc.__push("plc:B", next));
+    const { result, rerender } = renderHook(({ p }) => useTag(p), { initialProps: { p: "plc:A" } });
+    expect(result.current.value).toBe(75);
+    rerender({ p: "plc:B" });
+    expect(result.current).toMatchObject({ value, quality });
+  });
+
+  it("useTags drops the old paths' values", async () => {
+    const { useTags } = await import("./useTags");
+    act(() => tsc.__push("plc:A", { value: 75, quality: "Good", ts: 1 }));
+    const { result, rerender } = renderHook(({ ps }) => useTags(ps), { initialProps: { ps: ["plc:A"] } });
+    expect(result.current["plc:A"]!.value).toBe(75);
+    rerender({ ps: ["plc:B"] });
+    expect(result.current).toEqual({ "plc:B": { value: null, quality: "Unknown", ts: 0 } });
+  });
+});
