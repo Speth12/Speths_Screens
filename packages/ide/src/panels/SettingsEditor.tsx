@@ -175,7 +175,7 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
         <div>
           <Label text={f.label} />
           <BindingInput value={(v as string | undefined) ?? ""} onChange={(s) => put(s || undefined)}
-            placeholder={f.placeholder ?? "ds:tagPath or ns:path"} className={`${inp} font-mono w-full`} />
+            placeholder={f.placeholder ?? "ns:plant.tag or datasource:path"} className={`${inp} font-mono w-full`} />
           {note}
         </div>
       );

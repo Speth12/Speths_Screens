@@ -17,6 +17,7 @@ import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
+import { StatusMessage } from "./StatusMessage";
 import { convertWidget } from "../store/presets";
 import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
@@ -391,7 +392,7 @@ export function LeftPanel({ width }: { width?: number }) {
 
       {/* ── Bottom action bar ────────────────────────────────────────── */}
       <div className="border-t border-zinc-800 p-2 space-y-1 shrink-0">
-        {deployMsg && <div className="text-[10px] text-zinc-400 truncate px-1">{deployMsg}</div>}
+        {deployMsg && <StatusMessage text={deployMsg} className="text-[10px] text-zinc-400 px-1" />}
         <button
           onClick={doDeploy}
           disabled={deploying}
