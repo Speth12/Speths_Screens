@@ -57,11 +57,18 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			source: SourceScreens, want: "plc:P",
 		},
 		{
-			name: "dynamic binding",
+			name: "driven property",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Dynamics: []project.DynamicElement{{ID: "d", Kind: project.Blink, Binding: strp("plc:D")}},
+				Dynamics: map[string]project.Drive{"blink": {Expr: "{plc:D} && good({ns:E})"}},
 			}}}}},
 			source: SourceScreens, want: "plc:D",
+		},
+		{
+			name: "driven property, second tag",
+			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
+				Dynamics: map[string]project.Drive{"blink": {Expr: "{plc:D} && good({ns:E})"}},
+			}}}}},
+			source: SourceScreens, want: "ns:E",
 		},
 		{
 			name: "action tag",

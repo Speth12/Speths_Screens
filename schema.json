@@ -304,11 +304,6 @@
         "unit":    { "type": "string" }
       }
     },
-    "DynamicTargetProp": {
-      "title": "DynamicTargetProp",
-      "type": "string",
-      "enum": ["bgColor", "borderColor", "textColor", "visible"]
-    },
     "AlarmRule": {
       "title": "AlarmRule",
       "type": "object",
@@ -525,7 +520,7 @@
       "type": "string",
       "enum": ["grid", "pixel"]
     },
-    "FrameProps": {
+"FrameProps": {
       "title": "FrameProps",
       "type": "object",
       "description": "Settings of the frame every widget is drawn in. Each widget type's settings include these",
@@ -575,6 +570,15 @@
             "$ref": "#/$defs/Threshold"
           },
           "description": "Frame border color rules, applied to the color tag (bindings.color, else the value tag)"
+        },
+        "blinkPeriodMs": {
+          "type": "integer",
+          "minimum": 100,
+          "description": "Blink period in milliseconds while dynamics.blink is on; missing means 800"
+        },
+        "blinkColor": {
+          "type": "string",
+          "description": "Color the frame flashes while blinking; missing means the widget fades in and out"
         }
       }
     },
@@ -980,7 +984,7 @@
       },
       "unevaluatedProperties": false
     },
-    "TypedProps": {
+"TypedProps": {
       "title": "TypedProps",
       "description": "Ties a widget's type to the settings type its props must follow",
       "oneOf": [
@@ -991,6 +995,24 @@
             },
             "props": {
               "$ref": "#/$defs/GaugeProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max",
+                  "unit"
+                ]
+              }
             }
           },
           "required": [
@@ -1004,6 +1026,24 @@
             },
             "props": {
               "$ref": "#/$defs/NumericDisplayProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max",
+                  "unit"
+                ]
+              }
             }
           },
           "required": [
@@ -1017,6 +1057,22 @@
             },
             "props": {
               "$ref": "#/$defs/TextDisplayProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "staticText"
+                ]
+              }
             }
           },
           "required": [
@@ -1030,6 +1086,25 @@
             },
             "props": {
               "$ref": "#/$defs/LedProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "trueColor",
+                  "falseColor",
+                  "trueLabel",
+                  "falseLabel"
+                ]
+              }
             }
           },
           "required": [
@@ -1043,6 +1118,24 @@
             },
             "props": {
               "$ref": "#/$defs/TankProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max",
+                  "unit"
+                ]
+              }
             }
           },
           "required": [
@@ -1056,6 +1149,22 @@
             },
             "props": {
               "$ref": "#/$defs/ButtonProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "btnColor"
+                ]
+              }
             }
           },
           "required": [
@@ -1069,6 +1178,25 @@
             },
             "props": {
               "$ref": "#/$defs/SetpointProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max",
+                  "unit",
+                  "step"
+                ]
+              }
             }
           },
           "required": [
@@ -1082,6 +1210,21 @@
             },
             "props": {
               "$ref": "#/$defs/MultiStateProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1095,6 +1238,23 @@
             },
             "props": {
               "$ref": "#/$defs/TrendProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max"
+                ]
+              }
             }
           },
           "required": [
@@ -1108,6 +1268,24 @@
             },
             "props": {
               "$ref": "#/$defs/NumericInputProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "min",
+                  "max",
+                  "unit"
+                ]
+              }
             }
           },
           "required": [
@@ -1121,6 +1299,21 @@
             },
             "props": {
               "$ref": "#/$defs/TextInputProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1134,6 +1327,21 @@
             },
             "props": {
               "$ref": "#/$defs/HistoryLogProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1147,6 +1355,21 @@
             },
             "props": {
               "$ref": "#/$defs/AlarmBannerProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1160,6 +1383,22 @@
             },
             "props": {
               "$ref": "#/$defs/ImageProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "src"
+                ]
+              }
             }
           },
           "required": [
@@ -1173,6 +1412,22 @@
             },
             "props": {
               "$ref": "#/$defs/SymbolProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate",
+                  "stroke"
+                ]
+              }
             }
           },
           "required": [
@@ -1186,6 +1441,21 @@
             },
             "props": {
               "$ref": "#/$defs/FaceplateProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1199,6 +1469,21 @@
             },
             "props": {
               "$ref": "#/$defs/TableProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
             }
           },
           "required": [
@@ -1303,86 +1588,178 @@
         }
       }
     },
-    "DynamicKind": {
-      "title": "DynamicKind",
-      "type": "string",
-      "enum": [
-        "visibility",
-        "colorFill",
-        "blink",
-        "rotation",
-        "disable",
-        "script"
-      ]
-    },
-    "Dynamic": {
-      "title": "Dynamic",
+"Drive": {
+      "title": "Drive",
       "type": "object",
       "required": [
-        "id",
+        "expr"
+      ],
+      "additionalProperties": false,
+      "description": "Drives one property of a widget: the expression's value, through the transform if there is one. An unknown result, or a value of the wrong type for the property, leaves the property's own setting",
+      "properties": {
+        "expr": {
+          "type": "string",
+          "description": "Expression (the Speth's Screens expression language); value is the widget's value tag"
+        },
+        "transform": {
+          "$ref": "#/$defs/Transform"
+        }
+      }
+    },
+    "TransformKind": {
+      "title": "TransformKind",
+      "type": "string",
+      "enum": [
+        "linear",
+        "thresholds",
+        "map"
+      ]
+    },
+    "Transform": {
+      "title": "Transform",
+      "type": "object",
+      "required": [
         "kind"
       ],
       "additionalProperties": false,
-      "description": "A tag-driven look on a widget (actions are events). Which fields apply depends on kind",
+      "description": "Turns an expression value into a property value. linear: scale in to out; thresholds: the value of the last step whose above the value reaches; map: the value of the case it equals",
       "properties": {
-        "id": {
-          "type": "string"
-        },
         "kind": {
-          "$ref": "#/$defs/DynamicKind"
+          "$ref": "#/$defs/TransformKind"
         },
-        "binding": {
-          "type": "string",
-          "description": "Tag the dynamic reacts to"
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "linear: input range [low, high]"
         },
-        "trueColor": {
-          "type": "string",
-          "description": "colorFill: color when the tag is truthy"
+        "out": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "linear: output range [low, high]"
         },
-        "falseColor": {
-          "type": "string",
-          "description": "colorFill: color when the tag is falsy"
+        "clamp": {
+          "type": "boolean",
+          "description": "linear: keep the result inside out; missing means true"
         },
-        "blinkPeriodMs": {
-          "type": "integer",
-          "description": "blink: period in milliseconds"
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThresholdStep"
+          },
+          "description": "thresholds: steps in ascending order of above"
         },
-        "blinkColor": {
-          "type": "string",
-          "description": "blink: flash color"
+        "below": {
+          "$ref": "#/$defs/TransformValue",
+          "description": "thresholds: the value under the first step; missing leaves the property's own setting"
         },
-        "minValue": {
-          "type": "number",
-          "description": "rotation: tag value mapped to minAngle"
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MapCase"
+          },
+          "description": "map: the cases, first match wins"
         },
-        "maxValue": {
-          "type": "number",
-          "description": "rotation: tag value mapped to maxAngle"
+        "default": {
+          "$ref": "#/$defs/TransformValue",
+          "description": "map: the value when no case matches; missing leaves the property's own setting"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "linear"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "in",
+              "out"
+            ]
+          }
         },
-        "minAngle": {
-          "type": "number",
-          "description": "rotation: angle in degrees"
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "thresholds"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "steps"
+            ]
+          }
         },
-        "maxAngle": {
-          "type": "number",
-          "description": "rotation: angle in degrees"
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "map"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "cases"
+            ]
+          }
+        }
+      ]
+    },
+    "ThresholdStep": {
+      "title": "ThresholdStep",
+      "type": "object",
+      "required": [
+        "above",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "above": {
+          "type": "number"
         },
-        "expression": {
-          "type": "string",
-          "description": "script: expression evaluated with `value` = tag value, e.g. 'value > 5000'"
-        },
-        "targetProp": {
-          "$ref": "#/$defs/DynamicTargetProp"
-        },
-        "trueValue": {
-          "type": "string",
-          "description": "script: applied to targetProp when the expression is truthy"
-        },
-        "falseValue": {
-          "type": "string",
-          "description": "script: applied to targetProp when the expression is falsy"
+        "value": {
+          "$ref": "#/$defs/TransformValue"
         }
       }
+    },
+    "MapCase": {
+      "title": "MapCase",
+      "type": "object",
+      "required": [
+        "equals",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "equals": {
+          "$ref": "#/$defs/TransformValue"
+        },
+        "value": {
+          "$ref": "#/$defs/TransformValue"
+        }
+      }
+    },
+    "TransformValue": {
+      "title": "TransformValue",
+      "type": [
+        "string",
+        "number",
+        "boolean"
+      ],
+      "description": "A property value: a color, text, number or flag"
     },
     "Widget": {
       "title": "Widget",
@@ -1442,9 +1819,10 @@
           "$ref": "#/$defs/WidgetEvents"
         },
         "dynamics": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Dynamic"
+          "type": "object",
+          "description": "Driven properties, by property name; which names a widget type has is listed in TypedProps",
+          "additionalProperties": {
+            "$ref": "#/$defs/Drive"
           }
         }
       },
@@ -1513,9 +1891,10 @@
           "$ref": "#/$defs/WidgetEvents"
         },
         "dynamics": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Dynamic"
+          "type": "object",
+          "description": "Driven properties, by property name; which names a widget type has is listed in TypedProps",
+          "additionalProperties": {
+            "$ref": "#/$defs/Drive"
           }
         }
       },

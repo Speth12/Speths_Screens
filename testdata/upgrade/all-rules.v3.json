@@ -242,22 +242,14 @@
           "bindings": {
             "value": "plc:Count"
           },
-          "dynamics": [
-            {
-              "binding": "plc:Show",
-              "id": "v",
-              "kind": "visibility"
+          "dynamics": {
+            "bgColor": {
+              "expr": "({plc:Count} > 5) ? '#ef4444' : ''"
             },
-            {
-              "binding": "plc:Count",
-              "expression": "value > 5",
-              "falseValue": "",
-              "id": "s",
-              "kind": "script",
-              "targetProp": "bgColor",
-              "trueValue": "#ef4444"
+            "visible": {
+              "expr": "{plc:Show}"
             }
-          ],
+          },
           "events": {
             "onClick": [
               {

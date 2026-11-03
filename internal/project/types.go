@@ -135,8 +135,9 @@ type FaceplateParam struct {
 
 // A widget inside a faceplate. Same as Widget, but identified by localId
 type FaceplateWidget struct {
-	Bindings *WidgetBindings  `json:"bindings,omitempty"`
-	Dynamics []DynamicElement `json:"dynamics,omitempty"`
+	Bindings *WidgetBindings `json:"bindings,omitempty"`
+	// Driven properties, by property name; which names a widget type has is listed in TypedProps
+	Dynamics map[string]Drive `json:"dynamics,omitempty"`
 	Events   *WidgetEvents    `json:"events,omitempty"`
 	// IDE-only: widgets with the same groupId move together
 	GroupID *string `json:"groupId,omitempty"`
@@ -167,35 +168,43 @@ type WidgetBindings struct {
 	Visible *string `json:"visible,omitempty"`
 }
 
-// A tag-driven look on a widget (actions are events). Which fields apply depends on kind
-type DynamicElement struct {
-	// Tag the dynamic reacts to
-	Binding *string `json:"binding,omitempty"`
-	// blink: flash color
-	BlinkColor *string `json:"blinkColor,omitempty"`
-	// blink: period in milliseconds
-	BlinkPeriodMS *int64 `json:"blinkPeriodMs,omitempty"`
-	// script: expression evaluated with `value` = tag value, e.g. 'value > 5000'
-	Expression *string `json:"expression,omitempty"`
-	// colorFill: color when the tag is falsy
-	FalseColor *string `json:"falseColor,omitempty"`
-	// script: applied to targetProp when the expression is falsy
-	FalseValue *string     `json:"falseValue,omitempty"`
-	ID         string      `json:"id"`
-	Kind       DynamicKind `json:"kind"`
-	// rotation: angle in degrees
-	MaxAngle *float64 `json:"maxAngle,omitempty"`
-	// rotation: tag value mapped to maxAngle
-	MaxValue *float64 `json:"maxValue,omitempty"`
-	// rotation: angle in degrees
-	MinAngle *float64 `json:"minAngle,omitempty"`
-	// rotation: tag value mapped to minAngle
-	MinValue   *float64           `json:"minValue,omitempty"`
-	TargetProp *DynamicTargetProp `json:"targetProp,omitempty"`
-	// colorFill: color when the tag is truthy
-	TrueColor *string `json:"trueColor,omitempty"`
-	// script: applied to targetProp when the expression is truthy
-	TrueValue *string `json:"trueValue,omitempty"`
+// Drives one property of a widget: the expression's value, through the transform if there
+// is one. An unknown result, or a value of the wrong type for the property, leaves the
+// property's own setting
+type Drive struct {
+	// Expression (the Speth's Screens expression language); value is the widget's value tag
+	Expr      string     `json:"expr"`
+	Transform *Transform `json:"transform,omitempty"`
+}
+
+// Turns an expression value into a property value. linear: scale in to out; thresholds: the
+// value of the last step whose above the value reaches; map: the value of the case it equals
+type Transform struct {
+	// thresholds: the value under the first step; missing leaves the property's own setting
+	Below *TransformValue `json:"below,omitempty"`
+	// map: the cases, first match wins
+	Cases []MapCase `json:"cases,omitempty"`
+	// linear: keep the result inside out; missing means true
+	Clamp *bool `json:"clamp,omitempty"`
+	// map: the value when no case matches; missing leaves the property's own setting
+	Default *TransformValue `json:"default,omitempty"`
+	// linear: input range [low, high]
+	In   []float64     `json:"in,omitempty"`
+	Kind TransformKind `json:"kind"`
+	// linear: output range [low, high]
+	Out []float64 `json:"out,omitempty"`
+	// thresholds: steps in ascending order of above
+	Steps []ThresholdStep `json:"steps,omitempty"`
+}
+
+type MapCase struct {
+	Equals *TransformValue `json:"equals"`
+	Value  *TransformValue `json:"value"`
+}
+
+type ThresholdStep struct {
+	Above float64         `json:"above"`
+	Value *TransformValue `json:"value"`
 }
 
 // What a widget does when touched. onPress and onRelease write at once (momentary); onClick
@@ -264,12 +273,16 @@ type Action struct {
 //
 // Settings of a table widget
 type FaceplateWidgetProps struct {
-	Max         *float64    `json:"max,omitempty"`
-	Min         *float64    `json:"min,omitempty"`
-	Thresholds  []Threshold `json:"thresholds,omitempty"`
-	Unit        *string     `json:"unit,omitempty"`
-	BgColor     *string     `json:"bgColor,omitempty"`
-	BorderColor *string     `json:"borderColor,omitempty"`
+	Max        *float64    `json:"max,omitempty"`
+	Min        *float64    `json:"min,omitempty"`
+	Thresholds []Threshold `json:"thresholds,omitempty"`
+	Unit       *string     `json:"unit,omitempty"`
+	BgColor    *string     `json:"bgColor,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
+	BorderColor   *string `json:"borderColor,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
@@ -436,8 +449,9 @@ type Page struct {
 }
 
 type Widget struct {
-	Bindings *WidgetBindings  `json:"bindings,omitempty"`
-	Dynamics []DynamicElement `json:"dynamics,omitempty"`
+	Bindings *WidgetBindings `json:"bindings,omitempty"`
+	// Driven properties, by property name; which names a widget type has is listed in TypedProps
+	Dynamics map[string]Drive `json:"dynamics,omitempty"`
 	Events   *WidgetEvents    `json:"events,omitempty"`
 	// IDE-only: widgets with the same groupId move together
 	GroupID *string `json:"groupId,omitempty"`
@@ -496,12 +510,16 @@ type Widget struct {
 //
 // Settings of a table widget
 type WidgetProps struct {
-	Max         *float64    `json:"max,omitempty"`
-	Min         *float64    `json:"min,omitempty"`
-	Thresholds  []Threshold `json:"thresholds,omitempty"`
-	Unit        *string     `json:"unit,omitempty"`
-	BgColor     *string     `json:"bgColor,omitempty"`
-	BorderColor *string     `json:"borderColor,omitempty"`
+	Max        *float64    `json:"max,omitempty"`
+	Min        *float64    `json:"min,omitempty"`
+	Thresholds []Threshold `json:"thresholds,omitempty"`
+	Unit       *string     `json:"unit,omitempty"`
+	BgColor    *string     `json:"bgColor,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
+	BorderColor   *string `json:"borderColor,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
@@ -694,24 +712,12 @@ const (
 	REST                  DatasourceType = "rest"
 )
 
-type DynamicKind string
+type TransformKind string
 
 const (
-	Blink      DynamicKind = "blink"
-	ColorFill  DynamicKind = "colorFill"
-	Disable    DynamicKind = "disable"
-	Rotation   DynamicKind = "rotation"
-	Script     DynamicKind = "script"
-	Visibility DynamicKind = "visibility"
-)
-
-type DynamicTargetProp string
-
-const (
-	BgColor     DynamicTargetProp = "bgColor"
-	BorderColor DynamicTargetProp = "borderColor"
-	TextColor   DynamicTargetProp = "textColor"
-	Visible     DynamicTargetProp = "visible"
+	Linear     TransformKind = "linear"
+	Map        TransformKind = "map"
+	Thresholds TransformKind = "thresholds"
 )
 
 type ActionType string
@@ -845,3 +851,14 @@ const (
 	Real   UDTFieldType = "real"
 	String UDTFieldType = "string"
 )
+
+// thresholds: the value under the first step; missing leaves the property's own setting
+//
+// A property value: a color, text, number or flag
+//
+// map: the value when no case matches; missing leaves the property's own setting
+type TransformValue struct {
+	Bool   *bool
+	Double *float64
+	String *string
+}

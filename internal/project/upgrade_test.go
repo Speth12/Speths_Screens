@@ -39,6 +39,13 @@ var upgradeNotes = func() map[string][]string {
 			`datasource "sim", calculated tag pick: unknown function if at column 1; the tag stays Bad until the formula is fixed`,
 			`datasource "broken": dropped its calculated tags, which were not valid JSON`,
 		},
+		"dynamics": {
+			`page "Main", widget ring (led): two dynamics drive borderColor; kept the last`,
+			`page "Main", widget scr (numericDisplay): dynamics.visible: rewrote Math.abs(value) === 0 as abs({plc:Press}) == 0`,
+			`page "Main", widget scr (numericDisplay): dynamics.textColor: rewrote value.toFixed(1) == '20.0' && 'value' != {ns:value} as format({plc:T}, 1) == '20.0' && 'value' != {ns:value}`,
+			`page "Main", widget bad (led): dropped a blink dynamic without a tag`,
+			`page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9; the property keeps its own setting until it is fixed`,
+		},
 	}
 	all := map[string][]string{}
 	for name, n := range v2ToV3 {
@@ -55,8 +62,8 @@ var upgradeNotes = func() map[string][]string {
 // newest file of that name, <name>.v3.json.
 func TestUpgradeGolden(t *testing.T) {
 	newest, _ := filepath.Glob(fmt.Sprintf("../../testdata/upgrade/*.v%d.json", CurrentSchemaVersion))
-	if len(newest) != 5 {
-		t.Fatalf("%d current golden files, want 5", len(newest))
+	if len(newest) != 6 {
+		t.Fatalf("%d current golden files, want 6", len(newest))
 	}
 	tested := 0
 	for _, wantFile := range newest {

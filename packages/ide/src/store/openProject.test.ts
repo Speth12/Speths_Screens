@@ -14,6 +14,13 @@ describe("validateProject", () => {
   it.each([
     ["valid widget", widgetDoc(w("gauge", { props: { min: 0, label: "T" }, bindings: { value: "plc:T" } })), []],
     ["valid events", widgetDoc(w("button", { events: { onPress: [{ type: "write", value: 1 }] } })), []],
+    ["driven properties", widgetDoc(w("gauge", { dynamics: { min: { expr: "{ns:a}" }, bgColor: { expr: "{ns:a}", transform: { kind: "thresholds", steps: [{ above: 80, value: "#f00" }], below: "#888" } } } })), []],
+    ["a property the widget type cannot drive", widgetDoc(w("led", { dynamics: { min: { expr: "1" }, bgColor: { expr: "2" } } })),
+      [`page "Main", widget w1 (led): dynamics: cannot drive min`]],
+    ["a transform without its fields", widgetDoc(w("gauge", { dynamics: { rotate: { expr: "1", transform: { kind: "linear" } } } })),
+      [`page "Main", widget w1 (gauge): dynamics.rotate.transform: missing properties 'in', 'out'`]],
+    ["an expression that does not compile", widgetDoc(w("gauge", { dynamics: { bgColor: { expr: "avrg(1)" } } })),
+      [`page "Main", widget w1 (gauge): dynamics.bgColor: unknown function avrg at column 1`]],
     ["setting of another widget type", widgetDoc(w("gauge", { props: { momentary: true } })),
       [`page "Main", widget w1 (gauge): unknown setting momentary`]],
     ["one bad setting among good ones", widgetDoc(w("gauge", { props: { min: 0, max: 10, unit: "bar", label: "P", momentary: true } })),
@@ -57,7 +64,7 @@ describe("openProject", () => {
     expect(o.project.schemaVersion).toBe(3);
     expect(o.project.pages[0]!.widgets[0]).toMatchObject({ bindings: { value: "plc:T" }, props: { min: 0 } });
     expect(o.notes).toEqual([`page "Main", widget g (gauge): dropped setting decimals, which no widget reads`]);
-    expect(openSummary("plant.json", o)).toContain("opened plant.json, upgraded (1 change:");
+    expect(openSummary("plant.json", o)).toContain("opened plant.json, upgraded (1 note:");
   });
 
   it("refuses a project that does not follow the schema", () => {
@@ -75,5 +82,28 @@ describe("openProject", () => {
     const v1 = JSON.parse(readFileSync(resolve(__dirname, `../../../../testdata/upgrade/${name}.v1.json`), "utf8"));
     const o = openProject(v1);
     expect(o.ok ? [] : o.problems).toEqual([]);
+  });
+});
+
+// The expression problems in each current golden file, as in internal/project/expressions_test.go.
+const GOLDEN_EXPRESSION_PROBLEMS: Record<string, string[]> = {
+  "all-rules": [], demo: [], example: [], "dan-project": [],
+  "calc-tags": [`datasource "sim", calculated tag pick: unknown function if at column 1`],
+  dynamics: [`page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9`],
+};
+
+describe("expression problems", () => {
+  it.each(Object.entries(GOLDEN_EXPRESSION_PROBLEMS))("%s.v3.json", (name, want) => {
+    const doc = JSON.parse(readFileSync(resolve(__dirname, `../../../../testdata/upgrade/${name}.v3.json`), "utf8"));
+    const o = openProject(doc);
+    if (!o.ok) throw new Error(o.problems.join("; "));
+    expect(o.problems).toEqual(want);
+    expect(validateProject(doc)).toEqual(want);
+  });
+
+  it("opens a project whose expressions do not compile, and says so", () => {
+    const o = openProject(widgetDoc(w("gauge", { dynamics: { bgColor: { expr: "1 +" } } })));
+    expect(o.ok).toBe(true);
+    expect(openSummary("x.json", o)).toBe(`opened x.json; fix before deploying: page "Main", widget w1 (gauge): dynamics.bgColor: unexpected end of expression`);
   });
 });

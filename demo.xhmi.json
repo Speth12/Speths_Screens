@@ -423,18 +423,16 @@
           "bindings": {
             "value": "sim:fault_active"
           },
-          "dynamics": [
-            {
-              "binding": "sim:fault_active",
-              "blinkColor": "#fca5a5",
-              "blinkPeriodMs": 800,
-              "id": "dyn-fault-blink",
-              "kind": "blink"
+          "dynamics": {
+            "blink": {
+              "expr": "{sim:fault_active}"
             }
-          ],
+          },
           "h": 2,
           "id": "w-fault-led",
           "props": {
+            "blinkColor": "#fca5a5",
+            "blinkPeriodMs": 800,
             "falseColor": "#166534",
             "falseLabel": "Normal",
             "label": "System Fault",
@@ -1551,15 +1549,11 @@
           "bindings": {
             "value": "sim:fault_active"
           },
-          "dynamics": [
-            {
-              "binding": "sim:fault_active",
-              "falseColor": "#052e16",
-              "id": "dyn-fault-fill",
-              "kind": "colorFill",
-              "trueColor": "#7f1d1d"
+          "dynamics": {
+            "borderColor": {
+              "expr": "{sim:fault_active} ? '#7f1d1d' : '#052e16'"
             }
-          ],
+          },
           "h": 3,
           "id": "a-fault-big",
           "props": {

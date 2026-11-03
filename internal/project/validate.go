@@ -62,7 +62,15 @@ func ValidateJSON(data []byte) error {
 	}
 	var problems []string
 	for _, leaf := range inDocumentOrder(leaves(ve), keyOrder(data)) {
+		if _, ok := leaf.ErrorKind.(*kind.PropertyNames); ok {
+			continue // drivenNameProblems names them, with the right location
+		}
 		p := describe(inst, leaf)
+		if !slices.Contains(problems, p) {
+			problems = append(problems, p)
+		}
+	}
+	for _, p := range drivenNameProblems(inst) {
 		if !slices.Contains(problems, p) {
 			problems = append(problems, p)
 		}
@@ -70,10 +78,42 @@ func ValidateJSON(data []byte) error {
 	return &SchemaError{Problems: problems}
 }
 
+// drivenNameProblems names every driven property a widget's type cannot
+// drive, in widget order and then by name. The schema library reports
+// these too, but with a wrong location.
+func drivenNameProblems(inst any) []string {
+	allowed, err := drivenKeys()
+	if err != nil {
+		return []string{err.Error()}
+	}
+	root, _ := inst.(map[string]any)
+	var out []string
+	for _, owner := range []string{"pages", "faceplates", "presets"} {
+		for i, o := range objects(root[owner]) {
+			for j, w := range objects(o["widgets"]) {
+				dyn, _ := w["dynamics"].(map[string]any)
+				names := make([]string, 0, len(dyn))
+				for name := range dyn {
+					if !allowed[str(w["type"])][name] {
+						names = append(names, name)
+					}
+				}
+				sort.Strings(names)
+				where, _ := locate(inst, []string{owner, strconv.Itoa(i), "widgets", strconv.Itoa(j)})
+				for _, name := range names {
+					out = append(out, where+": dynamics: cannot drive "+name)
+				}
+			}
+		}
+	}
+	return out
+}
+
 // leaves returns the errors at the bottom of the tree, skipping the oneOf
 // branches for other widget types (each fails on its type constant).
 func leaves(ve *jsonschema.ValidationError) []*jsonschema.ValidationError {
-	if len(ve.Causes) == 0 {
+	// A bad property name stops here: drivenNameProblems describes it.
+	if _, ok := ve.ErrorKind.(*kind.PropertyNames); ok || len(ve.Causes) == 0 {
 		return []*jsonschema.ValidationError{ve}
 	}
 	causes := ve.Causes

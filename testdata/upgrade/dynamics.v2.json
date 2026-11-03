@@ -1,0 +1,60 @@
+{
+  "datasources": [],
+  "faceplates": [
+    {
+      "id": "fp-pump",
+      "name": "Pump",
+      "params": [{ "name": "run" }],
+      "widgets": [
+        { "localId": "lamp", "type": "led", "x": 0, "y": 0, "w": 1, "h": 1,
+          "bindings": { "value": "{run}" },
+          "dynamics": [{ "id": "d1", "kind": "blink", "binding": "{run}", "blinkPeriodMs": 400 }] }
+      ]
+    }
+  ],
+  "name": "Dynamics",
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Main",
+      "widgets": [
+        { "id": "vis", "type": "gauge", "x": 0, "y": 0, "w": 2, "h": 2,
+          "dynamics": [{ "id": "a", "kind": "visibility", "binding": "plc:Show" }] },
+        { "id": "dis", "type": "button", "x": 2, "y": 0, "w": 2, "h": 1,
+          "dynamics": [{ "id": "a", "kind": "disable", "binding": "ns:Line1/Locked" }] },
+        { "id": "ring", "type": "led", "x": 4, "y": 0, "w": 1, "h": 1,
+          "dynamics": [
+            { "id": "a", "kind": "colorFill", "binding": "plc:Run", "trueColor": "#00ff00" },
+            { "id": "b", "kind": "colorFill", "binding": "plc:Run2", "trueColor": "#0000ff", "falseColor": "#111111" }
+          ] },
+        { "id": "rot", "type": "symbol", "x": 5, "y": 0, "w": 1, "h": 1,
+          "dynamics": [
+            { "id": "a", "kind": "rotation", "binding": "plc:Angle", "minValue": 0, "maxValue": 360, "minAngle": 0, "maxAngle": 360 },
+            { "id": "b", "kind": "blink", "binding": "plc:Alarm", "blinkColor": "#ff0000" }
+          ] },
+        { "id": "rot2", "type": "symbol", "x": 6, "y": 0, "w": 1, "h": 1,
+          "dynamics": [{ "id": "a", "kind": "rotation", "binding": "plc:Valve" }] },
+        { "id": "scr", "type": "numericDisplay", "x": 0, "y": 2, "w": 2, "h": 1,
+          "bindings": { "value": "plc:Other" },
+          "dynamics": [
+            { "id": "a", "kind": "script", "binding": "plc:Press", "expression": "value > 5000", "targetProp": "bgColor", "trueValue": "#dc2626", "falseValue": "" },
+            { "id": "b", "kind": "script", "binding": "plc:Press", "expression": "Math.abs(value) === 0", "targetProp": "visible" },
+            { "id": "c", "kind": "script", "binding": "plc:T", "expression": "value.toFixed(1) == '20.0' && 'value' != {ns:value}", "targetProp": "textColor", "trueValue": "it's red", "falseValue": "#fff" }
+          ] },
+        { "id": "bad", "type": "led", "x": 2, "y": 2, "w": 1, "h": 1,
+          "dynamics": [
+            { "id": "a", "kind": "blink" },
+            { "id": "b", "kind": "script", "binding": "plc:X", "expression": "value.length > 2", "targetProp": "borderColor", "trueValue": "#f00" }
+          ] }
+      ]
+    }
+  ],
+  "presets": [
+    { "id": "ps1", "name": "Alarm lamp", "widgets": [
+      { "id": "w", "type": "led", "x": 0, "y": 0, "w": 1, "h": 1,
+        "dynamics": [{ "id": "a", "kind": "visibility", "binding": "plc:Lamp" }] }
+    ] }
+  ],
+  "schemaVersion": 2,
+  "version": "1.0.0"
+}

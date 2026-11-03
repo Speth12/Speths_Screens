@@ -4,6 +4,8 @@
 // unknown setting momentary".
 import Ajv2020, { type ErrorObject } from "ajv/dist/2020";
 import schema from "../../../../schema.json";
+import { DRIVEN_PROPS, type Project, type WidgetType } from "@speths-screens/shared-types";
+import { expressionProblems } from "@speths-screens/shared-types/expressions";
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 ajv.addSchema(schema, "project");
@@ -18,8 +20,16 @@ const propsCheck = new Map(
     .map((b) => [b.properties.type.const, ajv.getSchema(`project${b.properties.props.$ref}`)!]),
 );
 
-/** The problems with a project in the current format; empty when it is valid. */
+/** The problems with a project in the current format, schema first, then
+ *  its expressions; empty when it is valid. A project with problems is not
+ *  deployed. */
 export function validateProject(project: unknown): string[] {
+  const problems = schemaProblems(project);
+  return problems.length ? problems : expressionProblems(project as Project);
+}
+
+/** The ways a project in the current format does not follow schema.json. */
+export function schemaProblems(project: unknown): string[] {
   if (check(project)) return [];
   const problems: string[] = [];
   const errors = widgetAware(project, check.errors ?? []);
@@ -29,10 +39,45 @@ export function validateProject(project: unknown): string[] {
   for (const e of errors) {
     const key = (e.params as { unevaluatedProperty?: string }).unevaluatedProperty;
     if (e.keyword === "unevaluatedProperties" && key !== undefined && failed.has(`${e.instancePath}/${key}`)) continue;
-    const p = describe(project, e);
+    // Driven names are checked below; "if" only says its "then" failed.
+    if (e.keyword === "propertyNames" || e.propertyName !== undefined || e.keyword === "if") continue;
+    const p = e.keyword === "required" ? missing(project, e, errors) : describe(project, e);
     if (!problems.includes(p)) problems.push(p);
   }
+  for (const p of drivenNameProblems(project)) if (!problems.includes(p)) problems.push(p);
   return problems;
+}
+
+// missing writes every required property missing at e's location in one
+// line, as the runtime does: "missing properties 'in', 'out'".
+function missing(project: unknown, e: ErrorObject, errors: ErrorObject[]): string {
+  const names = [...new Set(errors
+    .filter((x) => x.keyword === "required" && x.instancePath === e.instancePath)
+    .map((x) => `'${String((x.params as { missingProperty: string }).missingProperty)}'`))];
+  const what = names.length === 1 ? `missing property ${names[0]}` : `missing properties ${names.join(", ")}`;
+  return describe(project, { ...e, keyword: "missing", message: what });
+}
+
+/** Every driven property a widget's type cannot drive, in widget order and
+ *  then by name, as the runtime reports them. */
+function drivenNameProblems(project: unknown): string[] {
+  const out: string[] = [];
+  for (const owner of Object.keys(OWNERS)) {
+    const list = (project as Obj)[owner];
+    if (!Array.isArray(list)) continue;
+    list.forEach((o, i) => {
+      const widgets = (o as Obj | null)?.widgets;
+      if (!Array.isArray(widgets)) return;
+      widgets.forEach((w: Obj, j) => {
+        const allowed: readonly string[] = DRIVEN_PROPS[w.type as WidgetType] ?? [];
+        const bad = Object.keys((w.dynamics as Obj | undefined) ?? {}).filter((k) => !allowed.includes(k)).sort();
+        for (const name of bad) {
+          out.push(describe(project, { keyword: "drive", instancePath: `/${owner}/${i}/widgets/${j}/dynamics`, schemaPath: "", params: {}, message: `cannot drive ${name}` }));
+        }
+      });
+    });
+  }
+  return out;
 }
 
 /**

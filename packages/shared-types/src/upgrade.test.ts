@@ -40,6 +40,13 @@ const V2_TO_V3: Record<string, string[]> = {
     `datasource "sim", calculated tag pick: unknown function if at column 1; the tag stays Bad until the formula is fixed`,
     `datasource "broken": dropped its calculated tags, which were not valid JSON`,
   ],
+  dynamics: [
+    `page "Main", widget ring (led): two dynamics drive borderColor; kept the last`,
+    `page "Main", widget scr (numericDisplay): dynamics.visible: rewrote Math.abs(value) === 0 as abs({plc:Press}) == 0`,
+    `page "Main", widget scr (numericDisplay): dynamics.textColor: rewrote value.toFixed(1) == '20.0' && 'value' != {ns:value} as format({plc:T}, 1) == '20.0' && 'value' != {ns:value}`,
+    `page "Main", widget bad (led): dropped a blink dynamic without a tag`,
+    `page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9; the property keeps its own setting until it is fixed`,
+  ],
 };
 // Notes for upgrading <name>.v<N>.json, as in internal/project/upgrade_test.go.
 const NOTES: Record<string, string[]> = {};

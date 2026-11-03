@@ -178,4 +178,8 @@ export const FRAME_SETTINGS: SettingsGroup[] = [
       options: [{ value: "left" }, { value: "center" }, { value: "right" }] },
     { key: "textColor", label: "Text color", kind: "color", optional: true, default: "#e4e4e7" },
   ] },
+  { title: "Blinking (while the blink property is driven on)", fields: [
+    { key: "blinkPeriodMs", label: "Period (ms)", kind: "number", default: 800, half: true },
+    { key: "blinkColor", label: "Flash color (blank fades the widget)", kind: "color", optional: true, default: "#ef4444", half: true },
+  ] },
 ];
