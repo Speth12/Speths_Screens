@@ -15,6 +15,8 @@ interface GoldenCase {
   error?: string;
   refs?: string[];
   usesValue?: boolean;
+  /** Compare to 12 significant digits (sin, cos, log, pow can differ from Go in the last digit). */
+  near?: boolean;
 }
 
 const dir = resolve(__dirname, "../../../testdata/expr");
@@ -52,7 +54,11 @@ describe("golden cases", () => {
           if ("value" in c) env.value = () => input(c.value);
           const got = e.eval(env);
           if (c.unknown !== undefined) expect(got).toEqual({ ok: false, reason: c.unknown });
-          else expect(got).toEqual({ ok: true, value: c.want });
+          else if (c.near) {
+            const want = c.want as number;
+            if (!got.ok || typeof got.value !== "number") throw new Error(`got ${JSON.stringify(got)}`);
+            expect(Math.abs(got.value - want)).toBeLessThanOrEqual(1e-12 * Math.max(1, Math.abs(want)));
+          } else expect(got).toEqual({ ok: true, value: c.want });
         });
       }
     });

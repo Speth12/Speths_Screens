@@ -112,6 +112,51 @@ func init() {
 			return formatFixed(x, d)
 		}},
 		"good": {min: 1, max: 1, tag: true},
+		// From the calculated-tag engine this language replaced. sin, cos,
+		// tan, log and pow may differ from the browser in the last digit.
+		"sin":   unary(math.Sin),
+		"cos":   unary(math.Cos),
+		"tan":   unary(math.Tan),
+		"log":   unary(math.Log),
+		"log10": unary(math.Log10),
+		"log2":  unary(math.Log2),
+		"sign": unary(func(x float64) float64 {
+			switch {
+			case x > 0:
+				return 1
+			case x < 0:
+				return -1
+			}
+			return 0
+		}),
+		"pow": {min: 2, max: 2, eval: func(name string, a []any) (any, string) {
+			var xs [2]float64
+			for i, v := range a {
+				x, ok := num(v)
+				if !ok {
+					return nil, name + " needs numbers, got " + typeName(v)
+				}
+				xs[i] = x
+			}
+			return finite(math.Pow(xs[0], xs[1]))
+		}},
+		// map(x, inLo, inHi, outLo, outHi) scales x linearly, without clamping;
+		// an empty input range gives outLo.
+		"map": {min: 5, max: 5, eval: func(name string, a []any) (any, string) {
+			var xs [5]float64
+			for i, v := range a {
+				x, ok := num(v)
+				if !ok {
+					return nil, name + " needs numbers, got " + typeName(v)
+				}
+				xs[i] = x
+			}
+			span := xs[2] - xs[1]
+			if span == 0 {
+				return finite(xs[3])
+			}
+			return finite(xs[3] + (xs[0]-xs[1])/span*(xs[4]-xs[3]))
+		}},
 	}
 }
 

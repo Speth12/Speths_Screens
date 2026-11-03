@@ -46,6 +46,20 @@ const variadic = (f: (xs: number[]) => number): Func => ({
   },
 });
 
+// numbers is a function of exactly n numbers.
+const numbers = (n: number, f: (xs: number[]) => number): Func => ({
+  min: n, max: n,
+  eval: (name, a) => {
+    const xs: number[] = [];
+    for (const v of a) {
+      const x = num(v);
+      if (x === undefined) return new Unknown(`${name} needs numbers, got ${typeName(v)}`);
+      xs.push(x);
+    }
+    return finite(f(xs));
+  },
+});
+
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
 
 // formatFixed writes x with d decimals, rounding half away from zero as
@@ -115,4 +129,20 @@ export const FUNCS: Record<string, Func> = {
     },
   },
   good: { min: 1, max: 1, tag: true },
+  // From the calculated-tag engine this language replaced. sin, cos, tan,
+  // log and pow may differ from Go in the last digit.
+  sin: unary(Math.sin),
+  cos: unary(Math.cos),
+  tan: unary(Math.tan),
+  log: unary(Math.log),
+  log10: unary(Math.log10),
+  log2: unary(Math.log2),
+  sign: unary((x) => (x > 0 ? 1 : x < 0 ? -1 : 0)),
+  pow: numbers(2, (xs) => Math.pow(xs[0]!, xs[1]!)),
+  // map(x, inLo, inHi, outLo, outHi) scales x linearly, without clamping; an
+  // empty input range gives outLo.
+  map: numbers(5, ([x, inLo, inHi, outLo, outHi]) => {
+    const span = inHi! - inLo!;
+    return span === 0 ? outLo! : outLo! + ((x! - inLo!) / span) * (outHi! - outLo!);
+  }),
 };

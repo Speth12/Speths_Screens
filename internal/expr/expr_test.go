@@ -2,6 +2,7 @@ package expr
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -23,6 +24,7 @@ type goldenCase struct {
 	Error     string                     `json:"error"`
 	Refs      *[]string                  `json:"refs"`
 	UsesValue bool                       `json:"usesValue"`
+	Near      bool                       `json:"near"` // compare to 12 significant digits (sin, cos, log, pow)
 }
 
 func input(t *testing.T, raw json.RawMessage) Input {
@@ -96,6 +98,14 @@ func TestGolden(t *testing.T) {
 				var want any
 				if err := json.Unmarshal(c.Want, &want); err != nil {
 					t.Fatalf("bad want %s: %v", c.Want, err)
+				}
+				if c.Near {
+					g, gok := got.(float64)
+					w, wok := want.(float64)
+					if !gok || !wok || math.Abs(g-w) > 1e-12*math.Max(1, math.Abs(w)) {
+						t.Fatalf("Eval = %#v, want about %#v", got, want)
+					}
+					return
 				}
 				if !reflect.DeepEqual(got, want) {
 					t.Fatalf("Eval = %#v, want %#v", got, want)
