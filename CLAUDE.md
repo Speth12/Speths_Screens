@@ -116,9 +116,11 @@ Status (2026-10-23): **Phase 0 done.** PR #1 merged; CI green on `main` (`b0a092
 
 Local files that are git-ignored and must stay out of commits: `*.db` (the historian `history.db` is about 850 MB because it stores every update; Phase 1 fixes that), `*.pem`, and the built binaries in the repo root.
 
-## Next: Phase 1 — read/write core
+## Phase 1 — read/write core (done)
 
 Branch `phase-1-readwrite-core`. Gate: a 24-hour soak test against the AXC F 3152 with no frozen values, and every write either confirmed or failed with a reason.
+
+Status (2026-11-03): **Phase 1 done.** PR #2 (`e362038`) and the follow-ups, PR #3 (`9bc2a84`), merged into `main`. Gate met by the soak run `soak-runs/20261024-085639`: 22.2 h (ended by Dan), all 7,488 writes confirmed, no gaps or frozen values. It had two short PLC outages (OPC UA 1.5 s; REST and OPC UA 15–24 s, both timeouts), handled as designed. That build predates the follow-ups (OPC UA ran with security None), so a soak on the Phase 2 build, including a write during an outage, comes before the Phase 2 merge.
 
 Defect 5 decisions (Dan, 2026-10-23): `Connect` only checks the config and starts the loop; the driver reaches the PLC, logs in and reconnects on its own (states: starting, online, offline). One failed request for a group (network error, timeout, HTTP 5xx, a 401 that one fresh login doesn't fix) takes the driver offline: every polled tag goes Bad keeping its last value, `Status()` shows the reason, retries back off from 1 s doubling to 30 s with ±20% jitter, and writes fail at once. A per-variable error (`NotExists`) makes only that tag Bad. `TagState` and the WebSocket tag message get an optional `reason`. Long `paths=` lists are split so each URL stays under 2000 bytes. Login and token refresh are built and tested against a fake; not yet verified on a controller with user authentication on. MQTT subscribes again after a reconnect and marks exact-topic tags Bad while the connection is lost. Per-datasource certificate checking is a separate change (needs `schema.json`). Live unplug test (2026-10-23): REST tags went Bad and recovered on their own; detection took the 8 s HTTP timeout and the reason held the whole URL, so the timeout is now 3 s and reasons are short ("no answer from 10.0.0.210 (timed out)").
 
