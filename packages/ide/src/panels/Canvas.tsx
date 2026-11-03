@@ -3,7 +3,7 @@ import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
-import { SYMBOLS } from "@speths-screens/widgets";
+import { SYMBOLS, themeById, themeVars } from "@speths-screens/widgets";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 
@@ -534,10 +534,12 @@ export function Canvas() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  // The screen's theme applies inside the page, not to the IDE around it.
+  const screenTheme = themeVars(themeById(project.theme));
   const pageBg = page.backgroundColor ?? "";
   const gridBg = isPixelMode
-    ? { backgroundColor: pageBg || undefined, backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${16 * zoom}px ${16 * zoom}px` }
-    : { backgroundColor: pageBg || undefined, backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${eColW + GAP}px ${eRowH + GAP}px`, backgroundPosition: `${GAP / 2}px ${GAP / 2}px` };
+    ? { ...screenTheme, backgroundColor: pageBg || "var(--background)", backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${16 * zoom}px ${16 * zoom}px` }
+    : { ...screenTheme, backgroundColor: pageBg || "var(--background)", backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${eColW + GAP}px ${eRowH + GAP}px`, backgroundPosition: `${GAP / 2}px ${GAP / 2}px` };
 
 
   return (

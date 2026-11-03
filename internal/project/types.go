@@ -821,15 +821,12 @@ const (
 
 // Default theme for every screen. A browser can still pick its own; that choice is not
 // saved in the project
+//
+// Screen themes. Phase 3 has one; each later theme adds its id
 type ThemeID string
 
 const (
-	Blueprint        ThemeID = "blueprint"
-	Brutalist        ThemeID = "brutalist"
-	CleanRoom        ThemeID = "clean-room"
-	EngineeringPaper ThemeID = "engineering-paper"
-	Holographic      ThemeID = "holographic"
-	SCADADark        ThemeID = "scada-dark"
+	HighPerformance ThemeID = "high-performance"
 )
 
 type UDTFieldType string

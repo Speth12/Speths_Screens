@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { compile, type Expr, type Input } from "@speths-screens/expr";
 import type { Drive, Transform, Widget } from "@speths-screens/shared-types";
 import { useTags, type TagState } from "./host";
+import { tokenColor } from "./tokens";
 
 export type DrivenValue = string | number | boolean;
 
@@ -61,13 +62,14 @@ export const DRIVEN_KIND: Record<string, Kind> = {
 
 /** The value for a property, or undefined when v does not suit it. Flags
  *  follow the expression language's truthiness; numbers and flags become
- *  text; a color must be non-empty text. */
+ *  text; a color must be non-empty text, and "token:alarm-critical" names
+ *  a design token (an unknown token does not suit). */
 export function suit(prop: string, v: DrivenValue): DrivenValue | undefined {
   switch (DRIVEN_KIND[prop]) {
     case "flag": return v !== false && v !== 0 && v !== "";
     case "number": return num(v);
     case "text": return typeof v === "string" ? v : String(v);
-    case "color": return typeof v === "string" && v !== "" ? v : undefined;
+    case "color": return typeof v === "string" && v !== "" ? tokenColor(v) : undefined;
   }
   return v;
 }

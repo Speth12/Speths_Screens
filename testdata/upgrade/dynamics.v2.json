@@ -56,5 +56,6 @@
     ] }
   ],
   "schemaVersion": 2,
+  "theme": "scada-dark",
   "version": "1.0.0"
 }

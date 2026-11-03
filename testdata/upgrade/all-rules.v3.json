@@ -319,5 +319,6 @@
     }
   ],
   "schemaVersion": 3,
+  "theme": "high-performance",
   "version": "0.1.0"
 }

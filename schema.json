@@ -95,7 +95,8 @@
     "ThemeId": {
       "title": "ThemeId",
       "type": "string",
-      "enum": ["scada-dark", "blueprint", "clean-room", "brutalist", "holographic", "engineering-paper"]
+      "enum": ["high-performance"],
+      "description": "Screen themes. Phase 3 has one; each later theme adds its id"
     },
     "Security": {
       "title": "Security",

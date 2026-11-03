@@ -44,6 +44,7 @@ var upgradeNotes = func() map[string][]string {
 			`alarm rule "untagged": dropped, it had no tag`,
 		},
 		"dynamics": {
+			`theme scada-dark is gone; the project now uses high-performance`,
 			`page "Main", widget ring (led): two dynamics drive borderColor; kept the last`,
 			`page "Main", widget scr (numericDisplay): dynamics.visible: rewrote Math.abs(value) === 0 as abs({plc:Press}) == 0`,
 			`page "Main", widget scr (numericDisplay): dynamics.textColor: rewrote value.toFixed(1) == '20.0' && 'value' != {ns:value} as format({plc:T}, 1) == '20.0' && 'value' != {ns:value}`,

@@ -139,7 +139,7 @@ export function LeftPanel({ width }: { width?: number }) {
 
   // A static snapshot of every page, with the values the IDE has now.
   const exportHtml = async () => {
-    const html = await generateStandaloneHtml(project, { ...ideLook(), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
+    const html = await generateStandaloneHtml(project, { ...ideLook(project.theme), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
     const blob = new Blob([html], { type: "text/html" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");

@@ -979,8 +979,10 @@ export type AuthMode = "none" | "login";
 /**
  * Default theme for every screen. A browser can still pick its own; that choice is not
  * saved in the project
+ *
+ * Screen themes. Phase 3 has one; each later theme adds its id
  */
-export type ThemeID = "scada-dark" | "blueprint" | "clean-room" | "brutalist" | "holographic" | "engineering-paper";
+export type ThemeID = "high-performance";
 
 export interface Udt {
     description?: string;

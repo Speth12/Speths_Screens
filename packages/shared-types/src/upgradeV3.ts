@@ -14,6 +14,7 @@ const orDefault = (v: unknown, def: unknown) => (v === undefined || v === null |
 export function v2ToV3(doc: Obj, notes: string[]) {
   calculatedTagsV3(doc, notes);
   alarmRulesV3(doc, notes);
+  themeV3(doc, notes);
   const q = (v: unknown) => JSON.stringify(str(v));
   for (const pg of objects(doc.pages)) {
     for (const w of objects(pg.widgets)) drivesV3(w, `page ${q(pg.name)}, widget ${String(w.id)} (${String(w.type)})`, notes);
@@ -24,6 +25,14 @@ export function v2ToV3(doc: Obj, notes: string[]) {
   for (const ps of objects(doc.presets)) {
     for (const w of objects(ps.widgets)) drivesV3(w, `preset ${q(ps.name)}, widget ${String(w.id)} (${String(w.type)})`, notes);
   }
+}
+
+// themeV3 moves every project to high-performance, the one theme of format 3
+// (decision 10): the six earlier themes are gone.
+function themeV3(doc: Obj, notes: string[]) {
+  const old = str(doc.theme);
+  if (old !== "" && old !== "high-performance") notes.push(`theme ${old} is gone; the project now uses high-performance`);
+  doc.theme = "high-performance";
 }
 
 // The v2 alarm conditions as expression operators.

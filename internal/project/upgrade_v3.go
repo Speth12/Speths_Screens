@@ -17,6 +17,7 @@ import (
 func (u *upgrader) v2ToV3(doc map[string]any) {
 	u.calculatedTagsV3(doc)
 	u.alarmRulesV3(doc)
+	u.themeV3(doc)
 	for _, pg := range objects(doc["pages"]) {
 		for _, w := range objects(pg["widgets"]) {
 			u.drivesV3(w, fmt.Sprintf("page %q, widget %v (%v)", str(pg["name"]), w["id"], w["type"]))
@@ -32,6 +33,15 @@ func (u *upgrader) v2ToV3(doc map[string]any) {
 			u.drivesV3(w, fmt.Sprintf("preset %q, widget %v (%v)", str(ps["name"]), w["id"], w["type"]))
 		}
 	}
+}
+
+// themeV3 moves every project to high-performance, the one theme of format
+// 3 (decision 10): the six earlier themes are gone.
+func (u *upgrader) themeV3(doc map[string]any) {
+	if old := str(doc["theme"]); old != "" && old != "high-performance" {
+		u.note("theme %s is gone; the project now uses high-performance", old)
+	}
+	doc["theme"] = "high-performance"
 }
 
 // alarmOps are the v2 alarm conditions as expression operators.

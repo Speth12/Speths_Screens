@@ -159,16 +159,18 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     background: isTransparent ? "transparent" : bgColor ?? "var(--card)",
     borderColor: dynColor ?? (borderColor === "none" ? "transparent" : borderColor ?? "var(--border)"),
     border: dynColor ? `2px solid ${dynColor}` : undefined,
-    boxShadow: dynColor ? `0 0 8px ${dynColor}44` : undefined,
+    boxShadow: dynColor ? `0 0 8px ${dynColor}44` : "var(--shadow, none)",
+    borderRadius: "var(--radius, 0.5rem)",
+    padding: p.noPadding ? 0 : "var(--pad, 0.75rem)",
     color: textColor ?? "var(--card-foreground)",
   };
   if (!dynColor && !bgColor) {
-    style.border = "1px solid var(--border)";
+    style.border = "var(--line-width, 1px) solid var(--border)";
   }
 
   return (
     <div
-      className={`h-full w-full rounded-lg flex flex-col gap-1 select-none transition-colors overflow-hidden ${p.noPadding ? "" : "p-3"}`}
+      className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
       style={style}
     >
       {p.label && (
@@ -1283,7 +1285,7 @@ function DriveApplicator({ w, children }: { w: Widget; children: (w: Widget) => 
         cursor: (hasClick || hasPress) ? "pointer" : undefined,
         outline: flash ? `2px solid ${flash}` : undefined,
         outlineOffset: "-2px",
-        borderRadius: "0.5rem",
+        borderRadius: "var(--radius, 0.5rem)",
         transition: "opacity 0.05s, outline-color 0.2s",
       }}
       onClick={hasClick ? () => run(events?.onClick, false) : undefined}
