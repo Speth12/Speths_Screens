@@ -7,8 +7,10 @@
 # the run, starts the runtime on 127.0.0.1 with its own databases in
 # soak-runs\<time>\, and runs scripts\soak\soak.mjs, which deploys a soak
 # project, watches every tag, writes the PLC test variables every minute
-# and restores them at the end. Results: soak-runs\<time>\summary.json and
-# events.jsonl. Ctrl+C stops early and still restores the variables.
+# and restores them at the end. During an outage (unplug the PLC for a
+# minute to cause one) it also writes once and expects a fast refusal.
+# Results: soak-runs\<time>\summary.json and events.jsonl. Ctrl+C stops
+# early and still restores the variables.
 param(
     [string]$Plc = "10.0.0.210",
     [double]$Hours = 24,
