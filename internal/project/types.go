@@ -21,14 +21,13 @@ type Types struct {
 	// Operator PIN — operator panel locks behind this if set
 	Pin     *string  `json:"pin,omitempty"`
 	Recipes []Recipe `json:"recipes,omitempty"`
-	// Login settings. Missing means mode 'none'
+	// Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
+	// in the project
 	Security *Security `json:"security,omitempty"`
 	// Default theme for every screen. A browser can still pick its own; that choice is not
 	// saved in the project
 	Theme *ThemeID `json:"theme,omitempty"`
 	Udts  []Udt    `json:"udts,omitempty"`
-	// Users who can log in when security.mode is 'login'
-	Users []User `json:"users,omitempty"`
 	// Schema version, e.g. '0.1.0'
 	Version string `json:"version"`
 	// Disable all write widgets in the operator panel
@@ -376,7 +375,8 @@ type RecipeEntry struct {
 	Value   interface{} `json:"value"`
 }
 
-// Login settings. Missing means mode 'none'
+// Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
+// in the project
 type Security struct {
 	Mode AuthMode `json:"mode"`
 }
@@ -393,15 +393,6 @@ type UDTField struct {
 	Name        string       `json:"name"`
 	Type        UDTFieldType `json:"type"`
 	Unit        *string      `json:"unit,omitempty"`
-}
-
-type User struct {
-	ID string `json:"id"`
-	// Login name
-	Name string `json:"name"`
-	// bcrypt hash ($2a$/$2b$). Never a plain-text password
-	PasswordHash string   `json:"passwordHash"`
-	Role         UserRole `json:"role"`
 }
 
 type AlarmCondition string
@@ -636,12 +627,4 @@ const (
 	Int    UDTFieldType = "int"
 	Real   UDTFieldType = "real"
 	String UDTFieldType = "string"
-)
-
-type UserRole string
-
-const (
-	Admin    UserRole = "admin"
-	Operator UserRole = "operator"
-	Viewer   UserRole = "viewer"
 )

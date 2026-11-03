@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useProject, type AlarmCondition, type AlarmRule, type AlarmSeverity } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
+import { authHeader, getToken } from "../store/runtimeAuth";
+import { applyAlarmMessage } from "../store/alarmMessages";
 import { useClientAlarms } from "../store/alarmEngine";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -244,16 +246,13 @@ export function Alarms() {
     const wsBase = apiBase
       ? apiBase.replace(/^http/, "ws")
       : (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
-    const ws = new WebSocket(`${wsBase}/ws/alarms`);
+    const token = getToken(apiBase); // needed with security.mode "login"
+    const ws = new WebSocket(`${wsBase}/ws/alarms${token ? `?token=${encodeURIComponent(token)}` : ""}`);
     wsRef.current = ws;
     ws.onmessage = (e) => {
       try {
-        const ev: AlarmEvent = JSON.parse(e.data);
-        setEvents((prev) => {
-          const idx = prev.findIndex((x) => x.id === ev.id);
-          if (idx >= 0) { const next = [...prev]; next[idx] = ev; return next; }
-          return [...prev, ev];
-        });
+        const msg: unknown = JSON.parse(e.data);
+        setEvents((prev) => applyAlarmMessage<AlarmEvent>(prev, msg));
       } catch { /* ignore */ }
     };
     ws.onerror = () => {};
@@ -261,7 +260,7 @@ export function Alarms() {
   }, []);
 
   const ack = async (eventId: string) => {
-    try { await fetch(`${apiBase}/api/v1/alarms/${encodeURIComponent(eventId)}/ack`, { method: "POST" }); }
+    try { await fetch(`${apiBase}/api/v1/alarms/${encodeURIComponent(eventId)}/ack`, { method: "POST", headers: authHeader(apiBase) }); }
     catch { /* ignore */ }
   };
 

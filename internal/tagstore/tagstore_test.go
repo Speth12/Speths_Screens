@@ -31,87 +31,159 @@ func TestGetUnknownPath(t *testing.T) {
 	}
 }
 
-func TestSubscribeReceivesUpdate(t *testing.T) {
-	ts := New()
-	ch, cancel := ts.Subscribe("sensor.temp")
-	defer cancel()
-
-	// drain any pre-pushed cached value
-	drainTimeout(ch, 10*time.Millisecond)
-
-	state := TagState{Value: 99.5, Quality: "Good", TS: time.Now().UnixNano()}
-	ts.Update("sensor.temp", state)
-
+// next waits for the watcher's next batch.
+func next(t *testing.T, w *Watcher) []TagUpdate {
+	t.Helper()
 	select {
-	case update := <-ch:
-		if update.State.Value != 99.5 {
-			t.Errorf("got %v want 99.5", update.State.Value)
-		}
+	case <-w.C():
+		return w.Drain()
 	case <-time.After(50 * time.Millisecond):
-		t.Fatal("subscriber did not receive update within 50ms")
+		t.Fatal("no update within 50ms")
+		return nil
 	}
 }
 
-func TestSubscribeReceivesCachedValueImmediately(t *testing.T) {
+// quiet reports whether nothing arrives for d.
+func quiet(w *Watcher, d time.Duration) bool {
+	select {
+	case <-w.C():
+		return len(w.Drain()) == 0
+	case <-time.After(d):
+		return true
+	}
+}
+
+func TestWatcherReceivesUpdate(t *testing.T) {
+	ts := New()
+	w := ts.Watch()
+	defer w.Close()
+	w.Add("sensor.temp")
+
+	ts.Update("sensor.temp", TagState{Value: 99.5, Quality: "Good", TS: time.Now().UnixNano()})
+
+	got := next(t, w)
+	if len(got) != 1 || got[0].State.Value != 99.5 {
+		t.Errorf("got %v want one update with 99.5", got)
+	}
+}
+
+func TestWatcherReceivesCachedValueImmediately(t *testing.T) {
 	ts := New()
 	ts.Update("cached.tag", TagState{Value: true, Quality: "Good", TS: time.Now().UnixNano()})
 
-	ch, cancel := ts.Subscribe("cached.tag")
-	defer cancel()
+	w := ts.Watch()
+	defer w.Close()
+	w.Add("cached.tag")
 
-	select {
-	case update := <-ch:
-		if update.State.Value != true {
-			t.Errorf("got %v want true", update.State.Value)
-		}
-	case <-time.After(50 * time.Millisecond):
-		t.Fatal("should receive cached value immediately on subscribe")
+	got := next(t, w)
+	if len(got) != 1 || got[0].State.Value != true {
+		t.Errorf("got %v want the cached value true", got)
 	}
 }
 
-func TestMultipleSubscribersAllReceiveUpdate(t *testing.T) {
+func TestMultipleWatchersAllReceiveUpdate(t *testing.T) {
 	ts := New()
 	const n = 5
-	channels := make([]<-chan TagUpdate, n)
-	cancels := make([]func(), n)
+	ws := make([]*Watcher, n)
 	for i := range n {
-		channels[i], cancels[i] = ts.Subscribe("shared.tag")
-		defer cancels[i]()
+		ws[i] = ts.Watch()
+		defer ws[i].Close()
+		ws[i].Add("shared.tag")
 	}
 
-	// drain cached values (none exist yet)
-	for _, ch := range channels {
-		drainTimeout(ch, 10*time.Millisecond)
-	}
+	ts.Update("shared.tag", TagState{Value: "hello", Quality: "Good", TS: time.Now().UnixNano()})
 
-	state := TagState{Value: "hello", Quality: "Good", TS: time.Now().UnixNano()}
-	ts.Update("shared.tag", state)
-
-	for i, ch := range channels {
-		select {
-		case update := <-ch:
-			if update.State.Value != "hello" {
-				t.Errorf("subscriber %d: got %v want hello", i, update.State.Value)
-			}
-		case <-time.After(50 * time.Millisecond):
-			t.Errorf("subscriber %d did not receive update", i)
+	for i, w := range ws {
+		got := next(t, w)
+		if len(got) != 1 || got[0].State.Value != "hello" {
+			t.Errorf("watcher %d: got %v want hello", i, got)
 		}
 	}
 }
 
-func TestUnsubscribeStopsDelivery(t *testing.T) {
+func TestRemoveStopsDelivery(t *testing.T) {
+	tests := []struct {
+		name string
+		stop func(w *Watcher)
+	}{
+		{"remove", func(w *Watcher) { w.Remove("remove.me") }},
+		{"close", func(w *Watcher) { w.Close() }},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := New()
+			w := ts.Watch()
+			w.Add("remove.me")
+			ts.Update("remove.me", TagState{Value: 1, Quality: "Good"}) // pending, never read
+			tc.stop(w)
+			ts.Update("remove.me", TagState{Value: 2, Quality: "Good"})
+			if !quiet(w, 30*time.Millisecond) {
+				t.Fatal("received an update after stopping")
+			}
+		})
+	}
+}
+
+// A watcher that never reads must not slow Update down and must still hold
+// the newest value of every path it watches.
+func TestSlowWatcherEndsOnNewest(t *testing.T) {
 	ts := New()
-	ch, cancel := ts.Subscribe("remove.me")
-	drainTimeout(ch, 10*time.Millisecond)
-	cancel()
+	w := ts.Watch()
+	defer w.Close()
+	w.Add("a", "b", "c")
 
-	ts.Update("remove.me", TagState{Value: 1, Quality: "Good", TS: time.Now().UnixNano()})
-
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 10000; i++ {
+			for _, p := range []string{"a", "b", "c"} {
+				ts.Update(p, TagState{Value: i, Quality: "Good"})
+			}
+		}
+		close(done)
+	}()
 	select {
-	case <-ch:
-		t.Fatal("should not receive after cancel")
-	case <-time.After(30 * time.Millisecond):
-		// correct
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Update blocked on a watcher that does not read")
+	}
+
+	got := map[string]any{}
+	for _, u := range w.Drain() {
+		got[u.Path] = u.State.Value
+	}
+	for _, p := range []string{"a", "b", "c"} {
+		if got[p] != 9999 {
+			t.Errorf("%s = %v, want 9999", p, got[p])
+		}
+	}
+}
+
+func TestUpdateOnlyNotifiesWatchersOfThatPath(t *testing.T) {
+	ts := New()
+	wa, wb := ts.Watch(), ts.Watch()
+	defer wa.Close()
+	defer wb.Close()
+	wa.Add("a")
+	wb.Add("b")
+
+	ts.Update("a", TagState{Value: 1, Quality: "Good"})
+
+	if got := next(t, wa); len(got) != 1 || got[0].Path != "a" {
+		t.Errorf("watcher a got %v", got)
+	}
+	if !quiet(wb, 30*time.Millisecond) {
+		t.Error("watcher b was notified of a")
+	}
+	ts.mu.Lock()
+	n := len(ts.watchers)
+	ts.mu.Unlock()
+	wa.Close()
+	wb.Close()
+	ts.mu.Lock()
+	after := len(ts.watchers)
+	ts.mu.Unlock()
+	if n != 2 || after != 0 {
+		t.Errorf("index sizes %d → %d, want 2 → 0", n, after)
 	}
 }
 
@@ -136,18 +208,109 @@ func TestConcurrentWritesNoRace(t *testing.T) {
 }
 
 func TestMarkStale(t *testing.T) {
-	ts := New()
-	old := TagState{Value: 1, Quality: "Good", TS: time.Now().Add(-2 * time.Second).UnixNano()}
-	ts.data.Store("stale.tag", old)
-
-	ts.MarkStale(time.Second)
-
-	got, ok := ts.Get("stale.tag")
-	if !ok {
-		t.Fatal("tag missing")
+	const maxAge = 10 * time.Second
+	all := func(string) bool { return true }
+	tests := []struct {
+		name        string
+		state       TagState
+		since       time.Duration // time since the store received the tag
+		include     func(string) bool
+		wantQuality string
+		wantReason  string
+	}{
+		{"no update for longer than maxAge", TagState{Value: 1, Quality: "Good"}, 11 * time.Second, all, "Uncertain", "no update for 10s"},
+		{"recent update", TagState{Value: 1, Quality: "Good"}, 5 * time.Second, all, "Good", ""},
+		// An OPC UA source timestamp stays old while the value does not
+		// change; what counts is when the store last received it.
+		{"old value timestamp, received recently", TagState{Value: 1, Quality: "Good", TS: time.Now().Add(-time.Hour).UnixNano()}, time.Second, all, "Good", ""},
+		{"not a polled datasource", TagState{Value: 1, Quality: "Good"}, time.Hour, func(string) bool { return false }, "Good", ""},
+		{"already Bad keeps its reason", TagState{Value: 1, Quality: "Bad", Reason: "no answer"}, time.Hour, all, "Bad", "no answer"},
 	}
-	if got.Quality != "Uncertain" {
-		t.Errorf("quality: got %q want Uncertain", got.Quality)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := New()
+			w := ts.Watch()
+			defer w.Close()
+			w.Add("plc:A")
+			ts.Update("plc:A", tc.state)
+			<-w.C()
+			w.Drain()
+
+			now := time.Now().Add(tc.since).UnixNano()
+			marked := ts.markStale(now, maxAge, tc.include)
+
+			got, _ := ts.Get("plc:A")
+			if got.Quality != tc.wantQuality || got.Reason != tc.wantReason {
+				t.Errorf("got %q %q, want %q %q", got.Quality, got.Reason, tc.wantQuality, tc.wantReason)
+			}
+			if got.Value != tc.state.Value || got.TS != tc.state.TS {
+				t.Errorf("value or timestamp changed: got %+v, had %+v", got, tc.state)
+			}
+			wantMarked := 0
+			if tc.wantQuality == "Uncertain" {
+				wantMarked = 1
+			}
+			if marked != wantMarked {
+				t.Errorf("marked %d, want %d", marked, wantMarked)
+			}
+			// Watchers hear about the change, and only about a change.
+			select {
+			case <-w.C():
+				u := w.Drain()
+				if wantMarked == 0 || len(u) != 1 || u[0].State.Quality != "Uncertain" {
+					t.Errorf("watcher got %+v", u)
+				}
+			default:
+				if wantMarked == 1 {
+					t.Error("watcher was not told")
+				}
+			}
+		})
+	}
+}
+
+func TestStaleTagRecoversAndIsMarkedOnce(t *testing.T) {
+	ts := New()
+	ts.Update("plc:A", TagState{Value: 1, Quality: "Good"})
+	later := time.Now().Add(time.Minute).UnixNano()
+	all := func(string) bool { return true }
+	if n := ts.markStale(later, time.Second, all); n != 1 {
+		t.Fatalf("first check marked %d, want 1", n)
+	}
+	if n := ts.markStale(later, time.Second, all); n != 0 {
+		t.Errorf("second check marked %d, want 0 (already Uncertain)", n)
+	}
+	ts.Update("plc:A", TagState{Value: 2, Quality: "Good"})
+	if got, _ := ts.Get("plc:A"); got.Quality != "Good" || got.Reason != "" || got.Value != 2 {
+		t.Errorf("after a fresh update: %+v, want Good 2 with no reason", got)
+	}
+}
+
+// A fresh update racing the stale check must never be replaced by the stale
+// copy of an older value. Run with -race.
+func TestMarkStaleDoesNotOverwriteFreshUpdate(t *testing.T) {
+	ts := New()
+	const n = 2000
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 1; i <= n; i++ {
+			ts.Update("plc:A", TagState{Value: i, Quality: "Good"})
+		}
+	}()
+	future := time.Now().Add(time.Hour).UnixNano()
+	all := func(string) bool { return true }
+	for {
+		ts.markStale(future, 0, all)
+		select {
+		case <-done:
+			ts.markStale(future, 0, all)
+			if got, _ := ts.Get("plc:A"); got.Value != n {
+				t.Fatalf("value = %v after the last update of %d", got.Value, n)
+			}
+			return
+		default:
+		}
 	}
 }
 
@@ -160,17 +323,5 @@ func TestStop(t *testing.T) {
 	case <-ts.Stopped():
 	default:
 		t.Fatal("Stopped() channel should be closed after Stop()")
-	}
-}
-
-func drainTimeout(ch <-chan TagUpdate, d time.Duration) {
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	for {
-		select {
-		case <-ch:
-		case <-timer.C:
-			return
-		}
 	}
 }

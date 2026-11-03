@@ -114,7 +114,8 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+// handleSetUserPassword sets another user's password (users.manage).
+func (s *Server) handleSetUserPassword(w http.ResponseWriter, r *http.Request) {
 	if s.rt.Security == nil {
 		writeErr(w, 503, "security not configured")
 		return
@@ -132,5 +133,6 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
+	s.recordAudit(r, audit.ActionUserPassword, username, nil, nil, "")
 	writeJSON(w, 200, map[string]any{"ok": true})
 }

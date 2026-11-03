@@ -70,7 +70,7 @@ func (d *Driver) ID() string { return driverID }
 // cfg.Extra["tags"] must be a JSON-encoded []TagSpec:
 //
 //	[{"path":"tempF","formula":"{opcua:Temp}*9/5+32"},...]
-func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
+func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	tagsJSON := cfg.Extra["tags"]
 	if tagsJSON == "" {
 		return fmt.Errorf("virtual: cfg.Extra['tags'] is required")
@@ -89,11 +89,14 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig) error {
 	d.vals = make(map[string]float64)
 	d.overrides = make(map[string]float64)
 	d.stopCh = make(chan struct{})
+	d.outCh = out
 	d.mu.Unlock()
 
 	d.tagCount.Store(int32(len(specs)))
 	d.connected.Store(true)
 	log.Printf("[DRIVER] virtual: connected with %d computed tags", len(specs))
+	d.evaluateAll(specs) // push initial values
+	d.startLoop(specs)
 	return nil
 }
 
@@ -124,20 +127,14 @@ func (d *Driver) Browse(_ context.Context) ([]drivers.TagDefinition, error) {
 	return out, nil
 }
 
-// Subscribe starts the reactive evaluation loop.
-// When any upstream tag referenced by a formula changes, all formulae that
-// use it are re-evaluated and pushed to ch.
-func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.TagUpdate) error {
-	d.mu.Lock()
-	d.outCh = ch
-	stopCh := d.stopCh
-	d.mu.Unlock()
+// SetTags does nothing: a virtual driver always computes every configured
+// tag. It exists so the driver satisfies the same contract as the others.
+func (d *Driver) SetTags(_ []string) error { return nil }
 
-	// Build a map from upstream tag key → which specs reference it.
-	d.mu.RLock()
-	specs := d.specs
-	d.mu.RUnlock()
-
+// startLoop starts the driver's only evaluation goroutine. It polls the
+// referenced upstream tags (the tagstore has no external pub/sub) and
+// re-evaluates every formula when one of them changes.
+func (d *Driver) startLoop(specs []TagSpec) {
 	// refMap: upstream key → list of spec indices that use it.
 	refMap := map[string][]int{}
 	for i, s := range specs {
@@ -145,13 +142,10 @@ func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.T
 			refMap[ref.Key] = append(refMap[ref.Key], i)
 		}
 	}
+	d.mu.RLock()
+	stopCh := d.stopCh
+	d.mu.RUnlock()
 
-	// Push initial values for all specs.
-	d.evaluateAll(specs, ch)
-
-	// Poll upstream values at 1 Hz as a fallback, and also react reactively
-	// via the tagstore subscription.
-	// (The tagstore doesn't expose a pub/sub API externally, so we poll.)
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()
@@ -159,19 +153,16 @@ func (d *Driver) Subscribe(ctx context.Context, _ []string, ch chan<- tagstore.T
 		defer tick.Stop()
 		for {
 			select {
-			case <-ctx.Done():
-				return
 			case <-stopCh:
 				return
 			case <-tick.C:
-				if d.refreshUpstream(refMap) {
-					d.evaluateAll(specs, ch)
+				if !d.refreshUpstream(refMap) {
+					continue
 				}
+				d.evaluateAll(specs)
 			}
 		}
 	}()
-
-	return nil
 }
 
 // refreshUpstream reads all referenced tags from the store and returns true if
@@ -197,11 +188,11 @@ func (d *Driver) refreshUpstream(refMap map[string][]int) bool {
 	return changed
 }
 
-// evaluateAll computes all formulas and pushes their results to ch.
+// evaluateAll computes all formulas and sends their results.
 // If a tag has been written via Write(), the override value is used instead
 // of the formula result — this lets Setpoint widgets and recipes actually
 // change virtual tag values during a demo.
-func (d *Driver) evaluateAll(specs []TagSpec, ch chan<- tagstore.TagUpdate) {
+func (d *Driver) evaluateAll(specs []TagSpec) {
 	d.mu.RLock()
 	vals := make(map[string]float64, len(d.vals))
 	for k, v := range d.vals {
@@ -233,13 +224,10 @@ func (d *Driver) evaluateAll(specs []TagSpec, ch chan<- tagstore.TagUpdate) {
 				}
 			}
 		}
-		select {
-		case ch <- tagstore.TagUpdate{
+		d.send(tagstore.TagUpdate{
 			Path:  s.Path,
 			State: tagstore.TagState{Value: result, Quality: quality, TS: now},
-		}:
-		default:
-		}
+		})
 	}
 }
 
@@ -267,16 +255,27 @@ func (d *Driver) Write(_ context.Context, path string, val any) error {
 	d.mu.Unlock()
 
 	// Immediately push the new value without waiting for the next tick.
-	if d.outCh != nil {
-		select {
-		case d.outCh <- tagstore.TagUpdate{
-			Path:  path,
-			State: tagstore.TagState{Value: f, Quality: "Good", TS: time.Now().UnixNano()},
-		}:
-		default:
-		}
-	}
+	d.send(tagstore.TagUpdate{
+		Path:  path,
+		State: tagstore.TagState{Value: f, Quality: "Good", TS: time.Now().UnixNano()},
+	})
 	return nil
+}
+
+// send delivers u to the output channel, waiting if the runtime is busy.
+// It gives up when the driver is disconnected and does nothing before
+// Connect or without an output channel.
+func (d *Driver) send(u tagstore.TagUpdate) {
+	d.mu.RLock()
+	ch, stop := d.outCh, d.stopCh
+	d.mu.RUnlock()
+	if ch == nil || stop == nil {
+		return
+	}
+	select {
+	case ch <- u:
+	case <-stop:
+	}
 }
 
 func (d *Driver) Status() drivers.DriverStatus {
@@ -291,26 +290,10 @@ func (d *Driver) Status() drivers.DriverStatus {
 	}
 }
 
+// toFloat reads an input as a number; text and missing values count as 0.
 func toFloat(v any) float64 {
-	switch x := v.(type) {
-	case float64:
-		return x
-	case float32:
-		return float64(x)
-	case int:
-		return float64(x)
-	case int32:
-		return float64(x)
-	case int64:
-		return float64(x)
-	case bool:
-		if x {
-			return 1
-		}
-		return 0
-	default:
-		return 0
-	}
+	f, _ := tagstore.Number(v)
+	return f
 }
 
 func init() {

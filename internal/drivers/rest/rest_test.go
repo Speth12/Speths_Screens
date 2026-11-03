@@ -53,6 +53,7 @@ func TestSubscribeAndPoll(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	ch := make(chan tagstore.TagUpdate, 32)
 	d := New()
 	d.pollEvery = 50 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -64,15 +65,14 @@ func TestSubscribeAndPoll(t *testing.T) {
 			"basePath":    "/api",
 			"bearerToken": "test-token",
 		},
-	})
+	}, ch)
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
 
-	ch := make(chan tagstore.TagUpdate, 32)
-	if err := d.Subscribe(ctx, []string{"temp", "multi#a.b"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags([]string{"temp", "multi#a.b"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	got := map[string]any{}
@@ -115,7 +115,7 @@ func TestWritePUT(t *testing.T) {
 
 	d := New()
 	ctx := context.Background()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: srv.URL}); err != nil {
+	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: srv.URL}, nil); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
@@ -133,29 +133,31 @@ func TestWritePUT(t *testing.T) {
 	}
 }
 
+// An unreachable endpoint: Connect still succeeds, the driver reports offline
+// with a reason, and polled tags are Bad with that reason.
 func TestStatusBadEndpoint(t *testing.T) {
+	ch := make(chan tagstore.TagUpdate, 4)
 	d := New()
 	d.pollEvery = 50 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: "http://127.0.0.1:1"}); err != nil {
+	d.backoffMin = 20 * time.Millisecond
+	d.httpTimeout = 500 * time.Millisecond
+	if err := d.Connect(context.Background(), drivers.DriverConfig{Endpoint: "http://127.0.0.1:1"}, ch); err != nil {
 		t.Fatalf("Connect should not fail: %v", err)
 	}
 	defer d.Disconnect()
-	if !d.Status().Connected {
-		t.Error("expected Connected=true (REST connect doesn't probe)")
-	}
 
-	ch := make(chan tagstore.TagUpdate, 4)
-	if err := d.Subscribe(ctx, []string{"x"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags([]string{"x"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 	select {
 	case u := <-ch:
-		if u.State.Quality != "Bad" {
-			t.Errorf("expected Bad quality, got %q", u.State.Quality)
+		if u.State.Quality != "Bad" || u.State.Reason == "" {
+			t.Errorf("got quality %q reason %q, want Bad with a reason", u.State.Quality, u.State.Reason)
 		}
-	case <-time.After(800 * time.Millisecond):
-		t.Fatal("expected at least one poll within 800ms")
+	case <-time.After(5 * time.Second):
+		t.Fatal("no Bad update within 5 s")
+	}
+	if st := d.Status(); st.Connected || st.LastError == "" {
+		t.Errorf("Status = %+v, want Connected=false with LastError", st)
 	}
 }

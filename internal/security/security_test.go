@@ -129,3 +129,23 @@ func TestListAndDelete(t *testing.T) {
 		t.Errorf("want 1 user after delete, got %d", len(users))
 	}
 }
+
+// Operators write tags from their screens (defect 8); which tags is limited
+// by the write pipeline, not the role.
+func TestOperatorMayWriteTags(t *testing.T) {
+	tests := []struct {
+		role Role
+		perm Permission
+		want bool
+	}{
+		{RoleOperator, PermWriteTag, true},
+		{RoleOperator, PermApplyRecipe, false},
+		{RoleOperator, PermDeploy, false},
+		{RoleSupervisor, PermWriteTag, true},
+	}
+	for _, tc := range tests {
+		if got := HasPermission(tc.role, tc.perm); got != tc.want {
+			t.Errorf("HasPermission(%s, %s) = %v, want %v", tc.role, tc.perm, got, tc.want)
+		}
+	}
+}

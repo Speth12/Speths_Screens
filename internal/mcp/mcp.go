@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/eventbus"
+	"github.com/Speth12/Speths_Screens/internal/project"
 	"github.com/Speth12/Speths_Screens/internal/runtime"
 )
 
@@ -216,7 +217,7 @@ func (h *Handler) readResource(_ context.Context, uri string) (string, error) {
 
 	switch {
 	case uri == "xhmi://project":
-		b, err := json.MarshalIndent(proj, "", "  ")
+		b, err := json.MarshalIndent(project.RedactSecrets(proj), "", "  ")
 		if err != nil {
 			return "", err
 		}
@@ -431,20 +432,13 @@ func (h *Handler) callTool(ctx context.Context, name string, args map[string]any
 		if binding == "" {
 			return "", true, fmt.Errorf("binding is required")
 		}
-		sep := strings.Index(binding, ":")
-		if sep < 0 {
-			return "", true, fmt.Errorf("invalid binding format (expected dsId:tagPath)")
+		// Through the write pipeline, like every other write.
+		res := h.rt.WriteTag(ctx, runtime.WriteRequest{Binding: binding, Value: value})
+		switch res.Status {
+		case runtime.WriteConfirmed, runtime.WriteSent:
+			return fmt.Sprintf("wrote %v to %s (%s)", value, binding, res.Status), false, nil
 		}
-		dsID := binding[:sep]
-		path := binding[sep+1:]
-		d := h.rt.Driver(dsID)
-		if d == nil {
-			return "", true, fmt.Errorf("datasource not found: %s", dsID)
-		}
-		if err := d.Write(ctx, path, value); err != nil {
-			return "", true, fmt.Errorf("write failed: %w", err)
-		}
-		return fmt.Sprintf("wrote %v to %s", value, binding), false, nil
+		return "", true, fmt.Errorf("write %s: %s", res.Status, res.Reason)
 
 	case "list_alarms":
 		events := h.rt.Alarms.Events()
@@ -496,29 +490,26 @@ func (h *Handler) callTool(ctx context.Context, name string, args map[string]any
 			return "", true, fmt.Errorf("no project loaded")
 		}
 		var recipeName string
+		var failed []string
 		found := false
 		for _, r := range proj.Recipes {
 			if r.ID == id || r.Name == id {
 				recipeName = r.Name
 				found = true
 				for _, e := range r.Entries {
-					sep := strings.Index(e.Binding, ":")
-					if sep < 0 {
-						continue
+					res := h.rt.WriteTag(ctx, runtime.WriteRequest{Binding: e.Binding, Value: e.Value, Recipe: true})
+					if res.Status != runtime.WriteConfirmed && res.Status != runtime.WriteSent {
+						failed = append(failed, fmt.Sprintf("%s: %s: %s", e.Binding, res.Status, res.Reason))
 					}
-					dsID := e.Binding[:sep]
-					path := e.Binding[sep+1:]
-					d := h.rt.Driver(dsID)
-					if d == nil {
-						continue
-					}
-					_ = d.Write(ctx, path, e.Value)
 				}
 				break
 			}
 		}
 		if !found {
 			return "", true, fmt.Errorf("recipe not found: %s", id)
+		}
+		if len(failed) > 0 {
+			return "", true, fmt.Errorf("recipe %q: %d entries did not go through: %s", recipeName, len(failed), strings.Join(failed, "; "))
 		}
 		return fmt.Sprintf("recipe \"%s\" applied", recipeName), false, nil
 

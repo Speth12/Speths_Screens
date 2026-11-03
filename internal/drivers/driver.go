@@ -1,7 +1,7 @@
 // Package drivers defines the ProtocolDriver contract.
 //
-// Drivers MUST push every value into the supplied chan<- tagstore.TagUpdate
-// and never touch the UI or store state outside that channel.
+// Drivers MUST push every value into the channel given to Connect and never
+// touch the UI or store state outside that channel.
 package drivers
 
 import (
@@ -44,15 +44,19 @@ type DriverStatus struct {
 
 // ProtocolDriver is implemented by every driver instance.
 //
-// Lifecycle: Connect → Browse → Subscribe → (Write) → Disconnect.
+// Lifecycle: Connect → SetTags (any number of times) → (Write) → Disconnect.
+// A driver runs one poll loop (or one set of subscriptions) from Connect to
+// Disconnect; SetTags only changes what it reads.
 // Drivers own their own reconnect with exponential backoff.
 type ProtocolDriver interface {
 	// ID returns the driver identifier, e.g. "opcua", "mbtcp", "mqtt", "rest".
 	ID() string
 
-	// Connect establishes the connection. Returns when the initial connect
-	// succeeds or fails. Drivers retry internally after this returns.
-	Connect(ctx context.Context, cfg DriverConfig) error
+	// Connect establishes the connection and starts the driver's poll loop.
+	// Returns when the initial connect succeeds or fails. Drivers retry
+	// internally after this returns. Every value is pushed into out, which
+	// must stay open until Disconnect returns; a nil out discards values.
+	Connect(ctx context.Context, cfg DriverConfig, out chan<- tagstore.TagUpdate) error
 
 	// Disconnect cleanly shuts down the driver and any background goroutines.
 	Disconnect() error
@@ -60,10 +64,11 @@ type ProtocolDriver interface {
 	// Browse returns all discoverable tags after Connect.
 	Browse(ctx context.Context) ([]TagDefinition, error)
 
-	// Subscribe begins pushing TagUpdate values for the given paths into ch.
-	// Returns immediately; the driver runs the subscription loop in a goroutine.
-	// ch must remain open for the lifetime of the subscription.
-	Subscribe(ctx context.Context, paths []string, ch chan<- tagstore.TagUpdate) error
+	// SetTags replaces the set of paths the driver reads. It is idempotent:
+	// the same set (in any order, with duplicates) changes nothing. An empty
+	// set keeps the driver connected but idle. Returns quickly; values for
+	// new paths arrive from the next poll.
+	SetTags(paths []string) error
 
 	// Write pushes a value to the remote tag.
 	Write(ctx context.Context, path string, value any) error

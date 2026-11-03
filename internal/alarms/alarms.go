@@ -4,6 +4,7 @@
 package alarms
 
 import (
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"sync"
 	"time"
 )
@@ -33,7 +34,7 @@ const (
 type Rule struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
-	Binding   string    `json:"binding"`   // "dsId:tagPath"
+	Binding   string    `json:"binding"` // "dsId:tagPath"
 	Condition Condition `json:"condition"`
 	Threshold float64   `json:"threshold"`
 	Severity  Severity  `json:"severity"`
@@ -42,18 +43,18 @@ type Rule struct {
 
 // Event is an instance of a rule that has fired.
 type Event struct {
-	ID          string    `json:"id"`
-	RuleID      string    `json:"ruleId"`
-	RuleName    string    `json:"ruleName"`
-	Binding     string    `json:"binding"`
-	Condition   Condition `json:"condition"`
-	Threshold   float64   `json:"threshold"`
-	Severity    Severity  `json:"severity"`
-	Message     string    `json:"message"`
-	Value       float64   `json:"value"`       // value that triggered the alarm
-	Active      bool      `json:"active"`      // true = condition still true
-	Acked       bool      `json:"acked"`
-	TriggeredAt time.Time `json:"triggeredAt"`
+	ID          string     `json:"id"`
+	RuleID      string     `json:"ruleId"`
+	RuleName    string     `json:"ruleName"`
+	Binding     string     `json:"binding"`
+	Condition   Condition  `json:"condition"`
+	Threshold   float64    `json:"threshold"`
+	Severity    Severity   `json:"severity"`
+	Message     string     `json:"message"`
+	Value       float64    `json:"value"`  // value that triggered the alarm
+	Active      bool       `json:"active"` // true = condition still true
+	Acked       bool       `json:"acked"`
+	TriggeredAt time.Time  `json:"triggeredAt"`
 	AckedAt     *time.Time `json:"ackedAt,omitempty"`
 	NormalAt    *time.Time `json:"normalAt,omitempty"`
 }
@@ -64,7 +65,7 @@ type Engine struct {
 	mu          sync.RWMutex
 	rules       []Rule
 	events      map[string]*Event // keyed by rule ID (one event per rule)
-	subs        []chan Event
+	subs        map[*Subscription]struct{}
 	eventSerial int // monotonic ID suffix
 }
 
@@ -192,26 +193,92 @@ func (e *Engine) Acknowledge(eventID string) bool {
 	return false
 }
 
-// Subscribe returns a channel that receives every alarm event change.
-// The caller must drain the channel; slow consumers will miss events (drop).
-func (e *Engine) Subscribe() chan Event {
-	ch := make(chan Event, 64)
+// DefaultQueue is how many alarm changes a subscriber can fall behind by
+// before it has to resync from a snapshot. Tests lower it.
+var DefaultQueue = 256
+
+// Subscribe returns a subscription to every alarm event change. Call Close
+// when done. Subscribe before taking a snapshot with Events, so no change
+// falls between the two.
+func (e *Engine) Subscribe() *Subscription { return e.SubscribeN(DefaultQueue) }
+
+// SubscribeN is Subscribe with a queue of size changes.
+func (e *Engine) SubscribeN(size int) *Subscription {
+	s := &Subscription{engine: e, max: size, signal: make(chan struct{}, 1)}
 	e.mu.Lock()
-	e.subs = append(e.subs, ch)
+	if e.subs == nil {
+		e.subs = map[*Subscription]struct{}{}
+	}
+	e.subs[s] = struct{}{}
 	e.mu.Unlock()
-	return ch
+	return s
 }
 
-// Unsubscribe removes a subscriber channel.
-func (e *Engine) Unsubscribe(ch chan Event) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	for i, s := range e.subs {
-		if s == ch {
-			e.subs = append(e.subs[:i], e.subs[i+1:]...)
-			close(ch)
-			return
-		}
+// Subscription receives alarm event changes in order. Delivery never
+// blocks the engine: when the queue is full it is dropped and Next reports
+// a resync, after which the subscriber reads the full state with Events.
+//
+//	s := engine.Subscribe()
+//	defer s.Close()
+//	send(engine.Events())
+//	for range s.C() {
+//		changes, resync := s.Next()
+//		if resync {
+//			send(engine.Events())
+//		}
+//		send(changes)
+//	}
+type Subscription struct {
+	engine *Engine
+	max    int
+	signal chan struct{}
+
+	mu     sync.Mutex
+	queue  []Event
+	resync bool
+	closed bool
+}
+
+// C receives a value when changes may be waiting. Receive before Next.
+func (s *Subscription) C() <-chan struct{} { return s.signal }
+
+// Next returns the waiting changes, oldest first. resync is true when
+// changes were dropped since the last call: read Events for the full state
+// before applying changes.
+func (s *Subscription) Next() (changes []Event, resync bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	changes, resync = s.queue, s.resync
+	s.queue, s.resync = nil, false
+	return changes, resync
+}
+
+// Close stops delivery. The subscription cannot be reused.
+func (s *Subscription) Close() {
+	s.engine.mu.Lock()
+	delete(s.engine.subs, s)
+	s.engine.mu.Unlock()
+	s.mu.Lock()
+	s.closed = true
+	s.queue = nil
+	s.mu.Unlock()
+}
+
+// push queues one change. The caller holds the engine lock.
+func (s *Subscription) push(ev Event) {
+	s.mu.Lock()
+	switch {
+	case s.closed, s.resync:
+		// a resync covers it: the snapshot is read after Next
+	case len(s.queue) >= s.max:
+		s.queue, s.resync = nil, true
+	default:
+		s.queue = append(s.queue, ev)
+	}
+	s.mu.Unlock()
+	select {
+	case s.signal <- struct{}{}:
+	default:
 	}
 }
 
@@ -235,34 +302,14 @@ func eval(cond Condition, value, threshold float64) bool {
 	return false
 }
 
-func toFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case float32:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case int32:
-		return float64(x), true
-	case int64:
-		return float64(x), true
-	case bool:
-		if x {
-			return 1, true
-		}
-		return 0, true
-	}
-	return 0, false
-}
+// toFloat reads a tag value as a number (every Go number type a driver
+// delivers; see tagstore.Number).
+func toFloat(v any) (float64, bool) { return tagstore.Number(v) }
 
+// fanOut hands a change to every subscriber. The caller holds e.mu.
 func (e *Engine) fanOut(ev Event) {
-	for _, ch := range e.subs {
-		select {
-		case ch <- ev:
-		default:
-			// slow subscriber — drop; they'll catch up on next poll
-		}
+	for s := range e.subs {
+		s.push(ev)
 	}
 }
 

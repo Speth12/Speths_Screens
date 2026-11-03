@@ -13,6 +13,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/audit"
 	"github.com/Speth12/Speths_Screens/internal/project"
 	"github.com/Speth12/Speths_Screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/runtime"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -51,6 +52,7 @@ func (s *Server) handleGetVersion(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "version not found")
 		return
 	}
+	v.Project = project.RedactSecretsJSON(v.Project) // versions saved before secrets were kept out
 	writeJSON(w, 200, v)
 }
 
@@ -78,13 +80,14 @@ func (s *Server) handleRestoreVersion(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, "stored project invalid: "+err.Error())
 		return
 	}
+	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
 		writeErr(w, 500, err.Error())
 		return
 	}
 	// Save the restore itself as a new version so the log stays append-only.
 	label := fmt.Sprintf("restore of version %d", id)
-	newID, _ := s.versions.Save(r.Context(), v.Project, label)
+	newID, _ := s.versions.Save(r.Context(), project.RedactSecretsJSON(v.Project), label)
 	writeJSON(w, 200, map[string]any{"ok": true, "restoredFrom": id, "newVersionId": newID})
 }
 
@@ -123,7 +126,9 @@ func (s *Server) handleGetProject(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, nil)
 		return
 	}
-	writeJSON(w, 200, p)
+	// Datasource passwords and tokens never leave the runtime; a deploy
+	// that leaves them blank keeps the stored ones.
+	writeJSON(w, 200, project.RedactSecrets(p))
 }
 
 func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +143,7 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err.Error())
 		return
 	}
+	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
 		writeErr(w, 500, err.Error())
 		return
@@ -145,7 +151,7 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 	var versionID int64
 	if s.versions != nil {
 		label := r.URL.Query().Get("label")
-		versionID, _ = s.versions.Save(r.Context(), raw, label)
+		versionID, _ = s.versions.Save(r.Context(), project.RedactSecretsJSON(raw), label)
 	}
 	s.recordAudit(r, audit.ActionProjectDeploy, "", nil, nil, fmt.Sprintf("pages=%d datasources=%d", len(p.Pages), len(p.Datasources)))
 	writeJSON(w, 200, map[string]any{"ok": true, "datasources": len(p.Datasources), "pages": len(p.Pages), "versionId": versionID})
@@ -218,12 +224,18 @@ func (s *Server) handleReadTag(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, state)
 }
 
+// handleWriteTag writes one tag through the write pipeline. The body is
+// {"datasource", "value", "widgetId"?}; datasource "ns" writes a namespace
+// path. The reply is the pipeline's result with its HTTP status; "ok" is
+// kept for older clients and is true only when the write was confirmed or
+// sent.
 func (s *Server) handleWriteTag(w http.ResponseWriter, r *http.Request) {
 	path := tagPathFromRequest(r)
 	defer r.Body.Close()
 	var body struct {
 		Datasource string `json:"datasource"`
 		Value      any    `json:"value"`
+		WidgetID   string `json:"widgetId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeErr(w, 400, "invalid json")
@@ -233,21 +245,41 @@ func (s *Server) handleWriteTag(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "datasource is required")
 		return
 	}
-	d := s.rt.Driver(body.Datasource)
-	if d == nil {
-		writeErr(w, 404, "datasource not found")
-		return
+	res := s.writeTag(r, runtime.WriteRequest{
+		Binding: body.Datasource + ":" + path, Value: body.Value, WidgetID: body.WidgetID,
+	})
+	writeJSON(w, res.Code, writeReply(res))
+}
+
+// writeTag runs one write and records it in the audit trail and, when it
+// went through, in the historian.
+func (s *Server) writeTag(r *http.Request, req runtime.WriteRequest) runtime.WriteResult {
+	res := s.rt.WriteTag(r.Context(), req)
+	if s.rt.Historian != nil && (res.Status == runtime.WriteConfirmed || res.Status == runtime.WriteSent) {
+		_ = s.rt.Historian.RecordWrite(req.Binding, req.Value)
 	}
-	if err := d.Write(r.Context(), path, body.Value); err != nil {
-		writeErr(w, 500, err.Error())
-		return
+	meta := res.Status
+	if res.Reason != "" {
+		meta += ": " + res.Reason
 	}
-	fullPath := body.Datasource + ":" + path
-	if s.rt.Historian != nil {
-		_ = s.rt.Historian.RecordWrite(fullPath, body.Value)
+	s.recordAudit(r, audit.ActionTagWrite, req.Binding, nil, req.Value, meta)
+	return res
+}
+
+// writeReply is the JSON answer to a write.
+func writeReply(res runtime.WriteResult) map[string]any {
+	out := map[string]any{
+		"ok":     res.Status == runtime.WriteConfirmed || res.Status == runtime.WriteSent,
+		"status": res.Status,
 	}
-	s.recordAudit(r, audit.ActionTagWrite, fullPath, nil, body.Value, "")
-	writeJSON(w, 200, map[string]any{"ok": true})
+	if res.Reason != "" {
+		out["reason"] = res.Reason
+		out["error"] = res.Reason // older clients read "error"
+	}
+	if res.Value != nil {
+		out["value"] = res.Value
+	}
+	return out
 }
 
 func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
@@ -593,25 +625,13 @@ func (s *Server) findRecipe(id string) ([]project.RecipeEntry, string) {
 func (s *Server) executeRecipeEntries(r *http.Request, entries []recipestore.Entry) ([]string, int) {
 	var errs []string
 	applied := 0
+	// One at a time, in recipe order: a recipe may set a mode before a
+	// setpoint that depends on it.
 	for _, entry := range entries {
-		sep := strings.Index(entry.Binding, ":")
-		if sep < 0 {
-			errs = append(errs, "bad binding: "+entry.Binding)
+		res := s.writeTag(r, runtime.WriteRequest{Binding: entry.Binding, Value: entry.Value, Recipe: true})
+		if res.Status != runtime.WriteConfirmed && res.Status != runtime.WriteSent {
+			errs = append(errs, entry.Binding+": "+res.Status+": "+res.Reason)
 			continue
-		}
-		dsID := entry.Binding[:sep]
-		tagPath := entry.Binding[sep+1:]
-		d := s.rt.Driver(dsID)
-		if d == nil {
-			errs = append(errs, "driver not found: "+dsID)
-			continue
-		}
-		if err := d.Write(r.Context(), tagPath, entry.Value); err != nil {
-			errs = append(errs, entry.Binding+": "+err.Error())
-			continue
-		}
-		if s.rt.Historian != nil {
-			_ = s.rt.Historian.RecordWrite(entry.Binding, entry.Value)
 		}
 		applied++
 	}

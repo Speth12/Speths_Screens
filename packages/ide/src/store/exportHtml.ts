@@ -246,7 +246,7 @@ const RENDERERS = {
   image(w, t) {
     // lib: references can't be resolved without the IDE's image store; show placeholder
     const src = w.config?.src ?? "";
-    const fit = w.config?.objectFit ?? "contain";
+    const fit = w.config?.fit ?? w.config?.objectFit ?? "contain";
     if (!src || src.startsWith("lib:")) return \`<div class="wbody" style="color:#52525b;justify-content:center">🖼</div>\`;
     return \`<img src="\${escH(src)}" style="width:100%;height:100%;object-fit:\${escH(fit)}" draggable="false"/>\`;
   },

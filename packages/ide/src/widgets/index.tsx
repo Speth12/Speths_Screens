@@ -7,6 +7,7 @@ import { useTag } from "../hooks/useTag";
 import { useTags } from "../hooks/useTags";
 import { apiBase } from "../store/runtimeTarget";
 import { registerWidget } from "./widgetRegistry";
+import { imageFit } from "./imageFit";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -974,7 +975,7 @@ registerWidget({ type: "table",          label: "Table",       defaultW: 4, defa
 
 function ImageWidget({ w }: { w: Widget }) {
   const src = (w.config?.src as string | undefined) ?? "";
-  const fit = (w.config?.objectFit as string | undefined) ?? "contain";
+  const fit = imageFit(w.config);
 
   // Resolve lib: references against the project image library
   const libSrc = useProject(s => {
@@ -999,7 +1000,7 @@ function ImageWidget({ w }: { w: Widget }) {
       src={resolved}
       alt={w.config?.label as string ?? ""}
       className="w-full h-full"
-      style={{ objectFit: fit as React.CSSProperties["objectFit"] }}
+      style={{ objectFit: fit }}
       draggable={false}
     />
   );

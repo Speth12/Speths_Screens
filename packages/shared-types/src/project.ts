@@ -30,7 +30,8 @@ export interface Project {
     pin?:     string;
     recipes?: Recipe[];
     /**
-     * Login settings. Missing means mode 'none'
+     * Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
+     * in the project
      */
     security?: Security;
     /**
@@ -39,10 +40,6 @@ export interface Project {
      */
     theme?: ThemeID;
     udts?:  Udt[];
-    /**
-     * Users who can log in when security.mode is 'login'
-     */
-    users?: User[];
     /**
      * Schema version, e.g. '0.1.0'
      */
@@ -628,7 +625,8 @@ export interface RecipeEntry {
 }
 
 /**
- * Login settings. Missing means mode 'none'
+ * Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
+ * in the project
  */
 export interface Security {
     mode: AuthMode;
@@ -661,18 +659,3 @@ export interface UDTField {
 }
 
 export type UDTFieldType = "bool" | "int" | "real" | "string";
-
-export interface User {
-    id: string;
-    /**
-     * Login name
-     */
-    name: string;
-    /**
-     * bcrypt hash ($2a$/$2b$). Never a plain-text password
-     */
-    passwordHash: string;
-    role:         UserRole;
-}
-
-export type UserRole = "admin" | "operator" | "viewer";

@@ -28,6 +28,7 @@ const (
 	ActionUserCreate    Action = "user.create"
 	ActionUserDelete    Action = "user.delete"
 	ActionUserDisable   Action = "user.disable"
+	ActionUserPassword  Action = "user.password"
 	ActionConfigChange  Action = "config.change"
 )
 

@@ -1,16 +1,20 @@
 // TagStoreClient — single WebSocket connection to /ws/tags with a per-path
 // subscriber registry. Caches the last value so re-mounts hydrate immediately.
 
+import { onTokenChange, wsURL } from "../auth";
+
 export type TagState = {
   value: unknown;
   quality: "Good" | "Bad" | "Uncertain" | "Unknown";
   ts: number;
+  /** Why the quality is not Good, when the runtime knows. */
+  reason?: string;
 };
 
 type Listener = (s: TagState) => void;
 
 type Outgoing = { subscribe?: string[]; unsubscribe?: string[] };
-type Incoming = { path: string; value: unknown; quality: TagState["quality"]; ts: number };
+type Incoming = { path: string; value: unknown; quality: TagState["quality"]; reason?: string; ts: number };
 
 const RECONNECT_MS = 1500;
 
@@ -58,12 +62,7 @@ class Client {
     if (this.connected || this.connecting) return;
     this.connecting = true;
 
-    const url =
-      (location.protocol === "https:" ? "wss://" : "ws://") +
-      location.host +
-      "/ws/tags";
-
-    const ws = new WebSocket(url);
+    const ws = new WebSocket(wsURL("/ws/tags"));
     this.ws = ws;
 
     ws.addEventListener("open", () => {
@@ -79,6 +78,7 @@ class Client {
         const state: TagState = {
           value: msg.value,
           quality: msg.quality ?? "Unknown",
+          reason: msg.reason,
           ts: msg.ts ?? Date.now() * 1e6,
         };
         this.cache.set(msg.path, state);
@@ -99,6 +99,11 @@ class Client {
     ws.addEventListener("error", reconnect);
   }
 
+  /** Reconnects, e.g. with a new login token. */
+  restart(): void {
+    this.ws?.close();
+  }
+
   private send(msg: Outgoing): void {
     if (this.connected && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
@@ -107,3 +112,4 @@ class Client {
 }
 
 export const tagStoreClient = new Client();
+onTokenChange(() => tagStoreClient.restart());

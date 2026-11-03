@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
+import { authHeader } from "../store/runtimeAuth";
 import { tagStoreClient, type TagState } from "../store/tagStoreClient";
 
 // ── Shared types ───────────────────────────────────────────────────────────
@@ -90,7 +91,7 @@ export function TagScannerModal({
   useEffect(() => {
     if (isModbus) { setLoading(false); return; }
     setLoading(true);
-    fetch(`${apiBase}/api/v1/datasources/${dsId}/tags`)
+    fetch(`${apiBase}/api/v1/datasources/${dsId}/tags`, { headers: authHeader(apiBase) })
       .then(r => r.ok ? r.json() : Promise.reject("not connected"))
       .then((data: TagDef[]) => { setTags(data ?? []); setLoading(false); })
       .catch(() => { setError("Could not fetch tags — is the runtime running and the datasource connected?"); setLoading(false); });
@@ -394,7 +395,7 @@ function SourceBrowser() {
     for (const ds of project.datasources) {
       try {
         const [tagR, stR] = await Promise.all([
-          fetch(`${apiBase}/api/v1/datasources/${ds.id}/tags`),
+          fetch(`${apiBase}/api/v1/datasources/${ds.id}/tags`, { headers: authHeader(apiBase) }),
           fetch(`${apiBase}/api/v1/datasources/${ds.id}/status`),
         ]);
         const data = tagR.ok ? await tagR.json() : null;

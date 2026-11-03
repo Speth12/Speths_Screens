@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/historian"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 func init() {
@@ -162,21 +163,4 @@ func aggregateSamples(samples []historian.Sample, from, to int64, bucketDur time
 	return out
 }
 
-func toFloat(v any) (float64, bool) {
-	switch n := v.(type) {
-	case float64:
-		return n, true
-	case float32:
-		return float64(n), true
-	case int:
-		return float64(n), true
-	case int64:
-		return float64(n), true
-	case bool:
-		if n {
-			return 1, true
-		}
-		return 0, true
-	}
-	return 0, false
-}
+func toFloat(v any) (float64, bool) { return tagstore.Number(v) }

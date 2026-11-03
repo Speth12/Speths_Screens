@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { tagStoreClient } from "../store/tagStoreClient";
 import { apiBase } from "../store/runtimeTarget";
+import { authHeader } from "../store/runtimeAuth";
 import { useProject } from "../store/projectStore";
 
 type DSStatus = { connected: boolean; lastError: string; tagCount: number };
@@ -25,7 +26,7 @@ export function StatusBar() {
       await Promise.all(
         project.datasources.map(async (ds) => {
           try {
-            const r = await fetch(`${apiBase}/api/v1/datasources/${ds.id}/status`);
+            const r = await fetch(`${apiBase}/api/v1/datasources/${ds.id}/status`, { headers: authHeader(apiBase) });
             if (r.ok) next[ds.id] = (await r.json()) as DSStatus;
           } catch { /* ignore */ }
         }),

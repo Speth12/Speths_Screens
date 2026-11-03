@@ -11,6 +11,7 @@ import (
 
 func TestWriteOverride(t *testing.T) {
 	store := tagstore.New()
+	ch := make(chan tagstore.TagUpdate, 64)
 	d := New(store)
 
 	cfg := drivers.DriverConfig{
@@ -24,13 +25,12 @@ func TestWriteOverride(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := d.Connect(ctx, cfg); err != nil {
+	if err := d.Connect(ctx, cfg, ch); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 
-	ch := make(chan tagstore.TagUpdate, 64)
-	if err := d.Subscribe(ctx, nil, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags(nil); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	// Let the driver push at least one tick.
@@ -83,4 +83,47 @@ loop:
 	}
 
 	_ = d.Disconnect()
+}
+
+// A formula reads PLC integers in every size OPC UA delivers them (an INT
+// arrives as int16); they used to count as 0.
+func TestFormulaReadsEveryIntegerType(t *testing.T) {
+	tests := []struct {
+		name  string
+		input any
+		want  float64
+	}{
+		{"INT int16", int16(21), 42},
+		{"WORD uint16", uint16(21), 42},
+		{"BYTE uint8", uint8(21), 42},
+		{"SINT int8", int8(-21), -42},
+		{"REAL float32", float32(21), 42},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			store := tagstore.New()
+			store.Update("plc:X", tagstore.TagState{Value: tc.input, Quality: "Good"})
+			ch := make(chan tagstore.TagUpdate, 64)
+			d := New(store)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			if err := d.Connect(ctx, drivers.DriverConfig{Extra: map[string]string{
+				"tags": `[{"path":"double","formula":"{plc:X} * 2"}]`,
+			}}, ch); err != nil {
+				t.Fatalf("Connect: %v", err)
+			}
+			defer d.Disconnect()
+			deadline := time.After(2 * time.Second)
+			for {
+				select {
+				case u := <-ch:
+					if u.Path == "double" && u.State.Value == tc.want {
+						return
+					}
+				case <-deadline:
+					t.Fatalf("no update with %v", tc.want)
+				}
+			}
+		})
+	}
 }

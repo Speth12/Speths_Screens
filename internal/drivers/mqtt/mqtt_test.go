@@ -83,8 +83,9 @@ func TestConnectAndSubscribe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	ch := make(chan tagstore.TagUpdate, 8)
 	d := New()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}); err != nil {
+	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}, ch); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
@@ -92,9 +93,8 @@ func TestConnectAndSubscribe(t *testing.T) {
 		t.Fatal("expected Connected=true")
 	}
 
-	ch := make(chan tagstore.TagUpdate, 8)
-	if err := d.Subscribe(ctx, []string{"x-hmi/test/+"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags([]string{"x-hmi/test/+"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	// publish a message via the same client
@@ -123,15 +123,15 @@ func TestBrowseReturnsSeenTopics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	ch := make(chan tagstore.TagUpdate, 16)
 	d := New()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}); err != nil {
+	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}, ch); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
 
-	ch := make(chan tagstore.TagUpdate, 16)
-	if err := d.Subscribe(ctx, []string{"#"}, ch); err != nil {
-		t.Fatalf("Subscribe: %v", err)
+	if err := d.SetTags([]string{"#"}); err != nil {
+		t.Fatalf("SetTags: %v", err)
 	}
 
 	for _, topic := range []string{"a/b", "x/y/z", "another"} {
@@ -169,7 +169,7 @@ func TestStatusAfterDisconnect(t *testing.T) {
 	defer cancel()
 
 	d := New()
-	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}); err != nil {
+	if err := d.Connect(ctx, drivers.DriverConfig{Endpoint: endpoint}, nil); err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
 	if err := d.Disconnect(); err != nil {
