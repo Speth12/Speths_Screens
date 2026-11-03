@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
-import { authHeader } from "../store/runtimeAuth";
+import { apiFetch, authHeader } from "../store/runtimeAuth";
 import { tagStoreClient, type TagState } from "../store/tagStoreClient";
 
 // ── Shared types ───────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ function slugify(s: string) {
 // ── Publish to namespace helper ────────────────────────────────────────────
 
 async function publishToNS(nsPath: string, driverId: string, driverAddr: string, dataType = "float") {
-  const r = await fetch(`${apiBase}/api/v1/namespace`, {
+  const r = await apiFetch(`/api/v1/namespace`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path: nsPath, driverId, driverAddr, dataType }),
@@ -115,7 +115,7 @@ export function TagScannerModal({
   const groupKeys = Object.keys(groups).sort();
 
   const toggleTag = (path: string) =>
-    setSelected(prev => { const s = new Set(prev); s.has(path) ? s.delete(path) : s.add(path); return s; });
+    setSelected(prev => { const s = new Set(prev); if (s.has(path)) s.delete(path); else s.add(path); return s; });
 
   const toggleGroup = (key: string) => {
     const paths = (groups[key] ?? []).map(t => t.Path);
@@ -134,7 +134,7 @@ export function TagScannerModal({
   };
 
   const toggleCollapse = (key: string) =>
-    setCollapsed(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+    setCollapsed(prev => { const s = new Set(prev); if (s.has(key)) s.delete(key); else s.add(key); return s; });
 
   const handlePublish = async () => {
     setPublishing(true);
@@ -388,15 +388,20 @@ function SourceBrowser() {
   const [nsMsg, setNsMsg]           = useState<{ ok: boolean; text: string } | null>(null);
   const unsubsRef = useRef<Array<() => void>>([]);
 
-  const refresh = async () => {
+  // Reload whenever the datasource list changes (added, removed, or another
+  // project opened). The counter drops a slower, older reload's result.
+  const refreshSeq = useRef(0);
+  const datasources = project.datasources;
+  const refresh = useCallback(async () => {
+    const seq = ++refreshSeq.current;
     setBusy(true);
     const nextTags: Record<string, TagDef[]> = {};
     const nextStatus: Record<string, DSStatus | null> = {};
-    for (const ds of project.datasources) {
+    for (const ds of datasources) {
       try {
         const [tagR, stR] = await Promise.all([
           fetch(`${apiBase}/api/v1/datasources/${ds.id}/tags`, { headers: authHeader(apiBase) }),
-          fetch(`${apiBase}/api/v1/datasources/${ds.id}/status`),
+          apiFetch(`/api/v1/datasources/${ds.id}/status`),
         ]);
         const data = tagR.ok ? await tagR.json() : null;
         nextTags[ds.id] = Array.isArray(data) ? data : [];
@@ -406,12 +411,13 @@ function SourceBrowser() {
         nextStatus[ds.id] = null;
       }
     }
+    if (seq !== refreshSeq.current) return;
     setByDS(nextTags);
     setStatusByDS(nextStatus);
     setBusy(false);
-  };
+  }, [datasources]);
 
-  useEffect(() => { void refresh(); /* eslint-disable-next-line */ }, [project.datasources.length]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   useEffect(() => {
     unsubsRef.current.forEach((u) => u());
@@ -621,6 +627,8 @@ function SourceBrowser() {
 
 // ── Namespace browser ──────────────────────────────────────────────────────
 
+// Not rendered anywhere yet: wire it in or delete it.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function NamespaceBrowser() {
   const { selectedWidgetId, activePageId, updateWidget } = useProject();
   const [query, setQuery] = useState("");
@@ -656,7 +664,7 @@ function NamespaceBrowser() {
 
   // Load root on mount
   useEffect(() => {
-    fetch(`${apiBase}/api/v1/namespace/tree?path=`)
+    apiFetch(`/api/v1/namespace/tree?path=`)
       .then((r) => r.ok ? r.json() : [])
       .then((nodes: NSNode[]) => {
         setRootNodes(nodes ?? []);
@@ -665,9 +673,10 @@ function NamespaceBrowser() {
         }
       })
       .catch(() => setRootNodes([]));
+    const unsubs = unsubsRef.current;
     return () => {
-      unsubsRef.current.forEach((u) => u());
-      unsubsRef.current.clear();
+      unsubs.forEach((u) => u());
+      unsubs.clear();
     };
   }, [subscribeTag]);
 
@@ -678,7 +687,7 @@ function NamespaceBrowser() {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const r = await fetch(`${apiBase}/api/v1/namespace/search?q=${encodeURIComponent(query)}`);
+        const r = await apiFetch(`/api/v1/namespace/search?q=${encodeURIComponent(query)}`);
         const data: NSNode[] = r.ok ? await r.json() : [];
         setSearchResults(data ?? []);
         for (const n of (data ?? [])) {
@@ -701,7 +710,7 @@ function NamespaceBrowser() {
     if (children[path]) return;
     setLoadingPaths((prev) => new Set(prev).add(path));
     try {
-      const r = await fetch(`${apiBase}/api/v1/namespace/tree?path=${encodeURIComponent(path)}`);
+      const r = await apiFetch(`/api/v1/namespace/tree?path=${encodeURIComponent(path)}`);
       const data: NSNode[] = r.ok ? await r.json() : [];
       setChildren((prev) => ({ ...prev, [path]: data ?? [] }));
       for (const n of (data ?? [])) {

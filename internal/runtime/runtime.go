@@ -155,6 +155,9 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		})
 	}
 	r.Alarms.SetRules(rules)
+	if r.Historian != nil {
+		r.Historian.SetRules(historianRules(p))
+	}
 
 	// Load namespace from project JSON (replaces previous tree contents).
 	// Round-trips through JSON so Tree.UnmarshalJSON keeps doing the replace.
@@ -246,6 +249,9 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		}
 	}
 	r.setDemands(projectDemand(p))
+	for _, w := range certWarnings(p) {
+		log.Printf("[SECURITY] WARNING: %s", w)
+	}
 	if p.Security == nil || p.Security.Mode != project.Login {
 		log.Printf("[SECURITY] WARNING: security.mode is not \"login\": no login is needed and everyone has full access, including writes and deploys")
 	} else if r.Security != nil && r.InitialAdminFile != "" {
@@ -470,6 +476,12 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	}
 	if c.SecurityPolicy != nil {
 		cfg.Extra["securityPolicy"] = string(*c.SecurityPolicy)
+	}
+	if c.CERTCheck != nil {
+		cfg.Extra["certCheck"] = string(*c.CERTCheck)
+	}
+	if c.CERTFingerprint != nil {
+		cfg.Extra["certFingerprint"] = *c.CERTFingerprint
 	}
 	if c.SlaveID != nil {
 		cfg.Extra["slaveId"] = fmt.Sprintf("%d", *c.SlaveID)

@@ -13,7 +13,12 @@ export interface Project {
      */
     enabledSymbolPacks?: string[];
     faceplates?:         Faceplate[];
-    images?:             ImageAsset[];
+    /**
+     * What the historian stores and for how long. Missing means every change, plus one sample
+     * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+     */
+    historian?: HistorianSettings;
+    images?:    ImageAsset[];
     /**
      * Human-readable project name
      */
@@ -121,6 +126,16 @@ export interface DatasourceConfig {
      */
     bearerToken?: string;
     /**
+     * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+     * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+     */
+    certCheck?: CERTCheck;
+    /**
+     * SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
+     * optional)
+     */
+    certFingerprint?: string;
+    /**
      * MQTT client ID
      */
     clientId?: string;
@@ -149,6 +164,15 @@ export interface DatasourceConfig {
     tags?:     string;
     username?: string;
 }
+
+/**
+ * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+ * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+ *
+ * off: accept any certificate; pinned: only the one with certFingerprint; trusted:
+ * certificates the system trusts
+ */
+export type CERTCheck = "off" | "pinned" | "trusted";
 
 export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
 
@@ -510,6 +534,42 @@ export type DynamicKind = "visibility" | "colorFill" | "blink" | "rotation" | "d
 export type DynamicTargetProp = "bgColor" | "borderColor" | "textColor" | "visible";
 
 export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table";
+
+/**
+ * What the historian stores and for how long. Missing means every change, plus one sample
+ * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
+ */
+export interface HistorianSettings {
+    /**
+     * Default deadband in each tag's own units: a number is stored when it moves more than this
+     * from the last stored value. 0 stores any change. Text and true/false values ignore it
+     */
+    deadband?: number;
+    /**
+     * Days of history kept. Overrides the runtime's --history-retention
+     */
+    retentionDays?: number;
+    /**
+     * Rules for single tags or groups; the most specific rule wins
+     */
+    tags?: HistorianTagRule[];
+}
+
+export interface HistorianTagRule {
+    /**
+     * Deadband for these tags; missing uses the default
+     */
+    deadband?: number;
+    /**
+     * Tag as datasource:path, e.g. 'plc1:Arp.Plc.Eclr/rTemp'. Ending in * matches every tag
+     * starting with the rest
+     */
+    path: string;
+    /**
+     * false leaves these tags out of the history (default true)
+     */
+    store?: boolean;
+}
 
 export interface ImageAsset {
     /**

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiBase } from "../store/runtimeTarget";
+import { apiFetch } from "../store/runtimeAuth";
 
 type Role = "operator" | "supervisor" | "engineer" | "admin";
 type User = { username: string; role: Role; enabled: boolean };
@@ -62,7 +62,7 @@ function levelOf(role: Role): LevelDef {
 // ── API helpers ────────────────────────────────────────────────────────────
 
 async function api(method: string, path: string, body?: unknown) {
-  const r = await fetch(`${apiBase}/api/v1/users${path}`, {
+  const r = await apiFetch(`/api/v1/users${path}`, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,

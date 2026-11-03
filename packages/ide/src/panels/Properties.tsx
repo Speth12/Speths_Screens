@@ -781,7 +781,7 @@ function ColorBindingEditor({ w, setConfig, cfgStr, inp, numInp, label }: {
 
 type LabelFn = (t: string) => React.ReactNode;
 
-function RangeEditor({ cfgNum, setConfig, inp, numInp, label, note }: {
+function RangeEditor({ cfgNum, setConfig, numInp, label, note }: {
   cfgNum: (k: string, def?: number) => number | undefined;
   setConfig: (k: string, v: unknown) => void;
   inp: string; numInp: string; label: LabelFn; note?: string;

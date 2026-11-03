@@ -14,7 +14,7 @@
     "dev:all": "concurrently --names 'runtime,ide,operator' --prefix-colors 'cyan,green,yellow' 'go run ./cmd/speths-screens --mode=dev --project=demo.xhmi.json' 'npm run dev --workspace=packages/ide' 'npm run dev --workspace=packages/operator'",
     "build": "npm run build --workspace=packages/ide && npm run build --workspace=packages/operator",
     "test": "npm run test --workspace=packages/ide",
-    "lint": "npm run lint --workspace=packages/ide"
+    "lint": "npm run lint --workspace=packages/ide && npm run lint --workspace=packages/operator"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

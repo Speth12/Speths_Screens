@@ -66,6 +66,7 @@ func TestResubscribeAfterBrokerRestart(t *testing.T) {
 		t.Fatalf("Connect: %v", err)
 	}
 	defer d.Disconnect()
+	waitConnected(t, d)
 	if err := d.SetTags([]string{"plant/a", "plant/+/temp"}); err != nil {
 		t.Fatal(err)
 	}

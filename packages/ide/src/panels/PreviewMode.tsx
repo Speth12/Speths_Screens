@@ -4,10 +4,12 @@ import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
 import { wsEventsUrl } from "../store/runtimeTarget";
+import type { CanvasResolution } from "@speths-screens/shared-types";
 
 const COL_W = 80;
 const ROW_H = 64;
 const GAP   = 8;
+const DYNAMIC: CanvasResolution = { type: "dynamic" };
 
 /** Convert grid position to px (same formula as Canvas.tsx) */
 function gx(col: number, span: number) {
@@ -29,7 +31,7 @@ export function PreviewMode({ onExit }: Props) {
   );
 
   const page = project.pages.find((p) => p.id === activePageId) ?? project.pages[0];
-  const resolution = project.canvasResolution ?? { type: "dynamic" };
+  const resolution = project.canvasResolution ?? DYNAMIC;
 
   // ── PIN gate ──────────────────────────────────────────────────────────────
   const [pinOk, setPinOk] = useState(!project.pin);
@@ -74,7 +76,7 @@ export function PreviewMode({ onExit }: Props) {
     };
     connect();
     return () => { closed = true; ws?.close(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Page script execution ─────────────────────────────────────────────────
   useEffect(() => {
@@ -143,7 +145,7 @@ export function PreviewMode({ onExit }: Props) {
   useEffect(() => {
     showToolbar();
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── PIN screen ────────────────────────────────────────────────────────────
   if (!pinOk) {

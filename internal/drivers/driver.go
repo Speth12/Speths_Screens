@@ -40,6 +40,9 @@ type DriverStatus struct {
 	Connected bool   `json:"connected"`
 	LastError string `json:"lastError,omitempty"`
 	TagCount  int    `json:"tagCount"`
+	// CertFingerprint is the SHA-256 of the certificate the server last
+	// presented (TLS or OPC UA), for the IDE to show and pin.
+	CertFingerprint string `json:"certFingerprint,omitempty"`
 }
 
 // ProtocolDriver is implemented by every driver instance.

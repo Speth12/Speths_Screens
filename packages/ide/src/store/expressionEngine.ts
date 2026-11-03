@@ -10,11 +10,9 @@ const BINDING_RE = /\{([^}]+)\}/g;
 function evalFormula(formula: string, values: Map<string, number>): number | null {
   let expr = formula;
   for (const [ref, val] of values) {
-    const safe = ref.replace(/[^a-zA-Z0-9_]/g, "_");
     expr = expr.replaceAll(`{${ref}}`, String(val));
   }
   try {
-    // eslint-disable-next-line no-new-func
     const result = new Function(`"use strict"; return (${expr});`)() as unknown;
     const n = typeof result === "number" ? result : parseFloat(String(result));
     return isNaN(n) ? null : n;

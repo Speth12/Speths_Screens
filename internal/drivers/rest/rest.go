@@ -51,8 +51,10 @@ const (
 // the goroutine retries with backoff until the controller answers again.
 // Disconnect stops it (stopped).
 type Driver struct {
-	mu        sync.Mutex
-	hc        *http.Client
+	mu    sync.Mutex
+	hc    *http.Client
+	certs atomic.Pointer[drivers.CertPolicy] // https certificate check
+
 	baseURL   string // e.g. https://192.168.88.10
 	host      string // e.g. 192.168.88.10, for reasons shown to operators
 	basePath  string // e.g. /_pxc_api/v1.14  (trimmed of trailing slash)
@@ -124,6 +126,12 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("rest: endpoint is required")
 	}
+	// Without a certCheck the driver skips the check, as it always did.
+	certs, err := drivers.NewCertPolicy(cfg.Extra["certCheck"], cfg.Extra["certFingerprint"], drivers.CertOff)
+	if err != nil {
+		return fmt.Errorf("rest: %w", err)
+	}
+	d.certs.Store(certs)
 	d.mu.Lock()
 	d.out = out
 	d.mu.Unlock()
@@ -145,9 +153,8 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	d.mu.Unlock()
 
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	// Always skip TLS verification — PLCs and embedded devices universally use
-	// self-signed certificates on trusted industrial networks.
-	tr.TLSClientConfig = insecureTLSConfig()
+	// A refused certificate fails the handshake, so no login or token is sent.
+	tr.TLSClientConfig = certs.TLSConfig()
 	d.hc = &http.Client{Timeout: d.httpTimeout, Transport: tr}
 
 	// Auto-detect PLCnext pxc_api mode. With a version in basePath the
@@ -843,11 +850,15 @@ func (d *Driver) genericWrite(ctx context.Context, path string, value any) error
 // ── Status ───────────────────────────────────────────────────────────────────
 
 func (d *Driver) Status() drivers.DriverStatus {
-	return drivers.DriverStatus{
+	st := drivers.DriverStatus{
 		Connected: d.state.Load() == stateOnline,
 		LastError: d.lastError(),
 		TagCount:  int(d.tagCount.Load()),
 	}
+	if c := d.certs.Load(); c != nil {
+		st.CertFingerprint = c.Seen()
+	}
+	return st
 }
 
 func (d *Driver) lastError() string {

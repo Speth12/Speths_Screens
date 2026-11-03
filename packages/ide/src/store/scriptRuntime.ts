@@ -74,7 +74,6 @@ export function runPageScript(script: string): ScriptCleanup {
   };
 
   try {
-    // eslint-disable-next-line no-new-func
     new Function(
       "api",
       `"use strict";
