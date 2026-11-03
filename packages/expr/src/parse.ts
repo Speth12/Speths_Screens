@@ -10,19 +10,21 @@ export const MAX_DEPTH = 32;
 
 export class CompileError extends Error {}
 
-type Kind = "eof" | "num" | "str" | "tag" | "name" | "punct";
+type Kind = "eof" | "num" | "str" | "tag" | "param" | "name" | "punct";
 interface Token { kind: Kind; text: string; num: number; col: number }
 
 const isDigit = (c: string) => c >= "0" && c <= "9";
 const isHex = (c: string) => isDigit(c) || (c >= "a" && c <= "f") || (c >= "A" && c <= "F");
 const isNameStart = (c: string) => c === "_" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
 const isNamePart = (c: string) => isNameStart(c) || isDigit(c);
+// isParamName reports whether s is a faceplate parameter name: letters, digits and _.
+const isParamName = (s: string) => s !== "" && Array.from(s).every(isNamePart);
 const TWO = new Set(["&&", "||", "==", "!=", "<=", ">="]);
 
 // lex splits src (one string per code point) into tokens. It fails only on
 // broken strings, tag references and numbers; any other stray character
 // becomes a punct token, so the parser reports problems in reading order.
-function lex(src: string[]): Token[] {
+function lex(src: string[], params: boolean): Token[] {
   const toks: Token[] = [];
   const tok = (kind: Kind, text: string, col: number, num = 0): Token => ({ kind, text, num, col });
   let i = 0;
@@ -62,8 +64,11 @@ function lex(src: string[]): Token[] {
       while (j < src.length && src[j] !== "}") j++;
       if (j >= src.length) throw new CompileError(`unclosed tag reference at column ${col}`);
       const ref = src.slice(i + 1, j).join("");
-      checkRef(ref, col);
-      toks.push(tok("tag", ref, col));
+      if (params && isParamName(ref)) toks.push(tok("param", ref, col));
+      else {
+        checkRef(ref, col);
+        toks.push(tok("tag", ref, col));
+      }
       i = j + 1;
     } else if (isNameStart(c)) {
       let j = i + 1;
@@ -133,19 +138,20 @@ function checkRef(ref: string, col: number) {
 function unexpected(t: Token): CompileError {
   if (t.kind === "eof") return new CompileError("unexpected end of expression");
   if (t.kind === "str") return new CompileError(`unexpected string at column ${t.col}`);
-  if (t.kind === "tag") return new CompileError(`unexpected tag {${t.text}} at column ${t.col}`);
+  if (t.kind === "tag" || t.kind === "param") return new CompileError(`unexpected tag {${t.text}} at column ${t.col}`);
   return new CompileError(`unexpected "${t.text}" at column ${t.col}`);
 }
 
 const CMP = new Set(["==", "!=", "<", "<=", ">", ">="]);
 const isCmp = (t: Token) => t.kind === "punct" && CMP.has(t.text);
 
-export interface Parsed { root: Node; refs: string[]; usesValue: boolean }
+export interface Parsed { root: Node; refs: string[]; params: string[]; usesValue: boolean }
 
 class Parser {
   private pos = 0;
   private depth = 0;
   readonly refs: string[] = [];
+  readonly params: string[] = [];
   usesValue = false;
 
   constructor(private readonly toks: Token[]) {}
@@ -245,6 +251,9 @@ class Parser {
         return new LitNode(t.num);
       case "str":
         return new LitNode(t.text);
+      case "param":
+        if (!this.params.includes(t.text)) this.params.push(t.text);
+        return new RefNode(t.text, false);
       case "tag":
         if (!this.refs.includes(t.text)) this.refs.push(t.text);
         return new RefNode(t.text, false);
@@ -255,7 +264,7 @@ class Parser {
           this.usesValue = true;
           return new RefNode("", true);
         }
-        const fn: Func | undefined = Object.hasOwn(FUNCS, t.text) ? FUNCS[t.text] : undefined;
+        const fn: Func | undefined = Object.prototype.hasOwnProperty.call(FUNCS, t.text) ? FUNCS[t.text] : undefined;
         if (!this.is("(")) {
           if (fn) throw new CompileError(`${t.text} must be called, like ${t.text}(x) at column ${t.col}`);
           throw new CompileError(`unknown name ${t.text} (tags are written {ns:path}) at column ${t.col}`);
@@ -304,14 +313,14 @@ function checkCall(name: string, fn: Func, args: Node[]): string | undefined {
   return `${name} takes ${fn.min} or ${fn.max} arguments, got ${n}`;
 }
 
-/** Parses src, throwing CompileError. */
-export function parse(src: string): Parsed {
+/** Parses src, throwing CompileError. With params, {name} is a faceplate parameter. */
+export function parse(src: string, params = false): Parsed {
   const chars = Array.from(src);
   if (chars.length > MAX_LENGTH) throw new CompileError(`expression longer than ${MAX_LENGTH} characters`);
   if (chars.every((c) => c === " " || c === "\t" || c === "\n" || c === "\r")) throw new CompileError("empty expression");
-  const p = new Parser(lex(chars));
+  const p = new Parser(lex(chars, params));
   const root = p.parseExpr();
   const t = p.peek();
   if (t.kind !== "eof") throw unexpected(t);
-  return { root, refs: p.refs, usesValue: p.usesValue };
+  return { root, refs: p.refs, params: p.params, usesValue: p.usesValue };
 }

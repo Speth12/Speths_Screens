@@ -45,17 +45,28 @@ type Expr struct {
 	Refs []string
 	// UsesValue is true when the expression reads value.
 	UsesValue bool
+	// Params lists the faceplate parameters ({name}) a template reads, in
+	// order of first use. Always empty for Compile.
+	Params []string
 }
 
 // Compile parses src. The error reads like "unexpected \")\" at column 6".
-func Compile(src string) (*Expr, error) {
+func Compile(src string) (*Expr, error) { return compile(src, false) }
+
+// CompileTemplate parses an expression inside a faceplate, where {name}
+// (a name, no colon) is one of the faceplate's parameters. The faceplate
+// fills them in with tag paths before the expression is evaluated; a
+// parameter evaluated as it is has no value.
+func CompileTemplate(src string) (*Expr, error) { return compile(src, true) }
+
+func compile(src string, params bool) (*Expr, error) {
 	if utf8.RuneCountInString(src) > MaxLength {
 		return nil, fmt.Errorf("expression longer than %d characters", MaxLength)
 	}
 	if strings.Trim(src, " \t\n\r") == "" { // the whitespace the lexer skips
 		return nil, fmt.Errorf("empty expression")
 	}
-	toks, err := lex([]rune(src))
+	toks, err := lex([]rune(src), params)
 	if err != nil {
 		return nil, err
 	}
@@ -67,11 +78,14 @@ func Compile(src string) (*Expr, error) {
 	if t := p.peek(); t.kind != tEOF {
 		return nil, unexpected(t)
 	}
-	refs := p.refs
+	refs, ps := p.refs, p.params
 	if refs == nil {
 		refs = []string{}
 	}
-	return &Expr{root: root, Refs: refs, UsesValue: p.value}, nil
+	if ps == nil {
+		ps = []string{}
+	}
+	return &Expr{root: root, Refs: refs, UsesValue: p.value, Params: ps}, nil
 }
 
 // Eval evaluates the expression. It returns the value (float64, bool or

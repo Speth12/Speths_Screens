@@ -30,6 +30,8 @@ export class Expr {
     readonly refs: readonly string[],
     /** Whether the expression reads value. */
     readonly usesValue: boolean,
+    /** The faceplate parameters ({name}) a template reads, in order of first use. */
+    readonly params: readonly string[] = [],
   ) {}
 
   eval(env: Env): Result {
@@ -38,11 +40,14 @@ export class Expr {
   }
 }
 
-/** Parses src. The error reads like `unexpected ")" at column 6`. */
-export function compile(src: string): { ok: true; expr: Expr } | { ok: false; error: string } {
+/** Parses src. The error reads like `unexpected ")" at column 6`. With
+ *  template, the expression is inside a faceplate and {name} (a name, no
+ *  colon) is one of its parameters, which the faceplate fills in with tag
+ *  paths before evaluating; evaluated as it is, a parameter has no value. */
+export function compile(src: string, opts: { template?: boolean } = {}): { ok: true; expr: Expr } | { ok: false; error: string } {
   try {
-    const p = parse(src);
-    return { ok: true, expr: new Expr(p.root, p.refs, p.usesValue) };
+    const p = parse(src, opts.template ?? false);
+    return { ok: true, expr: new Expr(p.root, p.refs, p.usesValue, p.params) };
   } catch (err) {
     if (err instanceof CompileError) return { ok: false, error: err.message };
     throw err;

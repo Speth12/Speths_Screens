@@ -17,6 +17,9 @@ interface GoldenCase {
   usesValue?: boolean;
   /** Compare to 12 significant digits (sin, cos, log, pow can differ from Go in the last digit). */
   near?: boolean;
+  /** Compile as a faceplate template. */
+  template?: boolean;
+  params?: string[];
 }
 
 const dir = resolve(__dirname, "../../../testdata/expr");
@@ -39,7 +42,7 @@ describe("golden cases", () => {
     describe(file, () => {
       for (const c of cases) {
         it(c.expr, () => {
-          const compiled = compile(c.expr);
+          const compiled = compile(c.expr, { template: c.template });
           if (c.error !== undefined) {
             expect(compiled).toEqual({ ok: false, error: c.error });
             return;
@@ -47,6 +50,7 @@ describe("golden cases", () => {
           if (!compiled.ok) throw new Error(`compile: ${compiled.error}`);
           const e = compiled.expr;
           if (c.refs) expect(e.refs).toEqual(c.refs);
+          if (c.params) expect(e.params).toEqual(c.params);
           expect(e.usesValue).toBe(c.usesValue ?? false);
           const env: Env = {
             tag: (ref) => (c.tags && Object.hasOwn(c.tags, ref) ? input(c.tags[ref]) : undefined),

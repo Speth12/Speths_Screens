@@ -3,6 +3,7 @@ package expr
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -20,6 +21,7 @@ const (
 	tNum
 	tStr
 	tTag
+	tParam // a faceplate parameter, {name}, in a template
 	tName
 	tPunct // operators, brackets and any character the language does not use
 )
@@ -34,7 +36,7 @@ type token struct {
 // lex splits src into tokens. It fails only on broken strings, tag
 // references and numbers; any other stray character becomes a tPunct
 // token, so the parser reports problems in reading order.
-func lex(src []rune) ([]token, error) {
+func lex(src []rune, params bool) ([]token, error) {
 	var toks []token
 	i := 0
 	for i < len(src) {
@@ -91,6 +93,11 @@ func lex(src []rune) ([]token, error) {
 				return nil, fmt.Errorf("unclosed tag reference at column %d", col)
 			}
 			ref := string(src[i+1 : j])
+			if params && isParamName(ref) {
+				toks = append(toks, token{kind: tParam, text: ref, col: col})
+				i = j + 1
+				continue
+			}
 			if err := checkRef(ref, col); err != nil {
 				return nil, err
 			}
@@ -176,6 +183,12 @@ func checkRef(ref string, col int) error {
 	return nil
 }
 
+// isParamName reports whether s is a faceplate parameter name: letters,
+// digits and _.
+func isParamName(s string) bool {
+	return s != "" && strings.IndexFunc(s, func(r rune) bool { return !isNamePart(r) }) < 0
+}
+
 func isDigit(c rune) bool     { return c >= '0' && c <= '9' }
 func isHex(c rune) bool       { return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') }
 func isNameStart(c rune) bool { return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') }
@@ -184,12 +197,13 @@ func isNamePart(c rune) bool  { return isNameStart(c) || isDigit(c) }
 // ── parser ──────────────────────────────────────────────────────────────────
 
 type parser struct {
-	toks  []token
-	pos   int
-	depth int
-	refs  []string
-	seen  map[string]bool
-	value bool // the expression reads `value`
+	toks   []token
+	pos    int
+	depth  int
+	refs   []string
+	seen   map[string]bool
+	value  bool // the expression reads `value`
+	params []string
 }
 
 func (p *parser) peek() token { return p.toks[p.pos] }
@@ -214,7 +228,7 @@ func unexpected(t token) error {
 	switch t.kind {
 	case tStr:
 		return fmt.Errorf("unexpected string at column %d", t.col)
-	case tTag:
+	case tTag, tParam:
 		return fmt.Errorf("unexpected tag {%s} at column %d", t.text, t.col)
 	}
 	return fmt.Errorf("unexpected \"%s\" at column %d", t.text, t.col)
@@ -355,6 +369,11 @@ func (p *parser) parsePrimary() (node, error) {
 		if !p.seen[t.text] {
 			p.seen[t.text] = true
 			p.refs = append(p.refs, t.text)
+		}
+		return &refNode{key: t.text}, nil
+	case tParam:
+		if !slices.Contains(p.params, t.text) {
+			p.params = append(p.params, t.text)
 		}
 		return &refNode{key: t.text}, nil
 	case tName:

@@ -24,7 +24,9 @@ type goldenCase struct {
 	Error     string                     `json:"error"`
 	Refs      *[]string                  `json:"refs"`
 	UsesValue bool                       `json:"usesValue"`
-	Near      bool                       `json:"near"` // compare to 12 significant digits (sin, cos, log, pow)
+	Near      bool                       `json:"near"`     // compare to 12 significant digits (sin, cos, log, pow)
+	Template  bool                       `json:"template"` // compile with CompileTemplate
+	Params    *[]string                  `json:"params"`
 }
 
 func input(t *testing.T, raw json.RawMessage) Input {
@@ -59,7 +61,11 @@ func TestGolden(t *testing.T) {
 		}
 		for _, c := range cases {
 			t.Run(filepath.Base(f)+"/"+c.Expr, func(t *testing.T) {
-				e, err := Compile(c.Expr)
+				compile := Compile
+				if c.Template {
+					compile = CompileTemplate
+				}
+				e, err := compile(c.Expr)
 				if c.Error != "" {
 					if err == nil || err.Error() != c.Error {
 						t.Fatalf("Compile error = %v, want %q", err, c.Error)
@@ -71,6 +77,9 @@ func TestGolden(t *testing.T) {
 				}
 				if c.Refs != nil && !reflect.DeepEqual(e.Refs, *c.Refs) {
 					t.Errorf("Refs = %q, want %q", e.Refs, *c.Refs)
+				}
+				if c.Params != nil && !reflect.DeepEqual(e.Params, *c.Params) {
+					t.Errorf("Params = %q, want %q", e.Params, *c.Params)
 				}
 				if e.UsesValue != c.UsesValue {
 					t.Errorf("UsesValue = %v, want %v", e.UsesValue, c.UsesValue)
