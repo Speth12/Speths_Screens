@@ -10,3 +10,4 @@ export * from "./symbols";
 export type { Field, FieldKind, WidgetManifest, BindingSlot, WidgetEvent } from "./manifest";
 export { MANIFESTS, FRAME_SETTINGS, DEFAULT_STATES, manifestFor, type SettingsGroup } from "./manifests";
 export { BUILTIN_PRESETS } from "./presets";
+export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
