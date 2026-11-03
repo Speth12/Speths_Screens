@@ -52,7 +52,7 @@ Dan is the only developer and owns the code.
 | `internal/drivers/*` | One package per driver; interface in `internal/drivers/driver.go` |
 | `internal/api` | HTTP routes (`server.go`, `routes.go`) and WebSockets (`ws.go`) |
 | `internal/historian`, `alarms`, `alarmstore`, `audit`, `security`, `recipestore`, `versionstore`, `namespace`, `faceplate`, `assets`, `mcp` | Platform services |
-| `internal/expr` | Unused. Delete in Phase 3 when the shared expression engine lands |
+| `internal/expr`, `packages/expr` | The expression language (Phase 3), in Go and TypeScript, held to the golden cases in `testdata/expr`. Change both and the cases together |
 | `packages/ide`, `packages/operator` | The two browser apps. Each provides a widget host (`ide/src/widgets/index.tsx`, `operator/src/widgetHost.ts`) |
 | `packages/widgets` | The one widget library both apps draw from (Phase 2); widgets reach tags, writes, navigation and the API only through the `WidgetHost` |
 | `schema.json` | The project contract |
