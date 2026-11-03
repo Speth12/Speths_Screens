@@ -5,9 +5,14 @@
 // Usage (scripts/soak/run-soak.ps1 starts the runtime and calls this):
 //   node scripts/soak/soak.mjs --runtime=http://127.0.0.1:3095 --plc=10.0.0.210
 //        --hours=24 --out=<dir> [--pid=<runtime pid>] [--write-every=60]
+//        --opcua-fingerprint=<hex> --rest-fingerprint=<hex>
 //
 // It deploys a soak project (no credentials: OPC UA anonymous, REST without
-// login), subscribes to every tag over /ws/tags and to /ws/alarms, writes
+// login). OPC UA uses SignAndEncrypt / Basic256Sha256, and both datasources
+// pin the controller's certificates (certCheck pinned). Without both
+// fingerprints it connects once, prints the ones the controller presents
+// and stops without writing. It subscribes to every tag over /ws/tags and
+// to /ws/alarms, writes
 // the PLC test variables (iOPC_/rOPC_/sOPC_Write, iREST_/rREST_/sREST_Write)
 // on a timer and restores their starting values at the end. When a
 // datasource's tags go Bad (an outage), it writes one of that datasource's
@@ -29,6 +34,7 @@ const hours = Number(args.hours ?? 24);
 const out = args.out ?? `soak-${Date.now()}`;
 const pid = args.pid ? Number(args.pid) : null;
 const writeEvery = Number(args["write-every"] ?? 60) * 1000;
+const pins = { opcua: args["opcua-fingerprint"] ?? "", rest: args["rest-fingerprint"] ?? "" };
 const GAP_MS = 15_000; // a polled tag reports every 0.5–1 s; 15 s of silence while online is a freeze
 const OUTAGE_WRITE_MS = 1000; // an offline driver refuses writes at once (defect 5)
 mkdirSync(out, { recursive: true });
@@ -66,8 +72,13 @@ const project = {
   version: "0.1.0",
   name: "Phase 1 soak",
   datasources: [
-    { id: "opcua", label: "PLC OPC UA", type: "opcua", config: { endpoint: `opc.tcp://${plc}:4840`, securityMode: "None" } },
-    { id: "rest", label: "PLC REST", type: "rest", config: { endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14" } },
+    { id: "opcua", label: "PLC OPC UA", type: "opcua", config: {
+      endpoint: `opc.tcp://${plc}:4840`, securityMode: "SignAndEncrypt", securityPolicy: "Basic256Sha256",
+      certCheck: "pinned", certFingerprint: pins.opcua,
+    } },
+    { id: "rest", label: "PLC REST", type: "rest", config: {
+      endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14", certCheck: "pinned", certFingerprint: pins.rest,
+    } },
   ],
   pages: [{
     id: "soak", name: "Soak", widgets: [
@@ -85,6 +96,7 @@ const tags = Object.fromEntries(allTags.map((p) => [p, { updates: 0, last: 0, qu
 const ds = {};
 const stats = {
   started: now(), plc, hours,
+  security: { opcua: "SignAndEncrypt / Basic256Sha256, pinned", rest: "pinned", pins },
   writes: { sent: 0, confirmed: 0, failedWithReason: 0, notConfirmed: 0, other: 0, maxMs: 0, totalMs: 0 },
   // One write per datasource outage. failedAtOnce is the expected result;
   // confirmed means the datasource was back before the write arrived.
@@ -290,7 +302,24 @@ for (let i = 0; ; i++) {
 }
 const dep = await api("POST", "/api/v1/project", project);
 if (dep.code !== 200) { console.error("deploy failed", dep); process.exit(2); }
-log("start", { plc, hours, writeEverySec: writeEvery / 1000, out });
+
+// Without both pins, show the certificates the controller presents (the
+// drivers record them before refusing them) and stop; nothing is written.
+if (!pins.opcua || !pins.rest) {
+  const seen = {};
+  for (const deadline = Date.now() + 30_000; Date.now() < deadline && !(seen.opcua && seen.rest); await sleep(1000)) {
+    for (const id of ["opcua", "rest"]) {
+      const r = await api("GET", `/api/v1/datasources/${id}/status`).catch(() => null);
+      if (r?.json?.certFingerprint) seen[id] = r.json.certFingerprint;
+    }
+  }
+  log("fingerprints", { seen });
+  console.log(`\nNo writes were made. Check these against the controller, then run again with:\n` +
+    `  -OpcuaFingerprint ${seen.opcua ?? "(none seen: is OPC UA reachable?)"}\n` +
+    `  -RestFingerprint ${seen.rest ?? "(none seen: is HTTPS reachable?)"}`);
+  process.exit(2);
+}
+log("start", { plc, hours, writeEverySec: writeEvery / 1000, out, security: stats.security });
 
 // Wait until both datasources are online and every test variable reads
 // Good: its starting value must be known before anything is written, or it
