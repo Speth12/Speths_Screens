@@ -496,7 +496,10 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 		cfg.Extra["bearerToken"] = *c.BearerToken
 	}
 	if c.Tags != nil {
-		cfg.Extra["tags"] = *c.Tags
+		// The virtual driver reads its tag list as JSON, like every Extra setting.
+		if b, err := json.Marshal(c.Tags); err == nil {
+			cfg.Extra["tags"] = string(b)
+		}
 	}
 	return cfg
 }

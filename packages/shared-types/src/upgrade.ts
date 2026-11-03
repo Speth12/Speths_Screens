@@ -2,9 +2,10 @@
 // upgrader (internal/project/upgrade.go) does the same; both are held to the
 // golden files in testdata/upgrade.
 import schema from "../../../schema.json";
+import { v2ToV3 } from "./upgradeV3";
 
 /** The project format this build writes. A file without schemaVersion is 1. */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 type Obj = Record<string, unknown>;
 
@@ -35,7 +36,8 @@ export function upgradeProject(input: unknown): UpgradeResult {
 
   const doc = structuredClone(input);
   const notes: string[] = [];
-  v1ToV2(doc, notes);
+  if (version < 2) v1ToV2(doc, notes);
+  v2ToV3(doc, notes);
   doc.schemaVersion = CURRENT_SCHEMA_VERSION;
   return { project: doc, notes };
 }

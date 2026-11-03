@@ -18,5 +18,8 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "eslint": "9.39.5"
+  },
+  "dependencies": {
+    "@speths-screens/expr": "*"
   }
 }

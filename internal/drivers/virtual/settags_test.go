@@ -36,7 +36,7 @@ func TestRepeatedSetTagsDoesNotAddLoops(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			d := New(tagstore.New())
-			cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","formula":"1"}]`}}
+			cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","expr":"1"}]`}}
 			ch := make(chan tagstore.TagUpdate, 1024)
 			if err := d.Connect(context.Background(), cfg, ch); err != nil {
 				t.Fatalf("Connect: %v", err)
@@ -64,7 +64,7 @@ func TestRepeatedSetTagsDoesNotAddLoops(t *testing.T) {
 
 func TestDisconnectStopsEvaluation(t *testing.T) {
 	d := New(tagstore.New())
-	cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","formula":"1"}]`}}
+	cfg := drivers.DriverConfig{Extra: map[string]string{"tags": `[{"path":"x","expr":"1"}]`}}
 	ch := make(chan tagstore.TagUpdate, 1024)
 	if err := d.Connect(context.Background(), cfg, ch); err != nil {
 		t.Fatalf("Connect: %v", err)

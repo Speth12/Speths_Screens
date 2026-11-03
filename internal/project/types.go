@@ -105,9 +105,18 @@ type DatasourceConfig struct {
 	SecurityPolicy *SecurityPolicy `json:"securityPolicy,omitempty"`
 	// Modbus slave/unit ID
 	SlaveID *int64 `json:"slaveId,omitempty"`
-	// Virtual driver: JSON-encoded [{path,formula}...] array
-	Tags     *string `json:"tags,omitempty"`
-	Username *string `json:"username,omitempty"`
+	// Virtual driver: the calculated tags
+	Tags     []CalculatedTag `json:"tags,omitempty"`
+	Username *string         `json:"username,omitempty"`
+}
+
+// A tag the virtual driver computes. Other expressions read it as {datasource:path}
+type CalculatedTag struct {
+	// Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
+	// input makes the tag Bad
+	Expr string `json:"expr"`
+	// The tag's name in this datasource
+	Path string `json:"path"`
 }
 
 type FaceplateElement struct {

@@ -17,8 +17,8 @@ func TestWriteOverride(t *testing.T) {
 	cfg := drivers.DriverConfig{
 		Extra: map[string]string{
 			"tags": `[
-				{"path":"phase","formula":"({sim:phase} + 0.01) % 6.283"},
-				{"path":"pressure","formula":"50 + sin({sim:phase}) * 15"}
+				{"path":"phase","expr":"({sim:phase} + 0.01) % 6.283"},
+				{"path":"pressure","expr":"50 + sin({sim:phase}) * 15"}
 			]`,
 		},
 	}
@@ -108,7 +108,7 @@ func TestFormulaReadsEveryIntegerType(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			if err := d.Connect(ctx, drivers.DriverConfig{Extra: map[string]string{
-				"tags": `[{"path":"double","formula":"{plc:X} * 2"}]`,
+				"tags": `[{"path":"double","expr":"{plc:X} * 2"}]`,
 			}}, ch); err != nil {
 				t.Fatalf("Connect: %v", err)
 			}

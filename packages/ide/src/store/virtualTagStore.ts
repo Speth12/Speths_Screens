@@ -21,8 +21,8 @@ class VirtualTagStore {
 
   get(path: string): TagState | undefined { return this.values.get(path); }
 
-  set(path: string, value: unknown): void {
-    const state: TagState = { value, quality: "Good", ts: Date.now() * 1e6 };
+  set(path: string, value: unknown, quality: TagState["quality"] = "Good", reason?: string): void {
+    const state: TagState = { value, quality, ts: Date.now() * 1e6, ...(reason ? { reason } : {}) };
     this.values.set(path, state);
     this.listeners.get(path)?.forEach((fn) => fn(state));
   }

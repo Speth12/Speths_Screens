@@ -8,8 +8,8 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "minimum": 2,
-      "maximum": 2,
+      "minimum": 3,
+      "maximum": 3,
       "description": "Project file format. A file without it is format 1 and is upgraded when opened"
     },
     "version": {
@@ -148,7 +148,7 @@
         "bearerToken":   { "type": "string", "description": "REST bearer token" },
         "certCheck":     { "$ref": "#/$defs/CertCheck", "description": "How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security). Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off" },
         "certFingerprint": { "type": "string", "description": "SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons optional)" },
-        "tags":          { "type": "string", "description": "Virtual driver: JSON-encoded [{path,formula}...] array" }
+        "tags":          { "type": "array", "items": { "$ref": "#/$defs/CalculatedTag" }, "description": "Virtual driver: the calculated tags" }
       }
     },
     "CertCheck": {
@@ -156,6 +156,17 @@
       "type": "string",
       "enum": ["off", "pinned", "trusted"],
       "description": "off: accept any certificate; pinned: only the one with certFingerprint; trusted: certificates the system trusts"
+    },
+    "CalculatedTag": {
+      "title": "CalculatedTag",
+      "type": "object",
+      "required": ["path", "expr"],
+      "additionalProperties": false,
+      "description": "A tag the virtual driver computes. Other expressions read it as {datasource:path}",
+      "properties": {
+        "path": { "type": "string", "description": "The tag's name in this datasource" },
+        "expr": { "type": "string", "description": "Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing input makes the tag Bad" }
+      }
     },
     "SecurityMode": {
       "title": "SecurityMode",

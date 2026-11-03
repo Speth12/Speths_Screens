@@ -58,7 +58,52 @@
   "datasources": [
     {
       "config": {
-        "tags": "[{\"path\":\"pressure\",\"formula\":\"50 + sin({sim:phase}) * 18\"},{\"path\":\"temperature\",\"formula\":\"65 + cos({sim:phase}) * 10\"},{\"path\":\"flow\",\"formula\":\"clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)\"},{\"path\":\"level\",\"formula\":\"clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)\"},{\"path\":\"phase\",\"formula\":\"({sim:phase} + 0.012) % 6.283\"},{\"path\":\"pump1_running\",\"formula\":\"clamp(sign(sin({sim:phase}) + 0.3), 0, 1)\"},{\"path\":\"pump2_running\",\"formula\":\"clamp(sign(cos({sim:phase})), 0, 1)\"},{\"path\":\"fault_active\",\"formula\":\"clamp(sign({sim:pressure} - 64), 0, 1)\"},{\"path\":\"pressure_psi\",\"formula\":\"{sim:pressure} * 14.504\"},{\"path\":\"temp_f\",\"formula\":\"{sim:temperature} * 9/5 + 32\"},{\"path\":\"efficiency\",\"formula\":\"clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)\"}]"
+        "tags": [
+          {
+            "expr": "50 + sin({sim:phase}) * 18",
+            "path": "pressure"
+          },
+          {
+            "expr": "65 + cos({sim:phase}) * 10",
+            "path": "temperature"
+          },
+          {
+            "expr": "clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)",
+            "path": "flow"
+          },
+          {
+            "expr": "clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)",
+            "path": "level"
+          },
+          {
+            "expr": "((good({sim:phase}) ? {sim:phase} : 0) + 0.012) % 6.283",
+            "path": "phase"
+          },
+          {
+            "expr": "clamp(sign(sin({sim:phase}) + 0.3), 0, 1)",
+            "path": "pump1_running"
+          },
+          {
+            "expr": "clamp(sign(cos({sim:phase})), 0, 1)",
+            "path": "pump2_running"
+          },
+          {
+            "expr": "clamp(sign({sim:pressure} - 64), 0, 1)",
+            "path": "fault_active"
+          },
+          {
+            "expr": "{sim:pressure} * 14.504",
+            "path": "pressure_psi"
+          },
+          {
+            "expr": "{sim:temperature} * 9/5 + 32",
+            "path": "temp_f"
+          },
+          {
+            "expr": "clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)",
+            "path": "efficiency"
+          }
+        ]
       },
       "id": "sim",
       "label": "Simulation",
@@ -1688,6 +1733,6 @@
       "name": "Maintenance Mode"
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "version": "0.1.0"
 }

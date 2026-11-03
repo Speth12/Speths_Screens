@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
+import { compile } from "@speths-screens/expr";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -266,29 +267,15 @@ rt.Namespace.PublishDriverTag(
 }
 
 function ExprSection({ feature }: { feature: FeatureMeta }) {
-  const [expr, setExpr] = useState("Average(10, 20, 30) * 1.8 + 32");
-  const [result, setResult] = useState<string | null>(null);
+  const [expr, setExpr] = useState("avg(10, 20, 30) * 1.8 + 32");
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   const evaluate = useCallback(() => {
-    try {
-      const builtins: Record<string, (...a: number[]) => number> = {
-        Average: (...a) => a.reduce((s, v) => s + v, 0) / a.length,
-        Avg:     (...a) => a.reduce((s, v) => s + v, 0) / a.length,
-        Min:     (...a) => Math.min(...a),
-        Max:     (...a) => Math.max(...a),
-        Sum:     (...a) => a.reduce((s, v) => s + v, 0),
-        Abs:     (v) => Math.abs(v),
-        Round:   (v) => Math.round(v),
-        Sqrt:    (v) => Math.sqrt(v),
-        Clamp:   (v, lo, hi) => Math.max(lo, Math.min(hi, v)),
-        If:      (c, t, f) => (c ? t : f),
-      };
-      const replaced = expr.replace(/\{[^}]+\}/g, "42");
-      // eslint-disable-next-line no-new-func -- removed in Phase 3 step 2 (calculated tags)
-      const fn = new Function(...Object.keys(builtins), `return (${replaced})`);
-      const r = fn(...Object.values(builtins));
-      setResult(String(Math.round(r * 1000) / 1000));
-    } catch { setResult("parse error"); }
+    const c = compile(expr);
+    if (!c.ok) { setResult({ ok: false, text: c.error }); return; }
+    // Every tag reads 42 in this demo.
+    const r = c.expr.eval({ tag: () => ({ value: 42, quality: "Good" }), value: () => ({ value: 42, quality: "Good" }) });
+    setResult(r.ok ? { ok: true, text: String(r.value) } : { ok: false, text: `unknown: ${r.reason}` });
   }, [expr]);
 
   useEffect(() => { evaluate(); }, [evaluate]);
@@ -296,12 +283,12 @@ function ExprSection({ feature }: { feature: FeatureMeta }) {
   return (
     <SectionCard feature={feature}>
       <Explain>
-        A recursive-descent parser evaluates infix expressions at runtime. Dependency tracking uses a
-        dry-run pass — the engine records which tag paths are accessed, then re-evaluates whenever any
-        dependency fires a change event. Circular dependencies are detected via DFS before registration.
+        One expression language for calculated tags, in the runtime (Go) and the IDE (TypeScript), with
+        the same results for the same expression. An expression is parsed once and evaluated again
+        whenever a tag it reads changes; a Bad input makes the result Bad, with the reason.
       </Explain>
       <div className="flex flex-wrap mt-1">
-        {["Average","Min","Max","Sum","If","Clamp","Abs","Round","Sqrt"].map(f =>
+        {["avg","min","max","sum","clamp","abs","round","sqrt","map","bit","format","good"].map(f =>
           <Pill key={f} label={f + "(…)"} color={feature.accentColor} />
         )}
       </div>
@@ -318,8 +305,8 @@ function ExprSection({ feature }: { feature: FeatureMeta }) {
           />
           <span className="text-xs text-zinc-500">=</span>
           <span className="text-sm font-mono font-bold min-w-[60px]"
-            style={{ color: result === "parse error" ? "#ef4444" : "#34d399" }}>
-            {result ?? "…"}
+            style={{ color: result && !result.ok ? "#ef4444" : "#34d399" }}>
+            {result?.text ?? "…"}
           </span>
         </div>
         <p className="text-[10px] text-zinc-600 mt-1.5">

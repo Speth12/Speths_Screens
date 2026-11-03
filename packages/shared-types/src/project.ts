@@ -168,9 +168,9 @@ export interface DatasourceConfig {
      */
     slaveId?: number;
     /**
-     * Virtual driver: JSON-encoded [{path,formula}...] array
+     * Virtual driver: the calculated tags
      */
-    tags?:     string;
+    tags?:     CalculatedTag[];
     username?: string;
 }
 
@@ -186,6 +186,21 @@ export type CERTCheck = "off" | "pinned" | "trusted";
 export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
 
 export type SecurityPolicy = "None" | "Basic128Rsa15" | "Basic256" | "Basic256Sha256";
+
+/**
+ * A tag the virtual driver computes. Other expressions read it as {datasource:path}
+ */
+export interface CalculatedTag {
+    /**
+     * Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
+     * input makes the tag Bad
+     */
+    expr: string;
+    /**
+     * The tag's name in this datasource
+     */
+    path: string;
+}
 
 export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual";
 

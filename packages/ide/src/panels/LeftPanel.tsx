@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
-import type { CERTCheck } from "@speths-screens/shared-types";
+import type { CalculatedTag, CERTCheck } from "@speths-screens/shared-types";
+import { compile } from "@speths-screens/expr";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
@@ -1049,8 +1050,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [mqttPort, setMqttPort]             = useState(1883);
   const [basePath, setBasePath]             = useState("/_pxc_api/v1.14");
   const [bearerToken, setBearerToken]       = useState("");
-  const [virtualRows, setVirtualRows]       = useState<{ path: string; formula: string }[]>([
-    { path: "tagA", formula: "{rest:tagPath} * 1.0" },
+  const [virtualRows, setVirtualRows]       = useState<CalculatedTag[]>([
+    { path: "tagA", expr: "{rest:tagPath} * 1.0" },
   ]);
   const [username, setUsername]             = useState("");
   const [password, setPassword]             = useState("");
@@ -1077,7 +1078,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
     } else if (type === "mqtt") {
       config.host = ip; config.port = mqttPort || 1883;
     } else if (type === "virtual") {
-      config.tags = JSON.stringify(virtualRows.filter((r) => r.path.trim()));
+      config.tags = virtualRows.filter((r) => r.path.trim());
     } else {
       config.endpoint = `https://${ip}`;
       config.basePath = basePath;
@@ -1179,17 +1180,23 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-zinc-300">Computed Tags</span>
-              <button onClick={() => setVirtualRows((r) => [...r, { path: "", formula: "" }])} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add tag</button>
+              <button onClick={() => setVirtualRows((r) => [...r, { path: "", expr: "" }])} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add tag</button>
             </div>
             <div className="space-y-1.5 max-h-44 overflow-y-auto">
-              {virtualRows.map((row, i) => (
-                <div key={i} className="flex gap-1.5 items-center">
+              {virtualRows.map((row, i) => {
+                const check = row.expr.trim() ? compile(row.expr) : undefined;
+                return (
+                <div key={i}>
+                <div className="flex gap-1.5 items-center">
                   <input value={row.path} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, path: e.target.value } : r))} placeholder="tagName" className="w-24 shrink-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
                   <span className="text-zinc-600 text-[10px] shrink-0">=</span>
-                  <input value={row.formula} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, formula: e.target.value } : r))} placeholder="{ds:path} * 9/5 + 32" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
+                  <input value={row.expr} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, expr: e.target.value } : r))} placeholder="{ds:path} * 9/5 + 32" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
                   <button onClick={() => setVirtualRows((rows) => rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
                 </div>
-              ))}
+                {check && !check.ok && <div className="text-[10px] text-red-400 pl-[6.5rem] mt-0.5">{check.error}</div>}
+                </div>
+                );
+              })}
             </div>
           </div>
         )}

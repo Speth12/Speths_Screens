@@ -1,0 +1,28 @@
+{
+  "datasources": [
+    {
+      "config": {
+        "tags": "[{\"path\":\"tempF\",\"formula\":\"{opcua:Temp} * 9/5 + 32\"},{\"path\":\"absFlow\",\"formula\":\"Math.abs({mb:Flow}) + Math.max(1, 2)\"},{\"path\":\"label\",\"formula\":\"{mb:Flow}.toFixed(1) + ' m3/h'\"},{\"path\":\"isRun\",\"formula\":\"{mb:State} === 1\"},{\"path\":\"phase\",\"formula\":\"({sim:phase} + 0.012) % 6.283\"},{\"path\":\"pick\",\"formula\":\"if({mb:State}, 1, 0)\"},{\"path\":\"scaled\",\"formula\":\"clamp(map({mb:AI0}, 0, 4095, 0, 100), 0, 100)\"}]"
+      },
+      "id": "sim",
+      "label": "Simulation",
+      "type": "virtual"
+    },
+    {
+      "config": { "tags": "[{\"path\":\"x\"" },
+      "id": "broken",
+      "label": "Broken",
+      "type": "virtual"
+    },
+    {
+      "config": { "endpoint": "opc.tcp://10.0.0.210:4840", "securityMode": "None" },
+      "id": "opcua",
+      "label": "PLC",
+      "type": "opcua"
+    }
+  ],
+  "name": "Calculated tags",
+  "pages": [{ "id": "p1", "name": "Main", "widgets": [] }],
+  "schemaVersion": 2,
+  "version": "1.0.0"
+}

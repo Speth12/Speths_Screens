@@ -94,7 +94,7 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			name: "calculated tag input",
 			p: project.Project{Datasources: []project.Datasource{{
 				ID: "calc", Type: project.DatasourceTypeVirtual,
-				Config: project.DatasourceConfig{Tags: strp(`[{"path":"f","formula":"{plc:IN} * 9/5 + 32"}]`)},
+				Config: project.DatasourceConfig{Tags: []project.CalculatedTag{{Path: "f", Expr: "{plc:IN} * 9/5 + 32"}}},
 			}}},
 			source: SourceCalculated, want: "plc:IN",
 		},

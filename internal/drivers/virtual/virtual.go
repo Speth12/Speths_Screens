@@ -1,23 +1,21 @@
 // Package virtual implements a computed-tag datasource.
 //
-// Each virtual tag has a path (name) and a formula string.
-// Formula syntax:
+// Each calculated tag has a path (name) and an expression in the Speth's
+// Screens expression language (internal/expr), for example
 //
-//	{dsId:tagPath}           → current live value of a tag from another datasource
-//	Arithmetic operators     → +  -  *  /  %
-//	Math functions           → abs(), floor(), ceil(), round(), sqrt(), min(), max(), clamp(), pow()
-//	Parentheses and literals → (expr), 3.14
-//
-// Example formula: "{opcua:Temp} * 9/5 + 32"
-// Example formula: "clamp({mb:AI0} / 4095 * 100, 0, 100)"
+//	{opcua:Temp} * 9/5 + 32
+//	clamp(map({mb:AI0}, 0, 4095, 0, 100), 0, 100)
 //
 // Configuration (in the project datasource config):
 //
-//	cfg.Extra["tags"] = JSON array of {path,formula} objects
+//	cfg.Extra["tags"] = JSON array of {path, expr} objects
 //
-// Connect() parses the tag list, then subscribes to all referenced upstream
-// tags via the tagstore. When any upstream tag changes the affected formulae
-// are re-evaluated and pushed to the output channel.
+// Connect() compiles the tag list, then watches every referenced upstream
+// tag in the tagstore. When any of them changes, every expression is
+// evaluated again and the results are pushed to the output channel. A tag
+// whose expression needs a Bad or missing input, or does not compile, is
+// Bad with the reason and keeps its last value. A tag that reads itself
+// must say how it starts: (good({sim:x}) ? {sim:x} : 0) + 1.
 package virtual
 
 import (
@@ -25,30 +23,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Speth12/Speths_Screens/internal/drivers"
+	"github.com/Speth12/Speths_Screens/internal/expr"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
 
 const driverID = "virtual"
 
-// TagSpec describes one computed tag.
+// TagSpec describes one computed tag, as the project's CalculatedTag.
 type TagSpec struct {
-	Path    string `json:"path"`
-	Formula string `json:"formula"`
+	Path string `json:"path"`
+	Expr string `json:"expr"`
+}
+
+// calcTag is a TagSpec with its compiled expression (nil when it does not
+// compile; err says why) and its last good value.
+type calcTag struct {
+	TagSpec
+	expr *expr.Expr
+	err  error
+	last any
 }
 
 // Driver implements drivers.ProtocolDriver.
 type Driver struct {
 	mu        sync.RWMutex
-	specs     []TagSpec
-	vals      map[string]float64 // current upstream tag values keyed by "ds:path"
-	overrides map[string]float64 // manually written values that suppress formula evaluation
-	store     *tagstore.TagStore // upstream tagstore for live reads
+	specs     []*calcTag
+	vals      map[string]tagstore.TagState // current upstream tag states keyed by "ds:path"
+	overrides map[string]float64           // manually written values that suppress formula evaluation
+	store     *tagstore.TagStore           // upstream tagstore for live reads
 	outCh     chan<- tagstore.TagUpdate
 	stopCh    chan struct{}
 	wg        sync.WaitGroup
@@ -65,28 +73,41 @@ func New(store *tagstore.TagStore) *Driver {
 
 func (d *Driver) ID() string { return driverID }
 
-// Connect parses the tag list and subscribes to upstream tag changes.
+// Connect compiles the tag list and starts watching upstream tags.
 //
 // cfg.Extra["tags"] must be a JSON-encoded []TagSpec:
 //
-//	[{"path":"tempF","formula":"{opcua:Temp}*9/5+32"},...]
+//	[{"path":"tempF","expr":"{opcua:Temp}*9/5+32"},...]
+//
+// A tag whose expression does not compile is Bad with the reason; the
+// others run.
 func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	tagsJSON := cfg.Extra["tags"]
 	if tagsJSON == "" {
 		return fmt.Errorf("virtual: cfg.Extra['tags'] is required")
 	}
 
-	var specs []TagSpec
-	if err := json.Unmarshal([]byte(tagsJSON), &specs); err != nil {
+	var list []TagSpec
+	if err := json.Unmarshal([]byte(tagsJSON), &list); err != nil {
 		return fmt.Errorf("virtual: invalid tags JSON: %w", err)
 	}
-	if len(specs) == 0 {
+	if len(list) == 0 {
 		return fmt.Errorf("virtual: at least one tag spec is required")
+	}
+	specs := make([]*calcTag, len(list))
+	for i, s := range list {
+		e, err := expr.Compile(s.Expr)
+		specs[i] = &calcTag{TagSpec: s, expr: e, err: err}
+		if err != nil {
+			msg := fmt.Sprintf("calculated tag %s: %v", s.Path, err)
+			d.lastErr.Store(&msg)
+			log.Printf("[DRIVER] virtual: %s", msg)
+		}
 	}
 
 	d.mu.Lock()
 	d.specs = specs
-	d.vals = make(map[string]float64)
+	d.vals = make(map[string]tagstore.TagState)
 	d.overrides = make(map[string]float64)
 	d.stopCh = make(chan struct{})
 	d.outCh = out
@@ -95,9 +116,25 @@ func (d *Driver) Connect(ctx context.Context, cfg drivers.DriverConfig, out chan
 	d.tagCount.Store(int32(len(specs)))
 	d.connected.Store(true)
 	log.Printf("[DRIVER] virtual: connected with %d computed tags", len(specs))
-	d.evaluateAll(specs) // push initial values
-	d.startLoop(specs)
+	refMap := refsOf(specs)
+	d.refreshUpstream(refMap) // read the inputs first, so the first values are not Bad
+	d.evaluateAll(specs)      // push initial values
+	d.startLoop(specs, refMap)
 	return nil
+}
+
+// refsOf maps each upstream key to the indices of the specs that use it.
+func refsOf(specs []*calcTag) map[string][]int {
+	refMap := map[string][]int{}
+	for i, s := range specs {
+		if s.expr == nil {
+			continue
+		}
+		for _, ref := range s.expr.Refs {
+			refMap[ref] = append(refMap[ref], i)
+		}
+	}
+	return refMap
 }
 
 func (d *Driver) Disconnect() error {
@@ -120,7 +157,7 @@ func (d *Driver) Browse(_ context.Context) ([]drivers.TagDefinition, error) {
 	for i, s := range d.specs {
 		out[i] = drivers.TagDefinition{
 			Path:        s.Path,
-			Description: s.Formula,
+			Description: s.Expr,
 			Writable:    true, // overrides are supported via Write()
 		}
 	}
@@ -134,14 +171,7 @@ func (d *Driver) SetTags(_ []string) error { return nil }
 // startLoop starts the driver's only evaluation goroutine. It polls the
 // referenced upstream tags (the tagstore has no external pub/sub) and
 // re-evaluates every formula when one of them changes.
-func (d *Driver) startLoop(specs []TagSpec) {
-	// refMap: upstream key → list of spec indices that use it.
-	refMap := map[string][]int{}
-	for i, s := range specs {
-		for _, ref := range ParseRefs(s.Formula) {
-			refMap[ref.Key] = append(refMap[ref.Key], i)
-		}
-	}
+func (d *Driver) startLoop(specs []*calcTag, refMap map[string][]int) {
 	d.mu.RLock()
 	stopCh := d.stopCh
 	d.mu.RUnlock()
@@ -178,9 +208,9 @@ func (d *Driver) refreshUpstream(refMap map[string][]int) bool {
 			if !ok {
 				continue
 			}
-			newVal := toFloat(state.Value)
-			if d.vals[key] != newVal {
-				d.vals[key] = newVal
+			old, seen := d.vals[key]
+			if !seen || old.Quality != state.Quality || !reflect.DeepEqual(old.Value, state.Value) {
+				d.vals[key] = state
 				changed = true
 			}
 		}
@@ -192,9 +222,9 @@ func (d *Driver) refreshUpstream(refMap map[string][]int) bool {
 // If a tag has been written via Write(), the override value is used instead
 // of the formula result — this lets Setpoint widgets and recipes actually
 // change virtual tag values during a demo.
-func (d *Driver) evaluateAll(specs []TagSpec) {
+func (d *Driver) evaluateAll(specs []*calcTag) {
 	d.mu.RLock()
-	vals := make(map[string]float64, len(d.vals))
+	vals := make(map[string]tagstore.TagState, len(d.vals))
 	for k, v := range d.vals {
 		vals[k] = v
 	}
@@ -204,30 +234,30 @@ func (d *Driver) evaluateAll(specs []TagSpec) {
 	}
 	d.mu.RUnlock()
 
+	env := expr.Env{Tag: func(ref string) (expr.Input, bool) {
+		s, ok := vals[ref]
+		return expr.Input{Value: s.Value, Quality: s.Quality}, ok
+	}}
 	now := time.Now().UnixNano()
 	for _, s := range specs {
-		var result float64
-		quality := "Good"
-
-		if ov, ok := overrides[s.Path]; ok {
-			// Manual write takes precedence over the formula.
-			result = ov
-		} else {
-			var err error
-			result, err = Eval(s.Formula, vals)
-			if err != nil || math.IsNaN(result) || math.IsInf(result, 0) {
-				quality = "Bad"
-				result = 0
-				if err != nil {
-					errStr := err.Error()
-					d.lastErr.Store(&errStr)
-				}
+		state := tagstore.TagState{Quality: "Good", TS: now}
+		switch ov, ok := overrides[s.Path]; {
+		case ok:
+			// Manual write takes precedence over the expression.
+			state.Value = ov
+		case s.expr == nil:
+			state.Value, state.Quality, state.Reason = s.last, "Bad", s.err.Error()
+		default:
+			v, why := s.expr.Eval(env)
+			if why != "" {
+				// Bad keeps the last good value, as a driver going offline does.
+				state.Value, state.Quality, state.Reason = s.last, "Bad", why
+			} else {
+				state.Value = v
+				s.last = v
 			}
 		}
-		d.send(tagstore.TagUpdate{
-			Path:  s.Path,
-			State: tagstore.TagState{Value: result, Quality: quality, TS: now},
-		})
+		d.send(tagstore.TagUpdate{Path: s.Path, State: state})
 	}
 }
 

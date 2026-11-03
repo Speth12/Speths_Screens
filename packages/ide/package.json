@@ -10,6 +10,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@speths-screens/expr": "*",
     "@speths-screens/shared-types": "*",
     "@speths-screens/widgets": "*",
     "ajv": "^8.20.0",
