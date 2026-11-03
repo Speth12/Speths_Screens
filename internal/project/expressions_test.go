@@ -17,6 +17,7 @@ var goldenExpressionProblems = map[string][]string{
 	"example":     nil,
 	"dan-project": nil,
 	"calc-tags":   {`datasource "sim", calculated tag pick: unknown function if at column 1`},
+	"alarms":      nil,
 	"dynamics":    {`page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9`},
 }
 

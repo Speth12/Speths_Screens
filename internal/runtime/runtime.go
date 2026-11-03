@@ -145,13 +145,11 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	rules := make([]alarms.Rule, 0, len(p.AlarmRules))
 	for _, ar := range p.AlarmRules {
 		rules = append(rules, alarms.Rule{
-			ID:        ar.ID,
-			Name:      ar.Name,
-			Binding:   ar.Binding,
-			Condition: alarms.Condition(ar.Condition),
-			Threshold: ar.Threshold,
-			Severity:  alarms.Severity(ar.Severity),
-			Message:   ar.Message,
+			ID:       ar.ID,
+			Name:     ar.Name,
+			Expr:     ar.Expr,
+			Severity: alarms.Severity(ar.Severity),
+			Message:  ar.Message,
 		})
 	}
 	r.Alarms.SetRules(rules)
@@ -386,13 +384,14 @@ func (r *Runtime) process(u tagstore.TagUpdate) {
 	if r.Historian != nil {
 		r.Historian.Enqueue(u) // never blocks; stores changes only
 	}
-	r.Alarms.Evaluate(u.Path, u.State.Value)
+	r.Alarms.Evaluate(u.Path, u.State)
 	// Forward update to any namespace alias paths (ns:foo).
 	r.mu.RLock()
 	aliases := r.nsAliases[u.Path]
 	r.mu.RUnlock()
 	for _, nsPath := range aliases {
 		r.Store.Update("ns:"+nsPath, u.State)
+		r.Alarms.Evaluate("ns:"+nsPath, u.State) // alarm expressions may name the ns: path
 	}
 }
 

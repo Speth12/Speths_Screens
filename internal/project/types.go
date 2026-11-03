@@ -43,14 +43,14 @@ type Types struct {
 }
 
 type AlarmRule struct {
-	// datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.pressure'
-	Binding   string         `json:"binding"`
-	Condition AlarmCondition `json:"condition"`
-	ID        string         `json:"id"`
-	Message   string         `json:"message"`
-	Name      string         `json:"name"`
-	Severity  AlarmSeverity  `json:"severity"`
-	Threshold float64        `json:"threshold"`
+	// Expression (the Speth's Screens expression language): the alarm is active while it is
+	// true, e.g. {ns:Tank1/Level} > 95 && {ns:Tank1/InletOpen}. While an input it needs is Bad
+	// or missing, the alarm stays as it is
+	Expr     string        `json:"expr"`
+	ID       string        `json:"id"`
+	Message  string        `json:"message"`
+	Name     string        `json:"name"`
+	Severity AlarmSeverity `json:"severity"`
 }
 
 type AssetNode struct {
@@ -628,17 +628,6 @@ type UDTField struct {
 	Type        UDTFieldType `json:"type"`
 	Unit        *string      `json:"unit,omitempty"`
 }
-
-type AlarmCondition string
-
-const (
-	Eq  AlarmCondition = "eq"
-	Gt  AlarmCondition = "gt"
-	Gte AlarmCondition = "gte"
-	LTE AlarmCondition = "lte"
-	Lt  AlarmCondition = "lt"
-	Ne  AlarmCondition = "ne"
-)
 
 type AlarmSeverity string
 

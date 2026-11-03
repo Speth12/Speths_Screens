@@ -263,7 +263,7 @@ func TestAlarmTriggersAndAck(t *testing.T) {
 	resp.Body.Close()
 
 	// Simulate tag exceeding threshold.
-	rt.Alarms.Evaluate("virt:temp", 105.0)
+	rt.Alarms.Evaluate("virt:temp", tagstore.TagState{Value: 105.0, Quality: "Good"})
 	time.Sleep(20 * time.Millisecond)
 
 	// GET /api/v1/alarms — should have one active event.

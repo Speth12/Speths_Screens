@@ -23,7 +23,6 @@ import { convertWidget } from "../store/presets";
 import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
-import { BindingInput } from "./BindingInput";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -622,123 +621,6 @@ function CanvasSettings() {
         {res.type === "dynamic" && (
           <div className="text-[10px] text-zinc-600">Canvas scales to fit the viewport</div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Alarm Rules (inline in Project Settings) ──────────────────────────────────
-
-type AlarmRule = {
-  id: string;
-  name: string;
-  binding: string;
-  condition: string;
-  threshold: number;
-  severity: string;
-  message: string;
-};
-
-// Not rendered anywhere yet: wire it in or delete it.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function AlarmRulesEditor() {
-  const { exportJSON, loadProject } = useProject();
-  const project = useProject((s) => s.project);
-  const rules: AlarmRule[] = (project.alarmRules as AlarmRule[]) ?? [];
-
-  const setRules = (next: AlarmRule[]) => {
-    const p = JSON.parse(exportJSON());
-    loadProject({ ...p, alarmRules: next });
-  };
-
-  const addRule = () => setRules([...rules, {
-    id: `alarm-${Date.now()}`,
-    name: "New Alarm",
-    binding: "",
-    condition: "gt",
-    threshold: 0,
-    severity: "warning",
-    message: "",
-  }]);
-
-  const updateRule = (idx: number, patch: Partial<AlarmRule>) => {
-    setRules(rules.map((r, i) => i === idx ? { ...r, ...patch } : r));
-  };
-
-  const removeRule = (idx: number) => setRules(rules.filter((_, i) => i !== idx));
-
-  const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-          Alarm Rules <AlarmBadge />
-        </div>
-        <button
-          onClick={addRule}
-          className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700"
-        >
-          + add
-        </button>
-      </div>
-      <div className="space-y-2">
-        {rules.length === 0 && (
-          <div className="text-[11px] text-zinc-600 italic">No alarm rules.</div>
-        )}
-        {rules.map((rule, i) => (
-          <div key={rule.id} className="border border-zinc-700/50 rounded p-2 space-y-1.5">
-            <div className="flex items-center gap-1">
-              <input
-                value={rule.name}
-                onChange={(e) => updateRule(i, { name: e.target.value })}
-                placeholder="Alarm name"
-                className={`${inp} flex-1`}
-              />
-              <button onClick={() => removeRule(i)} className="text-zinc-600 hover:text-red-400 text-xs shrink-0">×</button>
-            </div>
-            <BindingInput
-              value={rule.binding}
-              onChange={(v) => updateRule(i, { binding: v })}
-              className={`${inp} font-mono text-[10px]`}
-            />
-            <div className="flex gap-1">
-              <select
-                value={rule.condition}
-                onChange={(e) => updateRule(i, { condition: e.target.value })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-1 py-1 text-[10px] w-16"
-              >
-                <option value="gt">&gt;</option>
-                <option value="gte">≥</option>
-                <option value="lt">&lt;</option>
-                <option value="lte">≤</option>
-                <option value="eq">=</option>
-                <option value="ne">≠</option>
-              </select>
-              <input
-                type="number"
-                value={rule.threshold}
-                onChange={(e) => updateRule(i, { threshold: Number(e.target.value) })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono w-20"
-              />
-              <select
-                value={rule.severity}
-                onChange={(e) => updateRule(i, { severity: e.target.value })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-1 py-1 text-[10px] flex-1"
-              >
-                <option value="info">Info</option>
-                <option value="warning">Warning</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
-            <input
-              value={rule.message}
-              onChange={(e) => updateRule(i, { message: e.target.value })}
-              placeholder="Alarm message"
-              className={inp}
-            />
-          </div>
-        ))}
       </div>
     </div>
   );

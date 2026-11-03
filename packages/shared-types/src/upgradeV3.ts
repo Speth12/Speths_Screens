@@ -13,6 +13,7 @@ const orDefault = (v: unknown, def: unknown) => (v === undefined || v === null |
 
 export function v2ToV3(doc: Obj, notes: string[]) {
   calculatedTagsV3(doc, notes);
+  alarmRulesV3(doc, notes);
   const q = (v: unknown) => JSON.stringify(str(v));
   for (const pg of objects(doc.pages)) {
     for (const w of objects(pg.widgets)) drivesV3(w, `page ${q(pg.name)}, widget ${String(w.id)} (${String(w.type)})`, notes);
@@ -23,6 +24,36 @@ export function v2ToV3(doc: Obj, notes: string[]) {
   for (const ps of objects(doc.presets)) {
     for (const w of objects(ps.widgets)) drivesV3(w, `preset ${q(ps.name)}, widget ${String(w.id)} (${String(w.type)})`, notes);
   }
+}
+
+// The v2 alarm conditions as expression operators.
+const ALARM_OPS: Record<string, string> = { gt: ">", gte: ">=", lt: "<", lte: "<=", eq: "==", ne: "!=" };
+
+// alarmRulesV3 turns each alarm rule's binding, condition and threshold into
+// one expression: {binding} > threshold.
+function alarmRulesV3(doc: Obj, notes: string[]) {
+  if (!Array.isArray(doc.alarmRules)) return;
+  const kept: Obj[] = [];
+  for (const r of doc.alarmRules.filter(isObj)) {
+    const where = `alarm rule ${JSON.stringify(str(r.id))}`;
+    const binding = str(r.binding);
+    if (binding === "") {
+      notes.push(`${where}: dropped, it had no tag`);
+      continue;
+    }
+    let op = Object.prototype.hasOwnProperty.call(ALARM_OPS, str(r.condition)) ? ALARM_OPS[str(r.condition)] : undefined;
+    if (op === undefined) {
+      notes.push(`${where}: unknown condition ${JSON.stringify(str(r.condition))}, read as gt`);
+      op = ">";
+    }
+    const threshold = typeof r.threshold === "number" ? r.threshold : 0;
+    r.expr = `${tagRef(binding)} ${op} ${String(threshold)}`;
+    delete r.binding;
+    delete r.condition;
+    delete r.threshold;
+    kept.push(r);
+  }
+  doc.alarmRules = kept;
 }
 
 // drivesV3 turns a widget's list of v2 dynamics into its map of driven

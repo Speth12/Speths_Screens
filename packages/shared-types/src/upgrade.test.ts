@@ -40,6 +40,10 @@ const V2_TO_V3: Record<string, string[]> = {
     `datasource "sim", calculated tag pick: unknown function if at column 1; the tag stays Bad until the formula is fixed`,
     `datasource "broken": dropped its calculated tags, which were not valid JSON`,
   ],
+  alarms: [
+    `alarm rule "odd": unknown condition "between", read as gt`,
+    `alarm rule "untagged": dropped, it had no tag`,
+  ],
   dynamics: [
     `page "Main", widget ring (led): two dynamics drive borderColor; kept the last`,
     `page "Main", widget scr (numericDisplay): dynamics.visible: rewrote Math.abs(value) === 0 as abs({plc:Press}) == 0`,

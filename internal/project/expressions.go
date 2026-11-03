@@ -25,7 +25,7 @@ func (e *ExpressionError) Error() string {
 }
 
 // ExpressionProblems compiles every expression in a project that follows
-// schema.json: calculated tags, then the driven properties of page,
+// schema.json: calculated tags, alarm rules, then the driven properties of page,
 // faceplate and preset widgets (by property name). A faceplate widget's
 // expressions are templates, and may read only the faceplate's parameters.
 func ExpressionProblems(p *Project) []string {
@@ -35,6 +35,11 @@ func ExpressionProblems(p *Project) []string {
 			if _, err := expr.Compile(t.Expr); err != nil {
 				out = append(out, fmt.Sprintf("datasource %q, calculated tag %s: %s", ds.ID, t.Path, err))
 			}
+		}
+	}
+	for _, r := range p.AlarmRules {
+		if _, err := expr.Compile(r.Expr); err != nil {
+			out = append(out, fmt.Sprintf("alarm rule %q: %s", r.ID, err))
 		}
 	}
 	drives := func(where string, dynamics map[string]Drive, params []string) {

@@ -4,7 +4,7 @@ import { compile } from "@speths-screens/expr";
 import type { Drive, Project } from "./project";
 
 /** Every expression that does not compile, in a project that follows
- *  schema.json: calculated tags, then the driven properties of page,
+ *  schema.json: calculated tags, alarm rules, then the driven properties of page,
  *  faceplate and preset widgets (by property name). A faceplate widget's
  *  expressions are templates, and may read only the faceplate's parameters. */
 export function expressionProblems(p: Project): string[] {
@@ -14,6 +14,10 @@ export function expressionProblems(p: Project): string[] {
       const c = compile(t.expr);
       if (!c.ok) out.push(`datasource ${JSON.stringify(ds.id)}, calculated tag ${t.path}: ${c.error}`);
     }
+  }
+  for (const r of p.alarmRules ?? []) {
+    const c = compile(r.expr);
+    if (!c.ok) out.push(`alarm rule ${JSON.stringify(r.id)}: ${c.error}`);
   }
   const drives = (where: string, dynamics: Record<string, Drive> | undefined, params?: string[]) => {
     for (const name of Object.keys(dynamics ?? {}).sort()) {

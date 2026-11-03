@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	goruntime "runtime"
 	"strings"
 	"testing"
@@ -51,13 +52,13 @@ func TestAlarmWebSocketResyncs(t *testing.T) {
 	t.Cleanup(func() { alarms.DefaultQueue = old })
 
 	_, rt, hs := newTestServer(t)
-	rt.Alarms.SetRules([]alarms.Rule{{ID: "r1", Name: "High", Binding: "plc:T", Condition: alarms.CondGT, Threshold: 100, Severity: alarms.SeverityWarning}})
+	rt.Alarms.SetRules([]alarms.Rule{{ID: "r1", Name: "High", Expr: "{plc:T} > 100", Severity: alarms.SeverityWarning}})
 	conn := dialPath(t, hs.URL, "/ws/alarms")
 	defer conn.CloseNow()
 	time.Sleep(50 * time.Millisecond) // subscribed
 
 	for i := range 3000 { // far faster than the socket can carry
-		rt.Alarms.Evaluate("plc:T", float64(90+20*(i%2)))
+		rt.Alarms.Evaluate("plc:T", tagstore.TagState{Value: float64(90 + 20*(i%2)), Quality: "Good"})
 	}
 	want := rt.Alarms.Events()[0]
 

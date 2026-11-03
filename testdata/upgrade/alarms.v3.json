@@ -1,0 +1,64 @@
+{
+  "alarmRules": [
+    {
+      "expr": "{plc:T} > 100",
+      "id": "gt",
+      "message": "T above 100",
+      "name": "Above",
+      "severity": "warning"
+    },
+    {
+      "expr": "{plc:T} >= 99.5",
+      "id": "gte",
+      "message": "m",
+      "name": "At or above",
+      "severity": "critical"
+    },
+    {
+      "expr": "{ns:Tank1/Level} < -5",
+      "id": "lt",
+      "message": "m",
+      "name": "Below",
+      "severity": "info"
+    },
+    {
+      "expr": "{plc:T} <= 0",
+      "id": "lte",
+      "message": "m",
+      "name": "At or below",
+      "severity": "info"
+    },
+    {
+      "expr": "{plc:State} == 3",
+      "id": "eq",
+      "message": "m",
+      "name": "Equal",
+      "severity": "warning"
+    },
+    {
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/Mode} != 1",
+      "id": "ne",
+      "message": "m",
+      "name": "Not equal",
+      "severity": "warning"
+    },
+    {
+      "expr": "{plc:T} > 5",
+      "id": "odd",
+      "message": "m",
+      "name": "Odd condition",
+      "severity": "info"
+    }
+  ],
+  "datasources": [],
+  "name": "Alarms",
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Main",
+      "widgets": []
+    }
+  ],
+  "schemaVersion": 3,
+  "version": "1.0.0"
+}

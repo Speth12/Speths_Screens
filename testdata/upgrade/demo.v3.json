@@ -1,58 +1,46 @@
 {
   "alarmRules": [
     {
-      "binding": "sim:pressure",
-      "condition": "gt",
+      "expr": "{sim:pressure} > 62",
       "id": "alarm-high-pressure",
       "message": "Inlet pressure above safe operating range (>62 bar)",
       "name": "High Pressure",
-      "severity": "warning",
-      "threshold": 62
+      "severity": "warning"
     },
     {
-      "binding": "sim:pressure",
-      "condition": "gt",
+      "expr": "{sim:pressure} > 68",
       "id": "alarm-critical-pressure",
       "message": "CRITICAL: Overpressure — check relief valve immediately",
       "name": "Critical Overpressure",
-      "severity": "critical",
-      "threshold": 68
+      "severity": "critical"
     },
     {
-      "binding": "sim:temperature",
-      "condition": "gt",
+      "expr": "{sim:temperature} > 72",
       "id": "alarm-high-temp",
       "message": "Process temperature elevated above 72°C",
       "name": "High Temperature",
-      "severity": "warning",
-      "threshold": 72
+      "severity": "warning"
     },
     {
-      "binding": "sim:temperature",
-      "condition": "gt",
+      "expr": "{sim:temperature} > 78",
       "id": "alarm-critical-temp",
       "message": "CRITICAL: Temperature above safe limit (78°C)",
       "name": "Critical Temperature",
-      "severity": "critical",
-      "threshold": 78
+      "severity": "critical"
     },
     {
-      "binding": "sim:level",
-      "condition": "lt",
+      "expr": "{sim:level} < 25",
       "id": "alarm-low-level",
       "message": "Tank level critically low (<25%) — stop pumps",
       "name": "Low Tank Level",
-      "severity": "critical",
-      "threshold": 25
+      "severity": "critical"
     },
     {
-      "binding": "sim:efficiency",
-      "condition": "lt",
+      "expr": "{sim:efficiency} < 50",
       "id": "alarm-low-efficiency",
       "message": "Pump efficiency below 50% — maintenance recommended",
       "name": "Low Pump Efficiency",
-      "severity": "warning",
-      "threshold": 50
+      "severity": "warning"
     }
   ],
   "datasources": [

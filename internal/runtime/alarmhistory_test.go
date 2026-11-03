@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 	"path/filepath"
 	"testing"
 	"time"
@@ -24,13 +25,13 @@ func TestAlarmHistoryCatchesUpAfterFallingBehind(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 	r := New(nil, nil)
 	r.AlarmStore = store
-	r.Alarms.SetRules([]alarms.Rule{{ID: "r1", Name: "High", Binding: "plc:T", Condition: alarms.CondGT, Threshold: 100, Severity: alarms.SeverityWarning}})
+	r.Alarms.SetRules([]alarms.Rule{{ID: "r1", Name: "High", Expr: "{plc:T} > 100", Severity: alarms.SeverityWarning}})
 	r.Start(context.Background())
 	t.Cleanup(r.Stop)
 
 	// Far more changes than SQLite can write one by one.
 	for i := range 2000 {
-		r.Alarms.Evaluate("plc:T", float64(90+20*(i%2)))
+		r.Alarms.Evaluate("plc:T", tagstore.TagState{Value: float64(90 + 20*(i%2)), Quality: "Good"})
 	}
 	want := r.Alarms.Events()
 	if len(want) != 1 {

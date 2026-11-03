@@ -1,6 +1,7 @@
 // Alarms panel: rule editor + live events (Live tab) + persisted history (History tab).
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useProject, type AlarmCondition, type AlarmRule, type AlarmSeverity } from "../store/projectStore";
+import { compile } from "@speths-screens/expr";
+import { useProject, type AlarmRule, type AlarmSeverity } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
 import { apiFetch, authHeader, getToken } from "../store/runtimeAuth";
 import { applyAlarmMessage } from "../store/alarmMessages";
@@ -19,21 +20,16 @@ type AlarmEvent = {
   value: number;
   active: boolean;
   acked: boolean;
+  /** The rule's expression (format 3 events). */
+  expr?: string;
+  /** Why the alarm cannot be evaluated right now, while an input is Bad. */
+  reason?: string;
   triggeredAt: string;
   ackedAt?: string;
   normalAt?: string;
 };
 
 const uid = () => `alarm-${Math.random().toString(36).slice(2, 8)}`;
-
-const CONDITIONS: { value: AlarmCondition; label: string }[] = [
-  { value: "gt",  label: "> greater than" },
-  { value: "gte", label: "≥ at least" },
-  { value: "lt",  label: "< less than" },
-  { value: "lte", label: "≤ at most" },
-  { value: "eq",  label: "= equal to" },
-  { value: "ne",  label: "≠ not equal to" },
-];
 
 const SEVERITIES: AlarmSeverity[] = ["critical", "warning", "info"];
 
@@ -56,18 +52,16 @@ function RuleForm({ initial, onSave, onCancel }: {
   onSave: (r: AlarmRule) => void;
   onCancel: () => void;
 }) {
-  const { project } = useProject();
   const [name, setName]           = useState(initial?.name ?? "");
-  const [binding, setBinding]     = useState(initial?.binding ?? "");
-  const [condition, setCondition] = useState<AlarmCondition>(initial?.condition ?? "gt");
-  const [threshold, setThreshold] = useState(String(initial?.threshold ?? "0"));
+  const [expr, setExpr]           = useState(initial?.expr ?? "");
+  const [pick, setPick]           = useState("");
   const [severity, setSeverity]   = useState<AlarmSeverity>(initial?.severity ?? "warning");
   const [message, setMessage]     = useState(initial?.message ?? "");
+  const check = expr.trim() ? compile(expr) : undefined;
 
   const save = () => {
-    const t = parseFloat(threshold);
-    if (!name || !binding || isNaN(t)) return;
-    onSave({ id: initial?.id ?? uid(), name, binding, condition, threshold: t, severity, message });
+    if (!name || !check?.ok) return;
+    onSave({ id: initial?.id ?? uid(), name, expr, severity, message });
   };
 
   const inputCls = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
@@ -80,34 +74,15 @@ function RuleForm({ initial, onSave, onCancel }: {
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="High pressure" className={`mt-0.5 ${inputCls}`} />
       </label>
 
-      <label className="block text-[10px] text-zinc-500">Tag binding
-        <select value={binding} onChange={(e) => setBinding(e.target.value)} className={`mt-0.5 ${inputCls}`}>
-          <option value="">— pick a tag —</option>
-          {project.pages.flatMap((p) =>
-            p.widgets.filter((w) => w.bindings?.value).map((w) => (
-              <option key={w.id} value={w.bindings!.value!}>{w.bindings!.value}</option>
-            ))
-          )}
-          {binding && !project.pages.some((p) => p.widgets.some((w) => w.bindings?.value === binding)) && (
-            <option value={binding}>{binding}</option>
-          )}
-        </select>
-        <BindingInput
-          value={binding}
-          onChange={setBinding}
-          className={`mt-1 ${inputCls} font-mono text-[10px]`}
-        />
+      <label className="block text-[10px] text-zinc-500">Active while
+        <input aria-label="Alarm expression" value={expr} onChange={(e) => setExpr(e.target.value)}
+          placeholder="{ns:Tank1/Level} > 95 && {ns:Tank1/InletOpen}" className={`mt-0.5 ${inputCls} font-mono`} />
       </label>
-
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block text-[10px] text-zinc-500">Condition
-          <select value={condition} onChange={(e) => setCondition(e.target.value as AlarmCondition)} className={`mt-0.5 ${inputCls}`}>
-            {CONDITIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-        </label>
-        <label className="block text-[10px] text-zinc-500">Threshold
-          <input type="number" value={threshold} onChange={(e) => setThreshold(e.target.value)} className={`mt-0.5 ${inputCls} font-mono`} />
-        </label>
+      {check && !check.ok && <div className="text-[10px] text-red-400">{check.error}</div>}
+      <div className="flex gap-1 items-center">
+        <BindingInput value={pick} onChange={setPick} className={`${inputCls} font-mono text-[10px]`} />
+        <button disabled={!pick} onClick={() => { setExpr((e) => `${e}{${pick}}`); setPick(""); }}
+          className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 shrink-0">insert tag</button>
       </div>
 
       <label className="block text-[10px] text-zinc-500">Severity
@@ -215,6 +190,7 @@ function AlarmHistory() {
               {ev.acked && <span className="text-[9px] text-zinc-600 shrink-0">acked</span>}
             </div>
             <div className="text-[10px] text-zinc-400">{ev.message || ev.binding}</div>
+            {ev.reason && <div className="text-[10px] text-amber-400">held: {ev.reason}</div>}
             <div className="text-[10px] text-zinc-600 font-mono">
               val={ev.value.toFixed(2)}
               {" · "}{new Date(ev.triggeredAt).toLocaleString()}
@@ -326,7 +302,7 @@ export function Alarms() {
                     <span className={`text-[10px] font-semibold w-14 shrink-0 ${severityColor[r.severity]}`}>{r.severity}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] font-medium truncate">{r.name}</div>
-                      <div className="text-[10px] text-zinc-500 font-mono truncate">{r.binding} {r.condition} {r.threshold}</div>
+                      <div className="text-[10px] text-zinc-500 font-mono truncate">{r.expr}</div>
                     </div>
                     <button onClick={() => setEditId(r.id)} className="text-[10px] text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100">edit</button>
                     <button onClick={() => removeAlarmRule(r.id)} className="text-[10px] text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100">×</button>

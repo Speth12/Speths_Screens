@@ -94,7 +94,7 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 		},
 		{
 			name:   "alarm rule",
-			p:      project.Project{AlarmRules: []project.AlarmRule{{Binding: "plc:AL"}}},
+			p:      project.Project{AlarmRules: []project.AlarmRule{{Expr: "{plc:X} > 1 && {plc:AL}"}}},
 			source: SourceAlarms, want: "plc:AL",
 		},
 		{

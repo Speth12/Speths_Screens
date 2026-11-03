@@ -66,18 +66,16 @@ export interface Project {
 
 export interface AlarmRule {
     /**
-     * datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.pressure'
+     * Expression (the Speth's Screens expression language): the alarm is active while it is
+     * true, e.g. {ns:Tank1/Level} > 95 && {ns:Tank1/InletOpen}. While an input it needs is Bad
+     * or missing, the alarm stays as it is
      */
-    binding:   string;
-    condition: AlarmCondition;
-    id:        string;
-    message:   string;
-    name:      string;
-    severity:  AlarmSeverity;
-    threshold: number;
+    expr:     string;
+    id:       string;
+    message:  string;
+    name:     string;
+    severity: AlarmSeverity;
 }
-
-export type AlarmCondition = "gt" | "gte" | "lt" | "lte" | "eq" | "ne";
 
 export type AlarmSeverity = "critical" | "warning" | "info";
 

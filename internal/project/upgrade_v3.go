@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -15,6 +16,7 @@ import (
 // dynamics to driven properties (Phase 3 decisions 3, 5 and 8).
 func (u *upgrader) v2ToV3(doc map[string]any) {
 	u.calculatedTagsV3(doc)
+	u.alarmRulesV3(doc)
 	for _, pg := range objects(doc["pages"]) {
 		for _, w := range objects(pg["widgets"]) {
 			u.drivesV3(w, fmt.Sprintf("page %q, widget %v (%v)", str(pg["name"]), w["id"], w["type"]))
@@ -30,6 +32,46 @@ func (u *upgrader) v2ToV3(doc map[string]any) {
 			u.drivesV3(w, fmt.Sprintf("preset %q, widget %v (%v)", str(ps["name"]), w["id"], w["type"]))
 		}
 	}
+}
+
+// alarmOps are the v2 alarm conditions as expression operators.
+var alarmOps = map[string]string{"gt": ">", "gte": ">=", "lt": "<", "lte": "<=", "eq": "==", "ne": "!="}
+
+// alarmRulesV3 turns each alarm rule's binding, condition and threshold
+// into one expression: {binding} > threshold.
+func (u *upgrader) alarmRulesV3(doc map[string]any) {
+	list, ok := doc["alarmRules"].([]any)
+	if !ok {
+		return
+	}
+	kept := make([]any, 0, len(list))
+	for _, item := range list {
+		r, _ := item.(map[string]any)
+		if r == nil {
+			continue
+		}
+		where := fmt.Sprintf("alarm rule %q", str(r["id"]))
+		binding := str(r["binding"])
+		if binding == "" {
+			u.note("%s: dropped, it had no tag", where)
+			continue
+		}
+		op, known := alarmOps[str(r["condition"])]
+		if !known {
+			u.note("%s: unknown condition %q, read as gt", where, str(r["condition"]))
+			op = ">"
+		}
+		threshold := 0.0
+		if n, ok := r["threshold"].(json.Number); ok {
+			threshold, _ = n.Float64()
+		}
+		r["expr"] = fmt.Sprintf("%s %s %s", tagRef(binding), op, strconv.FormatFloat(threshold, 'f', -1, 64))
+		delete(r, "binding")
+		delete(r, "condition")
+		delete(r, "threshold")
+		kept = append(kept, r)
+	}
+	doc["alarmRules"] = kept
 }
 
 // drivesV3 turns a widget's list of v2 dynamics into its map of driven

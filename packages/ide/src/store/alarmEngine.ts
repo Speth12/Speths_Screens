@@ -1,15 +1,17 @@
 /**
  * Client-side alarm evaluator.
  *
- * Watches project.alarmRules and subscribes to each rule's tag via
- * tagStoreClient. Evaluates conditions on every tag update and maintains
- * a list of client-side ActiveAlarm objects.
+ * Watches project.alarmRules and subscribes to the tags each rule's
+ * expression reads via tagStoreClient. Evaluates the expression on every
+ * update, as the runtime's alarm engine does: while an input it needs is
+ * Bad or missing, the alarm keeps its state and carries the reason.
  *
  * Exposed via subscribeClientAlarms / getClientAlarms for useSyncExternalStore,
  * and the useClientAlarms() convenience hook.
  */
 import { useSyncExternalStore } from "react";
-import { useProject, type AlarmRule, type AlarmCondition } from "./projectStore";
+import { compile, type Input, type Value } from "@speths-screens/expr";
+import { useProject, type AlarmRule } from "./projectStore";
 import { tagStoreClient } from "./tagStoreClient";
 import { eventBus } from "./eventBus";
 
@@ -21,6 +23,8 @@ export type ActiveAlarm = {
   binding:  string;
   value:    number;
   since:    number;  // ms epoch
+  /** Why the alarm cannot be evaluated right now, while an input is Bad. */
+  reason?:  string;
 };
 
 // ── Internal state ─────────────────────────────────────────────────────────
@@ -41,67 +45,53 @@ export const subscribeClientAlarms = (fn: () => void) => {
 
 export const getClientAlarms = () => _alarms;
 
-// ── Condition evaluation ──────────────────────────────────────────────────
-
-function evaluate(condition: AlarmCondition, value: number, threshold: number): boolean {
-  switch (condition) {
-    case "gt":  return value >  threshold;
-    case "gte": return value >= threshold;
-    case "lt":  return value <  threshold;
-    case "lte": return value <= threshold;
-    case "eq":  return value === threshold;
-    case "ne":  return value !== threshold;
-    default:    return false;
-  }
-}
-
 // ── Engine ────────────────────────────────────────────────────────────────
 
-// Map from ruleId → tag unsubscribe function
+// Map from ruleId → unsubscribe function for all of the rule's tags
 const _unsubs = new Map<string, () => void>();
 
-function applyRules(rules: AlarmRule[]) {
-  const ruleIds = new Set(rules.map((r) => r.id));
+/** Truth as the expression language has it. */
+const truthy = (v: Value) => v !== false && v !== 0 && v !== "";
 
-  // Unsubscribe stale rules
-  for (const [id, unsub] of _unsubs) {
-    if (!ruleIds.has(id)) {
-      unsub();
-      _unsubs.delete(id);
-    }
+function applyRules(rules: AlarmRule[]) {
+  // Every rule is subscribed again, so an edited expression takes effect.
+  for (const unsub of _unsubs.values()) unsub();
+  _unsubs.clear();
+  const ids = new Set(rules.map((r) => r.id));
+  if (_alarms.some((a) => !ids.has(a.ruleId))) {
+    _alarms = _alarms.filter((a) => ids.has(a.ruleId));
+    notify();
   }
 
-  // Subscribe new/changed rules
   for (const rule of rules) {
-    if (!rule.binding) continue;
+    const c = compile(rule.expr ?? "");
+    if (!c.ok) continue; // validation reports it; the project cannot be deployed
+    const expr = c.expr;
+    const inputs = new Map<string, Input>();
+    const binding = expr.refs[0] ?? "";
 
-    // Re-subscribe if the binding changed
-    const existing = _unsubs.get(rule.id);
-    // We always unsub + resub to pick up binding changes
-    existing?.();
-
-    const binding = rule.binding;
-
-    const unsub = tagStoreClient.subscribe(binding, (state) => {
-      const numVal = typeof state.value === "number"
-        ? state.value
-        : typeof state.value === "string"
-        ? parseFloat(state.value)
-        : NaN;
-
-      if (isNaN(numVal)) return;
-
-      const triggered = evaluate(rule.condition, numVal, rule.threshold);
-      const existing  = _alarms.find((a) => a.ruleId === rule.id);
-
+    const evaluate = () => {
+      const r = expr.eval({ tag: (ref) => inputs.get(ref) });
+      const existing = _alarms.find((a) => a.ruleId === rule.id);
+      const first = inputs.get(binding)?.value;
+      const value = typeof first === "number" ? first : typeof first === "boolean" ? Number(first) : 0;
+      if (!r.ok) {
+        // Unknown: the alarm keeps its state and says why.
+        if (existing && existing.reason !== r.reason) {
+          _alarms = _alarms.map((a) => (a.ruleId === rule.id ? { ...a, reason: r.reason } : a));
+          notify();
+        }
+        return;
+      }
+      const triggered = truthy(r.value);
       if (triggered && !existing) {
         const newAlarm: ActiveAlarm = {
           ruleId:   rule.id,
           name:     rule.name,
           severity: rule.severity,
-          message:  rule.message || `${rule.name}: ${numVal} ${rule.condition} ${rule.threshold}`,
+          message:  rule.message || `${rule.name}: ${rule.expr}`,
           binding,
-          value:    numVal,
+          value,
           since:    Date.now(),
         };
         _alarms = [..._alarms, newAlarm];
@@ -111,24 +101,33 @@ function applyRules(rules: AlarmRule[]) {
         _alarms = _alarms.filter((a) => a.ruleId !== rule.id);
         eventBus.emit("alarm:cleared", { ruleId: rule.id, name: rule.name });
         notify();
-      } else if (triggered && existing && existing.value !== numVal) {
-        // Update live value
-        _alarms = _alarms.map((a) => a.ruleId === rule.id ? { ...a, value: numVal } : a);
+      } else if (triggered && existing && (existing.value !== value || existing.reason)) {
+        // Live value, and the input is back.
+        _alarms = _alarms.map((a) => (a.ruleId === rule.id ? { ...a, value, reason: undefined } : a));
         notify();
       }
-    });
+    };
 
-    _unsubs.set(rule.id, unsub);
+    const unsubs = expr.refs.map((ref) => tagStoreClient.subscribe(ref, (state) => {
+      inputs.set(ref, { value: state.value, quality: state.quality });
+      evaluate();
+    }));
+    _unsubs.set(rule.id, () => unsubs.forEach((u) => u()));
   }
 }
 
 // Watch the project store — re-evaluate whenever alarmRules change.
+let _lastRules: AlarmRule[] | undefined;
 useProject.subscribe((state) => {
-  applyRules(state.project.alarmRules ?? []);
+  const rules = state.project.alarmRules ?? [];
+  if (rules === _lastRules) return;
+  _lastRules = rules;
+  applyRules(rules);
 });
 
 // Boot with current rules.
-applyRules(useProject.getState().project.alarmRules ?? []);
+_lastRules = useProject.getState().project.alarmRules ?? [];
+applyRules(_lastRules);
 
 // ── React hook ────────────────────────────────────────────────────────────
 

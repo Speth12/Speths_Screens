@@ -87,7 +87,7 @@ describe("openProject", () => {
 
 // The expression problems in each current golden file, as in internal/project/expressions_test.go.
 const GOLDEN_EXPRESSION_PROBLEMS: Record<string, string[]> = {
-  "all-rules": [], demo: [], example: [], "dan-project": [],
+  "all-rules": [], demo: [], example: [], "dan-project": [], alarms: [],
   "calc-tags": [`datasource "sim", calculated tag pick: unknown function if at column 1`],
   dynamics: [`page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9`],
 };

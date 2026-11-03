@@ -4,14 +4,14 @@ import { openProject } from "./openProject";
 
 // Project types are generated from schema.json (npm run gen:types).
 import type {
-  Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
   RecipeEntry, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
-  Action, ActionType, AlarmCondition, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
+  Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam, FaceplateWidget,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe, RecipeEntry,
   UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,

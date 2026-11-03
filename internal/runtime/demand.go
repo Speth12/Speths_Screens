@@ -202,7 +202,7 @@ func projectDemand(p *project.Project) map[string][]string {
 
 	var alarms []string
 	for _, a := range p.AlarmRules {
-		alarms = append(alarms, a.Binding)
+		alarms = append(alarms, project.ExprTags(a.Expr)...)
 	}
 
 	var calculated []string
