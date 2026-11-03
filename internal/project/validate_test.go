@@ -29,6 +29,13 @@ func TestValidateJSON(t *testing.T) {
 		{"two bad settings among good ones",
 			widgetDoc(`{"id":"w1","type":"tank","x":0,"y":0,"w":2,"h":2,"props":{"min":0,"thresholds":[{"value":1,"color":"#fff"}],"step":1,"momentary":true}}`),
 			[]string{`page "Main", widget w1 (tank): unknown setting step`, `page "Main", widget w1 (tank): unknown setting momentary`}},
+		{"five bad settings, in document order",
+			widgetDoc(`{"id":"w1","type":"gauge","x":0,"y":0,"w":2,"h":2,"props":{"zeta":1,"alpha":1,"min":0,"mid":1,"beta":1,"omega":1}}`),
+			[]string{
+				`page "Main", widget w1 (gauge): unknown setting zeta`, `page "Main", widget w1 (gauge): unknown setting alpha`,
+				`page "Main", widget w1 (gauge): unknown setting mid`, `page "Main", widget w1 (gauge): unknown setting beta`,
+				`page "Main", widget w1 (gauge): unknown setting omega`,
+			}},
 		{"misspelt setting",
 			widgetDoc(`{"id":"w1","type":"led","x":0,"y":0,"w":2,"h":2,"props":{"trueColour":"#fff"}}`),
 			[]string{`page "Main", widget w1 (led): unknown setting trueColour`}},

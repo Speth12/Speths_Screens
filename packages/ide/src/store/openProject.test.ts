@@ -22,6 +22,9 @@ describe("validateProject", () => {
       [`page "Main", widget w1 (tank): unknown setting step`, `page "Main", widget w1 (tank): unknown setting momentary`]],
     ["bad value among good settings", widgetDoc(w("button", { props: { label: "Go", btnColor: "pink" } })),
       [`page "Main", widget w1 (button): props.btnColor: value must be one of 'blue', 'green', 'red', 'amber', 'zinc', 'purple', 'orange', 'white'`]],
+    // The same case as in internal/project/validate_test.go.
+    ["five bad settings, in document order", widgetDoc(w("gauge", { props: { zeta: 1, alpha: 1, min: 0, mid: 1, beta: 1, omega: 1 } })),
+      ["zeta", "alpha", "mid", "beta", "omega"].map((k) => `page "Main", widget w1 (gauge): unknown setting ${k}`)],
     ["misspelt setting", widgetDoc(w("led", { props: { trueColour: "#fff" } })),
       [`page "Main", widget w1 (led): unknown setting trueColour`]],
     ["wrong value in a setting", widgetDoc(w("button", { props: { btnColor: "pink" } })),
