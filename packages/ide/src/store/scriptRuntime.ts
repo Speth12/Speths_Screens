@@ -74,6 +74,7 @@ export function runPageScript(script: string): ScriptCleanup {
   };
 
   try {
+    // eslint-disable-next-line no-new-func -- page scripts move to a Web Worker in Phase 4
     new Function(
       "api",
       `"use strict";

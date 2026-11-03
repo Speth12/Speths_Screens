@@ -284,6 +284,7 @@ function ExprSection({ feature }: { feature: FeatureMeta }) {
         If:      (c, t, f) => (c ? t : f),
       };
       const replaced = expr.replace(/\{[^}]+\}/g, "42");
+      // eslint-disable-next-line no-new-func -- removed in Phase 3 step 2 (calculated tags)
       const fn = new Function(...Object.keys(builtins), `return (${replaced})`);
       const r = fn(...Object.values(builtins));
       setResult(String(Math.round(r * 1000) / 1000));

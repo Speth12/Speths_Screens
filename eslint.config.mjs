@@ -48,6 +48,11 @@ export default tseslint.config(
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
       "local/api-token": "error",
+      // User-written expressions go through @speths-screens/expr, never eval
+      // (CLAUDE.md dead ends). The last exceptions name the step that ends them.
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
       // Unused names prefixed with _ are deliberate.
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" }],
     },

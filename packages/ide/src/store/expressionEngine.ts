@@ -13,6 +13,7 @@ function evalFormula(formula: string, values: Map<string, number>): number | nul
     expr = expr.replaceAll(`{${ref}}`, String(val));
   }
   try {
+    // eslint-disable-next-line no-new-func -- removed in Phase 3 step 2 (calculated tags)
     const result = new Function(`"use strict"; return (${expr});`)() as unknown;
     const n = typeof result === "number" ? result : parseFloat(String(result));
     return isNaN(n) ? null : n;

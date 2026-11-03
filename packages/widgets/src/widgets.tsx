@@ -102,6 +102,7 @@ export function KeypadModal({
 
 function evalExpression(expr: string, value: unknown): unknown {
   try {
+    // eslint-disable-next-line no-new-func -- removed in Phase 3 step 5 (driven properties)
     return new Function("value", `"use strict"; return (${expr})`)(value);
   } catch {
     return false;
