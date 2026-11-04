@@ -35,13 +35,38 @@ func (r *Runtime) scriptRole() security.Role {
 	return security.RoleOperator
 }
 
+// scriptMayWrite reports whether the script's writes list covers a tag,
+// as the script wrote it or as the datasource path it resolves to. A script
+// without a list writes nothing.
+func (r *Runtime) scriptMayWrite(id, binding string) bool {
+	r.mu.RLock()
+	p := r.project
+	r.mu.RUnlock()
+	if p == nil {
+		return false
+	}
+	for _, s := range p.Scripts {
+		if s.ID != id {
+			continue
+		}
+		forms := []string{binding}
+		if ds, path, ok := r.resolveBinding(binding); ok {
+			forms = append(forms, ds+":"+path)
+		}
+		return project.WriteListAllows(s.Writes, forms...)
+	}
+	return false
+}
+
 func (h scriptHost) Write(ctx context.Context, id, path string, value any) script.WriteOutcome {
 	r := h.r
 	var res WriteResult
 	if role := r.scriptRole(); !security.HasPermission(role, security.PermWriteTag) {
 		res = writeFailed(403, "role %s may not write tags", role)
+	} else if !r.scriptMayWrite(id, path) {
+		res = writeFailed(403, "script %s may not write %s (not in its writes list)", id, path)
 	} else {
-		res = r.WriteTag(ctx, WriteRequest{Binding: path, Value: value})
+		res = r.WriteTag(ctx, WriteRequest{Binding: path, Value: value, Script: true})
 	}
 	if r.Historian != nil && (res.Status == WriteConfirmed || res.Status == WriteSent) {
 		_ = r.Historian.RecordWrite(path, value)
