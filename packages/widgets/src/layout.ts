@@ -20,7 +20,7 @@ export type Placeable = { x?: number; y?: number; w: number; h: number };
 export type CanvasResolutionLike = { type: "dynamic" | "fixed"; width?: number; height?: number };
 
 /** Where a widget sits on its page, in pixels, as the IDE canvas draws it. */
-export function placement(w: Placeable, pixel: boolean): Box {
+export function placement<W extends Placeable>(w: W, pixel: boolean): Box {
   if (pixel) return { left: w.x ?? 0, top: w.y ?? 0, width: w.w, height: w.h };
   return {
     left: (w.x ?? 0) * (COL_W + GAP),
