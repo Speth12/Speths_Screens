@@ -11,9 +11,14 @@ type TransformValue = string | number | boolean;
 const SESSION_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /** Memory tags and session variables: unique names, initial values of their type. */
+/** Starts the tag path of a session variable, {session:name}. Only screens
+ *  hold session variables, so "session" is not a datasource id. */
+export const SESSION_PREFIX = "session:";
+
 export function stateProblems(p: Project): string[] {
   const out: string[] = [];
   for (const ds of p.datasources ?? []) {
+    if (`${ds.id}:` === SESSION_PREFIX) out.push(`datasource ${JSON.stringify(ds.id)}: the id is kept for session variables`);
     const seen = new Set<string>();
     for (const t of ds.config?.memoryTags ?? []) {
       const where = `datasource ${JSON.stringify(ds.id)}, memory tag ${t.path}`;

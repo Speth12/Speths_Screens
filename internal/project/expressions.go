@@ -32,15 +32,19 @@ func ExpressionProblems(p *Project) []string {
 	var out []string
 	for _, ds := range p.Datasources {
 		for _, t := range ds.Config.Tags {
-			if _, err := expr.Compile(t.Expr); err != nil {
-				out = append(out, fmt.Sprintf("datasource %q, calculated tag %s: %s", ds.ID, t.Path, err))
+			if problem := runtimeExprProblem(t.Expr); problem != "" {
+				out = append(out, fmt.Sprintf("datasource %q, calculated tag %s: %s", ds.ID, t.Path, problem))
 			}
 		}
 	}
 	for _, r := range p.AlarmRules {
-		if _, err := expr.Compile(r.Expr); err != nil {
-			out = append(out, fmt.Sprintf("alarm rule %q: %s", r.ID, err))
+		if problem := runtimeExprProblem(r.Expr); problem != "" {
+			out = append(out, fmt.Sprintf("alarm rule %q: %s", r.ID, problem))
 		}
+	}
+	session := map[string]bool{}
+	for _, v := range p.SessionVars {
+		session[v.Name] = true
 	}
 	out = append(out, stateProblems(p)...)
 	out = append(out, scriptProblems(p)...)
@@ -51,7 +55,7 @@ func ExpressionProblems(p *Project) []string {
 		}
 		sort.Strings(names)
 		for _, name := range names {
-			if problem := driveProblem(dynamics[name].Expr, params); problem != "" {
+			if problem := driveProblem(dynamics[name].Expr, params, session); problem != "" {
 				out = append(out, fmt.Sprintf("%s: dynamics.%s: %s", where, name, problem))
 			}
 		}
@@ -80,20 +84,42 @@ func ExpressionProblems(p *Project) []string {
 
 // driveProblem compiles one driven property's expression. params is nil
 // outside a faceplate; inside one, the expression is a template.
-func driveProblem(src string, params []string) string {
-	if params == nil {
-		if _, err := expr.Compile(src); err != nil {
-			return err.Error()
-		}
-		return ""
+func driveProblem(src string, params []string, session map[string]bool) string {
+	compile := expr.Compile
+	if params != nil {
+		compile = expr.CompileTemplate
 	}
-	e, err := expr.CompileTemplate(src)
+	e, err := compile(src)
 	if err != nil {
 		return err.Error()
+	}
+	for _, ref := range e.Refs {
+		if name, ok := strings.CutPrefix(ref, SessionPrefix); ok && !session[name] {
+			return fmt.Sprintf("{%s} names no session variable", ref)
+		}
 	}
 	for _, name := range e.Params {
 		if !slices.Contains(params, name) {
 			return fmt.Sprintf("{%s} is not a parameter of this faceplate", name)
+		}
+	}
+	return ""
+}
+
+// SessionPrefix starts the tag path of a session variable, {session:name}.
+// Only screens hold session variables, so "session" is not a datasource id.
+const SessionPrefix = "session:"
+
+// runtimeExprProblem compiles an expression the runtime evaluates (a
+// calculated tag or an alarm rule), which cannot read session variables.
+func runtimeExprProblem(src string) string {
+	e, err := expr.Compile(src)
+	if err != nil {
+		return err.Error()
+	}
+	for _, ref := range e.Refs {
+		if strings.HasPrefix(ref, SessionPrefix) {
+			return fmt.Sprintf("{%s} is a session variable, which only screens have", ref)
 		}
 	}
 	return ""

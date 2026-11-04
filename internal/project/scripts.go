@@ -21,6 +21,9 @@ var sessionName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 func stateProblems(p *Project) []string {
 	var out []string
 	for _, ds := range p.Datasources {
+		if ds.ID+":" == SessionPrefix {
+			out = append(out, fmt.Sprintf("datasource %q: the id is kept for session variables", ds.ID))
+		}
 		seen := map[string]bool{}
 		for _, t := range ds.Config.MemoryTags {
 			where := fmt.Sprintf("datasource %q, memory tag %s", ds.ID, t.Path)

@@ -55,5 +55,23 @@
       "script \"a\": onChange: nocolon names no datasource",
       "script \"a\": onAlarm: no alarm rule \"low\"",
       "script \"a\": the id is used twice"
+    ] },
+  { "name": "session variables only on screens",
+    "project": {
+      "datasources": [
+        { "id": "calc", "type": "virtual", "label": "Calc", "config": { "tags": [{ "path": "Mode", "expr": "{session:shift} + 1" }] } },
+        { "id": "session", "type": "memory", "label": "Mine", "config": { "memoryTags": [] } }
+      ],
+      "alarmRules": [{ "id": "r", "name": "R", "expr": "{calc:Mode} > 1 && {session:shift} == 2", "severity": "info", "message": "m" }],
+      "sessionVars": [{ "name": "shift", "type": "int" }],
+      "presets": [{ "id": "p", "name": "P", "widgets": [
+        { "id": "w1", "type": "led", "x": 0, "y": 0, "w": 1, "h": 1, "dynamics": { "visible": { "expr": "{session:shift} > 1 && {session:nope}" }, "blink": { "expr": "{session:shift} == 3" } } }
+      ] }]
+    },
+    "want": [
+      "datasource \"calc\", calculated tag Mode: {session:shift} is a session variable, which only screens have",
+      "alarm rule \"r\": {session:shift} is a session variable, which only screens have",
+      "datasource \"session\": the id is kept for session variables",
+      "preset \"P\", widget w1 (led): dynamics.visible: {session:nope} names no session variable"
     ] }
 ]
