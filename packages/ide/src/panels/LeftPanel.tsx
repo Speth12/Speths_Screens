@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
-import type { CalculatedTag, CERTCheck } from "@speths-screens/shared-types";
+import type { CalculatedTag, CERTCheck, MemoryTag } from "@speths-screens/shared-types";
 import { compile } from "@speths-screens/expr";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
@@ -908,13 +908,30 @@ function PageSettings() {
 
 // ── Add Datasource Modal (moved from Header) ──────────────────────────────────
 
+/** A memory tag as the form edits it: the initial value is text until saved. */
+type MemoryRow = { path: string; type: MemoryTag["type"]; initial: string; retain: boolean };
+
+/** A form row as the project's MemoryTag: the initial value read as its type;
+ *  blank (or text that is not of the type) leaves it out, so the tag starts
+ *  at false, 0 or empty text. */
+export function memoryTag(r: MemoryRow): MemoryTag {
+  const t: MemoryTag = { path: r.path.trim(), type: r.type, ...(r.retain ? { retain: true } : {}) };
+  const text = r.initial.trim();
+  if (text === "") return t;
+  if (r.type === "string") return { ...t, initial: r.initial };
+  if (r.type === "bool") return text === "true" || text === "1" ? { ...t, initial: true } : text === "false" || text === "0" ? { ...t, initial: false } : t;
+  const n = Number(text);
+  if (Number.isNaN(n) || (r.type === "int" && !Number.isInteger(n))) return t;
+  return { ...t, initial: n };
+}
+
 const TYPE_DEFAULTS: Record<DatasourceType, { id: string; label: string }> = {
   opcua:   { id: "opcua",  label: "OPC UA" },
   mbtcp:   { id: "mb",     label: "Modbus TCP" },
   mqtt:    { id: "mqtt",   label: "MQTT" },
   rest:    { id: "rest",   label: "PLCnext REST" },
   virtual: { id: "calc",   label: "Computed Tags" },
-  memory:  { id: "mem",    label: "Memory tags" }, // offered once the memory driver lands (Phase 4 step 2)
+  memory:  { id: "mem",    label: "Memory tags" },
 };
 
 export function AddDatasourceModal({ onClose, onAdd }: {
@@ -933,6 +950,9 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [mqttPort, setMqttPort]             = useState(1883);
   const [basePath, setBasePath]             = useState("/_pxc_api/v1.14");
   const [bearerToken, setBearerToken]       = useState("");
+  const [memoryRows, setMemoryRows]         = useState<MemoryRow[]>([
+    { path: "Count", type: "int", initial: "0", retain: true },
+  ]);
   const [virtualRows, setVirtualRows]       = useState<CalculatedTag[]>([
     { path: "tagA", expr: "{rest:tagPath} * 1.0" },
   ]);
@@ -962,6 +982,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
       config.host = ip; config.port = mqttPort || 1883;
     } else if (type === "virtual") {
       config.tags = virtualRows.filter((r) => r.path.trim());
+    } else if (type === "memory") {
+      config.memoryTags = memoryRows.filter((r) => r.path.trim()).map(memoryTag);
     } else {
       config.endpoint = `https://${ip}`;
       config.basePath = basePath;
@@ -1004,6 +1026,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
             <option value="mqtt">MQTT</option>
             <option value="rest">REST (PLCnext pxc_api)</option>
             <option value="virtual">Virtual (computed expressions)</option>
+            <option value="memory">Memory tags (values the runtime keeps)</option>
           </select>
         </label>
 
@@ -1012,7 +1035,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <label className="text-[11px] text-zinc-400">Label<input value={label} onChange={(e) => setLabel(e.target.value)} className="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs" /></label>
         </div>
 
-        {type !== "virtual" && (
+        {type !== "virtual" && type !== "memory" && (
           <label className={lblCls}>IP Address<input value={ip} onChange={(e) => setIp(e.target.value)} placeholder="10.0.0.210" className={inpCls} /></label>
         )}
 
@@ -1059,6 +1082,33 @@ export function AddDatasourceModal({ onClose, onAdd }: {
 
         {hasCert && <CertCheckField mode={certCheck} fingerprint={certFp} onMode={setCertCheck} onFingerprint={setCertFp} />}
 
+        {type === "memory" && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] text-zinc-300">Memory Tags</span>
+              <button onClick={() => setMemoryRows((r) => [...r, { path: "", type: "real", initial: "", retain: false }])} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add tag</button>
+            </div>
+            <div className="space-y-1.5 max-h-44 overflow-y-auto">
+              {memoryRows.map((row, i) => {
+                const set = (patch: Partial<MemoryRow>) => setMemoryRows((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+                return (
+                  <div key={i} className="flex gap-1.5 items-center">
+                    <input aria-label={`memory tag ${i + 1} path`} value={row.path} onChange={(e) => set({ path: e.target.value })} placeholder="Batch/Count" className="w-28 shrink-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
+                    <select aria-label={`memory tag ${i + 1} type`} value={row.type} onChange={(e) => set({ type: e.target.value as MemoryRow["type"] })} className="bg-zinc-950 border border-zinc-800 rounded px-1 py-1 text-[11px]">
+                      <option value="bool">bool</option><option value="int">int</option><option value="real">real</option><option value="string">string</option>
+                    </select>
+                    <input aria-label={`memory tag ${i + 1} initial`} value={row.initial} onChange={(e) => set({ initial: e.target.value })} placeholder="initial" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
+                    <label className="flex items-center gap-1 text-[10px] text-zinc-400 shrink-0" title="Keep the value across a runtime restart">
+                      <input type="checkbox" checked={row.retain} onChange={(e) => set({ retain: e.target.checked })} />keep
+                    </label>
+                    <button onClick={() => setMemoryRows((rows) => rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {type === "virtual" && (
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -1090,6 +1140,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           {type === "mqtt"    && `${ip}:${mqttPort}`}
           {type === "rest"    && `https://${ip}${basePath}`}
           {type === "virtual" && `${virtualRows.filter((r) => r.path.trim()).length} computed tag(s)`}
+          {type === "memory"  && `${memoryRows.filter((r) => r.path.trim()).length} memory tag(s)`}
         </div>
 
         <div className="flex items-center gap-2 pt-1">
