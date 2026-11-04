@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useProject } from "../store/projectStore";
-import { Scripts, SessionVars, withTrigger } from "./Scripts";
+import { Scripts, SessionVars, withTrigger, withWrites, writesText } from "./Scripts";
 
 // The panel is tested with the text area the editor shows until Monaco loads.
 vi.mock("../store/monaco", () => ({ loadMonaco: () => new Promise(() => {}), setScriptApi: () => {} }));
@@ -67,4 +67,53 @@ it("declares session variables with typed initial values", () => {
   expect(vars()).toEqual([{ name: "shift", type: "real", initial: 2.5 }]);
   fireEvent.click(screen.getByTitle("Remove variable"));
   expect(useProject.getState().project.sessionVars).toBeUndefined();
+});
+
+describe("the writes list", () => {
+  it.each([
+    ["", undefined],
+    [" , ,, ", undefined],
+    ["mem:Count", ["mem:Count"]],
+    [" mem:*, plc:Run ,, ns:Line1/* ", ["mem:*", "plc:Run", "ns:Line1/*"]],
+  ])("withWrites(%j)", (text, want) => expect(withWrites(text)).toEqual(want));
+
+  it("writesText joins the entries", () => {
+    expect(writesText({ id: "s", name: "S", trigger: {}, source: "", writes: ["mem:*", "plc:Run"] })).toBe("mem:*, plc:Run");
+    expect(writesText({ id: "s", name: "S", trigger: {}, source: "" })).toBe("");
+  });
+
+  it("is edited in the panel, checked as you type, and a script that writes without one is warned about", () => {
+    useProject.setState({ project: {
+      ...original,
+      datasources: [{ id: "mem", type: "memory", label: "Memory", config: { memoryTags: [] } }],
+      scripts: [{ id: "s", name: "Setter", trigger: { onStart: true }, source: "await writeTag('mem:x', 1)" }],
+    } });
+    render(<Scripts />);
+    fireEvent.click(screen.getByText("Setter"));
+    const script = () => useProject.getState().project.scripts![0]!;
+    const input = () => screen.getByLabelText("writes") as HTMLInputElement;
+
+    expect(screen.getByText("The script calls writeTag but has no writes list: every write is refused.")).toBeTruthy();
+
+    fireEvent.change(input(), { target: { value: "mem:*" } });
+    expect(script().writes).toEqual(["mem:*"]);
+    expect(screen.queryByText(/has no writes list/)).toBeNull();
+    expect(screen.queryByText(/^writes: /)).toBeNull();
+
+    fireEvent.change(input(), { target: { value: "other:X, mem:a*b, mem:*, mem:*" } });
+    expect(screen.getByText("writes: other:X names no datasource")).toBeTruthy();
+    expect(screen.getByText("writes: mem:a*b: * is only allowed as the last character")).toBeTruthy();
+    expect(screen.getByText("writes: mem:* is listed twice")).toBeTruthy();
+
+    // A comma and a space typed last stay in the field while it has the focus.
+    fireEvent.change(input(), { target: { value: "mem:*, " } });
+    expect(input().value).toBe("mem:*, ");
+    expect(script().writes).toEqual(["mem:*"]);
+    fireEvent.blur(input());
+    expect(input().value).toBe("mem:*");
+
+    fireEvent.change(input(), { target: { value: "" } });
+    expect(script().writes).toBeUndefined();
+    expect(screen.getByText(/has no writes list/)).toBeTruthy();
+  });
 });

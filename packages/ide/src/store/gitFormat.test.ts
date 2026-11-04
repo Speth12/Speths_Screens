@@ -11,7 +11,7 @@ const project = {
   scriptRole: "engineer",
   sessionVars: [{ name: "shift", type: "int", initial: 1 }],
   scripts: [
-    { id: "count", name: "Count", trigger: { every: 1000 }, source: "state.n = (state.n ?? 0) + 1;\n" },
+    { id: "count", name: "Count", trigger: { every: 1000 }, writes: ["mem:*", "ns:Line1/*"], source: "state.n = (state.n ?? 0) + 1;\n" },
     { id: "a b", name: "Spaced", trigger: { onStart: true }, source: "log('a b')" },
     { id: "a_b", name: "Underscore", trigger: { onStart: true }, source: "log('a_b')" },
   ],

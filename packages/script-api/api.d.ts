@@ -31,7 +31,9 @@ export interface CommonApi {
   quality(path: string): Quality;
   /** Write through the runtime's write pipeline (its checks and limits apply)
    *  and wait for the answer. Never throws: a refused write resolves with
-   *  status "failed" and the reason. */
+   *  status "failed" and the reason. A runtime script may write only the tags
+   *  in its `writes` list (a script without the list writes nothing; a listed
+   *  tag needs no widget); a page script writes what a widget could. */
   writeTag(path: string, value: unknown): Promise<WriteResult>;
   /** Write a line to the log ([SCRIPT] in the runtime, the console on a page). */
   log(...args: unknown[]): void;

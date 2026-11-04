@@ -22,7 +22,8 @@
 // and at the end) to --out, and exits 0 when the gate passed.
 //
 // The soak project also runs four runtime scripts (Phase 4), which only touch
-// memory tags and so keep running through a PLC outage:
+// memory tags (each names the ones it writes in its writes list) and so keep
+// running through a PLC outage:
 //   ticker        every second, writes a counter to mem:ticks
 //   follower      when the OPC UA temperature changes, writes mem:derived
 //   alarm-counter when the soak alarm is raised or cleared, writes mem:alarms
@@ -89,27 +90,22 @@ const writes = [
 const allTags = [...reads, ...writes.map((w) => w.binding)];
 const widget = (id, type, binding, y, props) => ({ id, type, x: 0, y, w: 2, h: 1, bindings: { value: binding }, ...(props ? { props } : {}) });
 
-// What the scripts write: memory tags, each with a widget that may write it
-// (a tag is writable only when a writable widget is bound to it).
-const memWrites = [
-  { binding: "mem:ticks", props: { min: 0, max: 1e12 } },
-  { binding: "mem:derived", props: { min: -1e9, max: 1e9 } },
-  { binding: "mem:alarms", props: { min: 0, max: 1e12 } },
-];
+// What the scripts write: memory tags, each named in its script's writes list
+// (a script writes only what its list names; no widget is needed).
 const TEMP = `opcua:${O}HMI_SIM_Temp`;
 const scripts = [
-  { id: "ticker", name: "Ticker", trigger: { onStart: true, every: 1000 }, source: `
+  { id: "ticker", name: "Ticker", trigger: { onStart: true, every: 1000 }, writes: ["mem:ticks"], source: `
     state.n = (state.n ?? 0) + 1;
     const r = await writeTag('mem:ticks', state.n);
     if (r.status !== 'confirmed') throw new Error('mem:ticks write ' + r.status + ' ' + (r.reason ?? ''));` },
-  { id: "follower", name: "Follower", trigger: { onChange: [TEMP] }, source: `
+  { id: "follower", name: "Follower", trigger: { onChange: [TEMP] }, writes: ["mem:derived"], source: `
     state.runs = (state.runs ?? 0) + 1;
     if (event.quality === 'Good' && typeof event.value === 'number' && event.value !== state.last) {
       state.last = event.value;
       const r = await writeTag('mem:derived', Math.round(event.value * 200) / 100);
       if (r.status !== 'confirmed') throw new Error('mem:derived write ' + r.status + ' ' + (r.reason ?? ''));
     }` },
-  { id: "alarm-counter", name: "Alarm counter", trigger: { onAlarm: ["soak-high"] }, source: `
+  { id: "alarm-counter", name: "Alarm counter", trigger: { onAlarm: ["soak-high"] }, writes: ["mem:alarms"], source: `
     state.n = (state.n ?? 0) + 1;
     const r = await writeTag('mem:alarms', state.n);
     if (r.status !== 'confirmed') throw new Error('mem:alarms write ' + r.status + ' ' + (r.reason ?? ''));
@@ -143,7 +139,6 @@ const project = {
       ...reads.map((b, i) => widget(`r${i}`, "numericDisplay", b, i)),
       ...writes.map((w, i) => widget(`w${i}`, w.binding.includes("/s") ? "textInput" : "numericInput", w.binding, 20 + i,
         w.binding.includes("/s") ? undefined : { min: 0, max: 1000 })),
-      ...memWrites.map((m, i) => widget(`m${i}`, "numericInput", m.binding, 30 + i, m.props)),
     ],
   }],
   // Exercises alarms and alarm history: raised while the int write is above 500.

@@ -119,11 +119,56 @@ func scriptProblems(p *Project) []string {
 				out = append(out, fmt.Sprintf("%s: onAlarm: no alarm rule %q", where, id))
 			}
 		}
+		out = append(out, writeListProblems(where, s.Writes, datasources)...)
 		if problem := SyntaxProblem(s.Source); problem != "" {
 			out = append(out, where+": "+problem)
 		}
 	}
 	return out
+}
+
+// writeListProblems checks a script's writes list. An entry is a tag path
+// "datasource:path" (or "ns:path"), or a prefix of one with a * as its last
+// character ("mem:*", "ns:Line1/*"). Per entry, in this order: empty, listed
+// twice, names no datasource, a * that is not last.
+func writeListProblems(where string, writes []string, datasources map[string]bool) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, w := range writes {
+		switch {
+		case w == "":
+			out = append(out, where+": writes: an entry is empty")
+			continue
+		case seen[w]:
+			out = append(out, fmt.Sprintf("%s: writes: %s is listed twice", where, w))
+			continue
+		}
+		seen[w] = true
+		ds, _, ok := strings.Cut(w, ":")
+		switch {
+		case !ok || !datasources[ds]:
+			out = append(out, fmt.Sprintf("%s: writes: %s names no datasource", where, w))
+		case strings.Contains(strings.TrimSuffix(w, "*"), "*"):
+			out = append(out, fmt.Sprintf("%s: writes: %s: * is only allowed as the last character", where, w))
+		}
+	}
+	return out
+}
+
+// WriteListAllows reports whether a script's writes list covers a tag. The
+// tag is given in every form it is known by (as the script wrote it, and the
+// datasource path it resolves to); an entry covers it when it equals one of
+// them, or ends in * and is a prefix of one.
+func WriteListAllows(writes []string, forms ...string) bool {
+	for _, w := range writes {
+		prefix, isPrefix := strings.CutSuffix(w, "*")
+		for _, f := range forms {
+			if f == w || (isPrefix && strings.HasPrefix(f, prefix)) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // gojaPos is where goja reports a syntax error: "Line 2:7 ".

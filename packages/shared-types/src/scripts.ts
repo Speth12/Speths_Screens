@@ -68,8 +68,32 @@ export function scriptProblems(p: Project): string[] {
     for (const id of s.trigger.onAlarm ?? []) {
       if (!rules.has(id)) out.push(`${where}: onAlarm: no alarm rule ${JSON.stringify(id)}`);
     }
+    out.push(...writeListProblems(where, s.writes, datasources));
     const problem = syntaxProblem(s.source);
     if (problem) out.push(`${where}: ${problem}`);
+  }
+  return out;
+}
+
+/** A script's writes list. An entry is a tag path "datasource:path" (or "ns:path"), or a
+ *  prefix of one with a * as its last character ("mem:*", "ns:Line1/*"). Per entry, in this
+ *  order: empty, listed twice, names no datasource, a * that is not last. */
+export function writeListProblems(where: string, writes: string[] | undefined, datasources: Set<string>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const w of writes ?? []) {
+    if (w === "") {
+      out.push(`${where}: writes: an entry is empty`);
+      continue;
+    }
+    if (seen.has(w)) {
+      out.push(`${where}: writes: ${w} is listed twice`);
+      continue;
+    }
+    seen.add(w);
+    const k = w.indexOf(":");
+    if (k < 0 || !datasources.has(w.slice(0, k))) out.push(`${where}: writes: ${w} names no datasource`);
+    else if ((w.endsWith("*") ? w.slice(0, -1) : w).includes("*")) out.push(`${where}: writes: ${w}: * is only allowed as the last character`);
   }
   return out;
 }

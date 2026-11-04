@@ -24,13 +24,16 @@ const (
 	WriteFailed       = "failed"
 )
 
-// WriteRequest is one write, from the HTTP API, a WebSocket or a recipe.
-// The caller checks the user's role.
+// WriteRequest is one write, from the HTTP API, a WebSocket, a recipe or a
+// runtime script. The caller checks the user's role. Callers build it in
+// code; nothing decodes a client's JSON into it, so a client cannot set the
+// Recipe or Script flags.
 type WriteRequest struct {
 	Binding  string // "ds:path" or "ns:path"
 	Value    any
 	WidgetID string // optional: the widget writing; its min/max apply
 	Recipe   bool   // a recipe write: the recipe itself names the tag
+	Script   bool   // a runtime script's write, which its writes list has already allowed: no writable widget is needed
 }
 
 // WriteResult says what happened. Code is the HTTP status to answer with.
@@ -62,7 +65,7 @@ func (r *Runtime) WriteTag(ctx context.Context, req WriteRequest) WriteResult {
 	p := r.project
 	r.mu.RUnlock()
 	writers, nsTag := writableBy(p, key, r.resolveBinding)
-	if len(writers) == 0 && !nsTag && !req.Recipe && !inRecipe(p, key, r.resolveBinding) {
+	if len(writers) == 0 && !nsTag && !req.Recipe && !req.Script && !inRecipe(p, key, r.resolveBinding) {
 		return writeFailed(404, "%s is not writable in this project", req.Binding)
 	}
 	if err := limitsFor(writers, req.WidgetID).check(req.Value); err != nil {
