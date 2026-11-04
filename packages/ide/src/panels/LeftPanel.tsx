@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
 import type { CERTCheck } from "@speths-screens/shared-types";
-import { SYMBOL_PACKS, SYMBOLS } from "../data/symbols";
+import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
 import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
-import { generateStandaloneHtml } from "../store/exportHtml";
+import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
+import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertCheckField, CertPinModal, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
@@ -15,8 +16,13 @@ import { Faceplates } from "./Faceplates";
 import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
+import { openProject, openSummary } from "../store/openProject";
+import { StatusMessage } from "./StatusMessage";
+import { convertWidget } from "../store/presets";
+import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
+import { BindingInput } from "./BindingInput";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -116,6 +122,8 @@ export function LeftPanel({ width }: { width?: number }) {
   };
 
   const doDeploy = async () => {
+    const problems = validateProject(useProject.getState().project);
+    if (problems.length) { setDeployMsg(`Not deployed: ${problems.join("; ")}`); return; }
     setDeploying(true); setDeployMsg("");
     try {
       const r = await fetch(`${apiBase}/api/v1/project`, {
@@ -129,8 +137,9 @@ export function LeftPanel({ width }: { width?: number }) {
     finally { setDeploying(false); setTimeout(() => setDeployMsg(""), 4000); }
   };
 
-  const exportHtml = () => {
-    const html = generateStandaloneHtml(project, "");
+  // A static snapshot of every page, with the values the IDE has now.
+  const exportHtml = async () => {
+    const html = await generateStandaloneHtml(project, { ...ideLook(), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
     const blob = new Blob([html], { type: "text/html" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -148,11 +157,15 @@ export function LeftPanel({ width }: { width?: number }) {
       reader.onload = () => {
         try {
           const raw = JSON.parse(reader.result as string) as Record<string, unknown>;
+          let incoming: unknown = raw;
           if (raw._gitFormat) {
             const strMap: Record<string, string> = {};
             for (const [k, v] of Object.entries(raw._files as Record<string, unknown>)) strMap[k] = JSON.stringify(v);
-            loadProject(importGitFormat(strMap));
-          } else { loadProject(raw as unknown as Parameters<typeof loadProject>[0]); }
+            incoming = importGitFormat(strMap);
+          }
+          const o = openProject(incoming);
+          if (o.ok) loadProject(o.project);
+          setDeployMsg(openSummary(file.name, o));
         } catch (e) { alert(`Import failed: ${(e as Error).message}`); }
       };
       reader.readAsText(file);
@@ -301,14 +314,14 @@ export function LeftPanel({ width }: { width?: number }) {
           </div>
         </TreeSection>
 
-        {/* Tags */}
-        <TreeSection label="Tags">
-          <TagBrowser />
-        </TreeSection>
-
-        {/* Namespace */}
+        {/* Namespace first: widgets bind to ns: paths (Phase 2 step 5) */}
         <TreeSection label="Namespace" count={project.namespace?.length}>
           <Namespace />
+        </TreeSection>
+
+        {/* Raw PLC variables, by datasource */}
+        <TreeSection label="Tags">
+          <TagBrowser />
         </TreeSection>
 
         {/* Alarms */}
@@ -379,7 +392,7 @@ export function LeftPanel({ width }: { width?: number }) {
 
       {/* ── Bottom action bar ────────────────────────────────────────── */}
       <div className="border-t border-zinc-800 p-2 space-y-1 shrink-0">
-        {deployMsg && <div className="text-[10px] text-zinc-400 truncate px-1">{deployMsg}</div>}
+        {deployMsg && <StatusMessage text={deployMsg} className="text-[10px] text-zinc-400 px-1" />}
         <button
           onClick={doDeploy}
           disabled={deploying}
@@ -389,7 +402,7 @@ export function LeftPanel({ width }: { width?: number }) {
           {deploying ? "Deploying…" : "Deploy to Runtime"}
         </button>
         <div className="grid grid-cols-3 gap-1">
-          <button onClick={exportHtml} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export standalone HTML">⬇ HTML</button>
+          <button onClick={exportHtml} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export a snapshot of every page as one HTML file (no live values; use the operator screen for those)">⬇ HTML</button>
           <button onClick={() => downloadGitFormat(project)} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export Git format">⬇ Git</button>
           <button onClick={importGit} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Import project">⬆ Import</button>
         </div>
@@ -500,8 +513,6 @@ function CanvasSettings() {
   const [fw, setFw] = useState<number>(res.type === "fixed" ? (res.width ?? 1920) : 1920);
   const [fh, setFh] = useState<number>(res.type === "fixed" ? (res.height ?? 1080) : 1080);
 
-  const COL_W = 80, ROW_H = 64, GAP = 8;
-
   const setPatch = (patch: Partial<typeof project>) => {
     const p = JSON.parse(exportJSON());
     loadProject({ ...p, ...patch });
@@ -512,32 +523,10 @@ function CanvasSettings() {
   const setSnap = (s: CanvasSnap) => {
     if (s === snap) return;
     const p = JSON.parse(exportJSON());
-    // Convert all widget positions so they appear in the same place after the switch.
-    const pages = p.pages.map((pg: typeof project.pages[number]) => ({
-      ...pg,
-      widgets: pg.widgets.map((w: typeof project.pages[number]["widgets"][number]) => {
-        if (s === "pixel") {
-          // grid → pixel
-          return {
-            ...w,
-            x: Math.round((w.x ?? 0) * (COL_W + GAP)),
-            y: Math.round((w.y ?? 0) * (ROW_H + GAP)),
-            w: Math.max(40, Math.round(w.w * (COL_W + GAP) - GAP)),
-            h: Math.max(40, Math.round(w.h * (ROW_H + GAP) - GAP)),
-          };
-        } else {
-          // pixel → grid
-          return {
-            ...w,
-            x: Math.max(0, Math.round((w.x ?? 0) / (COL_W + GAP))),
-            y: Math.max(0, Math.round((w.y ?? 0) / (ROW_H + GAP))),
-            w: Math.max(1, Math.round((w.w + GAP) / (COL_W + GAP))),
-            h: Math.max(1, Math.round((w.h + GAP) / (ROW_H + GAP))),
-          };
-        }
-      }),
-    }));
-    loadProject({ ...p, pages, canvasSnap: s });
+    // Convert every widget, pages and presets, so it looks the same after the switch.
+    const pages = (p.pages as typeof project.pages).map((pg) => ({ ...pg, widgets: pg.widgets.map((w) => convertWidget(w, s)) }));
+    const presets = (p.presets as typeof project.presets)?.map((ps) => ({ ...ps, widgets: ps.widgets.map((w) => convertWidget(w, s)) }));
+    loadProject({ ...p, pages, presets, canvasSnap: s });
   };
 
   const numCls = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-zinc-500";
@@ -707,10 +696,9 @@ function AlarmRulesEditor() {
               />
               <button onClick={() => removeRule(i)} className="text-zinc-600 hover:text-red-400 text-xs shrink-0">×</button>
             </div>
-            <input
+            <BindingInput
               value={rule.binding}
-              onChange={(e) => updateRule(i, { binding: e.target.value })}
-              placeholder="ds:tagPath"
+              onChange={(v) => updateRule(i, { binding: v })}
               className={`${inp} font-mono text-[10px]`}
             />
             <div className="flex gap-1">
@@ -774,13 +762,14 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Overview",
     description: "Gauges, LED, button",
     widgets: [
-      { type: "gauge",          x: 0,  y: 0, w: 4, h: 3, config: { label: "Value 1" } },
-      { type: "gauge",          x: 4,  y: 0, w: 4, h: 3, config: { label: "Value 2" } },
-      { type: "tank",           x: 8,  y: 0, w: 2, h: 4, config: { label: "Level" } },
-      { type: "numericDisplay", x: 0,  y: 3, w: 3, h: 2, config: { label: "PV" } },
-      { type: "numericDisplay", x: 3,  y: 3, w: 3, h: 2, config: { label: "SP" } },
-      { type: "led",            x: 10, y: 0, w: 2, h: 2, config: { label: "Status" } },
-      { type: "button",         x: 10, y: 2, w: 2, h: 2, config: { label: "Reset" } },
+      { type: "gauge",          x: 0,  y: 0, w: 4, h: 3, props: { label: "Value 1" } },
+      { type: "gauge",          x: 4,  y: 0, w: 4, h: 3, props: { label: "Value 2" } },
+      { type: "tank",           x: 8,  y: 0, w: 2, h: 4, props: { label: "Level" } },
+      { type: "numericDisplay", x: 0,  y: 3, w: 3, h: 2, props: { label: "PV" } },
+      { type: "numericDisplay", x: 3,  y: 3, w: 3, h: 2, props: { label: "SP" } },
+      { type: "led",            x: 10, y: 0, w: 2, h: 2, props: { label: "Status" } },
+      { type: "button",         x: 10, y: 2, w: 2, h: 2, props: { label: "Reset" },
+        events: { onPress: [{ type: "write", value: 1 }], onRelease: [{ type: "write", value: 0 }] } },
     ],
   },
   {
@@ -788,8 +777,8 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Trend",
     description: "Full-width trend chart",
     widgets: [
-      { type: "trend",  x: 0, y: 0, w: 12, h: 7, config: { label: "Trend", duration: 300 } },
-      { type: "button", x: 0, y: 7, w: 3,  h: 2, config: { label: "← Back", action: "navigate" } },
+      { type: "trend",  x: 0, y: 0, w: 12, h: 7, props: { label: "Trend", duration: 300 } },
+      { type: "button", x: 0, y: 7, w: 3,  h: 2, props: { label: "← Back" } },
     ],
   },
   {
@@ -797,8 +786,8 @@ const PAGE_TEMPLATES: Template[] = [
     name: "Alarms",
     description: "Alarm banner + history",
     widgets: [
-      { type: "alarmBanner", x: 0, y: 0, w: 12, h: 4, config: { label: "Active Alarms", maxRows: 8 } },
-      { type: "historyLog",  x: 0, y: 4, w: 12, h: 5, config: { label: "Write History" } },
+      { type: "alarmBanner", x: 0, y: 0, w: 12, h: 4, props: { label: "Active Alarms", maxRows: 8 } },
+      { type: "historyLog",  x: 0, y: 4, w: 12, h: 5, props: { label: "Write History" } },
     ],
   },
 ];

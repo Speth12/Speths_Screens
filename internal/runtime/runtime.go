@@ -176,10 +176,10 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		prefix := ds.ID + ":"
 		for _, pg := range p.Pages {
 			for _, w := range pg.Widgets {
-				if w.Binding == nil || *w.Binding == "" {
+				b := w.View().ValueTag()
+				if b == "" {
 					continue
 				}
-				b := *w.Binding
 				if strings.HasPrefix(b, prefix) {
 					tagPath := b[len(prefix):]
 					nsPath := ds.ID + "." + strings.ReplaceAll(tagPath, ":", ".")

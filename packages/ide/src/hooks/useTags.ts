@@ -14,10 +14,10 @@ export function useTags(bindings: string[]): Record<string, TagState> {
   });
 
   useEffect(() => {
+    // A new set of paths starts from their own values, or Unknown: never old ones.
+    setStates(Object.fromEntries(bindings.map((b) => [b, tagStoreClient.get(b) ?? empty])));
     const unsubs: Array<() => void> = [];
     bindings.forEach((b) => {
-      const cached = tagStoreClient.get(b);
-      if (cached) setStates((prev) => ({ ...prev, [b]: cached }));
       unsubs.push(tagStoreClient.subscribe(b, (s) => setStates((prev) => ({ ...prev, [b]: s }))));
     });
     return () => unsubs.forEach((u) => u());

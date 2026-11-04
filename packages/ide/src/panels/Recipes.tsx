@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useProject, type Recipe, type RecipeEntry } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
+import { BindingInput } from "./BindingInput";
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
@@ -160,11 +161,11 @@ export function Recipes() {
                   <div className="space-y-1">
                     {rec.entries.map((entry, i) => (
                       <div key={i} className="flex items-center gap-1.5">
-                        <input
+                        <BindingInput
                           value={entry.binding}
-                          onChange={(e) => updateEntry(rec.id, i, { binding: e.target.value })}
-                          placeholder="ds:tagPath"
-                          className={`${inp} flex-1 font-mono text-zinc-300`}
+                          onChange={(v) => updateEntry(rec.id, i, { binding: v })}
+                          wrapClassName="flex-1 min-w-0"
+                          className={`${inp} w-full font-mono text-zinc-300`}
                         />
                         <span className="text-zinc-600 text-[10px] shrink-0">=</span>
                         <input

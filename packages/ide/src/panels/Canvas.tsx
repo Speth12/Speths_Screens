@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
-import { SYMBOLS } from "../data/symbols";
+import { preferNs } from "../store/tagPaths";
+import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
+import { SYMBOLS } from "@speths-screens/widgets";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 
@@ -130,6 +132,7 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
       {multi && item(`Group ${multiCount} widgets`, "group")}
       {!multi && w?.groupId && item("Ungroup", "ungroup")}
       {(multi || w?.groupId) && <div className="border-t border-zinc-700 my-1" />}
+      {item(multi ? `Save ${multiCount} widgets as preset…` : "Save as preset…", "save-preset")}
       {item(multi ? `Copy ${multiCount} widgets  Ctrl+C` : "Copy  Ctrl+C", "copy")}
       {!multi && item("Duplicate  Ctrl+D", "duplicate")}
       <div className="border-t border-zinc-700 my-1" />
@@ -153,6 +156,7 @@ export function Canvas() {
 
   const [zoom, setZoom]           = useState(1);
   const [ctxMenu, setCtxMenu]     = useState<CtxMenu | null>(null);
+  const [presetFrom, setPresetFrom] = useState<Widget[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Rubber-band state (screen coords relative to outerRef)
@@ -363,7 +367,7 @@ export function Canvas() {
     const types = e.dataTransfer.types;
     if (types.includes("text/x-widget-id") || types.includes("text/x-tag-binding") ||
         types.includes("text/x-resize")    || types.includes("text/x-image-id")    ||
-        types.includes("text/x-symbol-id"))
+        types.includes("text/x-symbol-id") || types.includes(PRESET_DRAG))
       e.preventDefault();
   };
 
@@ -379,7 +383,14 @@ export function Canvas() {
       const target = isPixel
         ? page.widgets.find(w => pxX >= w.x && pxX < w.x + w.w && pxY >= w.y && pxY < w.y + w.h)
         : page.widgets.find(w => col >= (w.x ?? 0) && col < (w.x ?? 0) + w.w && row >= (w.y ?? 0) && row < (w.y ?? 0) + w.h);
-      if (target) updateWidget(activePageId, target.id, { binding: tagBinding });
+      if (target) updateWidget(activePageId, target.id, { bindings: { ...target.bindings, value: preferNs(project, tagBinding) } });
+      return;
+    }
+
+    const presetId = e.dataTransfer.getData(PRESET_DRAG);
+    if (presetId) {
+      const ws = insertPreset(presetId, isPixel ? { x: Math.max(0, pxX), y: Math.max(0, pxY) } : { x: Math.max(0, col), y: Math.max(0, row) });
+      setSelectedIds(ws.map(w => w.id));
       return;
     }
 
@@ -392,7 +403,7 @@ export function Canvas() {
         x: isPixel ? Math.max(0, pxX) : Math.max(0, col),
         y: isPixel ? Math.max(0, pxY) : Math.max(0, row),
         w: isPixel ? 160 : 3, h: isPixel ? 160 : 3,
-        config: { symbolId, label: sym?.name ?? symbolId, stroke: "#d4d4d8" },
+        props: { symbolId, label: sym?.name ?? symbolId, stroke: "#d4d4d8" },
       });
       setSelectedIds([id]);
       return;
@@ -407,7 +418,7 @@ export function Canvas() {
         x: isPixel ? Math.max(0, pxX) : Math.max(0, col),
         y: isPixel ? Math.max(0, pxY) : Math.max(0, row),
         w: isPixel ? 240 : 4, h: isPixel ? 180 : 3,
-        config: { src: `lib:${imageId}`, label: img?.name ?? "Image", objectFit: "contain" },
+        props: { src: `lib:${imageId}`, label: img?.name ?? "Image", fit: "contain" },
       });
       setSelectedIds([id]);
       return;
@@ -472,6 +483,9 @@ export function Canvas() {
 
     if (action === "lock") {
       updateWidget(activePageId, widgetId, { locked: !w.locked });
+    }
+    if (action === "save-preset") {
+      setPresetFrom(selectedIds.length > 1 ? page.widgets.filter(x => selectedIds.includes(x.id)) : [w]);
     }
     if (action === "copy") {
       if (selectedIds.length > 1) {
@@ -732,9 +746,9 @@ export function Canvas() {
                   </>
                 )}
 
-                {w.binding && (
+                {w.bindings?.value && (
                   <div className="absolute bottom-0 left-0 right-0 text-[9px] font-mono text-zinc-500 px-1.5 truncate pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                    {w.binding}
+                    {w.bindings.value}
                   </div>
                 )}
               </div>
@@ -789,6 +803,7 @@ export function Canvas() {
             multiCount={selectedIds.length}
           />
         )}
+        {presetFrom && <SavePresetDialog widgets={presetFrom} onClose={() => setPresetFrom(null)} />}
       </div>
     </div>
   );

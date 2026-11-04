@@ -3,6 +3,7 @@ package project
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -15,16 +16,34 @@ func Load(path string) (*Project, error) {
 	return Parse(data)
 }
 
-// Parse unmarshals project JSON from raw bytes.
+// Parse reads project JSON of any format: it upgrades an older format,
+// checks the result against schema.json, and decodes it. What the upgrade
+// dropped is logged; ParseNotes returns it instead.
 func Parse(data []byte) (*Project, error) {
+	p, notes, err := ParseNotes(data)
+	for _, n := range notes {
+		log.Printf("[PROJECT] upgrade: %s", n)
+	}
+	return p, err
+}
+
+// ParseNotes is Parse, returning the upgrade's notes.
+func ParseNotes(data []byte) (*Project, []string, error) {
+	current, notes, err := Upgrade(data)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := ValidateJSON(current); err != nil {
+		return nil, notes, err
+	}
 	var p Project
-	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, fmt.Errorf("unmarshal project: %w", err)
+	if err := json.Unmarshal(current, &p); err != nil {
+		return nil, notes, fmt.Errorf("unmarshal project: %w", err)
 	}
 	if err := validate(&p); err != nil {
-		return nil, fmt.Errorf("validate project: %w", err)
+		return nil, notes, fmt.Errorf("validate project: %w", err)
 	}
-	return &p, nil
+	return &p, notes, nil
 }
 
 func validate(p *Project) error {

@@ -4,6 +4,7 @@ import type { Project } from "@speths-screens/shared-types";
 
 it("updateDatasource changes one datasource and can be undone", () => {
   const p: Project = {
+    schemaVersion: 2,
     version: "0.1.0",
     datasources: [
       { id: "rest", label: "REST", type: "rest", config: { endpoint: "https://10.0.0.210" } },

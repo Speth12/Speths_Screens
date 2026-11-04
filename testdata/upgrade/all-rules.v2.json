@@ -1,0 +1,331 @@
+{
+  "datasources": [
+    {
+      "config": {
+        "endpoint": "https://10.0.0.210"
+      },
+      "id": "plc",
+      "label": "PLC",
+      "type": "rest"
+    }
+  ],
+  "faceplates": [
+    {
+      "id": "fp1",
+      "name": "Pump",
+      "params": [
+        {
+          "name": "pump"
+        }
+      ],
+      "widgets": [
+        {
+          "bindings": {
+            "value": "{pump}.speed"
+          },
+          "h": 1,
+          "localId": "speed",
+          "props": {
+            "max": 1500,
+            "min": 0,
+            "unit": "rpm"
+          },
+          "type": "numericInput",
+          "w": 2,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "{pump}.run"
+          },
+          "events": {
+            "onClick": [
+              {
+                "off": false,
+                "on": true,
+                "type": "toggle"
+              }
+            ]
+          },
+          "h": 1,
+          "localId": "run",
+          "type": "button",
+          "w": 2,
+          "x": 2,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "name": "Every v1-to-v2 upgrade rule",
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Main",
+      "widgets": [
+        {
+          "bindings": {
+            "color": "plc:Alarm",
+            "value": "plc:Temp",
+            "visible": "plc:Show"
+          },
+          "h": 3,
+          "id": "g1",
+          "props": {
+            "colorThresholds": [
+              {
+                "color": "#ef4444",
+                "value": 1
+              }
+            ],
+            "label": "Temp",
+            "max": 120,
+            "min": 0,
+            "thresholds": [
+              {
+                "color": "#f59e0b",
+                "toValue": 100,
+                "value": 80
+              }
+            ],
+            "unit": "°C"
+          },
+          "type": "gauge",
+          "w": 4,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 1,
+          "id": "t1",
+          "props": {
+            "staticText": "Pump status"
+          },
+          "type": "textDisplay",
+          "w": 4,
+          "x": 0,
+          "y": 3
+        },
+        {
+          "h": 1,
+          "id": "t2",
+          "props": {
+            "staticText": "Kept"
+          },
+          "type": "textDisplay",
+          "w": 4,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "bindings": {
+            "value": "ns:plant.mixer.state"
+          },
+          "h": 1,
+          "id": "t3",
+          "type": "textDisplay",
+          "w": 4,
+          "x": 8,
+          "y": 3
+        },
+        {
+          "bindings": {
+            "value": "plc:Start"
+          },
+          "events": {
+            "onPress": [
+              {
+                "type": "write",
+                "value": 5
+              }
+            ],
+            "onRelease": [
+              {
+                "type": "write",
+                "value": 0
+              }
+            ]
+          },
+          "h": 2,
+          "id": "b1",
+          "props": {
+            "btnColor": "green",
+            "label": "Start"
+          },
+          "type": "button",
+          "w": 3,
+          "x": 0,
+          "y": 4
+        },
+        {
+          "bindings": {
+            "value": "plc:Run"
+          },
+          "events": {
+            "onClick": [
+              {
+                "off": 0,
+                "on": 1,
+                "type": "toggle"
+              },
+              {
+                "tag": "plc:Log",
+                "type": "write",
+                "value": "clicked"
+              }
+            ]
+          },
+          "h": 2,
+          "id": "b2",
+          "props": {
+            "label": "Run",
+            "toggleOnColor": "green"
+          },
+          "type": "button",
+          "w": 3,
+          "x": 3,
+          "y": 4
+        },
+        {
+          "events": {
+            "onClick": [
+              {
+                "page": "p2",
+                "type": "navigate"
+              }
+            ]
+          },
+          "h": 2,
+          "id": "b3",
+          "props": {
+            "label": "Next"
+          },
+          "type": "button",
+          "w": 3,
+          "x": 6,
+          "y": 4
+        },
+        {
+          "h": 2,
+          "id": "b4",
+          "type": "button",
+          "w": 3,
+          "x": 9,
+          "y": 4
+        },
+        {
+          "h": 3,
+          "id": "i1",
+          "props": {
+            "fit": "cover",
+            "src": "lib:logo"
+          },
+          "type": "image",
+          "w": 3,
+          "x": 0,
+          "y": 6
+        },
+        {
+          "h": 3,
+          "id": "i2",
+          "props": {
+            "fit": "fill",
+            "src": "lib:logo"
+          },
+          "type": "image",
+          "w": 3,
+          "x": 3,
+          "y": 6
+        },
+        {
+          "bindings": {
+            "value": "plc:Count"
+          },
+          "dynamics": [
+            {
+              "binding": "plc:Show",
+              "id": "v",
+              "kind": "visibility"
+            },
+            {
+              "binding": "plc:Count",
+              "expression": "value > 5",
+              "falseValue": "",
+              "id": "s",
+              "kind": "script",
+              "targetProp": "bgColor",
+              "trueValue": "#ef4444"
+            }
+          ],
+          "events": {
+            "onClick": [
+              {
+                "step": 2,
+                "tag": "plc:Count",
+                "type": "increment"
+              },
+              {
+                "page": "p2",
+                "type": "navigate"
+              },
+              {
+                "type": "openUrl",
+                "url": "https://example.com/help"
+              }
+            ],
+            "onPress": [
+              {
+                "tag": "plc:Horn",
+                "type": "write",
+                "value": true
+              }
+            ],
+            "onRelease": [
+              {
+                "tag": "plc:Lamp",
+                "type": "toggle"
+              }
+            ]
+          },
+          "h": 2,
+          "id": "n1",
+          "type": "numericDisplay",
+          "w": 3,
+          "x": 6,
+          "y": 6
+        },
+        {
+          "h": 2,
+          "id": "e1",
+          "type": "led",
+          "w": 2,
+          "x": 9,
+          "y": 6
+        },
+        {
+          "h": 4,
+          "id": "f1",
+          "props": {
+            "faceplateId": "fp1",
+            "label": "Pump 1",
+            "params": {
+              "pump": "plc:P1"
+            }
+          },
+          "type": "faceplate",
+          "w": 4,
+          "x": 0,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "name": "Second",
+      "widgets": []
+    }
+  ],
+  "schemaVersion": 2,
+  "version": "0.1.0"
+}

@@ -77,12 +77,10 @@ class Client {
    */
   reconnectTo(_url: string): void {
     // Close existing connection; ensureConnected will use the new wsUrl().
-    if (this.ws) {
-      this.ws.onclose = null; // prevent auto-reconnect loop
-      this.ws.onerror = null;
-      this.ws.close();
-      this.ws = null;
-    }
+    // Its late events are ignored: they belong to a socket no longer current.
+    const old = this.ws;
+    this.ws = null;
+    old?.close();
     this.connected = false;
     this.connecting = false;
     this.cache.clear();
@@ -97,7 +95,12 @@ class Client {
     const ws = new WebSocket(url);
     this.ws = ws;
 
+    // Events from a socket that is no longer the current one (closed by
+    // reconnectTo while a new one was opening) must not touch the state.
+    const current = () => this.ws === ws;
+
     ws.addEventListener("open", () => {
+      if (!current()) return;
       this.connecting = false;
       this.connected = true;
       const all = Array.from(this.listeners.keys());
@@ -105,6 +108,7 @@ class Client {
     });
 
     ws.addEventListener("message", (ev) => {
+      if (!current()) return;
       try {
         const msg = JSON.parse(ev.data) as Incoming;
         const state: TagState = {
@@ -121,6 +125,7 @@ class Client {
     });
 
     const scheduleReconnect = () => {
+      if (!current()) return;
       this.connecting = false;
       this.connected = false;
       this.ws = null;

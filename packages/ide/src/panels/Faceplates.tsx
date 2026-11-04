@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useProject, type Faceplate, type FaceplateParam, type FaceplateWidget, type WidgetType } from "../store/projectStore";
+import { manifestFor } from "@speths-screens/widgets";
+import type { Widget } from "../store/projectStore";
+import { SettingsFields } from "./SettingsEditor";
 
 const uid = () => `lw-${Math.random().toString(36).slice(2, 8)}`;
 const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
@@ -36,8 +39,16 @@ function FpWidgetProps({
   onChange: (patch: Partial<FaceplateWidget>) => void;
   onRemove: () => void;
 }) {
-  const setConfig = (k: string, v: unknown) =>
-    onChange({ config: { ...(w.config ?? {}), [k]: v } });
+  const props: Record<string, unknown> = w.props ?? {};
+  const setProp = (k: string, v: unknown) => {
+    const next = { ...props };
+    if (v === undefined) delete next[k];
+    else next[k] = v;
+    onChange({ props: next });
+  };
+  const tag = w.bindings?.value ?? "";
+  const setTag = (value: string) => onChange({ bindings: { ...w.bindings, value: value || undefined } });
+  const manifest = manifestFor(w.type);
 
   return (
     <div className="space-y-3">
@@ -51,11 +62,11 @@ function FpWidgetProps({
 
       <div>
         <div className="text-[10px] text-zinc-500 mb-0.5">Binding</div>
-        <input value={w.binding ?? ""} onChange={(e) => onChange({ binding: e.target.value || undefined })}
+        <input value={tag} onChange={(e) => setTag(e.target.value)}
           placeholder="e.g. {prefix}.Status" className={inp} />
         <div className="mt-1 flex flex-wrap gap-1">
           {params.map((p) => (
-            <button key={p.name} onClick={() => onChange({ binding: (w.binding ?? "") + `{${p.name}}` })}
+            <button key={p.name} onClick={() => setTag(tag + `{${p.name}}`)}
               className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-purple-300 font-mono">
               {`{${p.name}}`}
             </button>
@@ -65,7 +76,7 @@ function FpWidgetProps({
 
       <div>
         <div className="text-[10px] text-zinc-500 mb-0.5">Label</div>
-        <input value={(w.config?.label as string) ?? ""} onChange={(e) => setConfig("label", e.target.value)}
+        <input value={(props.label as string) ?? ""} onChange={(e) => setProp("label", e.target.value || undefined)}
           className={inp} />
       </div>
 
@@ -96,44 +107,9 @@ function FpWidgetProps({
         </div>
       </div>
 
-      {/* Widget-type specific quick config */}
-      {(w.type === "gauge" || w.type === "tank" || w.type === "setpoint") && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <div className="text-[10px] text-zinc-500 mb-0.5">Min</div>
-            <input type="number" value={(w.config?.min as number) ?? 0}
-              onChange={(e) => setConfig("min", Number(e.target.value))} className={inp} />
-          </div>
-          <div>
-            <div className="text-[10px] text-zinc-500 mb-0.5">Max</div>
-            <input type="number" value={(w.config?.max as number) ?? 100}
-              onChange={(e) => setConfig("max", Number(e.target.value))} className={inp} />
-          </div>
-        </div>
-      )}
-
-      {w.type === "button" && (
-        <div>
-          <div className="text-[10px] text-zinc-500 mb-0.5">Action</div>
-          <select value={(w.config?.action as string) ?? "write"}
-            onChange={(e) => setConfig("action", e.target.value)} className={inp}>
-            <option value="write">Write value</option>
-            <option value="navigate">Navigate page</option>
-          </select>
-        </div>
-      )}
-
-      {w.type === "led" && (
-        <div className="grid grid-cols-2 gap-1">
-          <div>
-            <div className="text-[10px] text-zinc-500 mb-0.5">ON label</div>
-            <input value={(w.config?.trueLabel as string) ?? "ON"} onChange={(e) => setConfig("trueLabel", e.target.value)} className={inp} />
-          </div>
-          <div>
-            <div className="text-[10px] text-zinc-500 mb-0.5">OFF label</div>
-            <input value={(w.config?.falseLabel as string) ?? "OFF"} onChange={(e) => setConfig("falseLabel", e.target.value)} className={inp} />
-          </div>
-        </div>
+      {/* The widget type's settings, from its manifest */}
+      {manifest && manifest.settings.length > 0 && (
+        <SettingsFields fields={manifest.settings} config={props} set={setProp} w={{ ...w, id: w.localId } as unknown as Widget} />
       )}
     </div>
   );
@@ -210,7 +186,7 @@ function FaceplateEditorModal({
 
   const addWidget = (type: WidgetType, defW: number, defH: number) => {
     const id = uid();
-    setWidgets((ws) => [...ws, { localId: id, type, x: 0, y: 0, w: defW, h: defH, binding: params[0] ? `{${params[0].name}}` : undefined, config: {} }]);
+    setWidgets((ws) => [...ws, { localId: id, type, x: 0, y: 0, w: defW, h: defH, ...(params[0] ? { bindings: { value: `{${params[0].name}}` } } : {}), ...manifestFor(type)?.defaults }]);
     setSelected(id);
   };
 
@@ -334,16 +310,16 @@ function FaceplateEditorModal({
                     </div>
 
                     {/* Binding preview */}
-                    {w.binding && (
+                    {w.bindings?.value && (
                       <div className="absolute bottom-1 left-1.5 right-6 text-[8px] font-mono text-purple-400 truncate">
-                        {w.binding}
+                        {w.bindings.value}
                       </div>
                     )}
 
                     {/* Label preview */}
-                    {typeof w.config?.label === "string" && w.config.label && (
+                    {w.props?.label && (
                       <div className="absolute inset-0 flex items-center justify-center text-xs text-zinc-300 pointer-events-none">
-                        {w.config.label}
+                        {w.props.label}
                       </div>
                     )}
 
@@ -514,7 +490,7 @@ function FaceplateCard({ fp }: { fp: Faceplate }) {
               {fp.widgets.map((w) => (
                 <div key={w.localId} className="flex items-center gap-2 text-[10px] py-0.5 border-b border-zinc-800/50">
                   <span className="text-zinc-500 font-mono w-20 truncate">{w.type}</span>
-                  <span className="text-zinc-600 font-mono flex-1 truncate text-purple-400">{w.binding ?? "—"}</span>
+                  <span className="text-zinc-600 font-mono flex-1 truncate text-purple-400">{w.bindings?.value ?? "—"}</span>
                   <span className="text-zinc-700">{w.w}×{w.h}</span>
                 </div>
               ))}

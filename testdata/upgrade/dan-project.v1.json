@@ -1,0 +1,260 @@
+{
+  "version": "0.1.0",
+  "name": "PLCnext AXC F 3152 — Live Demo",
+  "datasources": [
+    {
+      "id": "rest",
+      "type": "rest",
+      "label": "PLCnext REST",
+      "config": {
+        "endpoint": "https://10.0.0.210",
+        "basePath": "/_pxc_api/v1.14"
+      }
+    },
+    {
+      "id": "opcua",
+      "type": "opcua",
+      "label": "OPC UA",
+      "config": {
+        "endpoint": "opc.tcp://10.0.0.210:4840",
+        "securityMode": "None"
+      }
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-demo",
+      "name": "PLC Demo",
+      "widgets": [
+        {
+          "id": "w-gauge",
+          "type": "gauge",
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 3,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+          "config": {
+            "label": "Integer Value",
+            "min": 0,
+            "max": 1000,
+            "unit": "units",
+            "thresholds": [
+              {
+                "value": 700,
+                "color": "#f59e0b"
+              },
+              {
+                "value": 900,
+                "color": "#ef4444"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-numeric",
+          "type": "numericDisplay",
+          "x": 4,
+          "y": 0,
+          "w": 3,
+          "h": 2,
+          "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iInteger",
+          "config": {
+            "label": "OPC UA iInteger (GDS)",
+            "unit": "cnt",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "w-led",
+          "type": "led",
+          "x": 7,
+          "y": 0,
+          "w": 2,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.xBool_Out",
+          "config": {
+            "label": "Bool Out",
+            "trueLabel": "ACTIVE",
+            "falseLabel": "IDLE",
+            "trueColor": "#22c55e",
+            "falseColor": "#ef4444"
+          }
+        },
+        {
+          "id": "w-button",
+          "type": "button",
+          "x": 9,
+          "y": 0,
+          "w": 3,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.xBool_API",
+          "config": {
+            "label": "Toggle API Bool",
+            "momentary": false,
+            "onValue": true,
+            "offValue": false
+          }
+        },
+        {
+          "id": "w-multistate",
+          "type": "multiState",
+          "x": 4,
+          "y": 2,
+          "w": 3,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.xBool_Out",
+          "config": {
+            "label": "Bool State",
+            "states": [
+              {
+                "value": false,
+                "label": "OFFLINE",
+                "color": "#27272a",
+                "textColor": "#d4d4d8"
+              },
+              {
+                "value": true,
+                "label": "ONLINE",
+                "color": "#052e16",
+                "textColor": "#4ade80"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-numinput",
+          "type": "numericInput",
+          "x": 7,
+          "y": 2,
+          "w": 2,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.xBool_In",
+          "config": {
+            "label": "Write Bool In",
+            "unit": ""
+          }
+        },
+        {
+          "id": "w-setpoint",
+          "type": "setpoint",
+          "x": 9,
+          "y": 2,
+          "w": 3,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.xBool_In",
+          "config": {
+            "label": "Bool In Setpoint",
+            "min": 0,
+            "max": 1,
+            "step": 1,
+            "unit": ""
+          }
+        },
+        {
+          "id": "w-tank",
+          "type": "tank",
+          "x": 0,
+          "y": 3,
+          "w": 2,
+          "h": 4,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+          "config": {
+            "label": "Integer Tank",
+            "min": 0,
+            "max": 1000,
+            "unit": "units",
+            "thresholds": [
+              {
+                "value": 800,
+                "color": "#f59e0b"
+              },
+              {
+                "value": 950,
+                "color": "#ef4444"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-trend",
+          "type": "trend",
+          "x": 2,
+          "y": 3,
+          "w": 7,
+          "h": 4,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+          "config": {
+            "label": "Integer Trend",
+            "duration": 120,
+            "tags": [
+              {
+                "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+                "color": "#3b82f6",
+                "label": "iInteger"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-textinput",
+          "type": "textInput",
+          "x": 9,
+          "y": 3,
+          "w": 3,
+          "h": 2,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.sString",
+          "config": {
+            "label": "String Value",
+            "placeholder": "enter string…"
+          }
+        },
+        {
+          "id": "w-alarms",
+          "type": "alarmBanner",
+          "x": 9,
+          "y": 5,
+          "w": 3,
+          "h": 2,
+          "config": {
+            "label": "Active Alarms",
+            "showAcked": false
+          }
+        },
+        {
+          "id": "w-history",
+          "type": "historyLog",
+          "x": 0,
+          "y": 7,
+          "w": 12,
+          "h": 4,
+          "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+          "config": {
+            "label": "Integer History Log",
+            "pageSize": 25
+          }
+        }
+      ]
+    }
+  ],
+  "alarmRules": [
+    {
+      "id": "alarm-integer-high",
+      "name": "Integer High (REST)",
+      "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
+      "condition": "gt",
+      "threshold": 900,
+      "severity": "warning",
+      "message": "REST iInteger above 900"
+    },
+    {
+      "id": "alarm-opcua-integer-high",
+      "name": "Integer High (OPC UA)",
+      "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iInteger",
+      "condition": "gt",
+      "threshold": 900,
+      "severity": "critical",
+      "message": "OPC UA iInteger above 900"
+    }
+  ]
+}

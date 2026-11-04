@@ -5,11 +5,19 @@
 // Usage (scripts/soak/run-soak.ps1 starts the runtime and calls this):
 //   node scripts/soak/soak.mjs --runtime=http://127.0.0.1:3095 --plc=10.0.0.210
 //        --hours=24 --out=<dir> [--pid=<runtime pid>] [--write-every=60]
+//        --opcua-fingerprint=<hex> --rest-fingerprint=<hex>
 //
 // It deploys a soak project (no credentials: OPC UA anonymous, REST without
-// login), subscribes to every tag over /ws/tags and to /ws/alarms, writes
+// login). OPC UA uses SignAndEncrypt / Basic256Sha256, and both datasources
+// pin the controller's certificates (certCheck pinned). Without both
+// fingerprints it connects once, prints the ones the controller presents
+// and stops without writing. It subscribes to every tag over /ws/tags and
+// to /ws/alarms, writes
 // the PLC test variables (iOPC_/rOPC_/sOPC_Write, iREST_/rREST_/sREST_Write)
-// on a timer and restores their starting values at the end. It writes
+// on a timer and restores their starting values at the end. When a
+// datasource's tags go Bad (an outage), it writes one of that datasource's
+// test variables at once: the write must fail with a reason within
+// OUTAGE_WRITE_MS, not hang or report success. It writes
 // events.jsonl (every finding as it happens) and summary.json (every 10 min
 // and at the end) to --out, and exits 0 when the gate passed.
 import { appendFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
@@ -26,7 +34,9 @@ const hours = Number(args.hours ?? 24);
 const out = args.out ?? `soak-${Date.now()}`;
 const pid = args.pid ? Number(args.pid) : null;
 const writeEvery = Number(args["write-every"] ?? 60) * 1000;
+const pins = { opcua: args["opcua-fingerprint"] ?? "", rest: args["rest-fingerprint"] ?? "" };
 const GAP_MS = 15_000; // a polled tag reports every 0.5–1 s; 15 s of silence while online is a freeze
+const OUTAGE_WRITE_MS = 1000; // an offline driver refuses writes at once (defect 5)
 mkdirSync(out, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -62,8 +72,13 @@ const project = {
   version: "0.1.0",
   name: "Phase 1 soak",
   datasources: [
-    { id: "opcua", label: "PLC OPC UA", type: "opcua", config: { endpoint: `opc.tcp://${plc}:4840`, securityMode: "None" } },
-    { id: "rest", label: "PLC REST", type: "rest", config: { endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14" } },
+    { id: "opcua", label: "PLC OPC UA", type: "opcua", config: {
+      endpoint: `opc.tcp://${plc}:4840`, securityMode: "SignAndEncrypt", securityPolicy: "Basic256Sha256",
+      certCheck: "pinned", certFingerprint: pins.opcua,
+    } },
+    { id: "rest", label: "PLC REST", type: "rest", config: {
+      endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14", certCheck: "pinned", certFingerprint: pins.rest,
+    } },
   ],
   pages: [{
     id: "soak", name: "Soak", widgets: [
@@ -81,7 +96,11 @@ const tags = Object.fromEntries(allTags.map((p) => [p, { updates: 0, last: 0, qu
 const ds = {};
 const stats = {
   started: now(), plc, hours,
+  security: { opcua: "SignAndEncrypt / Basic256Sha256, pinned", rest: "pinned", pins },
   writes: { sent: 0, confirmed: 0, failedWithReason: 0, notConfirmed: 0, other: 0, maxMs: 0, totalMs: 0 },
+  // One write per datasource outage. failedAtOnce is the expected result;
+  // confirmed means the datasource was back before the write arrived.
+  outageWrites: { sent: 0, failedAtOnce: 0, failedSlow: 0, confirmed: 0, other: 0, maxMs: 0 },
   gaps: 0, datasourceDrops: 0, wsReconnects: { tags: 0, alarms: 0 }, alarmMessages: 0, alarmResyncs: 0,
   memoryKB: { first: null, min: null, max: null, last: null },
   historyBytes: { first: null, last: null },
@@ -120,6 +139,38 @@ function online(binding) {
   return ds[binding.split(":")[0]]?.connected === true;
 }
 
+// postWrite writes one tag through the runtime's write pipeline.
+async function postWrite(binding, value) {
+  const sep = binding.indexOf(":");
+  const t0 = Date.now();
+  let r;
+  try {
+    r = await api("POST", `/api/v1/tag/${encodeURIComponent(binding.slice(sep + 1))}`, { datasource: binding.slice(0, sep), value });
+  } catch (err) {
+    r = { code: 0, json: { status: "failed", reason: `runtime unreachable: ${err}` } };
+  }
+  return { r, ms: Date.now() - t0 };
+}
+
+// ── writes during an outage ─────────────────────────────────────────────────
+// inOutage holds the datasources whose tags went Bad and have not come back.
+const inOutage = new Set();
+async function outageWrite(dsId, cause) {
+  const w = writes.find((x) => x.binding.startsWith(dsId + ":"));
+  if (!w || stopping) return;
+  const value = w.value(n);
+  const { r, ms } = await postWrite(w.binding, value);
+  const s = stats.outageWrites;
+  s.sent++; s.maxMs = Math.max(s.maxMs, ms);
+  const status = r.json?.status, reason = r.json?.reason;
+  let result;
+  if (status === "failed" && reason) result = ms <= OUTAGE_WRITE_MS ? "failedAtOnce" : "failedSlow";
+  else if (status === "confirmed") result = "confirmed";
+  else result = "other";
+  s[result]++;
+  log("outage_write", { datasource: dsId, cause, tag: w.binding, value, result, code: r.code, status, reason, ms });
+}
+
 // ── WebSockets (reconnect forever) ──────────────────────────────────────────
 function watchTags() {
   const ws = new WebSocket(base.replace(/^http/, "ws") + "/ws/tags");
@@ -133,6 +184,15 @@ function watchTags() {
     if (u.quality !== t.quality || (u.reason ?? "") !== t.reason) {
       if (t.quality) t.qualityChanges++;
       log("quality", { tag: u.path, from: t.quality || "(none)", to: u.quality, reason: u.reason ?? "", value: u.value });
+      // The first tag of a datasource to go Bad starts an outage; the first
+      // to come back Good ends it (a driver marks all its tags together).
+      const dsId = u.path.split(":")[0];
+      if (u.quality === "Bad" && t.quality && !inOutage.has(dsId)) {
+        inOutage.add(dsId);
+        outageWrite(dsId, u.reason ?? "");
+      } else if (u.quality === "Good") {
+        inOutage.delete(dsId);
+      }
       t.quality = u.quality;
       t.reason = u.reason ?? "";
     }
@@ -199,19 +259,12 @@ async function checkHealth() {
 }
 
 let n = 0;
+let stopping = false;
 async function writeRound() {
   n++;
   for (const w of writes) {
     const value = w.value(n);
-    const t0 = Date.now();
-    let r;
-    try {
-      const sep = w.binding.indexOf(":");
-      r = await api("POST", `/api/v1/tag/${encodeURIComponent(w.binding.slice(sep + 1))}`, { datasource: w.binding.slice(0, sep), value });
-    } catch (err) {
-      r = { code: 0, json: { status: "failed", reason: `runtime unreachable: ${err}` } };
-    }
-    const ms = Date.now() - t0;
+    const { r, ms } = await postWrite(w.binding, value);
     const s = stats.writes;
     s.sent++; s.totalMs += ms; s.maxMs = Math.max(s.maxMs, ms);
     const status = r.json?.status, reason = r.json?.reason;
@@ -223,17 +276,19 @@ async function writeRound() {
 }
 
 function summary(final) {
-  const s = stats.writes;
+  const s = stats.writes, o = stats.outageWrites;
   const gate = {
     noFrozenValues: stats.gaps === 0,
     everyWriteConfirmedOrFailedWithReason: s.other === 0 && s.notConfirmed === 0,
+    // null when no outage happened, so this was not tested.
+    writesDuringOutageFailAtOnce: o.sent === 0 ? null : o.failedSlow === 0 && o.other === 0,
   };
   const doc = {
     ...stats, final, now: now(),
     writes: { ...s, avgMs: s.sent ? Math.round(s.totalMs / s.sent) : 0 },
     tags: Object.fromEntries(Object.entries(tags).map(([p, t]) => [p, { updates: t.updates, quality: t.quality, reason: t.reason, gaps: t.gaps, qualityChanges: t.qualityChanges }])),
     datasources: ds,
-    gate, passed: gate.noFrozenValues && gate.everyWriteConfirmedOrFailedWithReason,
+    gate, passed: Object.values(gate).every((g) => g !== false),
   };
   writeFileSync(join(out, "summary.json"), JSON.stringify(doc, null, 2));
   return doc;
@@ -247,7 +302,24 @@ for (let i = 0; ; i++) {
 }
 const dep = await api("POST", "/api/v1/project", project);
 if (dep.code !== 200) { console.error("deploy failed", dep); process.exit(2); }
-log("start", { plc, hours, writeEverySec: writeEvery / 1000, out });
+
+// Without both pins, show the certificates the controller presents (the
+// drivers record them before refusing them) and stop; nothing is written.
+if (!pins.opcua || !pins.rest) {
+  const seen = {};
+  for (const deadline = Date.now() + 30_000; Date.now() < deadline && !(seen.opcua && seen.rest); await sleep(1000)) {
+    for (const id of ["opcua", "rest"]) {
+      const r = await api("GET", `/api/v1/datasources/${id}/status`).catch(() => null);
+      if (r?.json?.certFingerprint) seen[id] = r.json.certFingerprint;
+    }
+  }
+  log("fingerprints", { seen });
+  console.log(`\nNo writes were made. Check these against the controller, then run again with:\n` +
+    `  -OpcuaFingerprint ${seen.opcua ?? "(none seen: is OPC UA reachable?)"}\n` +
+    `  -RestFingerprint ${seen.rest ?? "(none seen: is HTTPS reachable?)"}`);
+  process.exit(2);
+}
+log("start", { plc, hours, writeEverySec: writeEvery / 1000, out, security: stats.security });
 
 // Wait until both datasources are online and every test variable reads
 // Good: its starting value must be known before anything is written, or it
@@ -272,7 +344,6 @@ watchTags();
 watchAlarms();
 const health = setInterval(checkHealth, 10_000);
 const summaries = setInterval(() => { trend(); summary(false); }, 10 * 60_000);
-let stopping = false;
 const writer = (async () => {
   while (!stopping) {
     await writeRound();
@@ -303,6 +374,11 @@ async function stop() {
   console.log(`\nSoak ${doc.passed ? "PASSED" : "FAILED"}: ${doc.writes.sent} writes (${doc.writes.confirmed} confirmed, ` +
     `${doc.writes.failedWithReason} failed with a reason, ${doc.writes.notConfirmed} not confirmed, ${doc.writes.other} other), ` +
     `${doc.gaps} frozen-tag gaps, ${doc.datasourceDrops} datasource drops. Details: ${join(out, "summary.json")}`);
+  const o = doc.outageWrites;
+  console.log(o.sent === 0
+    ? "Writes during an outage: not tested (no outage happened; unplug the PLC briefly during a run to test them)."
+    : `Writes during an outage: ${o.sent} (${o.failedAtOnce} failed at once, ${o.failedSlow} failed slowly, ` +
+      `${o.confirmed} confirmed after recovery, ${o.other} other).`);
   if (doc.restoreFailed) console.log(`WARNING: ${doc.restoreFailed} test variables were NOT restored; see "restore_failed" in events.jsonl.`);
   process.exit(doc.passed ? 0 : 1);
 }

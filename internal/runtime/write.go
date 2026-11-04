@@ -146,17 +146,10 @@ type writer struct {
 	min, max *float64
 }
 
-// writableTypes write their bound tag.
-var writableTypes = map[project.WidgetType]bool{
-	project.Button:       true,
-	project.NumericInput: true,
-	project.TextInput:    true,
-	project.Setpoint:     true,
-}
-
 // writableBy returns the widgets that write key (a resolved "ds:path"),
 // directly or through a faceplate parameter, and whether key is a
-// namespace tag.
+// namespace tag. A widget writes its value tag when it is an input (numeric
+// input, text input, setpoint), and the tags its actions write.
 func writableBy(p *project.Project, key string, resolve func(string) (string, string, bool)) (ws []writer, nsTag bool) {
 	if p == nil {
 		return nil, false
@@ -165,37 +158,23 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 		ds, path, ok := resolve(b)
 		return ok && ds+":"+path == key
 	}
-	add := func(id string, cfg *project.WidgetConfig) {
-		w := writer{widgetID: id}
-		if cfg != nil {
-			w.min, w.max = cfg.Min, cfg.Max
-		}
+	add := func(v project.WidgetView) {
+		w := writer{widgetID: v.ID}
+		w.min, w.max = v.Limits()
 		ws = append(ws, w)
-	}
-	// writeTargets lists the bindings a widget writes.
-	writeTargets := func(typ project.WidgetType, binding *string, dyns []project.DynamicElement) []string {
-		var out []string
-		if binding != nil && writableTypes[typ] {
-			out = append(out, *binding)
-		}
-		for _, d := range dyns {
-			if d.WriteTo != nil {
-				out = append(out, *d.WriteTo)
-			}
-		}
-		return out
 	}
 
 	// Faceplate parameters written by a widget inside the faceplate.
-	writtenParams := map[string]map[string]*project.WidgetConfig{} // faceplate id → param → config
+	writtenParams := map[string]map[string]project.WidgetView{} // faceplate id → param → inner widget
 	for _, fp := range p.Faceplates {
-		for _, w := range fp.Widgets {
-			for _, b := range writeTargets(w.Type, w.Binding, w.Dynamics) {
+		for _, fw := range fp.Widgets {
+			v := fw.View()
+			for _, b := range v.WriteTargets() {
 				if param, ok := strings.CutPrefix(b, "{"); ok && strings.HasSuffix(param, "}") {
 					if writtenParams[fp.ID] == nil {
-						writtenParams[fp.ID] = map[string]*project.WidgetConfig{}
+						writtenParams[fp.ID] = map[string]project.WidgetView{}
 					}
-					writtenParams[fp.ID][strings.TrimSuffix(param, "}")] = w.Config
+					writtenParams[fp.ID][strings.TrimSuffix(param, "}")] = v
 				}
 			}
 		}
@@ -203,15 +182,17 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 
 	for _, pg := range p.Pages {
 		for _, w := range pg.Widgets {
-			for _, b := range writeTargets(w.Type, w.Binding, w.Dynamics) {
+			v := w.View()
+			for _, b := range v.WriteTargets() {
 				if is(b) {
-					add(w.ID, w.Config)
+					add(v)
 				}
 			}
-			if w.Type == project.Faceplate && w.Config != nil && w.Config.FaceplateID != nil {
-				for param, cfg := range writtenParams[*w.Config.FaceplateID] {
-					if b, ok := w.Config.Params[param]; ok && is(b) {
-						add(w.ID, cfg)
+			if w.Type == project.Faceplate && w.Props != nil && w.Props.FaceplateID != nil {
+				for param, inner := range writtenParams[*w.Props.FaceplateID] {
+					if b, ok := w.Props.Params[param]; ok && is(b) {
+						inner.ID = w.ID // the instance writes, with the inner widget's limits
+						add(inner)
 					}
 				}
 			}

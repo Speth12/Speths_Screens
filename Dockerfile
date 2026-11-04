@@ -6,9 +6,11 @@ WORKDIR /src
 COPY package.json package-lock.json* ./
 COPY packages/operator/package.json ./packages/operator/
 COPY packages/shared-types/package.json ./packages/shared-types/
-RUN npm ci --workspace=packages/operator --workspace=packages/shared-types --ignore-scripts
+COPY packages/widgets/package.json ./packages/widgets/
+RUN npm ci --workspace=packages/operator --workspace=packages/shared-types --workspace=packages/widgets --ignore-scripts
 
 COPY packages/shared-types ./packages/shared-types
+COPY packages/widgets ./packages/widgets
 COPY packages/operator ./packages/operator
 
 # Build output goes directly to cmd/speths-screens/ui/ (the Go embed target).
