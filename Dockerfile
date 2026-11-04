@@ -2,15 +2,21 @@
 FROM node:20-alpine AS node-builder
 WORKDIR /src
 
-# Install deps (operator only — IDE is never bundled into the container).
+# Install deps (operator and what it imports; the IDE is never bundled into the container).
+# The operator imports shared-types, widgets and script-api, and widgets imports expr:
+# every workspace the operator needs, directly or not, has to be copied and installed here.
 COPY package.json package-lock.json* ./
 COPY packages/operator/package.json ./packages/operator/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/widgets/package.json ./packages/widgets/
-RUN npm ci --workspace=packages/operator --workspace=packages/shared-types --workspace=packages/widgets --ignore-scripts
+COPY packages/expr/package.json ./packages/expr/
+COPY packages/script-api/package.json ./packages/script-api/
+RUN npm ci --workspace=packages/operator --workspace=packages/shared-types --workspace=packages/widgets --workspace=packages/expr --workspace=packages/script-api --ignore-scripts
 
 COPY packages/shared-types ./packages/shared-types
 COPY packages/widgets ./packages/widgets
+COPY packages/expr ./packages/expr
+COPY packages/script-api ./packages/script-api
 COPY packages/operator ./packages/operator
 
 # Build output goes directly to cmd/speths-screens/ui/ (the Go embed target).
