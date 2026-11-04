@@ -63,10 +63,17 @@ Dan is the only developer and owns the code.
 
 ```powershell
 go vet ./...
-go test ./...
+go test ./...                                           # CI runs go test -race ./... (needs a C compiler; Dan's PC has none)
 npm ci
 npm run build
+npm run lint
+npm test --workspace=packages/shared-types -- --run     # CI runs the tests of all six workspaces:
+npm test --workspace=packages/expr -- --run             # shared-types, expr, script-api, widgets, ide, operator
+npm test --workspace=packages/script-api -- --run
+npm test --workspace=packages/widgets -- --run
 npm test --workspace=packages/ide -- --run
+npm test --workspace=packages/operator -- --run
+npm run gen:types                                       # CI fails if this changes the generated files (git diff --exit-code)
 
 go run ./cmd/speths-screens --mode=dev --project=demo.xhmi.json   # runtime on :3001
 npm run dev                                              # IDE on :5173
