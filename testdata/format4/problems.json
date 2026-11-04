@@ -73,5 +73,24 @@
       "alarm rule \"r\": {session:shift} is a session variable, which only screens have",
       "datasource \"session\": the id is kept for session variables",
       "preset \"P\", widget w1 (led): dynamics.visible: {session:nope} names no session variable"
+    ] },
+  { "name": "script write lists",
+    "project": {
+      "datasources": [
+        { "id": "plc", "type": "rest", "label": "PLC", "config": {} },
+        { "id": "mem", "type": "memory", "label": "Memory", "config": { "memoryTags": [] } }
+      ],
+      "scripts": [
+        { "id": "ok", "name": "Fine", "trigger": { "onStart": true }, "source": "log(1)", "writes": ["mem:*", "plc:Motor/Start", "ns:Line1/*", "plc:Pump/*"] },
+        { "id": "w", "name": "W", "trigger": { "onStart": true }, "source": "log(1)",
+          "writes": ["mem:Count", "other:X", "nocolon", "", "mem:a*b", "mem:Count", "*", "plc:Motor/Start*"] }
+      ] },
+    "want": [
+      "script \"w\": writes: other:X names no datasource",
+      "script \"w\": writes: nocolon names no datasource",
+      "script \"w\": writes: an entry is empty",
+      "script \"w\": writes: mem:a*b: * is only allowed as the last character",
+      "script \"w\": writes: mem:Count is listed twice",
+      "script \"w\": writes: * names no datasource"
     ] }
 ]

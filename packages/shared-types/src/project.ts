@@ -1010,7 +1010,7 @@ export type Role = "operator" | "supervisor" | "engineer" | "admin";
 
 /**
  * JavaScript the runtime runs in its own sandbox, writing through the write pipeline as
- * scriptRole
+ * scriptRole, and only to the tags in its writes list
  */
 export interface RuntimeScript {
     id:   string;
@@ -1020,6 +1020,11 @@ export interface RuntimeScript {
      */
     source:  string;
     trigger: ScriptTrigger;
+    /**
+     * The tags the script may write: datasource:path, ns:path, or a prefix ending in * (mem:*,
+     * ns:Line1/*). A listed tag needs no widget; a script without the list writes nothing
+     */
+    writes?: string[];
 }
 
 /**

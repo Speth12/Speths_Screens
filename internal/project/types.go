@@ -632,13 +632,16 @@ type RecipeEntry struct {
 }
 
 // JavaScript the runtime runs in its own sandbox, writing through the write pipeline as
-// scriptRole
+// scriptRole, and only to the tags in its writes list
 type RuntimeScript struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	// JavaScript (the script API: readTag, writeTag, onChange, every, after, log, emit, alarms)
 	Source  string        `json:"source"`
 	Trigger ScriptTrigger `json:"trigger"`
+	// The tags the script may write: datasource:path, ns:path, or a prefix ending in * (mem:*,
+	// ns:Line1/*). A listed tag needs no widget; a script without the list writes nothing
+	Writes []string `json:"writes,omitempty"`
 }
 
 // When a runtime script runs; it can name several
