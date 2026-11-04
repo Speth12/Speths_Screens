@@ -12,7 +12,9 @@
 // that awaits a write enters again when the write answers); past it the VM
 // is interrupted. A script interrupted MaxInterrupts times in a minute is
 // stopped. Triggers wait in a queue of QueueSize runs; when it is full the
-// oldest is dropped and counted.
+// oldest is dropped and counted. Memory is bounded by guards on the built-ins
+// that allocate a lot in one call and by an estimate of what a script keeps
+// between runs (memory.go, guards.go).
 package script
 
 import (
@@ -145,6 +147,11 @@ type runner struct {
 	mu         sync.Mutex
 	st         Status
 	interrupts []time.Time
+
+	// Used on the VM's goroutine only (after compile): the global names that
+	// are not the script's own, and when its memory was last measured.
+	baseline map[string]struct{}
+	lastMem  time.Time
 }
 
 func newRunner(s project.RuntimeScript, store *tagstore.TagStore, host Host) *runner {
@@ -254,6 +261,9 @@ func (r *runner) setStopped(reason string) {
 // compile installs the API and compiles the source as an async function.
 func (r *runner) compile(vm *goja.Runtime) (goja.Callable, error) {
 	id := r.spec.ID
+	if err := installGuards(vm); err != nil {
+		return nil, err
+	}
 	_ = vm.Set("state", vm.NewObject())
 	_ = vm.Set("readTag", func(path string) any {
 		s, ok := r.store.Get(path)
@@ -288,12 +298,17 @@ func (r *runner) compile(vm *goja.Runtime) (goja.Callable, error) {
 		for i, a := range call.Arguments {
 			parts[i] = a.String()
 		}
-		r.host.Log(id, strings.Join(parts, " "))
+		r.host.Log(id, capLog(strings.Join(parts, " ")))
 		return goja.Undefined()
 	})
 	_ = vm.Set("emit", func(typ string, payload goja.Value) {
 		var v any
 		if payload != nil {
+			s := newSizer(vm, MaxEmitBytes)
+			s.add(payload)
+			if s.over() {
+				panic(rangeError(vm, fmt.Sprintf("emit: the payload is larger than %s (the script memory limit)", megabytes(MaxEmitBytes))))
+			}
 			v = payload.Export()
 		}
 		r.host.Emit(id, typ, v)
@@ -310,6 +325,7 @@ func (r *runner) compile(vm *goja.Runtime) (goja.Callable, error) {
 	if !ok {
 		return nil, fmt.Errorf("the script is not a function")
 	}
+	r.baseline = baselineGlobals(vm)
 	return fn, nil
 }
 
@@ -344,6 +360,9 @@ func (r *runner) loop(vm *goja.Runtime, fn goja.Callable) {
 			return
 		}
 		pending = r.settle(pending)
+		if r.overLimit(vm) {
+			return
+		}
 	}
 }
 
