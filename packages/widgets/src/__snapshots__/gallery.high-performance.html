@@ -1,0 +1,2591 @@
+<div data-theme-id="high-performance" style="--gray-0:#ffffff;--gray-1:#f2f2f2;--gray-2:#e6e6e6;--gray-3:#dcdcdc;--gray-4:#c8c8c8;--gray-5:#b0b0b0;--gray-6:#8a8a8a;--gray-7:#5c5c5c;--gray-8:#3d3d3d;--gray-9:#1f1f1f;--background:#c8c8c8;--foreground:#1f1f1f;--card:#dcdcdc;--card-foreground:#1f1f1f;--primary:#2f4f6f;--primary-foreground:#ffffff;--secondary:#bdbdbd;--secondary-foreground:#1f1f1f;--muted:#d2d2d2;--muted-foreground:#4a4a4a;--border:#8a8a8a;--danger:#c00000;--warning:#995000;--success:#3d3d3d;--process-normal:#dcdcdc;--process-off:#f2f2f2;--process-running:#3d3d3d;--process-value:#0b2a4a;--process-setpoint:#1f4e79;--process-bad-quality:#6b21a8;--alarm-critical:#c00000;--alarm-warning:#995000;--alarm-info:#1957a6;--alarm-shelved:#5c5c5c;--radius:2px;--line-width:1px;--font-sans:&#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;--font-mono:Consolas, &#x27;DejaVu Sans Mono&#x27;, monospace;--font-size:13px;--pad:0.5rem;--shadow:none;background:var(--background);color:var(--foreground);padding:12px">
+<div style="display:grid;grid-template-columns:7rem repeat(8, 168px);gap:8px;align-items:center">
+<div>
+</div>
+<div style="font-size:11px;font-weight:600">Normal</div>
+<div style="font-size:11px;font-weight:600">Running</div>
+<div style="font-size:11px;font-weight:600">Off</div>
+<div style="font-size:11px;font-weight:600">Critical alarm</div>
+<div style="font-size:11px;font-weight:600">Warning alarm</div>
+<div style="font-size:11px;font-weight:600">Info alarm</div>
+<div style="font-size:11px;font-weight:600">Bad quality</div>
+<div style="font-size:11px;font-weight:600">Disabled</div>
+<div style="font-size:11px;font-weight:600">Gauge</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-normal" title="Gauge, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-running" title="Gauge, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-off" title="Gauge, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(225deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">0.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-critical" title="Gauge, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-warning" title="Gauge, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-info" title="Gauge, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-bad" title="Gauge, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-red-400">Bad</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-gauge-disabled" title="Gauge, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Level</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-0.5">
+<svg viewBox="0 0 100 75" class="w-full max-h-28">
+<path d="M 24.54 85.46 A 36 36 0 1 1 75.46 85.45" fill="none" stroke="#27272a" stroke-width="7" stroke-linecap="round">
+</path>
+<path d="M 24.54 85.46 A 36 36 0 0 1 69.29 29.60" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round">
+</path>
+<line x1="23.13" y1="86.87" x2="30.91" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<line x1="14.89" y1="45.46" x2="25.06" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="50.00" y1="22.00" x2="50.00" y2="33.00" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="85.11" y1="45.46" x2="74.94" y2="49.67" stroke="#52525b" stroke-width="0.8">
+</line>
+<line x1="76.87" y1="86.87" x2="69.09" y2="79.09" stroke="#52525b" stroke-width="1.5">
+</line>
+<text x="20.3" y="89.7" text-anchor="end" font-size="5" fill="#52525b" font-family="monospace">0</text>
+<text x="79.7" y="89.7" text-anchor="start" font-size="5" fill="#52525b" font-family="monospace">100</text>
+<g style="transform:rotate(392.4deg);transform-origin:50px 60px;transition:transform 0.3s ease-out">
+<line x1="50" y1="66" x2="50" y2="28" stroke="#e4e4e7" stroke-width="1.5" stroke-linecap="round">
+</line>
+</g>
+<circle cx="50" cy="60" r="3.5" fill="#52525b">
+</circle>
+<circle cx="50" cy="60" r="1.5" fill="#a1a1aa">
+</circle>
+<text x="50" y="74" text-anchor="middle" font-size="8" fill="#e4e4e7" font-weight="600" font-family="monospace">62.0 %</text>
+</svg>
+<div class="text-[9px] text-center text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Numeric</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-normal" title="Numeric, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-running" title="Numeric, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-off" title="Numeric, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">0<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-critical" title="Numeric, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-warning" title="Numeric, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-info" title="Numeric, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-bad" title="Numeric, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-red-400">Bad</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericDisplay-disabled" title="Numeric, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums">62.50<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Text</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-normal" title="Text, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-running" title="Text, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-off" title="Text, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-critical" title="Text, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-warning" title="Text, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-info" title="Text, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-bad" title="Text, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textDisplay-disabled" title="Text, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Name</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="break-words h-full flex items-center justify-start text-lg">Pump 1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">LED</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-normal" title="LED, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-running" title="LED, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-off" title="LED, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#3f3f46">
+</div>
+<div class="text-sm font-medium">OFF</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-critical" title="LED, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-warning" title="LED, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-info" title="LED, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-bad" title="LED, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-led-disabled" title="LED, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Run</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center gap-2 h-full">
+<div class="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]" style="background:#22c55e;box-shadow:0 0 10px #22c55e88">
+</div>
+<div class="text-sm font-medium">ON</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Tank</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-normal" title="Tank, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-running" title="Tank, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-off" title="Tank, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:0%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">0</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-critical" title="Tank, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-warning" title="Tank, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-info" title="Tank, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-bad" title="Tank, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-red-400">Bad</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-tank-disabled" title="Tank, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Tank</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex gap-3 h-full items-end">
+<div class="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:75%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:50%">
+</div>
+<div class="absolute left-0 right-0 border-t border-zinc-600/50" style="bottom:25%">
+</div>
+<div class="absolute bottom-0 left-0 right-0 rounded-b-md transition-all duration-500" style="height:62%;background:#3b82f6;opacity:0.85">
+</div>
+</div>
+<div class="flex flex-col justify-end pb-1">
+<div class="text-xl font-semibold tabular-nums leading-none">62</div>
+<div class="text-[10px] text-zinc-500">%</div>
+<div class="text-[9px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Button</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-normal" title="Button, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-running" title="Button, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-off" title="Button, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-critical" title="Button, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-warning" title="Button, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-info" title="Button, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-bad" title="Button, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-button-disabled" title="Button, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Start</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
+<span class="flex items-center justify-center gap-1.5">Start</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Setpoint</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-normal" title="Setpoint, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-running" title="Setpoint, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-off" title="Setpoint, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">0</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="0"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-critical" title="Setpoint, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-warning" title="Setpoint, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-info" title="Setpoint, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-bad" title="Setpoint, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-red-400">Bad</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-setpoint-disabled" title="Setpoint, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-2">
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-semibold tabular-nums">62</span>
+<span class="text-xs text-zinc-500">°C</span>
+</div>
+<input type="range" min="0" max="100" step="1" class="w-full accent-blue-500 cursor-pointer" value="62"/>
+<div class="flex justify-between text-[9px] text-zinc-600">
+<span>0</span>
+<span class="text-emerald-400">Good</span>
+<span>100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Multi-State</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-normal" title="Multi-State, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-running" title="Multi-State, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-off" title="Multi-State, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#27272a">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#a1a1aa">OFF</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-critical" title="Multi-State, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-warning" title="Multi-State, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-info" title="Multi-State, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-bad" title="Multi-State, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-multiState-disabled" title="Multi-State, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pump</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 h-full flex items-center justify-center rounded transition-colors duration-300" style="background-color:#14532d">
+<span class="text-lg font-bold tracking-widest uppercase text-center px-2 leading-tight" style="color:#4ade80">RUNNING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Trend</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-normal" title="Trend, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-running" title="Trend, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-off" title="Trend, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-critical" title="Trend, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-warning" title="Trend, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-info" title="Trend, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-bad" title="Trend, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-trend-disabled" title="Trend, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Trend</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full">
+<div class="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">30s</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-blue-600 text-white">5m</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700">1h</button>
+<button class="text-[9px] px-1.5 py-0.5 rounded ml-0.5 bg-zinc-800 text-zinc-500 hover:bg-zinc-700">⏸</button>
+</div>
+<div class="flex flex-1 min-h-0 gap-1 min-w-0">
+<div class="flex-1 relative min-w-0 flex flex-col">
+<svg class="w-full flex-1 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" style="cursor:crosshair;display:block">
+<line x1="0" y1="0" x2="100" y2="0" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="25" x2="100" y2="25" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="50" x2="100" y2="50" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="75" x2="100" y2="75" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+<line x1="0" y1="100" x2="100" y2="100" stroke="#27272a" stroke-width="0.5" vector-effect="non-scaling-stroke">
+</line>
+</svg>
+<div class="relative shrink-0 h-3">
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:0%;transform:none">11:55:00 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:25%;transform:translateX(-50%)">11:56:15 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:50%;transform:translateX(-50%)">11:57:30 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:75%;transform:translateX(-50%)">11:58:45 AM</span>
+<span class="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap" style="left:100%;transform:translateX(-100%)">12:00:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Numeric In</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-normal" title="Numeric In, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-running" title="Numeric In, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-off" title="Numeric In, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">0<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-critical" title="Numeric In, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-warning" title="Numeric In, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-info" title="Numeric In, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-bad" title="Numeric In, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-red-400">Bad</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-numericInput-disabled" title="Numeric In, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Pressure</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center">
+<div class="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none">62<span class="text-base text-zinc-500 ml-1">bar</span>
+</div>
+<div class="text-[10px] mt-1 text-emerald-400">Good</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Text In</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-normal" title="Text In, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-running" title="Text In, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-off" title="Text In, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-critical" title="Text In, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-warning" title="Text In, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-info" title="Text In, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-bad" title="Text In, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-textInput-disabled" title="Text In, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Batch</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col h-full justify-center gap-1">
+<div class="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">Batch 7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">History</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-normal" title="History, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-running" title="History, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-off" title="History, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-critical" title="History, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-warning" title="History, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-info" title="History, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-bad" title="History, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-historyLog-disabled" title="History, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">History</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col">
+<div class="flex items-center justify-end mb-0.5 shrink-0">
+<button class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">↓ CSV</button>
+</div>
+<div class="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+<div class="text-zinc-600 italic">No history</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Alarms</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-normal" title="Alarms, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-running" title="Alarms, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-off" title="Alarms, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-critical" title="Alarms, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-warning" title="Alarms, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-info" title="Alarms, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-bad" title="Alarms, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmBanner-disabled" title="Alarms, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Alarms</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Image</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-normal" title="Image, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-running" title="Image, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-off" title="Image, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-critical" title="Image, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-warning" title="Image, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-info" title="Image, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-bad" title="Image, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-image-disabled" title="Image, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Image</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
+<span class="text-2xl opacity-40">🖼</span>
+<span class="text-[10px]">No image</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Faceplate</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-normal" title="Faceplate, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-running" title="Faceplate, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-off" title="Faceplate, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-critical" title="Faceplate, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-warning" title="Faceplate, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-info" title="Faceplate, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-bad" title="Faceplate, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-faceplate-disabled" title="Faceplate, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Faceplate</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
+<span class="text-xs font-mono">faceplate</span>
+<span class="text-[10px] text-zinc-600">no id</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Table</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-normal" title="Table, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-running" title="Table, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-off" title="Table, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-critical" title="Table, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-warning" title="Table, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-info" title="Table, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-bad" title="Table, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-table-disabled" title="Table, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Table</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full overflow-auto">
+<table class="w-full text-[11px] border-collapse">
+<thead>
+<tr class="border-b border-zinc-700">
+<th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
+<th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colSpan="3" class="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Symbol</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-normal" title="Symbol, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-running" title="Symbol, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-off" title="Symbol, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-critical" title="Symbol, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-warning" title="Symbol, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-info" title="Symbol, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-bad" title="Symbol, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-symbol-disabled" title="Symbol, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground)">
+<div class="text-[10px] uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Valve</div>
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
+<div class="flex-1 min-h-0 flex items-center justify-center w-full">
+<div style="width:100%;height:100%;color:#d4d4d8">
+<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible;display:block">
+      <polygon points="8,16 32,32 8,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <polygon points="56,16 32,32 56,48" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/>
+      <line x1="32" y1="8" x2="32" y2="32"/>
+      <line x1="22" y1="8" x2="42" y2="8"/>
+    </svg>
+</div>
+</div>
+<span class="text-[9px] text-zinc-400 truncate max-w-full shrink-0">Valve</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>

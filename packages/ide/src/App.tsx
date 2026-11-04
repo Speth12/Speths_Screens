@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Canvas } from "./panels/Canvas";
 import { DemoModal } from "./panels/Demo";
+import { GalleryPanel } from "./panels/GalleryPanel";
 import { Header } from "./panels/Header";
 import { ImageLibrary } from "./panels/ImageLibrary";
 import { LeftPanel } from "./panels/LeftPanel";
@@ -88,6 +89,7 @@ function useDrag(
 export function App() {
   const [showHelp, setShowHelp]     = useState(false);
   const [showDemo, setShowDemo]     = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const [showJSON, setShowJSON]     = useState(false);
   const [preview,  setPreview]      = useState(false);
   const [rightOpen, setRightOpen]   = useState(true);
@@ -126,6 +128,7 @@ export function App() {
       <Header
         onHelp={() => setShowHelp((v) => !v)}
         onDemo={() => setShowDemo(true)}
+        onGallery={() => setShowGallery((v) => !v)}
         showJSON={showJSON}
         onToggleJSON={() => setShowJSON((v) => !v)}
         onPreview={() => setPreview(true)}
@@ -200,6 +203,7 @@ export function App() {
       <StatusBar />
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
       {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
+      {showGallery && <GalleryPanel onClose={() => setShowGallery(false)} />}
       {preview  && <PreviewMode onExit={() => setPreview(false)} />}
     </div>
   );

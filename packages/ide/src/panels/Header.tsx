@@ -196,12 +196,13 @@ function RuntimeLoginModal({
 type HeaderProps = {
   onHelp: () => void;
   onDemo: () => void;
+  onGallery: () => void;
   showJSON: boolean;
   onToggleJSON: () => void;
   onPreview: () => void;
 };
 
-export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: HeaderProps) {
+export function Header({ onHelp, onDemo, onGallery, showJSON, onToggleJSON, onPreview }: HeaderProps) {
   const { exportJSON, loadProject } = useProject();
   const { canUndo, canRedo, undo, redo } = useProject(
     useShallow((s) => ({ canUndo: s.canUndo, canRedo: s.canRedo, undo: s.undo, redo: s.redo }))
@@ -362,6 +363,8 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
       </button>
 
       {/* Demo */}
+      <button onClick={onGallery} title="Every widget type in every state, under the theme"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Gallery</button>
       <button onClick={onDemo} title="Platform feature demo"
         className="text-xs px-2 py-1 rounded bg-violet-700 hover:bg-violet-600 text-white font-medium shrink-0">Demo</button>
 

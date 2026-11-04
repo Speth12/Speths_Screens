@@ -15,3 +15,5 @@ export {
   THEMES, HIGH_PERFORMANCE, DEFAULT_THEME_ID, COLOR_TOKENS, themeById, themeVars, themeStyle, applyTheme, tokenColor,
   type Theme, type ThemeColors,
 } from "./tokens";
+export { Gallery, GALLERY_STATES, galleryCell, galleryInsert, type GalleryState } from "./gallery";
+export type { GallerySample } from "./manifest";

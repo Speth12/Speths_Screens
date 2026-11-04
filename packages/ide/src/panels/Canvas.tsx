@@ -3,6 +3,7 @@ import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
+import { GALLERY_DRAG, insertGalleryWidget } from "./GalleryPanel";
 import { SYMBOLS, themeById, themeVars } from "@speths-screens/widgets";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
@@ -367,7 +368,7 @@ export function Canvas() {
     const types = e.dataTransfer.types;
     if (types.includes("text/x-widget-id") || types.includes("text/x-tag-binding") ||
         types.includes("text/x-resize")    || types.includes("text/x-image-id")    ||
-        types.includes("text/x-symbol-id") || types.includes(PRESET_DRAG))
+        types.includes("text/x-symbol-id") || types.includes(PRESET_DRAG) || types.includes(GALLERY_DRAG))
       e.preventDefault();
   };
 
@@ -390,6 +391,13 @@ export function Canvas() {
     const presetId = e.dataTransfer.getData(PRESET_DRAG);
     if (presetId) {
       const ws = insertPreset(presetId, isPixel ? { x: Math.max(0, pxX), y: Math.max(0, pxY) } : { x: Math.max(0, col), y: Math.max(0, row) });
+      setSelectedIds(ws.map(w => w.id));
+      return;
+    }
+
+    const galleryType = e.dataTransfer.getData(GALLERY_DRAG);
+    if (galleryType) {
+      const ws = insertGalleryWidget(galleryType, isPixel ? { x: Math.max(0, pxX), y: Math.max(0, pxY) } : { x: Math.max(0, col), y: Math.max(0, row) });
       setSelectedIds(ws.map(w => w.id));
       return;
     }
