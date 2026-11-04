@@ -4,6 +4,7 @@ import { useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
 import { PageStage } from "./PageStage";
+import { useElementSize } from "./useElementSize";
 import { sessionStore } from "./store/session";
 import { onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
@@ -181,22 +182,10 @@ export function App() {
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
 
-  const canvasRef = useRef<HTMLDivElement>(null);
-
   // Scale-to-fit: a page with a dynamic resolution is scaled to the window's width when on
   // (a fixed resolution always fits the window); the room is the canvas area without its padding.
   const [scaleToFit, setScaleToFit] = useState(() => localStorage.getItem("xhmi-scale") === "1");
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver((entries) => {
-      const { width, height } = entries[0]!.contentRect;
-      setViewport({ width, height });
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  const [canvasRef, viewport] = useElementSize();
   const toggleScale = () => setScaleToFit((s) => { localStorage.setItem("xhmi-scale", s ? "0" : "1"); return !s; });
 
   // Theme — persisted in localStorage via applyTheme
@@ -406,7 +395,8 @@ export function App() {
         </div>
       )}
       <div
-        className={`${isKiosk ? "h-screen overflow-hidden" : "min-h-screen"} flex flex-col`}
+        // h-screen in both modes: the canvas area scrolls and has a real height to fit a page to
+        className={`${isKiosk ? "h-screen overflow-hidden" : "h-screen"} flex flex-col`}
         style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
         {/* Header — hidden in kiosk mode */}
