@@ -2,11 +2,12 @@
 // trigger. The editor checks the source as you type (the same check the
 // runtime and deploy make) and shows each script's state on the runtime.
 import { useEffect, useMemo, useState } from "react";
-import type { Role, RuntimeScript, ScriptTrigger } from "@speths-screens/shared-types";
+import type { Role, RuntimeScript, ScriptTrigger, SessionVar, Type } from "@speths-screens/shared-types";
 import { syntaxProblem } from "@speths-screens/shared-types/scripts";
 import { useProject } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
 import { ScriptEditor } from "./ScriptEditor";
+import { typedInitial } from "./typedInitial";
 
 /** One script's state on the runtime, from GET /api/v1/scripts. */
 export interface ScriptStatus {
@@ -167,6 +168,47 @@ function ScriptRow({ script, rules, status, open, onToggle, onChange, onRemove }
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+const TYPES: Type[] = ["bool", "int", "real", "string"];
+
+/** Session variables: typed values each browser tab keeps for itself, read
+ *  as {session:name}. */
+export function SessionVars() {
+  const { project, setSessionVars } = useProject();
+  const vars = project.sessionVars ?? [];
+  // The initial values as typed, so text that is not yet a number stays.
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const set = (i: number, patch: Partial<SessionVar>) => setSessionVars(vars.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  const setInitial = (i: number, raw: string) => {
+    setDrafts((d) => ({ ...d, [i]: raw }));
+    set(i, { initial: typedInitial(vars[i]!.type, raw) }); // undefined: not saved
+  };
+  const add = () => {
+    let n = vars.length + 1;
+    while (vars.some((v) => v.name === `var${n}`)) n++;
+    setSessionVars([...vars, { name: `var${n}`, type: "int" }]);
+  };
+  const remove = (i: number) => {
+    setDrafts({});
+    setSessionVars(vars.filter((_, j) => j !== i));
+  };
+  return (
+    <div className="space-y-1.5 text-[11px]">
+      {vars.map((v, i) => (
+        <div key={i} className="flex gap-1.5 items-center">
+          <input aria-label={`session variable ${i + 1} name`} value={v.name} onChange={(e) => set(i, { name: e.target.value })} className="w-24 shrink-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 font-mono" />
+          <select aria-label={`session variable ${i + 1} type`} value={v.type} onChange={(e) => { const type = e.target.value as Type; set(i, { type, initial: typedInitial(type, drafts[i] ?? (v.initial === undefined ? "" : String(v.initial))) }); }} className="bg-zinc-950 border border-zinc-800 rounded px-1 py-1">
+            {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input aria-label={`session variable ${i + 1} initial`} value={drafts[i] ?? (v.initial === undefined ? "" : String(v.initial))} onChange={(e) => setInitial(i, e.target.value)} placeholder="initial" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 font-mono" />
+          <button onClick={() => remove(i)} title="Remove variable" className="text-zinc-600 hover:text-red-400 px-1">×</button>
+        </div>
+      ))}
+      <button onClick={add} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add variable</button>
+      <div className="text-[10px] text-zinc-600">Each browser tab keeps its own; read them as <code className="text-zinc-400">{"{session:name}"}</code>.</div>
     </div>
   );
 }

@@ -5,7 +5,8 @@ import { compile } from "@speths-screens/expr";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
-import { Scripts } from "./Scripts";
+import { Scripts, SessionVars } from "./Scripts";
+import { typedInitial } from "./typedInitial";
 import { ScriptEditor } from "./ScriptEditor";
 import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
@@ -338,6 +339,11 @@ export function LeftPanel({ width }: { width?: number }) {
         {/* Runtime scripts */}
         <TreeSection label="Scripts" count={project.scripts?.length}>
           <Scripts />
+        </TreeSection>
+
+        {/* Session variables, kept per browser tab */}
+        <TreeSection label="Session" count={project.sessionVars?.length}>
+          <SessionVars />
         </TreeSection>
 
         {/* Recipes */}
@@ -916,14 +922,8 @@ type MemoryRow = { path: string; type: MemoryTag["type"]; initial: string; retai
  *  blank (or text that is not of the type) leaves it out, so the tag starts
  *  at false, 0 or empty text. */
 export function memoryTag(r: MemoryRow): MemoryTag {
-  const t: MemoryTag = { path: r.path.trim(), type: r.type, ...(r.retain ? { retain: true } : {}) };
-  const text = r.initial.trim();
-  if (text === "") return t;
-  if (r.type === "string") return { ...t, initial: r.initial };
-  if (r.type === "bool") return text === "true" || text === "1" ? { ...t, initial: true } : text === "false" || text === "0" ? { ...t, initial: false } : t;
-  const n = Number(text);
-  if (Number.isNaN(n) || (r.type === "int" && !Number.isInteger(n))) return t;
-  return { ...t, initial: n };
+  const initial = typedInitial(r.type, r.initial);
+  return { path: r.path.trim(), type: r.type, ...(initial !== undefined ? { initial } : {}), ...(r.retain ? { retain: true } : {}) };
 }
 
 const TYPE_DEFAULTS: Record<DatasourceType, { id: string; label: string }> = {

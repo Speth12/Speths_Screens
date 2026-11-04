@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useProject } from "../store/projectStore";
-import { Scripts, withTrigger } from "./Scripts";
+import { Scripts, SessionVars, withTrigger } from "./Scripts";
 
 // The panel is tested with the text area the editor shows until Monaco loads.
 vi.mock("../store/monaco", () => ({ loadMonaco: () => new Promise(() => {}), setScriptApi: () => {} }));
@@ -50,4 +50,21 @@ it("adds a script, edits its triggers and source, and shows a syntax problem", (
   expect(useProject.getState().project.scriptRole).toBe("engineer");
   fireEvent.change(screen.getByLabelText("script role"), { target: { value: "operator" } });
   expect("scriptRole" in useProject.getState().project).toBe(false);
+});
+
+it("declares session variables with typed initial values", () => {
+  render(<SessionVars />);
+  fireEvent.click(screen.getByText("+ add variable"));
+  const vars = () => JSON.parse(JSON.stringify(useProject.getState().project.sessionVars));
+  expect(vars()).toEqual([{ name: "var1", type: "int" }]);
+  fireEvent.change(screen.getByLabelText("session variable 1 name"), { target: { value: "shift" } });
+  fireEvent.change(screen.getByLabelText("session variable 1 initial"), { target: { value: "2" } });
+  expect(vars()).toEqual([{ name: "shift", type: "int", initial: 2 }]);
+  fireEvent.change(screen.getByLabelText("session variable 1 initial"), { target: { value: "2.5" } });
+  expect(vars()).toEqual([{ name: "shift", type: "int" }]);
+  expect((screen.getByLabelText("session variable 1 initial") as HTMLInputElement).value).toBe("2.5");
+  fireEvent.change(screen.getByLabelText("session variable 1 type"), { target: { value: "real" } });
+  expect(vars()).toEqual([{ name: "shift", type: "real", initial: 2.5 }]);
+  fireEvent.click(screen.getByTitle("Remove variable"));
+  expect(useProject.getState().project.sessionVars).toBeUndefined();
 });

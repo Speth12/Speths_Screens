@@ -7,7 +7,7 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Role, RuntimeScript, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, SessionVar, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
@@ -70,6 +70,7 @@ type State = {
   updateScript: (id: string, patch: Partial<RuntimeScript>) => void;
   removeScript: (id: string) => void;
   setScriptRole: (role: Role | undefined) => void;
+  setSessionVars: (vars: SessionVar[]) => void;
 
   importImage: (asset: ImageAsset) => void;
   deleteImage: (id: string) => void;
@@ -423,6 +424,14 @@ export const useProject = create<State>((set, get) => {
     removeScript: (id) => {
       pushHistory();
       set((s) => ({ project: { ...s.project, scripts: (s.project.scripts ?? []).filter((r) => r.id !== id) } }));
+    },
+
+    setSessionVars: (vars) => {
+      pushHistory();
+      set((s) => {
+        const { sessionVars: _old, ...rest } = s.project;
+        return { project: vars.length ? { ...rest, sessionVars: vars } : rest };
+      });
     },
 
     setScriptRole: (role) => {
