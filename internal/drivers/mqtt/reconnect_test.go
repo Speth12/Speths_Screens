@@ -31,7 +31,7 @@ func brokerAt(t *testing.T, addr string) func() {
 			go func() { serveErr <- server.Serve() }()
 			if waitDial(addr, 2*time.Second) {
 				return func() {
-					_ = server.Close()
+					closeBroker(t, server)
 					select {
 					case <-serveErr:
 					case <-time.After(time.Second):
@@ -39,7 +39,7 @@ func brokerAt(t *testing.T, addr string) func() {
 				}
 			}
 		}
-		_ = server.Close()
+		closeBroker(t, server)
 		if time.Now().After(deadline) {
 			t.Fatalf("could not start broker on %s: %v", addr, err)
 		}
