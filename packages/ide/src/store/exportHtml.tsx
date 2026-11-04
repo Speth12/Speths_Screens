@@ -8,7 +8,7 @@ import {
   EMPTY_TAG, WidgetHostProvider, WidgetRenderer, inertHost, pageExtent, placement, themeById, themeStyle,
   type TagState, type WidgetHost,
 } from "@speths-screens/widgets";
-import type { Page, Project, Widget } from "./projectStore";
+import type { Page, Project } from "./projectStore";
 
 // Where a widget sits is the shared layout (packages/widgets/src/layout.ts).
 export { placement };
