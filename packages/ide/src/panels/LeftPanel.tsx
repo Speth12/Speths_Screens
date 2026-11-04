@@ -19,7 +19,7 @@ import { AssetModel } from "./AssetModel";
 import { Faceplates } from "./Faceplates";
 import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
-import { downloadGitFormat, importGitFormat } from "../store/gitFormat";
+import { downloadGitFormat, importGitFormat, unpackGitFiles } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
 import { StatusMessage } from "./StatusMessage";
 import { convertWidget } from "../store/presets";
@@ -162,9 +162,7 @@ export function LeftPanel({ width }: { width?: number }) {
           const raw = JSON.parse(reader.result as string) as Record<string, unknown>;
           let incoming: unknown = raw;
           if (raw._gitFormat) {
-            const strMap: Record<string, string> = {};
-            for (const [k, v] of Object.entries(raw._files as Record<string, unknown>)) strMap[k] = JSON.stringify(v);
-            incoming = importGitFormat(strMap);
+            incoming = importGitFormat(unpackGitFiles(raw._files as Record<string, unknown>));
           }
           const o = openProject(incoming);
           if (o.ok) loadProject(o.project);
