@@ -10,6 +10,10 @@ export * from "./symbols";
 export type { Field, FieldKind, WidgetManifest, BindingSlot, WidgetEvent } from "./manifest";
 export { MANIFESTS, FRAME_SETTINGS, DEFAULT_STATES, manifestFor, type SettingsGroup } from "./manifests";
 export { BUILTIN_PRESETS } from "./presets";
+export {
+  COL_W, ROW_H, GAP, PREVIEW_MINIMUM, placement, pageExtent, stageSize, fitScale,
+  type Size, type Box, type Placeable, type CanvasResolutionLike,
+} from "./layout";
 export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
 export {
   THEMES, HIGH_PERFORMANCE, DEFAULT_THEME_ID, COLOR_TOKENS, themeById, themeVars, themeStyle, applyTheme, tokenColor,

@@ -1,24 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
-import { themeById, themeVars } from "@speths-screens/widgets";
+import { PREVIEW_MINIMUM, fitScale, placement, stageSize, themeById, themeVars } from "@speths-screens/widgets";
 import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
 import { wsEventsUrl } from "../store/runtimeTarget";
 import type { CanvasResolution } from "@speths-screens/shared-types";
 
-const COL_W = 80;
-const ROW_H = 64;
-const GAP   = 8;
 const DYNAMIC: CanvasResolution = { type: "dynamic" };
-
-/** Convert grid position to px (same formula as Canvas.tsx) */
-function gx(col: number, span: number) {
-  return { left: col * (COL_W + GAP), width: span * (COL_W + GAP) - GAP };
-}
-function gy(row: number, span: number) {
-  return { top: row * (ROW_H + GAP), height: span * (ROW_H + GAP) - GAP };
-}
 
 type Props = { onExit: () => void };
 
@@ -33,6 +22,7 @@ export function PreviewMode({ onExit }: Props) {
 
   const page = project.pages.find((p) => p.id === activePageId) ?? project.pages[0];
   const resolution = project.canvasResolution ?? DYNAMIC;
+  const pixel = project.canvasSnap === "pixel";
 
   // ── PIN gate ──────────────────────────────────────────────────────────────
   const [pinOk, setPinOk] = useState(!project.pin);
@@ -105,26 +95,13 @@ export function PreviewMode({ onExit }: Props) {
     if (!containerRef.current) return;
     const { width: vw, height: vh } = containerRef.current.getBoundingClientRect();
 
-    if (resolution.type === "fixed") {
-      const fw = resolution.width ?? 1920;
-      const fh = resolution.height ?? 1080;
-      const s = Math.min(vw / fw, vh / fh);
-      setScale(s);
-      setCanvasW(fw);
-      setCanvasH(fh);
-    } else {
-      // Dynamic: fit all widgets, scale to viewport
-      const widgets = page?.widgets ?? [];
-      const maxCol = widgets.reduce((m, w) => Math.max(m, w.x + w.w), 12);
-      const maxRow = widgets.reduce((m, w) => Math.max(m, w.y + w.h), 6);
-      const naturalW = maxCol * (COL_W + GAP) - GAP;
-      const naturalH = maxRow * (ROW_H + GAP) - GAP;
-      const s = Math.min(vw / naturalW, vh / naturalH, 1);
-      setScale(s);
-      setCanvasW(naturalW);
-      setCanvasH(naturalH);
-    }
-  }, [resolution, page]);
+    // The same stage and fit as the operator screen (packages/widgets/src/layout.ts); a fixed
+    // resolution fits the window, a dynamic one only shrinks to it.
+    const stage = stageSize(resolution, page?.widgets ?? [], pixel, PREVIEW_MINIMUM);
+    setScale(fitScale(stage, { width: vw, height: vh }, stage.fixed ? {} : { maxScale: 1 }));
+    setCanvasW(stage.width);
+    setCanvasH(stage.height);
+  }, [resolution, page, pixel]);
 
   useEffect(() => {
     recalc();
@@ -201,18 +178,11 @@ export function PreviewMode({ onExit }: Props) {
               background: page.backgroundColor ?? "var(--background)",
             }}
           >
-            {page.widgets.map((w) => {
-              const { left, width } = gx(w.x, w.w);
-              const { top, height } = gy(w.y, w.h);
-              return (
-                <div
-                  key={w.id}
-                  style={{ position: "absolute", left, top, width, height }}
-                >
-                  <WidgetRenderer w={w} />
-                </div>
-              );
-            })}
+            {page.widgets.map((w) => (
+              <div key={w.id} style={{ position: "absolute", ...placement(w, pixel) }}>
+                <WidgetRenderer w={w} />
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -5,13 +5,13 @@
 // runtime (its origin is "null", and it cannot log in).
 import type { CSSProperties } from "react";
 import {
-  EMPTY_TAG, WidgetHostProvider, WidgetRenderer, inertHost, themeById, themeStyle,
+  EMPTY_TAG, WidgetHostProvider, WidgetRenderer, inertHost, pageExtent, placement, themeById, themeStyle,
   type TagState, type WidgetHost,
 } from "@speths-screens/widgets";
-import type { Page, Project, Widget } from "./projectStore";
+import type { Page, Project } from "./projectStore";
 
-// The canvas grid (Canvas.tsx): a cell and the gap after it.
-const COL_W = 80, ROW_H = 64, GAP = 8;
+// Where a widget sits is the shared layout (packages/widgets/src/layout.ts).
+export { placement };
 
 export type Snapshot = {
   /** The value the IDE has for a tag path, if any. */
@@ -35,21 +35,9 @@ export function snapshotHost(project: Project, tag: Snapshot["tag"]): WidgetHost
   };
 }
 
-/** Where a widget sits on its page, in pixels, as the IDE canvas draws it. */
-export function placement(w: Widget, pixel: boolean): { left: number; top: number; width: number; height: number } {
-  if (pixel) return { left: w.x ?? 0, top: w.y ?? 0, width: w.w, height: w.h };
-  return {
-    left: (w.x ?? 0) * (COL_W + GAP),
-    top: (w.y ?? 0) * (ROW_H + GAP),
-    width: w.w * (COL_W + GAP) - GAP,
-    height: w.h * (ROW_H + GAP) - GAP,
-  };
-}
-
 function PageSnapshot({ page, pixel }: { page: Page; pixel: boolean }) {
   const boxes = page.widgets.map((w) => [w, placement(w, pixel)] as const);
-  const width = Math.max(COL_W, ...boxes.map(([, b]) => b.left + b.width));
-  const height = Math.max(ROW_H, ...boxes.map(([, b]) => b.top + b.height));
+  const { width, height } = pageExtent(page.widgets, pixel);
   const stage: CSSProperties = { position: "relative", width, height, background: page.backgroundColor || undefined };
   return (
     <section id={`page-${page.id}`} className="snapshot-page">
