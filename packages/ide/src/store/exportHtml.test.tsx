@@ -90,11 +90,11 @@ describe("the exported page's look", () => {
   it("carries the project's screen theme, not the IDE's own look", () => {
     document.documentElement.style.setProperty("--background", "#0c0e10"); // the IDE's dark chrome
     const look = ideLook("high-performance");
-    expect(look.root.style).toContain("--background: #c8c8c8");
-    expect(look.root.style).toContain("--alarm-critical: #c00000");
-    expect(look.root.attrs?.["data-theme-id"]).toBe("high-performance");
+    expect(look.root?.style).toContain("--background: #c8c8c8");
+    expect(look.root?.style).toContain("--alarm-critical: #c00000");
+    expect(look.root?.attrs?.["data-theme-id"]).toBe("high-performance");
   });
   it("uses the default theme for a project without one", () => {
-    expect(ideLook(undefined).root.style).toContain("--background: #c8c8c8");
+    expect(ideLook(undefined).root?.style).toContain("--background: #c8c8c8");
   });
 });
