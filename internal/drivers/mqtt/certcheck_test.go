@@ -57,7 +57,7 @@ func TestCertCheck(t *testing.T) {
 	}
 	go func() { _ = server.Serve() }()
 	t.Cleanup(func() { closeBroker(t, server) })
-	if !waitDial(addr, 2*time.Second) {
+	if !waitDialTLS(addr, 2*time.Second) {
 		t.Fatal("broker did not start")
 	}
 
