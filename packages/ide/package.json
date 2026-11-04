@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@speths-screens/expr": "*",
+    "@speths-screens/script-api": "*",
     "@speths-screens/shared-types": "*",
     "@speths-screens/widgets": "*",
     "ajv": "^8.20.0",
