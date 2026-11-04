@@ -10,12 +10,16 @@ import { useProject } from "../store/projectStore";
 import { useTag } from "../hooks/useTag";
 import { useTags } from "../hooks/useTags";
 import { apiFetch } from "../store/runtimeAuth";
+import { sessionName } from "@speths-screens/script-api";
+import { sessionStore } from "../store/session";
 import { useClientAlarms } from "../store/alarmEngine";
 
 /** POST a value to the runtime's write pipeline. Binding is "dsId:tagPath".
  *  Failures show up as the value not changing; a view-only project writes nothing. */
 async function writeTag(req: WriteRequest): Promise<void> {
   if (useProject.getState().project.viewOnly) return;
+  const session = sessionName(req.binding);
+  if (session !== undefined) { sessionStore.set(session, req.value); return; }
   const sep = req.binding.indexOf(":");
   if (sep < 0) return;
   const datasource = req.binding.slice(0, sep);

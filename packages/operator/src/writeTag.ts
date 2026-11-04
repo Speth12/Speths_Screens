@@ -7,6 +7,9 @@
 // Writes to the same tag go out one after another, so a momentary
 // button's release can never overtake its press.
 
+import { sessionName } from "@speths-screens/script-api";
+import { sessionStore } from "./store/session";
+
 export type WriteStatus = "confirmed" | "sent" | "not_confirmed" | "failed";
 
 export type WriteResult = {
@@ -56,6 +59,8 @@ async function send(binding: string, value: unknown, widgetId?: string): Promise
 }
 
 async function post(binding: string, value: unknown, widgetId?: string): Promise<WriteResult> {
+  const session = sessionName(binding);
+  if (session !== undefined) return { binding, value, ...sessionStore.set(session, value) };
   const sep = binding.indexOf(":");
   if (sep < 0) return { binding, value, status: "failed", reason: `${binding} does not name a tag` };
   const datasource = binding.slice(0, sep);

@@ -1,7 +1,8 @@
 // Page scripts in the IDE preview (Phase 4): each runs in a Web Worker
 // through @speths-screens/script-api, with the same names as on the
 // operator screen. The worker ends when the page is left.
-import { startPageScript } from "@speths-screens/script-api";
+import { sessionName, startPageScript } from "@speths-screens/script-api";
+import { sessionStore } from "./session";
 import type { WriteResult } from "@speths-screens/script-api";
 import { useProject } from "./projectStore";
 import { tagStoreClient } from "./tagStoreClient";
@@ -12,9 +13,11 @@ import { apiFetch } from "./runtimeAuth";
 export type ScriptCleanup = () => void;
 
 /** Writes through the runtime's write pipeline and returns its answer;
- *  calculated tags simulated in the IDE are set here. */
+ *  calculated tags simulated in the IDE and session variables are set here. */
 export async function previewWrite(binding: string, value: unknown): Promise<WriteResult> {
   if (useProject.getState().project.viewOnly) return { status: "failed", reason: "the project is view-only" };
+  const session = sessionName(binding);
+  if (session !== undefined) return sessionStore.set(session, value);
   if (virtualTagStore.isVirtual(binding)) {
     virtualTagStore.set(binding, value);
     return { status: "confirmed" };

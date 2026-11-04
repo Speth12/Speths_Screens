@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { WidgetHostProvider, WidgetRenderer } from "@speths-screens/widgets";
 import { useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
+import { sessionStore } from "./store/session";
 import { onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
@@ -240,7 +241,7 @@ export function App() {
         })
         .then((p) => {
           if (p === null) return;
-          if (p && p.pages) { setProject(p); setError(""); }
+          if (p && p.pages) { sessionStore.define(p.sessionVars ?? []); setProject(p); setError(""); }
           else setError("No project deployed to this runtime.");
         })
         .catch(() => setError("Cannot reach runtime API."));
