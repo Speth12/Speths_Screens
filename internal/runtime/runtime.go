@@ -15,6 +15,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/assets"
 	"github.com/Speth12/Speths_Screens/internal/audit"
 	"github.com/Speth12/Speths_Screens/internal/drivers"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/memory"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/modbus"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/mqtt"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/opcua"
@@ -45,6 +46,8 @@ type Runtime struct {
 	Assets     *assets.Registry
 	Faceplates *faceplate.Registry
 	Recipes    *recipestore.Store
+	// Retain keeps memory-tag values across a restart (memstore); nil keeps none.
+	Retain drivers.Retainer
 
 	mu        sync.RWMutex
 	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
@@ -449,7 +452,7 @@ func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDrive
 	if r.newDriver != nil {
 		return r.newDriver(typ)
 	}
-	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store})
+	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store, Retain: r.Retain})
 }
 
 func buildConfig(ds project.Datasource) drivers.DriverConfig {
@@ -493,6 +496,13 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	}
 	if c.BearerToken != nil {
 		cfg.Extra["bearerToken"] = *c.BearerToken
+	}
+	if c.MemoryTags != nil {
+		// The memory driver keys retained values by datasource id.
+		if b, err := json.Marshal(c.MemoryTags); err == nil {
+			cfg.Extra["memoryTags"] = string(b)
+		}
+		cfg.Extra["datasourceId"] = ds.ID
 	}
 	if c.Tags != nil {
 		// The virtual driver reads its tag list as JSON, like every Extra setting.
