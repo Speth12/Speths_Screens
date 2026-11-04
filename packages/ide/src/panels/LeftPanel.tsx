@@ -6,6 +6,7 @@ import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
 import { Scripts } from "./Scripts";
+import { ScriptEditor } from "./ScriptEditor";
 import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
 import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
@@ -893,16 +894,10 @@ function PageSettings() {
               )}
             </div>
             <div className="text-[10px] text-zinc-600 leading-relaxed">
-              Runs when this page opens. Available: <code className="text-zinc-400">navigate(name)</code>, <code className="text-zinc-400">readTag(b)</code>, <code className="text-zinc-400">writeTag(b,v)</code>, <code className="text-zinc-400">onTimer(ms,fn)</code>, <code className="text-zinc-400">afterDelay(ms,fn)</code>, <code className="text-zinc-400">onTagChange(b,fn)</code>, <code className="text-zinc-400">log(...)</code>
+              Runs in a worker while this page is open: <code className="text-zinc-400">readTag</code>, <code className="text-zinc-400">await writeTag</code>, <code className="text-zinc-400">every(ms, fn)</code>, <code className="text-zinc-400">after(ms, fn)</code>, <code className="text-zinc-400">onTagChange</code>, <code className="text-zinc-400">navigate</code>, <code className="text-zinc-400">log</code>.
             </div>
-            <textarea
-              value={activePg.script ?? ""}
-              onChange={(e) => updatePage(activePageId, { script: e.target.value || undefined })}
-              placeholder={"// Example: go back to Main after 5 minutes\nonTimer(5 * 60 * 1000, () => navigate('Main'));"}
-              rows={8}
-              spellCheck={false}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded px-2 py-1.5 text-[11px] font-mono text-zinc-300 placeholder-zinc-700 focus:outline-none focus:border-zinc-500 resize-y"
-            />
+            <ScriptEditor kind="page" label="page script" rows={8} value={activePg.script ?? ""}
+              onChange={(source) => updatePage(activePageId, { script: source || undefined })} />
           </div>
         );
       })()}

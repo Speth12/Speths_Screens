@@ -3,6 +3,9 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useProject } from "../store/projectStore";
 import { Scripts, withTrigger } from "./Scripts";
 
+// The panel is tested with the text area the editor shows until Monaco loads.
+vi.mock("../store/monaco", () => ({ loadMonaco: () => new Promise(() => {}), setScriptApi: () => {} }));
+
 const original = useProject.getState().project;
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));

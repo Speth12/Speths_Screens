@@ -5,6 +5,7 @@ import { FRAME_SETTINGS, manifestFor } from "@speths-screens/widgets";
 import { BindingInput, LiveTagPreview } from "./BindingInput";
 import { SettingsFields, inp } from "./SettingsEditor";
 import { EventsEditor } from "./EventsEditor";
+import { ScriptEditor } from "./ScriptEditor";
 
 
 function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string } }) {
@@ -48,17 +49,10 @@ function PageProperties({ page }: { page: { id: string; name: string; background
       <div className="border-t border-zinc-800 pt-3">
         <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Page Script</div>
         <div className="text-[10px] text-zinc-600 mb-1.5 leading-relaxed">
-          Variables available: <code className="bg-zinc-800 px-0.5 rounded text-zinc-400">tags</code> object with tag paths as keys.<br />
-          Example: <code className="bg-zinc-800 px-0.5 rounded text-zinc-400">{"// tags['rest:path'] > 5000"}</code>
+          Runs in a worker while this page is open: <code className="text-zinc-400">readTag</code>, <code className="text-zinc-400">await writeTag</code>, <code className="text-zinc-400">every(ms, fn)</code>, <code className="text-zinc-400">after(ms, fn)</code>, <code className="text-zinc-400">onTagChange</code>, <code className="text-zinc-400">navigate</code>, <code className="text-zinc-400">log</code>.
         </div>
-        <textarea
-          value={page.script ?? ""}
-          onChange={(e) => updatePage(page.id, { script: e.target.value })}
-          placeholder={"// Page-level script runs when tags update\n// Example:\n// if (tags['rest:ds:path'] > 100) { ... }"}
-          rows={8}
-          className={`${inp} font-mono text-[10px] resize-y`}
-        />
-        <div className="text-[10px] text-zinc-600 mt-1">Page scripting executes in runtime — logic here affects all widgets on this page.</div>
+        <ScriptEditor kind="page" label="page script" rows={8} value={page.script ?? ""}
+          onChange={(source) => updatePage(page.id, { script: source || undefined })} />
       </div>
     </div>
   );

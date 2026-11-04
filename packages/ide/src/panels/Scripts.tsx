@@ -6,6 +6,7 @@ import type { Role, RuntimeScript, ScriptTrigger } from "@speths-screens/shared-
 import { syntaxProblem } from "@speths-screens/shared-types/scripts";
 import { useProject } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
+import { ScriptEditor } from "./ScriptEditor";
 
 /** One script's state on the runtime, from GET /api/v1/scripts. */
 export interface ScriptStatus {
@@ -155,8 +156,7 @@ function ScriptRow({ script, rules, status, open, onToggle, onChange, onRemove }
           )}
           {noTrigger && <div className="text-amber-400">A script needs at least one trigger.</div>}
           {t.every !== undefined && t.every < 100 && <div className="text-amber-400">every must be at least 100 ms.</div>}
-          <textarea aria-label="script source" value={script.source} onChange={(e) => onChange({ source: e.target.value })} spellCheck={false} rows={10}
-            className={`${field} font-mono leading-snug resize-y`} />
+          <ScriptEditor kind="runtime" label="script source" value={script.source} onChange={(source) => onChange({ source })} />
           {problem && <div className="text-red-400 font-mono">{problem}</div>}
           {status && (
             <div className="text-zinc-500">
