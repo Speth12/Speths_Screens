@@ -3,7 +3,7 @@
 // names as in the IDE preview. Writes go through writeTag, so they are
 // queued, audited and answered like a widget's. The worker ends when the
 // page changes or closes.
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { startPageScript } from "@speths-screens/script-api";
 import type { PageHost } from "@speths-screens/script-api";
 import { tagStoreClient } from "./store/tagStoreClient";
@@ -37,10 +37,20 @@ export function operatorPageHost(navigate: (page: string) => void, error: (messa
   };
 }
 
-/** Runs the open page's script while the page is open. */
+/**
+ * Runs the open page's script while the page is open. The script restarts
+ * only when the page or its source changes: the app fetches the project every
+ * 5 s, which gives `navigate` a new identity each time, and a restart would
+ * run the script's start-up writes again. The script's navigate calls the
+ * latest function.
+ */
 export function usePageScript(pageId: string | undefined, script: string | undefined, navigate: (page: string) => void): void {
+  const navigateRef = useRef(navigate);
+  useEffect(() => {
+    navigateRef.current = navigate;
+  });
   useEffect(() => {
     if (!script?.trim()) return;
-    return startPageScript(script, operatorPageHost(navigate, (m) => console.error("[Script]", m)));
-  }, [pageId, script, navigate]);
+    return startPageScript(script, operatorPageHost((page) => navigateRef.current(page), (m) => console.error("[Script]", m)));
+  }, [pageId, script]);
 }
