@@ -20,6 +20,22 @@
 // OUTAGE_WRITE_MS, not hang or report success. It writes
 // events.jsonl (every finding as it happens) and summary.json (every 10 min
 // and at the end) to --out, and exits 0 when the gate passed.
+//
+// The soak project also runs four runtime scripts (Phase 4), which only touch
+// memory tags and so keep running through a PLC outage:
+//   ticker        every second, writes a counter to mem:ticks
+//   follower      when the OPC UA temperature changes, writes mem:derived
+//   alarm-counter when the soak alarm is raised or cleared, writes mem:alarms
+//   canary        every minute, tries three huge allocations and must be refused
+//                 with a RangeError each time (the memory guards, for the whole run)
+// A script that writes a result other than "confirmed" throws, which the
+// engine keeps as its lastError. Every 10 s the soak reads GET /api/v1/scripts;
+// the gate scriptsHealthy needs every script running with no error, no
+// interrupt and no dropped run, and the ticker's runs and mem:ticks close to
+// the seconds that passed. Page scripts need a browser and are not covered.
+//
+// --scripts-only skips the PLC (no pins, no test writes, no restore) and only
+// watches the scripts; the PLC datasources stay offline.
 import { appendFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
@@ -35,6 +51,10 @@ const out = args.out ?? `soak-${Date.now()}`;
 const pid = args.pid ? Number(args.pid) : null;
 const writeEvery = Number(args["write-every"] ?? 60) * 1000;
 const pins = { opcua: args["opcua-fingerprint"] ?? "", rest: args["rest-fingerprint"] ?? "" };
+const scriptsOnly = "scripts-only" in args;
+// Scripts only: the PLC datasources get a pin that matches nothing, so they are refused and stay offline.
+const NO_MATCH = Array(32).fill("00").join(":");
+const pin = (id) => pins[id] || (scriptsOnly ? NO_MATCH : "");
 const GAP_MS = 15_000; // a polled tag reports every 0.5–1 s; 15 s of silence while online is a freeze
 const OUTAGE_WRITE_MS = 1000; // an offline driver refuses writes at once (defect 5)
 mkdirSync(out, { recursive: true });
@@ -67,17 +87,55 @@ const writes = [
   { binding: `rest:${R}sREST_Write`, value: (n) => `soak ${n}` },
 ];
 const allTags = [...reads, ...writes.map((w) => w.binding)];
-const widget = (id, type, binding, y, config) => ({ id, type, x: 0, y, w: 2, h: 1, binding, ...(config ? { config } : {}) });
+const widget = (id, type, binding, y, props) => ({ id, type, x: 0, y, w: 2, h: 1, bindings: { value: binding }, ...(props ? { props } : {}) });
+
+// What the scripts write: memory tags, each with a widget that may write it
+// (a tag is writable only when a writable widget is bound to it).
+const memWrites = [
+  { binding: "mem:ticks", props: { min: 0, max: 1e12 } },
+  { binding: "mem:derived", props: { min: -1e9, max: 1e9 } },
+  { binding: "mem:alarms", props: { min: 0, max: 1e12 } },
+];
+const TEMP = `opcua:${O}HMI_SIM_Temp`;
+const scripts = [
+  { id: "ticker", name: "Ticker", trigger: { onStart: true, every: 1000 }, source: `
+    state.n = (state.n ?? 0) + 1;
+    const r = await writeTag('mem:ticks', state.n);
+    if (r.status !== 'confirmed') throw new Error('mem:ticks write ' + r.status + ' ' + (r.reason ?? ''));` },
+  { id: "follower", name: "Follower", trigger: { onChange: [TEMP] }, source: `
+    state.runs = (state.runs ?? 0) + 1;
+    if (event.quality === 'Good' && typeof event.value === 'number' && event.value !== state.last) {
+      state.last = event.value;
+      const r = await writeTag('mem:derived', Math.round(event.value * 200) / 100);
+      if (r.status !== 'confirmed') throw new Error('mem:derived write ' + r.status + ' ' + (r.reason ?? ''));
+    }` },
+  { id: "alarm-counter", name: "Alarm counter", trigger: { onAlarm: ["soak-high"] }, source: `
+    state.n = (state.n ?? 0) + 1;
+    const r = await writeTag('mem:alarms', state.n);
+    if (r.status !== 'confirmed') throw new Error('mem:alarms write ' + r.status + ' ' + (r.reason ?? ''));
+    emit('soak.alarm', { active: event.active, n: state.n });` },
+  { id: "canary", name: "Memory guard canary", trigger: { every: 60000 }, source: `
+    const huge = [() => 'x'.repeat(2 ** 28), () => new Array(5e7).fill(0), () => new Uint8Array(2 ** 30)];
+    for (const f of huge) {
+      try { f(); } catch (e) { if (e instanceof RangeError) continue; throw e; }
+      throw new Error('a huge allocation was not refused');
+    }
+    state.runs = (state.runs ?? 0) + 1;` },
+];
 const project = {
+  schemaVersion: 4,
   version: "0.1.0",
-  name: "Phase 1 soak",
+  name: "Soak",
   datasources: [
     { id: "opcua", label: "PLC OPC UA", type: "opcua", config: {
       endpoint: `opc.tcp://${plc}:4840`, securityMode: "SignAndEncrypt", securityPolicy: "Basic256Sha256",
-      certCheck: "pinned", certFingerprint: pins.opcua,
+      certCheck: "pinned", certFingerprint: pin("opcua"),
     } },
     { id: "rest", label: "PLC REST", type: "rest", config: {
-      endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14", certCheck: "pinned", certFingerprint: pins.rest,
+      endpoint: `https://${plc}`, basePath: "/_pxc_api/v1.14", certCheck: "pinned", certFingerprint: pin("rest"),
+    } },
+    { id: "mem", label: "Script results", type: "memory", config: {
+      memoryTags: [{ path: "ticks", type: "int", initial: 0 }, { path: "derived", type: "real", initial: 0 }, { path: "alarms", type: "int", initial: 0 }],
     } },
   ],
   pages: [{
@@ -85,10 +143,12 @@ const project = {
       ...reads.map((b, i) => widget(`r${i}`, "numericDisplay", b, i)),
       ...writes.map((w, i) => widget(`w${i}`, w.binding.includes("/s") ? "textInput" : "numericInput", w.binding, 20 + i,
         w.binding.includes("/s") ? undefined : { min: 0, max: 1000 })),
+      ...memWrites.map((m, i) => widget(`m${i}`, "numericInput", m.binding, 30 + i, m.props)),
     ],
   }],
   // Exercises alarms and alarm history: raised while the int write is above 500.
-  alarmRules: [{ id: "soak-high", name: "Soak counter high", binding: `opcua:${O}iOPC_Write`, condition: "gt", threshold: 500, severity: "info", message: "soak counter above 500" }],
+  alarmRules: [{ id: "soak-high", name: "Soak counter high", expr: `{opcua:${O}iOPC_Write} > 500`, severity: "info", message: "soak counter above 500" }],
+  scripts,
 };
 
 // ── state ───────────────────────────────────────────────────────────────────
@@ -105,6 +165,9 @@ const stats = {
   memoryKB: { first: null, min: null, max: null, last: null },
   historyBytes: { first: null, last: null },
   historyRows: { first: null, last: null }, // the store keeps changes only (defect 7)
+  // The runtime scripts: problems counts the times one went into trouble (stopped,
+  // an error, an interrupt or a dropped run); ticks is mem:ticks as the ticker wrote it.
+  scripts: { problems: 0, ticks: { first: null, last: null }, status: {} },
 };
 
 // historyRows counts stored samples; null if node:sqlite is unavailable.
@@ -125,6 +188,7 @@ function trend() {
   log("trend", {
     memoryKB: stats.memoryKB.last, historyRows: rows, historyBytes: stats.historyBytes.last,
     tagUpdates: Object.values(tags).reduce((a, t) => a + t.updates, 0), writes: stats.writes.sent,
+    scriptRuns: Object.fromEntries(Object.entries(stats.scripts.status).map(([id, st]) => [id, st.runs])),
   });
 }
 
@@ -240,6 +304,7 @@ async function checkHealth() {
       log("gap_end", { tag: path });
     }
   }
+  await checkScripts();
   if (pid) {
     try {
       const csv = execFileSync("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"], { encoding: "utf8" });
@@ -256,6 +321,40 @@ async function checkHealth() {
     stats.historyBytes.first ??= size;
     stats.historyBytes.last = size;
   } catch {}
+}
+
+// checkScripts reads every script's state and mem:ticks. A script that is not
+// running, or has an error, an interrupt or a dropped run, is a problem; it is
+// logged and counted once when it first goes wrong.
+async function checkScripts() {
+  let list;
+  try { list = (await api("GET", "/api/v1/scripts")).json; } catch { return; }
+  const sc = stats.scripts;
+  for (const x of Array.isArray(list) ? list : []) {
+    const prev = sc.status[x.id];
+    const bad = x.state !== "running" || !!x.lastError || x.interrupts > 0 || x.dropped > 0;
+    const changed = !prev || prev.state !== x.state || (prev.lastError ?? "") !== (x.lastError ?? "") || prev.interrupts !== x.interrupts || prev.dropped !== x.dropped;
+    if (changed) log("script", { id: x.id, state: x.state, reason: x.reason ?? "", lastError: x.lastError ?? "", interrupts: x.interrupts, dropped: x.dropped, runs: x.runs });
+    if (bad && !prev?.bad) sc.problems++;
+    sc.status[x.id] = { state: x.state, reason: x.reason ?? "", lastError: x.lastError ?? "", runs: x.runs, interrupts: x.interrupts, dropped: x.dropped, queued: x.queued, bad };
+  }
+  const t = await api("GET", `/api/v1/tag/${encodeURIComponent("mem:ticks")}`).catch(() => null);
+  if (t?.json?.Quality === "Good" && typeof t.json.Value === "number") {
+    sc.ticks.first ??= t.json.Value;
+    sc.ticks.last = t.json.Value;
+  }
+}
+
+// scriptsHealthy: every script reported, none in trouble, and the ticker kept
+// pace with the clock. null while too little time has passed to judge.
+function scriptsHealthy() {
+  const elapsed = (Date.now() - scriptsStartedAt) / 1000;
+  if (elapsed < 30) return null;
+  const sc = stats.scripts;
+  const everyoneThere = scripts.every((x) => sc.status[x.id]);
+  const ticker = sc.status.ticker;
+  const keptPace = !!ticker && ticker.runs >= 0.9 * elapsed - 5 && (sc.ticks.last ?? 0) >= 0.9 * elapsed - 5;
+  return everyoneThere && sc.problems === 0 && keptPace;
 }
 
 let n = 0;
@@ -282,7 +381,13 @@ function summary(final) {
     everyWriteConfirmedOrFailedWithReason: s.other === 0 && s.notConfirmed === 0,
     // null when no outage happened, so this was not tested.
     writesDuringOutageFailAtOnce: o.sent === 0 ? null : o.failedSlow === 0 && o.other === 0,
+    scriptsHealthy: scriptsHealthy(),
   };
+  if (scriptsOnly) {
+    // No PLC: nothing was written and no PLC tag was watched, so these were not tested.
+    gate.everyWriteConfirmedOrFailedWithReason = null;
+    gate.noFrozenValues = null;
+  }
   const doc = {
     ...stats, final, now: now(),
     writes: { ...s, avgMs: s.sent ? Math.round(s.totalMs / s.sent) : 0 },
@@ -302,10 +407,11 @@ for (let i = 0; ; i++) {
 }
 const dep = await api("POST", "/api/v1/project", project);
 if (dep.code !== 200) { console.error("deploy failed", dep); process.exit(2); }
+const scriptsStartedAt = Date.now();
 
 // Without both pins, show the certificates the controller presents (the
 // drivers record them before refusing them) and stop; nothing is written.
-if (!pins.opcua || !pins.rest) {
+if (!scriptsOnly && (!pins.opcua || !pins.rest)) {
   const seen = {};
   for (const deadline = Date.now() + 30_000; Date.now() < deadline && !(seen.opcua && seen.rest); await sleep(1000)) {
     for (const id of ["opcua", "rest"]) {
@@ -325,6 +431,7 @@ log("start", { plc, hours, writeEverySec: writeEvery / 1000, out, security: stat
 // Good: its starting value must be known before anything is written, or it
 // could not be restored.
 const originals = [];
+if (!scriptsOnly) {
 for (const deadline = Date.now() + 120_000; ; await sleep(1000)) {
   await checkHealth();
   originals.length = 0;
@@ -338,14 +445,17 @@ for (const deadline = Date.now() + 120_000; ; await sleep(1000)) {
     process.exit(2);
   }
 }
+}
 log("originals", { values: Object.fromEntries(originals) });
 
-watchTags();
-watchAlarms();
+if (!scriptsOnly) {
+  watchTags();
+  watchAlarms();
+}
 const health = setInterval(checkHealth, 10_000);
 const summaries = setInterval(() => { trend(); summary(false); }, 10 * 60_000);
 const writer = (async () => {
-  while (!stopping) {
+  while (!stopping && !scriptsOnly) {
     await writeRound();
     for (let waited = 0; waited < writeEvery && !stopping; waited += 1000) await sleep(1000);
   }
@@ -374,6 +484,9 @@ async function stop() {
   console.log(`\nSoak ${doc.passed ? "PASSED" : "FAILED"}: ${doc.writes.sent} writes (${doc.writes.confirmed} confirmed, ` +
     `${doc.writes.failedWithReason} failed with a reason, ${doc.writes.notConfirmed} not confirmed, ${doc.writes.other} other), ` +
     `${doc.gaps} frozen-tag gaps, ${doc.datasourceDrops} datasource drops. Details: ${join(out, "summary.json")}`);
+  const sc = doc.scripts;
+  console.log(`Scripts: ${doc.gate.scriptsHealthy === null ? "too short to judge" : doc.gate.scriptsHealthy ? "healthy" : "NOT HEALTHY"}: ` +
+    `${Object.entries(sc.status).map(([id, x]) => `${id} ${x.state} ${x.runs} runs${x.lastError ? ` (error: ${x.lastError})` : ""}`).join("; ")}; mem:ticks ${sc.ticks.last}.`);
   const o = doc.outageWrites;
   console.log(o.sent === 0
     ? "Writes during an outage: not tested (no outage happened; unplug the PLC briefly during a run to test them)."

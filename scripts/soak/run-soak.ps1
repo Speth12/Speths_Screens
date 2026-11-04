@@ -18,13 +18,21 @@
 # minute to cause one) it also writes once and expects a fast refusal.
 # Results: soak-runs\<time>\summary.json and events.jsonl. Ctrl+C stops
 # early and still restores the variables.
+#
+# The soak project also runs four runtime scripts that touch only memory
+# tags (see soak.mjs), and the gate scriptsHealthy checks them for the whole
+# run, outages included. -ScriptsOnly runs just those, with no login, read or
+# write on the PLC (its datasources open a TLS connection, see a certificate
+# that does not match a dummy pin, refuse it and stay offline); no fingerprints:
+#   powershell -ExecutionPolicy Bypass -File scripts\soak\run-soak.ps1 -ScriptsOnly -Hours 0.05
 param(
     [string]$Plc = "10.0.0.210",
     [double]$Hours = 24,
     [int]$Port = 3095,
     [int]$WriteEverySec = 60,
     [string]$OpcuaFingerprint = "",
-    [string]$RestFingerprint = ""
+    [string]$RestFingerprint = "",
+    [switch]$ScriptsOnly
 )
 $ErrorActionPreference = "Stop"
 
@@ -67,10 +75,12 @@ $runtime = Start-Process -FilePath "$out\speths-screens.exe" -ArgumentList $runt
 Write-Host "Runtime PID $($runtime.Id) on http://127.0.0.1:$Port"
 
 $code = 1
+$extra = @()
+if ($ScriptsOnly) { $extra += "--scripts-only" }
 try {
     node "$root\scripts\soak\soak.mjs" "--runtime=http://127.0.0.1:$Port" "--plc=$Plc" "--hours=$Hours" `
         "--out=$out" "--pid=$($runtime.Id)" "--write-every=$WriteEverySec" `
-        "--opcua-fingerprint=$OpcuaFingerprint" "--rest-fingerprint=$RestFingerprint"
+        "--opcua-fingerprint=$OpcuaFingerprint" "--rest-fingerprint=$RestFingerprint" @extra
     $code = $LASTEXITCODE
 } finally {
     if (-not $runtime.HasExited) { Stop-Process -Id $runtime.Id -Force }
