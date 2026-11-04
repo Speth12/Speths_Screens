@@ -1,5 +1,9 @@
 import type { Project, Page, Datasource, AlarmRule, Recipe } from "./projectStore";
 import type { UDT, AssetNode, Faceplate } from "./projectStore";
+import type { RuntimeScript } from "@speths-screens/shared-types";
+
+/** A runtime script in scripts.json; its source is in its own .js file. */
+type ScriptEntry = Omit<RuntimeScript, "source"> & { file: string };
 
 function sortedJson(obj: unknown): string {
   return JSON.stringify(obj, (_, v) => {
@@ -21,6 +25,9 @@ export function exportGitFormat(project: Project): GitFiles {
     canvasResolution: project.canvasResolution,
     canvasSnap: project.canvasSnap,
     enabledSymbolPacks: project.enabledSymbolPacks,
+    schemaVersion: project.schemaVersion,
+    scriptRole: project.scriptRole,
+    sessionVars: project.sessionVars,
   };
 
   const files: GitFiles = {};
@@ -32,6 +39,18 @@ export function exportGitFormat(project: Project): GitFiles {
   files["assets.json"] = sortedJson((project as Project & { assets?: AssetNode[] }).assets ?? []);
   files["udts.json"] = sortedJson((project as Project & { udts?: UDT[] }).udts ?? []);
   files["faceplates.json"] = sortedJson((project as Project & { faceplates?: Faceplate[] }).faceplates ?? []);
+
+  // Each runtime script's source is its own .js file, so a diff reads as code.
+  const used = new Set<string>();
+  const entries: ScriptEntry[] = (project.scripts ?? []).map(({ source, ...rest }) => {
+    const base = rest.id.replace(/[^a-zA-Z0-9_-]/g, "_") || "script";
+    let file = `scripts/${base}.js`;
+    for (let n = 2; used.has(file); n++) file = `scripts/${base}_${n}.js`;
+    used.add(file);
+    files[file] = source;
+    return { ...rest, file };
+  });
+  if (entries.length) files["scripts.json"] = sortedJson(entries);
 
   for (const page of project.pages ?? []) {
     const safeName = page.name.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -60,6 +79,10 @@ export function importGitFormat(files: GitFiles): Project {
   const udts: UDT[] = files["udts.json"] ? JSON.parse(files["udts.json"]) as UDT[] : [];
   const faceplates: Faceplate[] = files["faceplates.json"] ? JSON.parse(files["faceplates.json"]) as Faceplate[] : [];
 
+  const scripts: RuntimeScript[] = files["scripts.json"]
+    ? (JSON.parse(files["scripts.json"]) as ScriptEntry[]).map(({ file, ...rest }) => ({ ...rest, source: files[file] ?? "" }))
+    : [];
+
   const pages: Page[] = Object.entries(files)
     .filter(([k]) => k.startsWith("pages/") && k.endsWith(".json"))
     .map(([, v]) => JSON.parse(v) as Page);
@@ -74,6 +97,7 @@ export function importGitFormat(files: GitFiles): Project {
     assets,
     udts,
     faceplates,
+    ...(scripts.length ? { scripts } : {}),
   } as Project & { assets: AssetNode[]; udts: UDT[]; faceplates: Faceplate[] };
 }
 
