@@ -188,18 +188,23 @@ func TestMeasuringIsThrottled(t *testing.T) {
 }
 
 func TestLogLinesAndEmitPayloadsAreCapped(t *testing.T) {
+	// Small limits, so the script has almost nothing to do: under -race a script
+	// that builds megabytes of text can use up its time budget.
+	oldLog, oldEmit := MaxLogBytes, MaxEmitBytes
+	MaxLogBytes, MaxEmitBytes = 1000, 10000
+	t.Cleanup(func() { MaxLogBytes, MaxEmitBytes = oldLog, oldEmit })
 	h := &fakeHost{}
 	start(t, tagstore.New(), h, project.RuntimeScript{
 		ID: "s", Trigger: project.ScriptTrigger{OnStart: ptrBool(true)},
 		Source: `
-			log('y'.repeat(100000));
-			try { emit('big', 'z'.repeat(2000000)); log('not caught'); }
+			log('y'.repeat(5000));
+			try { emit('big', 'z'.repeat(50000)); log('not caught'); }
 			catch (e) { log('caught', e instanceof RangeError); }
 			emit('small', { a: 1 });`,
 	})
 	eventually(t, "the script's lines", func() bool { _, logs, ev := h.snapshot(); return len(logs) >= 2 && len(ev) >= 1 })
 	_, logs, events := h.snapshot()
-	if len(logs[0]) > MaxLogBytes+100 || !strings.Contains(logs[0], "more bytes cut") {
+	if len(logs[0]) > MaxLogBytes+100 || !strings.Contains(logs[0], "4000 more bytes cut") {
 		t.Errorf("log line of %d bytes: ...%q", len(logs[0]), logs[0][len(logs[0])-40:])
 	}
 	if logs[1] != "s: caught true" {
