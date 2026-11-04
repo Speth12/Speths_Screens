@@ -7,7 +7,7 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
@@ -65,6 +65,11 @@ type State = {
   addRecipe: (recipe: Recipe) => void;
   updateRecipe: (id: string, patch: Partial<Recipe>) => void;
   removeRecipe: (id: string) => void;
+
+  addScript: (script: RuntimeScript) => void;
+  updateScript: (id: string, patch: Partial<RuntimeScript>) => void;
+  removeScript: (id: string) => void;
+  setScriptRole: (role: Role | undefined) => void;
 
   importImage: (asset: ImageAsset) => void;
   deleteImage: (id: string) => void;
@@ -401,6 +406,31 @@ export const useProject = create<State>((set, get) => {
           recipes: (s.project.recipes ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
         },
       }));
+    },
+
+    addScript: (script) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, scripts: [...(s.project.scripts ?? []), script] } }));
+    },
+
+    updateScript: (id, patch) => {
+      pushHistory();
+      set((s) => ({
+        project: { ...s.project, scripts: (s.project.scripts ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)) },
+      }));
+    },
+
+    removeScript: (id) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, scripts: (s.project.scripts ?? []).filter((r) => r.id !== id) } }));
+    },
+
+    setScriptRole: (role) => {
+      pushHistory();
+      set((s) => {
+        const { scriptRole: _old, ...rest } = s.project;
+        return { project: role ? { ...rest, scriptRole: role } : rest };
+      });
     },
 
     removeRecipe: (id) => {

@@ -5,6 +5,7 @@ import { compile } from "@speths-screens/expr";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
+import { Scripts } from "./Scripts";
 import { Users } from "./Users";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
 import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
@@ -331,6 +332,11 @@ export function LeftPanel({ width }: { width?: number }) {
           badge={<AlarmBadge />}
         >
           <Alarms />
+        </TreeSection>
+
+        {/* Runtime scripts */}
+        <TreeSection label="Scripts" count={project.scripts?.length}>
+          <Scripts />
         </TreeSection>
 
         {/* Recipes */}
