@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { WidgetHostProvider, WidgetRenderer } from "@speths-screens/widgets";
+import { WidgetHostProvider } from "@speths-screens/widgets";
 import { useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
+import { PageStage } from "./PageStage";
 import { sessionStore } from "./store/session";
 import { onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
@@ -17,7 +18,6 @@ const storedTheme = () => { try { return localStorage.getItem(THEME_KEY); } catc
 
 import type { Project, Recipe } from "@speths-screens/shared-types";
 
-const COLS = 12;
 
 
 // ── Alarm log panel ────────────────────────────────────────────────────────
@@ -183,19 +183,20 @@ export function App() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Scale-to-fit: dynamically compute cell size from container width
+  // Scale-to-fit: a page with a dynamic resolution is scaled to the window's width when on
+  // (a fixed resolution always fits the window); the room is the canvas area without its padding.
   const [scaleToFit, setScaleToFit] = useState(() => localStorage.getItem("xhmi-scale") === "1");
-  const [containerW, setContainerW] = useState(0);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   useEffect(() => {
     const el = canvasRef.current;
     if (!el) return;
     const obs = new ResizeObserver((entries) => {
-      setContainerW(entries[0]!.contentRect.width - 24); // subtract p-3 * 2
+      const { width, height } = entries[0]!.contentRect;
+      setViewport({ width, height });
     });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  const cellPx = scaleToFit && containerW > 0 ? Math.max(40, Math.floor(containerW / COLS)) : 80;
   const toggleScale = () => setScaleToFit((s) => { localStorage.setItem("xhmi-scale", s ? "0" : "1"); return !s; });
 
   // Theme — persisted in localStorage via applyTheme
@@ -482,9 +483,9 @@ export function App() {
             >
               ⚙ Recipes
             </button>
-            <button
+            {project.canvasResolution?.type !== "fixed" && <button
               onClick={toggleScale}
-              title={scaleToFit ? "Fixed cell size (80px)" : "Scale widgets to fit window"}
+              title={scaleToFit ? "Show the page at full size" : "Scale the page to fit the window width"}
               className="text-[11px] px-2 py-0.5 rounded transition-colors"
               style={{
                 background: scaleToFit ? "var(--primary)" : "var(--secondary)",
@@ -492,8 +493,8 @@ export function App() {
                 border: "1px solid var(--border)",
               }}
             >
-              {scaleToFit ? "⤢ Fit" : "⤢ Fit"}
-            </button>
+              ⤢ Fit
+            </button>}
             <select
               value={themeId}
               onChange={(e) => setThemeId(e.target.value)}
@@ -547,22 +548,13 @@ export function App() {
           {page.widgets.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-zinc-600 italic">No widgets on this page.</div>
           ) : (
-            <div
-              className="grid gap-1"
-              style={{
-                gridTemplateColumns: `repeat(${COLS}, ${cellPx}px)`,
-                gridAutoRows: `${cellPx}px`,
-              }}
-            >
-              {page.widgets.map((w) => (
-                <div key={w.id} style={{
-                  gridColumn: `${(w.x ?? 0) + 1} / span ${w.w}`,
-                  gridRow: `${(w.y ?? 0) + 1} / span ${w.h}`,
-                }}>
-                  <WidgetRenderer w={w} />
-                </div>
-              ))}
-            </div>
+            <PageStage
+              widgets={page.widgets}
+              resolution={project.canvasResolution}
+              pixel={project.canvasSnap === "pixel"}
+              fit={scaleToFit}
+              viewport={viewport}
+            />
           )}
         </div>
 
