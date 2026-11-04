@@ -3,12 +3,16 @@ package alarms
 import (
 	"testing"
 	"time"
+
+	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
+
+func good(v any) tagstore.TagState { return tagstore.TagState{Value: v, Quality: "Good"} }
 
 // highTemp raises at value > 100 on "plc:T".
 func highTemp() *Engine {
 	e := New()
-	e.SetRules([]Rule{{ID: "r1", Name: "High temp", Binding: "plc:T", Condition: CondGT, Threshold: 100, Severity: SeverityWarning}})
+	e.SetRules([]Rule{{ID: "r1", Name: "High temp", Expr: "{plc:T} > 100", Severity: SeverityWarning}})
 	return e
 }
 
@@ -17,7 +21,7 @@ func TestSubscriptionDeliversChangesInOrder(t *testing.T) {
 	s := e.SubscribeN(10)
 	defer s.Close()
 	for _, v := range []float64{105, 95, 110} { // raise, normal, raise again
-		e.Evaluate("plc:T", v)
+		e.Evaluate("plc:T", good(v))
 	}
 	<-s.C()
 	changes, resync := s.Next()
@@ -43,7 +47,7 @@ func TestOverflowAsksForResync(t *testing.T) {
 	s := e.SubscribeN(2)
 	defer s.Close()
 	for _, v := range []float64{105, 95, 110, 90} { // four changes into a queue of two
-		e.Evaluate("plc:T", v)
+		e.Evaluate("plc:T", good(v))
 	}
 	changes, resync := s.Next()
 	if !resync || len(changes) != 0 {
@@ -54,7 +58,7 @@ func TestOverflowAsksForResync(t *testing.T) {
 		t.Errorf("snapshot = %+v, want one inactive event at 90", evs)
 	}
 	// After the resync, changes flow again.
-	e.Evaluate("plc:T", 120)
+	e.Evaluate("plc:T", good(120.0))
 	changes, resync = s.Next()
 	if resync || len(changes) != 1 || !changes[0].Active {
 		t.Errorf("after resync: %+v, resync %v", changes, resync)
@@ -69,7 +73,7 @@ func TestStalledSubscriberDoesNotBlockEvaluate(t *testing.T) {
 	defer s.Close()
 	start := time.Now()
 	for i := range 10000 {
-		e.Evaluate("plc:T", float64(90+20*(i%2))) // a change on every call
+		e.Evaluate("plc:T", tagstore.TagState{Value: float64(90 + 20*(i%2)), Quality: "Good"}) // a change on every call
 	}
 	if el := time.Since(start); el > 500*time.Millisecond {
 		t.Errorf("10000 evaluations took %v with a stalled subscriber", el)
@@ -78,11 +82,11 @@ func TestStalledSubscriberDoesNotBlockEvaluate(t *testing.T) {
 
 func TestSubscribeBeforeSnapshotMissesNothing(t *testing.T) {
 	e := highTemp()
-	e.Evaluate("plc:T", 105)
+	e.Evaluate("plc:T", good(105.0))
 	s := e.Subscribe()
 	defer s.Close()
 	snapshot := e.Events()
-	e.Evaluate("plc:T", 95) // a change right after the snapshot
+	e.Evaluate("plc:T", good(95.0)) // a change right after the snapshot
 	changes, _ := s.Next()
 	if len(snapshot) != 1 || !snapshot[0].Active || len(changes) != 1 || changes[0].Active {
 		t.Errorf("snapshot %+v, changes %+v", snapshot, changes)
@@ -93,7 +97,7 @@ func TestClosedSubscriptionGetsNothing(t *testing.T) {
 	e := highTemp()
 	s := e.Subscribe()
 	s.Close()
-	e.Evaluate("plc:T", 105)
+	e.Evaluate("plc:T", good(105.0))
 	if changes, resync := s.Next(); len(changes) != 0 || resync {
 		t.Errorf("after Close: %+v %v", changes, resync)
 	}
@@ -131,11 +135,128 @@ func TestAlarmOnEveryNumberType(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			e := highTemp()
-			e.Evaluate("plc:T", tc.value)
+			e.Evaluate("plc:T", good(tc.value))
 			evs := e.Events()
 			if fired := len(evs) == 1 && evs[0].Active; fired != tc.fires {
 				t.Errorf("value %v (%T): fired %v, want %v", tc.value, tc.value, fired, tc.fires)
 			}
 		})
+	}
+}
+
+func bad(v any) tagstore.TagState {
+	return tagstore.TagState{Value: v, Quality: "Bad", Reason: "no answer"}
+}
+
+// A Bad input neither raises nor clears an alarm: the alarm keeps its state
+// and says why, until the input is back.
+func TestBadInputKeepsTheState(t *testing.T) {
+	type step struct {
+		state  tagstore.TagState
+		active bool
+		reason string
+	}
+	tests := []struct {
+		name  string
+		steps []step
+	}{
+		{"Bad while active stays active", []step{
+			{good(150.0), true, ""},
+			{bad(150.0), true, "input {plc:T} is Bad"},
+			{bad(50.0), true, "input {plc:T} is Bad"},
+			{good(150.0), true, ""},
+		}},
+		{"Bad while active, back below", []step{
+			{good(150.0), true, ""},
+			{bad(150.0), true, "input {plc:T} is Bad"},
+			{good(50.0), false, ""},
+		}},
+		{"Bad before any alarm raises nothing", []step{
+			{bad(150.0), false, ""},
+			{good(150.0), true, ""},
+		}},
+		{"Bad while normal stays normal", []step{
+			{good(150.0), true, ""},
+			{good(50.0), false, ""},
+			{bad(150.0), false, "input {plc:T} is Bad"},
+			{good(60.0), false, ""},
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			e := highTemp()
+			for i, s := range tc.steps {
+				e.Evaluate("plc:T", s.state)
+				evs := e.Events()
+				active, reason := false, ""
+				if len(evs) == 1 {
+					active, reason = evs[0].Active, evs[0].Reason
+				}
+				if active != s.active || reason != s.reason {
+					t.Errorf("step %d: active %v reason %q, want %v %q", i, active, reason, s.active, s.reason)
+				}
+			}
+		})
+	}
+}
+
+func TestReasonChangesAreSent(t *testing.T) {
+	e := highTemp()
+	s := e.SubscribeN(10)
+	defer s.Close()
+	e.Evaluate("plc:T", good(150.0))
+	e.Evaluate("plc:T", bad(150.0))
+	e.Evaluate("plc:T", bad(140.0)) // same reason: nothing new
+	e.Evaluate("plc:T", good(150.0))
+	changes, _ := s.Next()
+	var got []string
+	for _, c := range changes {
+		got = append(got, c.Reason)
+	}
+	if len(got) != 3 || got[0] != "" || got[1] != "input {plc:T} is Bad" || got[2] != "" {
+		t.Errorf("reasons sent: %q", got)
+	}
+}
+
+func TestExpressionOverSeveralTags(t *testing.T) {
+	e := New()
+	e.SetRules([]Rule{{ID: "r", Name: "Tank high, inlet open", Expr: "{ns:Tank1/Level} > 95 && {plc:Inlet}", Severity: SeverityCritical, Message: "m"}})
+	e.Evaluate("ns:Tank1/Level", good(97.0))
+	if len(e.Events()) != 0 {
+		t.Fatal("raised before the inlet tag arrived")
+	}
+	e.Evaluate("plc:Inlet", good(true))
+	evs := e.Events()
+	if len(evs) != 1 || !evs[0].Active {
+		t.Fatalf("events %+v, want one active", evs)
+	}
+	ev := evs[0]
+	if ev.Binding != "ns:Tank1/Level" || ev.Value != 97 || ev.Expr != "{ns:Tank1/Level} > 95 && {plc:Inlet}" || ev.Condition != "" {
+		t.Errorf("event %+v", ev)
+	}
+	e.Evaluate("plc:Inlet", good(false))
+	if e.Events()[0].Active {
+		t.Error("still active with the inlet closed")
+	}
+	// Tags no rule reads are ignored.
+	e.Evaluate("plc:Other", good(1.0))
+	e.mu.RLock()
+	_, kept := e.tags["plc:Other"]
+	e.mu.RUnlock()
+	if kept {
+		t.Error("kept a tag no rule reads")
+	}
+}
+
+func TestRuleThatDoesNotCompileIsSkipped(t *testing.T) {
+	e := New()
+	e.SetRules([]Rule{{ID: "broken", Expr: "{plc:T} >"}, {ID: "ok", Expr: "{plc:T} > 1"}})
+	e.Evaluate("plc:T", good(5.0))
+	evs := e.Events()
+	if len(evs) != 1 || evs[0].RuleID != "ok" {
+		t.Errorf("events %+v, want only rule ok", evs)
+	}
+	if n := len(e.Rules()); n != 2 {
+		t.Errorf("Rules() = %d, want both", n)
 	}
 }

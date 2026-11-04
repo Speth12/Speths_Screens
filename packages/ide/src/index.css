@@ -77,52 +77,5 @@ html, body, #root { height: 100%; }
 /* base background and text driven by theme vars */
 body { background-color: var(--background); color: var(--foreground); }
 
-/* ── Background patterns ──────────────────────────────────────────────────── */
-:root[data-bg-pattern="grid"] #root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 32px 32px;
-  opacity: 0.4;
-  z-index: 0;
-}
-
-:root[data-bg-pattern="dots"] #root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
-  background-size: 24px 24px;
-  opacity: 0.5;
-  z-index: 0;
-}
-
-:root[data-bg-pattern="crosshatch"] #root::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(45deg, var(--border) 1px, transparent 1px),
-    linear-gradient(-45deg, var(--border) 1px, transparent 1px);
-  background-size: 16px 16px;
-  opacity: 0.35;
-  z-index: 0;
-}
-
-/* ── Glass card style ─────────────────────────────────────────────────────── */
-:root[data-card-style="glass"] .panel-card {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* ── Glow effects ─────────────────────────────────────────────────────────── */
-:root[data-glow="true"] .status-dot-good   { box-shadow: 0 0 6px var(--success); }
-:root[data-glow="true"] .status-dot-warn   { box-shadow: 0 0 6px var(--warning); }
-:root[data-glow="true"] .status-dot-danger { box-shadow: 0 0 6px var(--danger); }
-:root[data-glow="true"] .btn-primary       { box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 40%, transparent); }
+/* The six early themes set background patterns, glass cards and glow here;
+   they are gone (Phase 3, decision 10). Look and feel comes from tokens. */

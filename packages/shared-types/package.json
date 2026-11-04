@@ -7,7 +7,8 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./upgrade": "./src/upgrade.ts"
+    "./upgrade": "./src/upgrade.ts",
+    "./expressions": "./src/expressions.ts"
   },
   "scripts": {
     "build": "tsc --noEmit -p .",
@@ -18,5 +19,8 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "eslint": "9.39.5"
+  },
+  "dependencies": {
+    "@speths-screens/expr": "*"
   }
 }

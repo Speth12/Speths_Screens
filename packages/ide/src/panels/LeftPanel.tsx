@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type DatasourceType, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
-import type { CERTCheck } from "@speths-screens/shared-types";
+import type { CalculatedTag, CERTCheck } from "@speths-screens/shared-types";
+import { compile } from "@speths-screens/expr";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { Alarms, AlarmBadge } from "./Alarms";
 import { Recipes } from "./Recipes";
@@ -22,7 +23,6 @@ import { convertWidget } from "../store/presets";
 import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
-import { BindingInput } from "./BindingInput";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -139,7 +139,7 @@ export function LeftPanel({ width }: { width?: number }) {
 
   // A static snapshot of every page, with the values the IDE has now.
   const exportHtml = async () => {
-    const html = await generateStandaloneHtml(project, { ...ideLook(), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
+    const html = await generateStandaloneHtml(project, { ...ideLook(project.theme), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
     const blob = new Blob([html], { type: "text/html" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
@@ -626,123 +626,6 @@ function CanvasSettings() {
   );
 }
 
-// ── Alarm Rules (inline in Project Settings) ──────────────────────────────────
-
-type AlarmRule = {
-  id: string;
-  name: string;
-  binding: string;
-  condition: string;
-  threshold: number;
-  severity: string;
-  message: string;
-};
-
-// Not rendered anywhere yet: wire it in or delete it.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function AlarmRulesEditor() {
-  const { exportJSON, loadProject } = useProject();
-  const project = useProject((s) => s.project);
-  const rules: AlarmRule[] = (project.alarmRules as AlarmRule[]) ?? [];
-
-  const setRules = (next: AlarmRule[]) => {
-    const p = JSON.parse(exportJSON());
-    loadProject({ ...p, alarmRules: next });
-  };
-
-  const addRule = () => setRules([...rules, {
-    id: `alarm-${Date.now()}`,
-    name: "New Alarm",
-    binding: "",
-    condition: "gt",
-    threshold: 0,
-    severity: "warning",
-    message: "",
-  }]);
-
-  const updateRule = (idx: number, patch: Partial<AlarmRule>) => {
-    setRules(rules.map((r, i) => i === idx ? { ...r, ...patch } : r));
-  };
-
-  const removeRule = (idx: number) => setRules(rules.filter((_, i) => i !== idx));
-
-  const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-          Alarm Rules <AlarmBadge />
-        </div>
-        <button
-          onClick={addRule}
-          className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700"
-        >
-          + add
-        </button>
-      </div>
-      <div className="space-y-2">
-        {rules.length === 0 && (
-          <div className="text-[11px] text-zinc-600 italic">No alarm rules.</div>
-        )}
-        {rules.map((rule, i) => (
-          <div key={rule.id} className="border border-zinc-700/50 rounded p-2 space-y-1.5">
-            <div className="flex items-center gap-1">
-              <input
-                value={rule.name}
-                onChange={(e) => updateRule(i, { name: e.target.value })}
-                placeholder="Alarm name"
-                className={`${inp} flex-1`}
-              />
-              <button onClick={() => removeRule(i)} className="text-zinc-600 hover:text-red-400 text-xs shrink-0">×</button>
-            </div>
-            <BindingInput
-              value={rule.binding}
-              onChange={(v) => updateRule(i, { binding: v })}
-              className={`${inp} font-mono text-[10px]`}
-            />
-            <div className="flex gap-1">
-              <select
-                value={rule.condition}
-                onChange={(e) => updateRule(i, { condition: e.target.value })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-1 py-1 text-[10px] w-16"
-              >
-                <option value="gt">&gt;</option>
-                <option value="gte">≥</option>
-                <option value="lt">&lt;</option>
-                <option value="lte">≤</option>
-                <option value="eq">=</option>
-                <option value="ne">≠</option>
-              </select>
-              <input
-                type="number"
-                value={rule.threshold}
-                onChange={(e) => updateRule(i, { threshold: Number(e.target.value) })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs font-mono w-20"
-              />
-              <select
-                value={rule.severity}
-                onChange={(e) => updateRule(i, { severity: e.target.value })}
-                className="bg-zinc-900 border border-zinc-700 rounded px-1 py-1 text-[10px] flex-1"
-              >
-                <option value="info">Info</option>
-                <option value="warning">Warning</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
-            <input
-              value={rule.message}
-              onChange={(e) => updateRule(i, { message: e.target.value })}
-              placeholder="Alarm message"
-              className={inp}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Page templates ────────────────────────────────────────────────────────────
 
 import { newWidgetId } from "../store/projectStore";
@@ -1049,8 +932,8 @@ export function AddDatasourceModal({ onClose, onAdd }: {
   const [mqttPort, setMqttPort]             = useState(1883);
   const [basePath, setBasePath]             = useState("/_pxc_api/v1.14");
   const [bearerToken, setBearerToken]       = useState("");
-  const [virtualRows, setVirtualRows]       = useState<{ path: string; formula: string }[]>([
-    { path: "tagA", formula: "{rest:tagPath} * 1.0" },
+  const [virtualRows, setVirtualRows]       = useState<CalculatedTag[]>([
+    { path: "tagA", expr: "{rest:tagPath} * 1.0" },
   ]);
   const [username, setUsername]             = useState("");
   const [password, setPassword]             = useState("");
@@ -1077,7 +960,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
     } else if (type === "mqtt") {
       config.host = ip; config.port = mqttPort || 1883;
     } else if (type === "virtual") {
-      config.tags = JSON.stringify(virtualRows.filter((r) => r.path.trim()));
+      config.tags = virtualRows.filter((r) => r.path.trim());
     } else {
       config.endpoint = `https://${ip}`;
       config.basePath = basePath;
@@ -1179,17 +1062,23 @@ export function AddDatasourceModal({ onClose, onAdd }: {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] text-zinc-300">Computed Tags</span>
-              <button onClick={() => setVirtualRows((r) => [...r, { path: "", formula: "" }])} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add tag</button>
+              <button onClick={() => setVirtualRows((r) => [...r, { path: "", expr: "" }])} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add tag</button>
             </div>
             <div className="space-y-1.5 max-h-44 overflow-y-auto">
-              {virtualRows.map((row, i) => (
-                <div key={i} className="flex gap-1.5 items-center">
+              {virtualRows.map((row, i) => {
+                const check = row.expr.trim() ? compile(row.expr) : undefined;
+                return (
+                <div key={i}>
+                <div className="flex gap-1.5 items-center">
                   <input value={row.path} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, path: e.target.value } : r))} placeholder="tagName" className="w-24 shrink-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
                   <span className="text-zinc-600 text-[10px] shrink-0">=</span>
-                  <input value={row.formula} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, formula: e.target.value } : r))} placeholder="{ds:path} * 9/5 + 32" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
+                  <input value={row.expr} onChange={(e) => setVirtualRows((rows) => rows.map((r, j) => j === i ? { ...r, expr: e.target.value } : r))} placeholder="{ds:path} * 9/5 + 32" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono" />
                   <button onClick={() => setVirtualRows((rows) => rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
                 </div>
-              ))}
+                {check && !check.ok && <div className="text-[10px] text-red-400 pl-[6.5rem] mt-0.5">{check.error}</div>}
+                </div>
+                );
+              })}
             </div>
           </div>
         )}

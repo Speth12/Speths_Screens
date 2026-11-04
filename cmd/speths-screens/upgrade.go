@@ -72,6 +72,6 @@ func runUpgrade(args []string, stdout, stderr io.Writer) int {
 	for _, n := range notes {
 		fmt.Fprintf(stdout, "  %s\n", n)
 	}
-	fmt.Fprintf(stdout, "wrote %s (format %d, %d change(s) dropped)\n", dest, project.CurrentSchemaVersion, len(notes))
+	fmt.Fprintf(stdout, "wrote %s (format %d, %d note(s) above)\n", dest, project.CurrentSchemaVersion, len(notes))
 	return 0
 }

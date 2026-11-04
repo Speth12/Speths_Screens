@@ -12,7 +12,6 @@ import {
   setActiveTarget, addTarget, updateTarget, removeTarget,
   type Target,
 } from "../store/targetsStore";
-import { themes, applyTheme, getThemeById, getStoredThemeId } from "../store/themes";
 
 // ── Manage Targets modal ───────────────────────────────────────────────────
 
@@ -125,37 +124,6 @@ function ManageTargetsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Theme picker ───────────────────────────────────────────────────────────
-
-function ThemePicker() {
-  const [activeId, setActiveId] = useState(getStoredThemeId);
-
-  const pick = (id: string) => {
-    const t = getThemeById(id);
-    applyTheme(t);
-    setActiveId(id);
-  };
-
-  // Apply stored theme on mount
-  useEffect(() => { applyTheme(getThemeById(activeId)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <div className="flex items-center gap-1 shrink-0">
-      <span className="text-[10px] text-zinc-500">theme</span>
-      <select
-        value={activeId}
-        onChange={(e) => pick(e.target.value)}
-        className="text-[11px] bg-zinc-800 border border-zinc-700 rounded px-1.5 py-0.5 text-zinc-200 max-w-[140px] truncate"
-        style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)" }}
-      >
-        {themes.map((t) => (
-          <option key={t.id} value={t.id}>{t.name}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
 // ── Runtime login modal ────────────────────────────────────────────────────
 
 function RuntimeLoginModal({
@@ -228,12 +196,13 @@ function RuntimeLoginModal({
 type HeaderProps = {
   onHelp: () => void;
   onDemo: () => void;
+  onGallery: () => void;
   showJSON: boolean;
   onToggleJSON: () => void;
   onPreview: () => void;
 };
 
-export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: HeaderProps) {
+export function Header({ onHelp, onDemo, onGallery, showJSON, onToggleJSON, onPreview }: HeaderProps) {
   const { exportJSON, loadProject } = useProject();
   const { canUndo, canRedo, undo, redo } = useProject(
     useShallow((s) => ({ canUndo: s.canUndo, canRedo: s.canRedo, undo: s.undo, redo: s.redo }))
@@ -393,10 +362,9 @@ export function Header({ onHelp, onDemo, showJSON, onToggleJSON, onPreview }: He
         {busy === "deploy" ? "deploying…" : "Deploy"}
       </button>
 
-      {/* Theme */}
-      <ThemePicker />
-
       {/* Demo */}
+      <button onClick={onGallery} title="Every widget type in every state, under the theme"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Gallery</button>
       <button onClick={onDemo} title="Platform feature demo"
         className="text-xs px-2 py-1 rounded bg-violet-700 hover:bg-violet-600 text-white font-medium shrink-0">Demo</button>
 

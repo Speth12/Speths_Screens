@@ -43,6 +43,9 @@ func ParseNotes(data []byte) (*Project, []string, error) {
 	if err := validate(&p); err != nil {
 		return nil, notes, fmt.Errorf("validate project: %w", err)
 	}
+	if problems := ExpressionProblems(&p); len(problems) > 0 {
+		return nil, notes, &ExpressionError{Problems: problems}
+	}
 	return &p, notes, nil
 }
 

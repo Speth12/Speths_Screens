@@ -6,7 +6,11 @@ import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
 import { applyAlarmMessage } from "./alarmMessages";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
-import { themes, applyTheme, getThemeById, getStoredThemeId } from "./store/themes";
+import { THEMES, applyTheme, themeById } from "@speths-screens/widgets";
+
+// A browser's own theme choice, kept on this device only.
+const THEME_KEY = "xhmi-theme";
+const storedTheme = () => { try { return localStorage.getItem(THEME_KEY); } catch { return null; } };
 
 import type { Project, Recipe } from "@speths-screens/shared-types";
 
@@ -192,10 +196,15 @@ export function App() {
   const toggleScale = () => setScaleToFit((s) => { localStorage.setItem("xhmi-scale", s ? "0" : "1"); return !s; });
 
   // Theme — persisted in localStorage via applyTheme
-  const [themeId, setThemeId] = useState(getStoredThemeId);
+  const [chosenTheme, setChosenTheme] = useState(storedTheme);
+  const themeId = themeById(chosenTheme ?? project?.theme).id;
+  const setThemeId = (id: string) => {
+    setChosenTheme(id);
+    try { localStorage.setItem(THEME_KEY, id); } catch { /* private mode: not kept */ }
+  };
 
   useEffect(() => {
-    applyTheme(getThemeById(themeId));
+    applyTheme(themeById(themeId));
   }, [themeId]);
 
   // Kiosk swipe — touch start X ref
@@ -477,7 +486,7 @@ export function App() {
               style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)", border: "1px solid" }}
               title="Switch theme"
             >
-              {themes.map((t) => (
+              {THEMES.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>

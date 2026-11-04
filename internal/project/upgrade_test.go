@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -9,10 +10,10 @@ import (
 	"testing"
 )
 
-// The golden files in testdata/upgrade are shared with the TypeScript
-// upgrader's tests: <name>.v1.json must upgrade to exactly <name>.v2.json.
-func TestUpgradeGolden(t *testing.T) {
-	notes := map[string][]string{
+// upgradeNotes are the notes for upgrading each golden file, keyed by
+// <name>.v<version>; the TypeScript upgrader's tests hold the same list.
+var upgradeNotes = func() map[string][]string {
+	v1ToV2 := map[string][]string{
 		"all-rules": {
 			`dropped the project's users list: users live on the runtime`,
 			`page "Main", widget g1 (gauge): dropped setting decimals, which no widget reads`,
@@ -25,32 +26,107 @@ func TestUpgradeGolden(t *testing.T) {
 		"example":     {`page "PLC Demo", widget w-numeric (numericDisplay): dropped setting decimals, which no widget reads`, `page "PLC Demo", widget w-textinput (textInput): dropped setting placeholder, which no widget reads`},
 		"dan-project": {`page "PLC Demo", widget w-numeric (numericDisplay): dropped setting decimals, which no widget reads`, `page "PLC Demo", widget w-textinput (textInput): dropped setting placeholder, which no widget reads`},
 	}
-	files, _ := filepath.Glob("../../testdata/upgrade/*.v1.json")
-	if len(files) != len(notes) {
-		t.Fatalf("%d golden files, want %d", len(files), len(notes))
+	v2ToV3 := map[string][]string{
+		"all-rules":   nil,
+		"demo":        {`datasource "sim", calculated tag phase reads itself, so it stays Bad until it has a value; start it with (good({sim:phase}) ? {sim:phase} : 0)`},
+		"example":     nil,
+		"dan-project": nil,
+		"calc-tags": {
+			`datasource "sim", calculated tag absFlow: rewrote Math.abs({mb:Flow}) + Math.max(1, 2) as abs({mb:Flow}) + max(1, 2)`,
+			`datasource "sim", calculated tag label: rewrote {mb:Flow}.toFixed(1) + ' m3/h' as format({mb:Flow}, 1) + ' m3/h'`,
+			`datasource "sim", calculated tag isRun: rewrote {mb:State} === 1 as {mb:State} == 1`,
+			`datasource "sim", calculated tag phase reads itself, so it stays Bad until it has a value; start it with (good({sim:phase}) ? {sim:phase} : 0)`,
+			`datasource "sim", calculated tag pick: unknown function if at column 1; the tag stays Bad until the formula is fixed`,
+			`datasource "broken": dropped its calculated tags, which were not valid JSON`,
+		},
+		"alarms": {
+			`alarm rule "odd": unknown condition "between", read as gt`,
+			`alarm rule "untagged": dropped, it had no tag`,
+		},
+		"dynamics": {
+			`theme scada-dark is gone; the project now uses high-performance`,
+			`page "Main", widget ring (led): two dynamics drive borderColor; kept the last`,
+			`page "Main", widget scr (numericDisplay): dynamics.visible: rewrote Math.abs(value) === 0 as abs({plc:Press}) == 0`,
+			`page "Main", widget scr (numericDisplay): dynamics.textColor: rewrote value.toFixed(1) == '20.0' && 'value' != {ns:value} as format({plc:T}, 1) == '20.0' && 'value' != {ns:value}`,
+			`page "Main", widget bad (led): dropped a blink dynamic without a tag`,
+			`page "Main", widget bad (led): dynamics.borderColor: unexpected "." at column 9; the property keeps its own setting until it is fixed`,
+		},
 	}
-	for _, f := range files {
-		name := strings.TrimSuffix(filepath.Base(f), ".v1.json")
-		t.Run(name, func(t *testing.T) {
-			v1 := read(t, f)
-			want := read(t, strings.Replace(f, ".v1.json", ".v2.json", 1))
-			got, gotNotes, err := Upgrade(v1)
-			if err != nil {
-				t.Fatal(err)
+	all := map[string][]string{}
+	for name, n := range v2ToV3 {
+		all[name+".v2"] = n
+		if first, ok := v1ToV2[name]; ok {
+			all[name+".v1"] = append(append([]string{}, first...), n...)
+		}
+	}
+	return all
+}()
+
+// The golden files in testdata/upgrade are shared with the TypeScript
+// upgrader's tests: every <name>.v<N>.json must upgrade to exactly the
+// newest file of that name, <name>.v3.json.
+func TestUpgradeGolden(t *testing.T) {
+	newest, _ := filepath.Glob(fmt.Sprintf("../../testdata/upgrade/*.v%d.json", CurrentSchemaVersion))
+	if len(newest) != 7 {
+		t.Fatalf("%d current golden files, want 7", len(newest))
+	}
+	tested := 0
+	for _, wantFile := range newest {
+		name := strings.TrimSuffix(filepath.Base(wantFile), fmt.Sprintf(".v%d.json", CurrentSchemaVersion))
+		want := read(t, wantFile)
+		for v := 1; v < CurrentSchemaVersion; v++ {
+			key := fmt.Sprintf("%s.v%d", name, v)
+			src := filepath.Join(filepath.Dir(wantFile), key+".json")
+			if _, err := os.Stat(src); err != nil {
+				continue
 			}
-			if !sameJSON(t, got, want) {
-				t.Errorf("upgrade differs from %s.v2.json:\n%s", name, got)
-			}
-			if !reflect.DeepEqual(gotNotes, notes[name]) {
-				t.Errorf("notes:\n%s\nwant:\n%s", strings.Join(gotNotes, "\n"), strings.Join(notes[name], "\n"))
-			}
-			// A current file is left alone.
+			tested++
+			t.Run(key, func(t *testing.T) {
+				got, gotNotes, err := Upgrade(read(t, src))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !sameJSON(t, got, want) {
+					t.Errorf("upgrade differs from %s:\n%s", filepath.Base(wantFile), got)
+				}
+				if wantNotes := upgradeNotes[key]; !reflect.DeepEqual(gotNotes, wantNotes) {
+					t.Errorf("notes:\n%s\nwant:\n%s", strings.Join(gotNotes, "\n"), strings.Join(wantNotes, "\n"))
+				}
+				checkSettingsAllowed(t, got)
+				if err := ValidateJSON(got); err != nil {
+					t.Errorf("upgraded file does not validate: %v", err)
+				}
+			})
+		}
+		t.Run(name+" current", func(t *testing.T) {
 			again, againNotes, err := Upgrade(want)
 			if err != nil || string(again) != string(want) || againNotes != nil {
-				t.Errorf("upgrading the v2 file changed it (err %v, notes %v)", err, againNotes)
+				t.Errorf("upgrading the current file changed it (err %v, notes %v)", err, againNotes)
 			}
-			checkSettingsAllowed(t, got)
 		})
+	}
+	if tested != len(upgradeNotes) {
+		t.Errorf("tested %d upgrades, but notes list %d", tested, len(upgradeNotes))
+	}
+}
+
+func TestRewriteJS(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"Math.abs(x)", "abs(x)"},
+		{"Math.round( {a} ) + Math.log10({b})", "round( {a} ) + log10({b})"},
+		{"Math.PI * 2", "Math.PI * 2"}, // not a function the language has: left for the compiler to report
+		{"Math.random()", "Math.random()"},
+		{"{a}.toFixed(2)", "format({a}, 2)"},
+		{"value.toFixed( 1 )", "format(value, 1)"},
+		{"({a} * 2).toFixed(0)", "format(({a} * 2), 0)"},
+		{"3.14159.toFixed(2)", "format(3.14159, 2)"},
+		{"{a} === 1 && {b} !== 2", "{a} == 1 && {b} != 2"},
+		{"{a} == 1", "{a} == 1"},
+	}
+	for _, tc := range tests {
+		if got := RewriteJS(tc.in); got != tc.want {
+			t.Errorf("RewriteJS(%q) = %q, want %q", tc.in, got, tc.want)
+		}
 	}
 }
 
@@ -60,8 +136,9 @@ func TestUpgradeVersions(t *testing.T) {
 	}{
 		{"missing means 1", `{"version":"1","pages":[]}`, ""},
 		{"1", `{"schemaVersion":1,"pages":[]}`, ""},
-		{"current", `{"schemaVersion":2,"pages":[]}`, ""},
-		{"newer", `{"schemaVersion":3,"pages":[]}`, "the project is format 3; this version of Speth's Screens reads up to 2"},
+		{"2", `{"schemaVersion":2,"pages":[]}`, ""},
+		{"current", `{"schemaVersion":3,"pages":[]}`, ""},
+		{"newer", `{"schemaVersion":4,"pages":[]}`, "the project is format 4; this version of Speth's Screens reads up to 3"},
 		{"not a version", `{"schemaVersion":0}`, "is not a format version"},
 		{"not JSON", `{`, "unmarshal project"},
 	}
@@ -78,8 +155,8 @@ func TestUpgradeVersions(t *testing.T) {
 				t.Fatal(err)
 			}
 			var doc map[string]any
-			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(2) {
-				t.Errorf("got %s, want schemaVersion 2", out)
+			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(3) {
+				t.Errorf("got %s, want schemaVersion 3", out)
 			}
 		})
 	}

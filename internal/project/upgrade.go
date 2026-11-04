@@ -13,7 +13,7 @@ import (
 
 // CurrentSchemaVersion is the project format this build writes. A file
 // without schemaVersion is version 1.
-const CurrentSchemaVersion = 2
+const CurrentSchemaVersion = 3
 
 // Upgrade turns project JSON in any older format into the current one. It
 // returns the JSON unchanged when it is current, and notes describing
@@ -47,7 +47,10 @@ func Upgrade(data []byte) ([]byte, []string, error) {
 		return nil, nil, err
 	}
 	u := &upgrader{allowed: allowed}
-	u.v1ToV2(doc)
+	if version < 2 {
+		u.v1ToV2(doc)
+	}
+	u.v2ToV3(doc)
 	doc["schemaVersion"] = CurrentSchemaVersion
 	var out bytes.Buffer
 	enc := json.NewEncoder(&out)
@@ -283,12 +286,37 @@ var propsKeys = sync.OnceValues(func() (map[string]map[string]bool, error) {
 	return out, nil
 })
 
+// drivenKeys reads, from the embedded schema, which properties each widget
+// type's dynamics can drive (TypedProps: dynamics.propertyNames).
+var drivenKeys = sync.OnceValues(func() (map[string]map[string]bool, error) {
+	var s struct {
+		Defs map[string]schemaNode `json:"$defs"`
+	}
+	if err := json.Unmarshal(screens.SchemaJSON, &s); err != nil {
+		return nil, fmt.Errorf("schema.json: %w", err)
+	}
+	out := map[string]map[string]bool{}
+	for _, branch := range s.Defs["TypedProps"].OneOf {
+		keys := map[string]bool{}
+		if pn := branch.Properties["dynamics"].PropertyNames; pn != nil {
+			for _, k := range pn.Enum {
+				keys[k] = true
+			}
+		}
+		out[branch.Properties["type"].Const] = keys
+	}
+	return out, nil
+})
+
 type schemaNode struct {
 	Ref        string                `json:"$ref"`
 	Const      string                `json:"const"`
 	Properties map[string]schemaNode `json:"properties"`
 	AllOf      []schemaNode          `json:"allOf"`
 	OneOf      []schemaNode          `json:"oneOf"`
+	// PropertyNames and Enum hold a widget type's driven property names.
+	PropertyNames *schemaNode `json:"propertyNames"`
+	Enum          []string    `json:"enum"`
 }
 
 func objects(v any) []map[string]any {

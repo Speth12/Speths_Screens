@@ -66,18 +66,16 @@ export interface Project {
 
 export interface AlarmRule {
     /**
-     * datasource_id:tag_path, e.g. 'opcua:ns=2;s=PLCnext.pressure'
+     * Expression (the Speth's Screens expression language): the alarm is active while it is
+     * true, e.g. {ns:Tank1/Level} > 95 && {ns:Tank1/InletOpen}. While an input it needs is Bad
+     * or missing, the alarm stays as it is
      */
-    binding:   string;
-    condition: AlarmCondition;
-    id:        string;
-    message:   string;
-    name:      string;
-    severity:  AlarmSeverity;
-    threshold: number;
+    expr:     string;
+    id:       string;
+    message:  string;
+    name:     string;
+    severity: AlarmSeverity;
 }
-
-export type AlarmCondition = "gt" | "gte" | "lt" | "lte" | "eq" | "ne";
 
 export type AlarmSeverity = "critical" | "warning" | "info";
 
@@ -168,9 +166,9 @@ export interface DatasourceConfig {
      */
     slaveId?: number;
     /**
-     * Virtual driver: JSON-encoded [{path,formula}...] array
+     * Virtual driver: the calculated tags
      */
-    tags?:     string;
+    tags?:     CalculatedTag[];
     username?: string;
 }
 
@@ -186,6 +184,21 @@ export type CERTCheck = "off" | "pinned" | "trusted";
 export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
 
 export type SecurityPolicy = "None" | "Basic128Rsa15" | "Basic256" | "Basic256Sha256";
+
+/**
+ * A tag the virtual driver computes. Other expressions read it as {datasource:path}
+ */
+export interface CalculatedTag {
+    /**
+     * Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
+     * input makes the tag Bad
+     */
+    expr: string;
+    /**
+     * The tag's name in this datasource
+     */
+    path: string;
+}
 
 export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual";
 
@@ -210,7 +223,10 @@ export interface FaceplateParam {
  */
 export interface FaceplateWidget {
     bindings?: WidgetBindings;
-    dynamics?: Dynamic[];
+    /**
+     * Driven properties, by property name; which names a widget type has is listed in TypedProps
+     */
+    dynamics?: { [key: string]: Drive };
     events?:   WidgetEvents;
     /**
      * IDE-only: widgets with the same groupId move together
@@ -264,65 +280,65 @@ export interface WidgetBindings {
 }
 
 /**
- * A tag-driven look on a widget (actions are events). Which fields apply depends on kind
+ * Drives one property of a widget: the expression's value, through the transform if there
+ * is one. An unknown result, or a value of the wrong type for the property, leaves the
+ * property's own setting
  */
-export interface Dynamic {
+export interface Drive {
     /**
-     * Tag the dynamic reacts to
+     * Expression (the Speth's Screens expression language); value is the widget's value tag
      */
-    binding?: string;
-    /**
-     * blink: flash color
-     */
-    blinkColor?: string;
-    /**
-     * blink: period in milliseconds
-     */
-    blinkPeriodMs?: number;
-    /**
-     * script: expression evaluated with `value` = tag value, e.g. 'value > 5000'
-     */
-    expression?: string;
-    /**
-     * colorFill: color when the tag is falsy
-     */
-    falseColor?: string;
-    /**
-     * script: applied to targetProp when the expression is falsy
-     */
-    falseValue?: string;
-    id:          string;
-    kind:        DynamicKind;
-    /**
-     * rotation: angle in degrees
-     */
-    maxAngle?: number;
-    /**
-     * rotation: tag value mapped to maxAngle
-     */
-    maxValue?: number;
-    /**
-     * rotation: angle in degrees
-     */
-    minAngle?: number;
-    /**
-     * rotation: tag value mapped to minAngle
-     */
-    minValue?:   number;
-    targetProp?: DynamicTargetProp;
-    /**
-     * colorFill: color when the tag is truthy
-     */
-    trueColor?: string;
-    /**
-     * script: applied to targetProp when the expression is truthy
-     */
-    trueValue?: string;
+    expr:       string;
+    transform?: Transform;
 }
 
-export type DynamicKind = "visibility" | "colorFill" | "blink" | "rotation" | "disable" | "script";
+/**
+ * Turns an expression value into a property value. linear: scale in to out; thresholds: the
+ * value of the last step whose above the value reaches; map: the value of the case it equals
+ */
+export interface Transform {
+    /**
+     * thresholds: the value under the first step; missing leaves the property's own setting
+     */
+    below?: boolean | number | string;
+    /**
+     * map: the cases, first match wins
+     */
+    cases?: MapCase[];
+    /**
+     * linear: keep the result inside out; missing means true
+     */
+    clamp?: boolean;
+    /**
+     * map: the value when no case matches; missing leaves the property's own setting
+     */
+    default?: boolean | number | string;
+    /**
+     * linear: input range [low, high]
+     */
+    in?:  number[];
+    kind: TransformKind;
+    /**
+     * linear: output range [low, high]
+     */
+    out?: number[];
+    /**
+     * thresholds: steps in ascending order of above
+     */
+    steps?: ThresholdStep[];
+}
 
-export type DynamicTargetProp = "bgColor" | "borderColor" | "textColor" | "visible";
+export interface MapCase {
+    equals: boolean | number | string;
+    value:  boolean | number | string;
+}
+
+export type TransformKind = "linear" | "thresholds" | "map";
+
+export interface ThresholdStep {
+    above: number;
+    value: boolean | number | string;
+}
 
 /**
  * What a widget does when touched. onPress and onRelease write at once (momentary); onClick
@@ -412,12 +428,20 @@ export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUr
  * Settings of a table widget
  */
 export interface FaceplateWidgetProps {
-    max?:         number;
-    min?:         number;
-    thresholds?:  Threshold[];
-    unit?:        string;
-    bgColor?:     string;
-    borderColor?: string;
+    max?:        number;
+    min?:        number;
+    thresholds?: Threshold[];
+    unit?:       string;
+    bgColor?:    string;
+    /**
+     * Color the frame flashes while blinking; missing means the widget fades in and out
+     */
+    blinkColor?: string;
+    /**
+     * Blink period in milliseconds while dynamics.blink is on; missing means 800
+     */
+    blinkPeriodMs?: number;
+    borderColor?:   string;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
@@ -698,7 +722,10 @@ export interface Page {
 
 export interface Widget {
     bindings?: WidgetBindings;
-    dynamics?: Dynamic[];
+    /**
+     * Driven properties, by property name; which names a widget type has is listed in TypedProps
+     */
+    dynamics?: { [key: string]: Drive };
     events?:   WidgetEvents;
     /**
      * IDE-only: widgets with the same groupId move together
@@ -773,12 +800,20 @@ export interface Widget {
  * Settings of a table widget
  */
 export interface WidgetProps {
-    max?:         number;
-    min?:         number;
-    thresholds?:  Threshold[];
-    unit?:        string;
-    bgColor?:     string;
-    borderColor?: string;
+    max?:        number;
+    min?:        number;
+    thresholds?: Threshold[];
+    unit?:       string;
+    bgColor?:    string;
+    /**
+     * Color the frame flashes while blinking; missing means the widget fades in and out
+     */
+    blinkColor?: string;
+    /**
+     * Blink period in milliseconds while dynamics.blink is on; missing means 800
+     */
+    blinkPeriodMs?: number;
+    borderColor?:   string;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
@@ -944,8 +979,10 @@ export type AuthMode = "none" | "login";
 /**
  * Default theme for every screen. A browser can still pick its own; that choice is not
  * saved in the project
+ *
+ * Screen themes. Phase 3 has one; each later theme adds its id
  */
-export type ThemeID = "scada-dark" | "blueprint" | "clean-room" | "brutalist" | "holographic" | "engineering-paper";
+export type ThemeID = "high-performance";
 
 export interface Udt {
     description?: string;

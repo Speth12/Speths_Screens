@@ -62,6 +62,11 @@ export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByTy
 ${types.map((t) => `  ${t.type}: [${t.props.map((p) => JSON.stringify(p.key)).join(", ")}],`).join("\n")}
 };
 
+/** Each widget type's properties that dynamics can drive. */
+export const DRIVEN_PROPS: { readonly [K in WidgetType]: readonly string[] } = {
+${defs.TypedProps.oneOf.map((b) => `  ${b.properties.type.const}: [${(b.properties.dynamics?.propertyNames?.enum ?? []).map((k) => JSON.stringify(k)).join(", ")}],`).join("\n")}
+};
+
 /** A widget as the typed widget of its type. The props are not checked:
  *  use it on projects that passed validation. */
 export function typed<T extends WidgetType>(w: Widget & { type: T }): TypedWidget<T> {

@@ -1,5 +1,7 @@
 package project
 
+import "github.com/Speth12/Speths_Screens/internal/expr"
+
 // WidgetView is what the runtime reads of a widget, the same for a page
 // widget and a widget inside a faceplate (whose tags may hold {param}).
 type WidgetView struct {
@@ -8,7 +10,7 @@ type WidgetView struct {
 	Props    *WidgetProps
 	Bindings *WidgetBindings
 	Events   *WidgetEvents
-	Dynamics []DynamicElement
+	Dynamics map[string]Drive
 }
 
 // View returns what the runtime reads of w.
@@ -67,7 +69,7 @@ func (v WidgetView) Tags() []string {
 		}
 	}
 	for _, d := range v.Dynamics {
-		add(d.Binding)
+		out = append(out, ExprTags(d.Expr)...)
 	}
 	return append(out, v.WriteTargets()...)
 }
@@ -102,4 +104,19 @@ func (v WidgetView) Limits() (min, max *float64) {
 		return nil, nil
 	}
 	return v.Props.Min, v.Props.Max
+}
+
+// ExprTags lists the tags an expression reads, as bindings: "ds:path", or
+// "{name}" for a faceplate parameter, which the faceplate fills in. An
+// expression that does not compile reads nothing.
+func ExprTags(src string) []string {
+	e, err := expr.CompileTemplate(src)
+	if err != nil {
+		return nil
+	}
+	out := append([]string{}, e.Refs...)
+	for _, p := range e.Params {
+		out = append(out, "{"+p+"}")
+	}
+	return out
 }

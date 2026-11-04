@@ -1,0 +1,17 @@
+{
+  "alarmRules": [
+    { "id": "gt", "name": "Above", "binding": "plc:T", "condition": "gt", "threshold": 100, "severity": "warning", "message": "T above 100" },
+    { "id": "gte", "name": "At or above", "binding": "plc:T", "condition": "gte", "threshold": 99.5, "severity": "critical", "message": "m" },
+    { "id": "lt", "name": "Below", "binding": "ns:Tank1/Level", "condition": "lt", "threshold": -5, "severity": "info", "message": "m" },
+    { "id": "lte", "name": "At or below", "binding": "plc:T", "condition": "lte", "threshold": 0, "severity": "info", "message": "m" },
+    { "id": "eq", "name": "Equal", "binding": "plc:State", "condition": "eq", "threshold": 3, "severity": "warning", "message": "m" },
+    { "id": "ne", "name": "Not equal", "binding": "opcua:ns=6;s=Arp.Plc.Eclr/Mode", "condition": "ne", "threshold": 1, "severity": "warning", "message": "m" },
+    { "id": "odd", "name": "Odd condition", "binding": "plc:T", "condition": "between", "threshold": 5, "severity": "info", "message": "m" },
+    { "id": "untagged", "name": "No tag", "binding": "", "condition": "gt", "threshold": 1, "severity": "info", "message": "m" }
+  ],
+  "datasources": [],
+  "name": "Alarms",
+  "pages": [{ "id": "p1", "name": "Main", "widgets": [] }],
+  "schemaVersion": 2,
+  "version": "1.0.0"
+}

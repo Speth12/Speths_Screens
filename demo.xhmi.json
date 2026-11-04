@@ -1,64 +1,97 @@
 {
   "alarmRules": [
     {
-      "binding": "sim:pressure",
-      "condition": "gt",
+      "expr": "{sim:pressure} > 62",
       "id": "alarm-high-pressure",
       "message": "Inlet pressure above safe operating range (>62 bar)",
       "name": "High Pressure",
-      "severity": "warning",
-      "threshold": 62
+      "severity": "warning"
     },
     {
-      "binding": "sim:pressure",
-      "condition": "gt",
+      "expr": "{sim:pressure} > 68",
       "id": "alarm-critical-pressure",
       "message": "CRITICAL: Overpressure — check relief valve immediately",
       "name": "Critical Overpressure",
-      "severity": "critical",
-      "threshold": 68
+      "severity": "critical"
     },
     {
-      "binding": "sim:temperature",
-      "condition": "gt",
+      "expr": "{sim:temperature} > 72",
       "id": "alarm-high-temp",
       "message": "Process temperature elevated above 72°C",
       "name": "High Temperature",
-      "severity": "warning",
-      "threshold": 72
+      "severity": "warning"
     },
     {
-      "binding": "sim:temperature",
-      "condition": "gt",
+      "expr": "{sim:temperature} > 78",
       "id": "alarm-critical-temp",
       "message": "CRITICAL: Temperature above safe limit (78°C)",
       "name": "Critical Temperature",
-      "severity": "critical",
-      "threshold": 78
+      "severity": "critical"
     },
     {
-      "binding": "sim:level",
-      "condition": "lt",
+      "expr": "{sim:level} < 25",
       "id": "alarm-low-level",
       "message": "Tank level critically low (<25%) — stop pumps",
       "name": "Low Tank Level",
-      "severity": "critical",
-      "threshold": 25
+      "severity": "critical"
     },
     {
-      "binding": "sim:efficiency",
-      "condition": "lt",
+      "expr": "{sim:efficiency} < 50",
       "id": "alarm-low-efficiency",
       "message": "Pump efficiency below 50% — maintenance recommended",
       "name": "Low Pump Efficiency",
-      "severity": "warning",
-      "threshold": 50
+      "severity": "warning"
     }
   ],
   "datasources": [
     {
       "config": {
-        "tags": "[{\"path\":\"pressure\",\"formula\":\"50 + sin({sim:phase}) * 18\"},{\"path\":\"temperature\",\"formula\":\"65 + cos({sim:phase}) * 10\"},{\"path\":\"flow\",\"formula\":\"clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)\"},{\"path\":\"level\",\"formula\":\"clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)\"},{\"path\":\"phase\",\"formula\":\"({sim:phase} + 0.012) % 6.283\"},{\"path\":\"pump1_running\",\"formula\":\"clamp(sign(sin({sim:phase}) + 0.3), 0, 1)\"},{\"path\":\"pump2_running\",\"formula\":\"clamp(sign(cos({sim:phase})), 0, 1)\"},{\"path\":\"fault_active\",\"formula\":\"clamp(sign({sim:pressure} - 64), 0, 1)\"},{\"path\":\"pressure_psi\",\"formula\":\"{sim:pressure} * 14.504\"},{\"path\":\"temp_f\",\"formula\":\"{sim:temperature} * 9/5 + 32\"},{\"path\":\"efficiency\",\"formula\":\"clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)\"}]"
+        "tags": [
+          {
+            "expr": "50 + sin({sim:phase}) * 18",
+            "path": "pressure"
+          },
+          {
+            "expr": "65 + cos({sim:phase}) * 10",
+            "path": "temperature"
+          },
+          {
+            "expr": "clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)",
+            "path": "flow"
+          },
+          {
+            "expr": "clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)",
+            "path": "level"
+          },
+          {
+            "expr": "((good({sim:phase}) ? {sim:phase} : 0) + 0.012) % 6.283",
+            "path": "phase"
+          },
+          {
+            "expr": "clamp(sign(sin({sim:phase}) + 0.3), 0, 1)",
+            "path": "pump1_running"
+          },
+          {
+            "expr": "clamp(sign(cos({sim:phase})), 0, 1)",
+            "path": "pump2_running"
+          },
+          {
+            "expr": "clamp(sign({sim:pressure} - 64), 0, 1)",
+            "path": "fault_active"
+          },
+          {
+            "expr": "{sim:pressure} * 14.504",
+            "path": "pressure_psi"
+          },
+          {
+            "expr": "{sim:temperature} * 9/5 + 32",
+            "path": "temp_f"
+          },
+          {
+            "expr": "clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)",
+            "path": "efficiency"
+          }
+        ]
       },
       "id": "sim",
       "label": "Simulation",
@@ -378,18 +411,16 @@
           "bindings": {
             "value": "sim:fault_active"
           },
-          "dynamics": [
-            {
-              "binding": "sim:fault_active",
-              "blinkColor": "#fca5a5",
-              "blinkPeriodMs": 800,
-              "id": "dyn-fault-blink",
-              "kind": "blink"
+          "dynamics": {
+            "blink": {
+              "expr": "{sim:fault_active}"
             }
-          ],
+          },
           "h": 2,
           "id": "w-fault-led",
           "props": {
+            "blinkColor": "#fca5a5",
+            "blinkPeriodMs": 800,
             "falseColor": "#166534",
             "falseLabel": "Normal",
             "label": "System Fault",
@@ -1506,15 +1537,11 @@
           "bindings": {
             "value": "sim:fault_active"
           },
-          "dynamics": [
-            {
-              "binding": "sim:fault_active",
-              "falseColor": "#052e16",
-              "id": "dyn-fault-fill",
-              "kind": "colorFill",
-              "trueColor": "#7f1d1d"
+          "dynamics": {
+            "borderColor": {
+              "expr": "{sim:fault_active} ? '#7f1d1d' : '#052e16'"
             }
-          ],
+          },
           "h": 3,
           "id": "a-fault-big",
           "props": {
@@ -1688,6 +1715,7 @@
       "name": "Maintenance Mode"
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 3,
+  "theme": "high-performance",
   "version": "0.1.0"
 }

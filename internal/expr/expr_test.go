@@ -1,176 +1,202 @@
 package expr
 
 import (
+	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
-var tags = map[string]float64{
-	"T1": 100, "T2": 80, "T3": 60,
-	"Level": 2.5, "Area": 4.0,
-	"SP": 75, "PV": 90,
+// goldenCase is one entry in testdata/expr/*.json, shared with the
+// TypeScript engine (packages/expr/src/expr.test.ts). A tag or value is
+// either a plain JSON value (Good) or {"value": ..., "quality": ...}; a
+// tag missing from tags has no value; a missing value means no widget.
+type goldenCase struct {
+	Expr      string                     `json:"expr"`
+	Tags      map[string]json.RawMessage `json:"tags"`
+	Value     json.RawMessage            `json:"value"`
+	Want      json.RawMessage            `json:"want"`
+	Unknown   string                     `json:"unknown"`
+	Error     string                     `json:"error"`
+	Refs      *[]string                  `json:"refs"`
+	UsesValue bool                       `json:"usesValue"`
+	Near      bool                       `json:"near"`     // compare to 12 significant digits (sin, cos, log, pow)
+	Template  bool                       `json:"template"` // compile with CompileTemplate
+	Params    *[]string                  `json:"params"`
 }
 
-func lookup(path string) (float64, bool) {
-	v, ok := tags[path]
-	return v, ok
+func input(t *testing.T, raw json.RawMessage) Input {
+	t.Helper()
+	var spec struct {
+		Value   any     `json:"value"`
+		Quality *string `json:"quality"`
+	}
+	if json.Unmarshal(raw, &spec) == nil && spec.Quality != nil {
+		return Input{Value: spec.Value, Quality: *spec.Quality}
+	}
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		t.Fatalf("bad input %s: %v", raw, err)
+	}
+	return Input{Value: v, Quality: "Good"}
 }
 
-func eng() *Engine { return New(lookup) }
+func TestGolden(t *testing.T) {
+	files, _ := filepath.Glob("../../testdata/expr/*.json")
+	if len(files) == 0 {
+		t.Fatal("no golden files in testdata/expr")
+	}
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var cases []goldenCase
+		if err := json.Unmarshal(data, &cases); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, c := range cases {
+			t.Run(filepath.Base(f)+"/"+c.Expr, func(t *testing.T) {
+				compile := Compile
+				if c.Template {
+					compile = CompileTemplate
+				}
+				e, err := compile(c.Expr)
+				if c.Error != "" {
+					if err == nil || err.Error() != c.Error {
+						t.Fatalf("Compile error = %v, want %q", err, c.Error)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("Compile: %v", err)
+				}
+				if c.Refs != nil && !reflect.DeepEqual(e.Refs, *c.Refs) {
+					t.Errorf("Refs = %q, want %q", e.Refs, *c.Refs)
+				}
+				if c.Params != nil && !reflect.DeepEqual(e.Params, *c.Params) {
+					t.Errorf("Params = %q, want %q", e.Params, *c.Params)
+				}
+				if e.UsesValue != c.UsesValue {
+					t.Errorf("UsesValue = %v, want %v", e.UsesValue, c.UsesValue)
+				}
+				env := Env{Tag: func(ref string) (Input, bool) {
+					raw, ok := c.Tags[ref]
+					if !ok {
+						return Input{}, false
+					}
+					return input(t, raw), true
+				}}
+				if c.Value != nil {
+					env.Value = func() (Input, bool) { return input(t, c.Value), true }
+				}
+				got, why := e.Eval(env)
+				if c.Unknown != "" {
+					if why != c.Unknown {
+						t.Fatalf("Eval = %v, %q; want unknown %q", got, why, c.Unknown)
+					}
+					return
+				}
+				if why != "" {
+					t.Fatalf("Eval unknown: %s", why)
+				}
+				var want any
+				if err := json.Unmarshal(c.Want, &want); err != nil {
+					t.Fatalf("bad want %s: %v", c.Want, err)
+				}
+				if c.Near {
+					g, gok := got.(float64)
+					w, wok := want.(float64)
+					if !gok || !wok || math.Abs(g-w) > 1e-12*math.Max(1, math.Abs(w)) {
+						t.Fatalf("Eval = %#v, want about %#v", got, want)
+					}
+					return
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("Eval = %#v, want %#v", got, want)
+				}
+			})
+		}
+	}
+}
 
-func TestArithmetic(t *testing.T) {
-	cases := []struct {
-		expr string
-		want float64
+func TestLength(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		ok   bool
 	}{
-		{"2 + 3", 5},
-		{"10 - 4", 6},
-		{"3 * 4", 12},
-		{"10 / 4", 2.5},
-		{"2 + 3 * 4", 14},
-		{"(2 + 3) * 4", 20},
-		{"-5 + 10", 5},
+		{"1000 characters", "1" + strings.Repeat(" ", 999), true},
+		{"1001 characters", "1" + strings.Repeat(" ", 1000), false},
+		{"1000 code points, more bytes", `"` + strings.Repeat("é", 998) + `"`, true},
 	}
-	e := eng()
-	for _, c := range cases {
-		got, err := e.Eval(c.expr)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Compile(tc.src)
+			if tc.ok && err != nil {
+				t.Fatalf("Compile: %v", err)
+			}
+			if !tc.ok && (err == nil || err.Error() != "expression longer than 1000 characters") {
+				t.Fatalf("Compile error = %v", err)
+			}
+		})
+	}
+}
+
+func TestDriverValues(t *testing.T) {
+	tests := []struct {
+		name string
+		in   any
+		want any
+		why  string
+	}{
+		{"int16", int16(-5), -5.0, ""},
+		{"uint32", uint32(7), 7.0, ""},
+		{"float32", float32(0.5), 0.5, ""},
+		{"json.Number", json.Number("12.5"), 12.5, ""},
+		{"NaN from a PLC float", nan(), nil, "input {ns:a} is not a finite number"},
+		{"a struct", struct{}{}, nil, "input {ns:a} has an unsupported value"},
+	}
+	e, err := Compile("{ns:a}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, why := e.Eval(Env{Tag: func(string) (Input, bool) { return Input{Value: tc.in, Quality: "Good"}, true }})
+			if why != tc.why || !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("Eval = %v, %q; want %v, %q", got, why, tc.want, tc.why)
+			}
+		})
+	}
+}
+
+func nan() float64 {
+	zero := 0.0
+	return zero / zero
+}
+
+// FuzzCompile checks that no input panics and that whatever compiles
+// evaluates without panicking against tags of every kind.
+func FuzzCompile(f *testing.F) {
+	for _, s := range []string{"1 + 2", "{ns:a} > 5 ? 'hi' : format(value, 2)", "bit({ds:x}, 3) && good({ns:a})", "((", "'\\", "{a:", "0x1"} {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, src string) {
+		e, err := Compile(src)
 		if err != nil {
-			t.Errorf("%q: %v", c.expr, err)
-			continue
+			if utf8.ValidString(src) && err.Error() == "" {
+				t.Fatal("empty error")
+			}
+			return
 		}
-		if math.Abs(got-c.want) > 1e-9 {
-			t.Errorf("%q: want %v, got %v", c.expr, c.want, got)
+		for _, v := range []any{1.5, true, "s", nil, -1e300} {
+			in := Input{Value: v, Quality: "Good"}
+			e.Eval(Env{Tag: func(string) (Input, bool) { return in, true }, Value: func() (Input, bool) { return in, true }})
 		}
-	}
-}
-
-func TestTagReference(t *testing.T) {
-	e := eng()
-	got, err := e.Eval("Level * Area")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != 10.0 {
-		t.Errorf("want 10, got %v", got)
-	}
-}
-
-func TestBuiltinAverage(t *testing.T) {
-	got, err := eng().Eval("Average(T1, T2, T3)")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != 80 {
-		t.Errorf("want 80, got %v", got)
-	}
-}
-
-func TestBuiltinMinMax(t *testing.T) {
-	e := eng()
-	min, _ := e.Eval("Min(T1, T2, T3)")
-	max, _ := e.Eval("Max(T1, T2, T3)")
-	if min != 60 {
-		t.Errorf("Min: want 60, got %v", min)
-	}
-	if max != 100 {
-		t.Errorf("Max: want 100, got %v", max)
-	}
-}
-
-func TestBuiltinSum(t *testing.T) {
-	got, err := eng().Eval("Sum(T1, T2, T3)")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != 240 {
-		t.Errorf("want 240, got %v", got)
-	}
-}
-
-func TestBuiltinIf(t *testing.T) {
-	e := eng()
-	// PV=90 > SP=75 → 1 (true) → return 1
-	got, err := e.Eval("If(PV > SP, 1, 0)")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != 1 {
-		t.Errorf("want 1, got %v", got)
-	}
-}
-
-func TestBuiltinClamp(t *testing.T) {
-	got, err := eng().Eval("Clamp(T1, 0, 50)")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != 50 {
-		t.Errorf("want 50, got %v", got)
-	}
-}
-
-func TestBuiltinAbs(t *testing.T) {
-	e := New(func(string) (float64, bool) { return 0, false })
-	got, _ := e.Eval("Abs(-42)")
-	if got != 42 {
-		t.Errorf("want 42, got %v", got)
-	}
-}
-
-func TestComparisons(t *testing.T) {
-	e := eng()
-	cases := [][2]interface{}{
-		{"T1 > T2", 1.0},
-		{"T2 < T1", 1.0},
-		{"T1 == 100", 1.0},
-		{"T1 != T2", 1.0},
-		{"T1 <= 100", 1.0},
-		{"T1 >= 100", 1.0},
-		{"T1 > 200", 0.0},
-	}
-	for _, c := range cases {
-		got, err := e.Eval(c[0].(string))
-		if err != nil {
-			t.Errorf("%q: %v", c[0], err)
-			continue
-		}
-		if got != c[1].(float64) {
-			t.Errorf("%q: want %v, got %v", c[0], c[1], got)
-		}
-	}
-}
-
-func TestUnknownTag(t *testing.T) {
-	_, err := eng().Eval("Unknown * 2")
-	if err == nil {
-		t.Error("expected error for unknown tag")
-	}
-}
-
-func TestCircularDetection(t *testing.T) {
-	m := NewManager(lookup, nil)
-	m.Register("A", "T1 + 1")
-	m.Register("B", "A + 1")
-	if err := m.Register("A", "B + 1"); err == nil {
-		t.Error("expected circular reference error")
-	}
-}
-
-func TestVirtualTagNotify(t *testing.T) {
-	localTags := map[string]float64{"X": 10}
-	results := map[string]float64{}
-
-	m := NewManager(
-		func(p string) (float64, bool) { v, ok := localTags[p]; return v, ok },
-		func(path string, val float64) { results[path] = val },
-	)
-
-	if err := m.Register("Doubled", "X * 2"); err != nil {
-		t.Fatal(err)
-	}
-	localTags["X"] = 20
-	m.Notify("X")
-	if results["Doubled"] != 40 {
-		t.Errorf("want 40, got %v", results["Doubled"])
-	}
+	})
 }

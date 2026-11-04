@@ -57,13 +57,17 @@ func Open(path string) (*AlarmStore, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("schema: %w", err)
 	}
+	if err := addColumns(db); err != nil {
+		return nil, fmt.Errorf("schema: %w", err)
+	}
 	stmt, err := db.Prepare(`
 		INSERT INTO alarm_events
 			(id, rule_id, rule_name, binding, condition, threshold, severity,
-			 message, value, active, acked, triggered_at, normal_at, acked_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			 message, value, active, acked, triggered_at, normal_at, acked_at, expr, reason)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET
 			value        = excluded.value,
+			reason       = excluded.reason,
 			active       = excluded.active,
 			acked        = excluded.acked,
 			normal_at    = excluded.normal_at,
@@ -102,8 +106,46 @@ func (s *AlarmStore) Record(ev alarms.Event) error {
 		string(ev.Severity), ev.Message,
 		ev.Value, active, acked,
 		ev.TriggeredAt.UnixNano(), normalAt, ackedAt,
+		nullable(ev.Expr), nullable(ev.Reason),
 	)
 	return err
+}
+
+// addColumns adds the columns of format 3 (alarm expressions) to a
+// database made before them. Old rows keep NULL there.
+func addColumns(db *sql.DB) error {
+	have := map[string]bool{}
+	rows, err := db.Query(`PRAGMA table_info(alarm_events)`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var cid, notNull, pk int
+		var name, typ string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &dflt, &pk); err != nil {
+			rows.Close()
+			return err
+		}
+		have[name] = true
+	}
+	rows.Close()
+	for _, col := range []string{"expr", "reason"} {
+		if !have[col] {
+			if _, err := db.Exec("ALTER TABLE alarm_events ADD COLUMN " + col + " TEXT"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// nullable stores an empty string as NULL.
+func nullable(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 // QueryOptions filters for Query.
@@ -138,7 +180,7 @@ func (s *AlarmStore) Query(ctx context.Context, opts QueryOptions) ([]alarms.Eve
 
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, rule_id, rule_name, binding, condition, threshold, severity,
-		        message, value, active, acked, triggered_at, normal_at, acked_at
+		        message, value, active, acked, triggered_at, normal_at, acked_at, expr, reason
 		 FROM alarm_events WHERE `+where+
 			` ORDER BY triggered_at DESC LIMIT ?`,
 		args...)
@@ -153,15 +195,17 @@ func (s *AlarmStore) Query(ctx context.Context, opts QueryOptions) ([]alarms.Eve
 		var active, acked int
 		var triggeredNs int64
 		var normalNs, ackedNs sql.NullInt64
+		var expr, reason sql.NullString
 		if err := rows.Scan(
 			&ev.ID, &ev.RuleID, &ev.RuleName, &ev.Binding,
 			&ev.Condition, &ev.Threshold,
 			&ev.Severity, &ev.Message,
 			&ev.Value, &active, &acked,
-			&triggeredNs, &normalNs, &ackedNs,
+			&triggeredNs, &normalNs, &ackedNs, &expr, &reason,
 		); err != nil {
 			return nil, err
 		}
+		ev.Expr, ev.Reason = expr.String, reason.String
 		ev.Active = active != 0
 		ev.Acked = acked != 0
 		ev.TriggeredAt = time.Unix(0, triggeredNs)

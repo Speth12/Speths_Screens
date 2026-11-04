@@ -2,9 +2,11 @@ package project
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,8 +61,16 @@ func ValidateJSON(data []byte) error {
 		return err
 	}
 	var problems []string
-	for _, leaf := range leaves(ve) {
+	for _, leaf := range inDocumentOrder(leaves(ve), keyOrder(data)) {
+		if _, ok := leaf.ErrorKind.(*kind.PropertyNames); ok {
+			continue // drivenNameProblems names them, with the right location
+		}
 		p := describe(inst, leaf)
+		if !slices.Contains(problems, p) {
+			problems = append(problems, p)
+		}
+	}
+	for _, p := range drivenNameProblems(inst) {
 		if !slices.Contains(problems, p) {
 			problems = append(problems, p)
 		}
@@ -68,10 +78,42 @@ func ValidateJSON(data []byte) error {
 	return &SchemaError{Problems: problems}
 }
 
+// drivenNameProblems names every driven property a widget's type cannot
+// drive, in widget order and then by name. The schema library reports
+// these too, but with a wrong location.
+func drivenNameProblems(inst any) []string {
+	allowed, err := drivenKeys()
+	if err != nil {
+		return []string{err.Error()}
+	}
+	root, _ := inst.(map[string]any)
+	var out []string
+	for _, owner := range []string{"pages", "faceplates", "presets"} {
+		for i, o := range objects(root[owner]) {
+			for j, w := range objects(o["widgets"]) {
+				dyn, _ := w["dynamics"].(map[string]any)
+				names := make([]string, 0, len(dyn))
+				for name := range dyn {
+					if !allowed[str(w["type"])][name] {
+						names = append(names, name)
+					}
+				}
+				sort.Strings(names)
+				where, _ := locate(inst, []string{owner, strconv.Itoa(i), "widgets", strconv.Itoa(j)})
+				for _, name := range names {
+					out = append(out, where+": dynamics: cannot drive "+name)
+				}
+			}
+		}
+	}
+	return out
+}
+
 // leaves returns the errors at the bottom of the tree, skipping the oneOf
 // branches for other widget types (each fails on its type constant).
 func leaves(ve *jsonschema.ValidationError) []*jsonschema.ValidationError {
-	if len(ve.Causes) == 0 {
+	// A bad property name stops here: drivenNameProblems describes it.
+	if _, ok := ve.ErrorKind.(*kind.PropertyNames); ok || len(ve.Causes) == 0 {
 		return []*jsonschema.ValidationError{ve}
 	}
 	causes := ve.Causes
@@ -92,6 +134,77 @@ func leaves(ve *jsonschema.ValidationError) []*jsonschema.ValidationError {
 	}
 	return out
 }
+
+// inDocumentOrder puts each run of unknown-property errors on the same
+// object into the order the keys appear in the document. The schema
+// library finds them by walking a map, so their order changes from run to
+// run; the IDE's validator lists them in document order.
+func inDocumentOrder(leaves []*jsonschema.ValidationError, order map[string]int) []*jsonschema.ValidationError {
+	unknownOn := func(ve *jsonschema.ValidationError) (string, bool) {
+		if _, ok := ve.ErrorKind.(*kind.FalseSchema); !ok || len(ve.InstanceLocation) == 0 {
+			return "", false
+		}
+		return pointer(ve.InstanceLocation[:len(ve.InstanceLocation)-1]), true
+	}
+	for i := 0; i < len(leaves); {
+		parent, ok := unknownOn(leaves[i])
+		j := i + 1
+		for ok && j < len(leaves) {
+			if p, ok2 := unknownOn(leaves[j]); !ok2 || p != parent {
+				break
+			}
+			j++
+		}
+		run := leaves[i:j]
+		sort.SliceStable(run, func(a, b int) bool {
+			return order[pointer(run[a].InstanceLocation)] < order[pointer(run[b].InstanceLocation)]
+		})
+		i = j
+	}
+	return leaves
+}
+
+// keyOrder maps the JSON pointer of every object member in data to its
+// position within its object.
+func keyOrder(data []byte) map[string]int {
+	order := map[string]int{}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	var walk func(path []string) error
+	walk = func(path []string) error {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		switch tok {
+		case json.Delim('{'):
+			for i := 0; dec.More(); i++ {
+				key, err := dec.Token()
+				if err != nil {
+					return err
+				}
+				k, _ := key.(string)
+				member := append(append([]string{}, path...), k)
+				order[pointer(member)] = i
+				if err := walk(member); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token() // }
+		case json.Delim('['):
+			for i := 0; dec.More(); i++ {
+				if err := walk(append(append([]string{}, path...), strconv.Itoa(i))); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token() // ]
+		}
+		return err
+	}
+	_ = walk(nil) // the document already parsed once; a failure only loses the order
+	return order
+}
+
+func pointer(loc []string) string { return "/" + strings.Join(loc, "/") }
 
 // wrongTypeBranch reports whether a oneOf branch failed because the widget
 // is another type.

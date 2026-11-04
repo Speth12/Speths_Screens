@@ -5,7 +5,7 @@
 // runtime (its origin is "null", and it cannot log in).
 import type { CSSProperties } from "react";
 import {
-  EMPTY_TAG, WidgetHostProvider, WidgetRenderer, inertHost,
+  EMPTY_TAG, WidgetHostProvider, WidgetRenderer, inertHost, themeById, themeStyle,
   type TagState, type WidgetHost,
 } from "@speths-screens/widgets";
 import type { Page, Project, Widget } from "./projectStore";
@@ -136,12 +136,13 @@ export async function generateStandaloneHtml(project: Project, snap: Snapshot): 
 }
 
 /** The IDE's own CSS and theme, for the snapshot to be drawn with. Browser only. */
-export function ideLook(): Pick<Snapshot, "css" | "root"> {
+export function ideLook(theme?: string): Pick<Snapshot, "css" | "root"> {
   const css = Array.from(document.styleSheets).map((sheet) => {
     try { return Array.from(sheet.cssRules).map((r) => r.cssText).join("\n"); }
     catch { return ""; } // a sheet from another origin cannot be read
   }).join("\n");
   const el = document.documentElement;
   const attrs = Object.fromEntries(Array.from(el.attributes).filter((a) => a.name.startsWith("data-")).map((a) => [a.name, a.value]));
-  return { css, root: { style: el.getAttribute("style") ?? undefined, className: el.className || undefined, attrs } };
+  // The screen's theme, not the IDE's own look, goes on the exported page.
+  return { css, root: { style: themeStyle(themeById(theme)), className: el.className || undefined, attrs: { ...attrs, "data-theme-id": themeById(theme).id } } };
 }

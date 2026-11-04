@@ -76,4 +76,17 @@ export interface WidgetManifest {
   settings: Field[];
   /** What a widget added from the palette starts with. */
   defaults?: { props?: Record<string, unknown>; events?: WidgetEvents };
+  /** What the widget gallery shows it with. */
+  sample: GallerySample;
+}
+
+/** A widget type's sample for the gallery: the value its tag holds in the
+ *  normal state, and on (running) and off; numeric means the gallery's
+ *  slider sets the value. Types that show no tag value only have props. */
+export interface GallerySample {
+  value?: unknown;
+  on?: unknown;
+  off?: unknown;
+  numeric?: boolean;
+  props?: Record<string, unknown>;
 }

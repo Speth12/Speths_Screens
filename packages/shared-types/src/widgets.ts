@@ -21,6 +21,10 @@ export interface FrameProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
 }
 
 /** Settings of a gauge widget. */
@@ -42,6 +46,10 @@ export interface GaugeProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   min?: number;
   max?: number;
   unit?: string;
@@ -67,6 +75,10 @@ export interface NumericDisplayProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   min?: number;
   max?: number;
   unit?: string;
@@ -91,6 +103,10 @@ export interface TextDisplayProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** TextDisplay: fixed text shown instead of a tag value */
   staticText?: string;
 }
@@ -114,6 +130,10 @@ export interface LedProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** LED color when true */
   trueColor?: string;
   /** LED color when false */
@@ -143,6 +163,10 @@ export interface TankProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   min?: number;
   max?: number;
   unit?: string;
@@ -168,6 +192,10 @@ export interface ButtonProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   btnVariant?: ButtonVariant;
   btnColor?: ButtonColor;
   btnRounded?: ButtonRounded;
@@ -198,6 +226,10 @@ export interface SetpointProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   min?: number;
   max?: number;
   unit?: string;
@@ -224,6 +256,10 @@ export interface MultiStateProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** MultiState value→label→color map */
   states?: StateEntry[];
 }
@@ -247,6 +283,10 @@ export interface TrendProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** Trend history window in seconds */
   duration?: number;
   xFormat?: TrendXFormat;
@@ -277,6 +317,10 @@ export interface NumericInputProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   min?: number;
   max?: number;
   unit?: string;
@@ -301,6 +345,10 @@ export interface TextInputProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
 }
 
 /** Settings of a historyLog widget. */
@@ -322,6 +370,10 @@ export interface HistoryLogProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** HistoryLog rows per page */
   pageSize?: number;
 }
@@ -345,6 +397,10 @@ export interface AlarmBannerProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** AlarmBanner max visible rows */
   maxRows?: number;
   /** AlarmBanner: show acknowledged alarms */
@@ -370,6 +426,10 @@ export interface ImageProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** Image: data-URL, URL or 'lib:<imageId>' */
   src?: string;
   /** Image object-fit, as set by the properties panel */
@@ -395,6 +455,10 @@ export interface SymbolProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** Symbol: id from a symbol pack */
   symbolId?: string;
   /** Symbol: stroke color */
@@ -420,6 +484,10 @@ export interface FaceplateProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** Faceplate widget: id of the faceplate to show */
   faceplateId?: string;
   /** Faceplate widget: parameter name → binding */
@@ -445,6 +513,10 @@ export interface TableProps {
   showQuality?: boolean;
   /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
   colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
   /** Table widget rows */
   rows?: TableRow[];
 }
@@ -478,23 +550,44 @@ export type TypedWidget<T extends WidgetType = WidgetType> = {
 
 /** Each widget type's settings, frame settings first. */
 export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByType[K] & string)[] } = {
-  gauge: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "thresholds"],
-  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit"],
-  textDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "staticText"],
-  led: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "trueColor", "falseColor", "trueLabel", "falseLabel"],
-  tank: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "thresholds"],
-  button: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"],
-  setpoint: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "step"],
-  multiState: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "states"],
-  trend: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "duration", "xFormat", "min", "max", "tags", "refLines"],
-  numericInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit"],
-  textInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds"],
-  historyLog: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "pageSize"],
-  alarmBanner: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "maxRows", "showAcked"],
-  image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "src", "fit"],
-  symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "symbolId", "stroke"],
-  faceplate: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "faceplateId", "params"],
-  table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "rows"],
+  gauge: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
+  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
+  textDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"],
+  led: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"],
+  tank: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
+  button: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"],
+  setpoint: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"],
+  multiState: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"],
+  trend: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines"],
+  numericInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
+  textInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"],
+  historyLog: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"],
+  alarmBanner: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"],
+  image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"],
+  symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke"],
+  faceplate: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "faceplateId", "params"],
+  table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"],
+};
+
+/** Each widget type's properties that dynamics can drive. */
+export const DRIVEN_PROPS: { readonly [K in WidgetType]: readonly string[] } = {
+  gauge: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max", "unit"],
+  numericDisplay: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max", "unit"],
+  textDisplay: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "staticText"],
+  led: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "trueColor", "falseColor", "trueLabel", "falseLabel"],
+  tank: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max", "unit"],
+  button: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "btnColor"],
+  setpoint: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max", "unit", "step"],
+  multiState: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  trend: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max"],
+  numericInput: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "min", "max", "unit"],
+  textInput: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  historyLog: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  alarmBanner: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  image: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "src"],
+  symbol: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "stroke"],
+  faceplate: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  table: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
 };
 
 /** A widget as the typed widget of its type. The props are not checked:

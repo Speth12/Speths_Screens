@@ -1,13 +1,12 @@
 package runtime
 
 import (
-	"encoding/json"
 	"log"
 	"sort"
 	"strings"
 	"sync"
 
-	"github.com/Speth12/Speths_Screens/internal/drivers/virtual"
+	"github.com/Speth12/Speths_Screens/internal/expr"
 	"github.com/Speth12/Speths_Screens/internal/project"
 )
 
@@ -203,22 +202,20 @@ func projectDemand(p *project.Project) map[string][]string {
 
 	var alarms []string
 	for _, a := range p.AlarmRules {
-		alarms = append(alarms, a.Binding)
+		alarms = append(alarms, project.ExprTags(a.Expr)...)
 	}
 
 	var calculated []string
 	for _, ds := range p.Datasources {
-		if ds.Type != project.DatasourceTypeVirtual || ds.Config.Tags == nil {
+		if ds.Type != project.DatasourceTypeVirtual {
 			continue
 		}
-		var specs []virtual.TagSpec
-		if err := json.Unmarshal([]byte(*ds.Config.Tags), &specs); err != nil {
-			continue // the virtual driver reports the bad config on Connect
-		}
-		for _, s := range specs {
-			for _, ref := range virtual.ParseRefs(s.Formula) {
-				calculated = append(calculated, ref.Key)
+		for _, t := range ds.Config.Tags {
+			e, err := expr.Compile(t.Expr)
+			if err != nil {
+				continue // the virtual driver marks the tag Bad with the reason
 			}
+			calculated = append(calculated, e.Refs...)
 		}
 	}
 

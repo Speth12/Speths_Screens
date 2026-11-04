@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
+import { themeById, themeVars } from "@speths-screens/widgets";
 import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
@@ -196,7 +197,8 @@ export function PreviewMode({ onExit }: Props) {
               transform: `scale(${scale})`,
               transformOrigin: "center center",
               flexShrink: 0,
-              background: page.backgroundColor ?? "var(--canvas-bg, #09090b)",
+              ...themeVars(themeById(project.theme)),
+              background: page.backgroundColor ?? "var(--background)",
             }}
           >
             {page.widgets.map((w) => {

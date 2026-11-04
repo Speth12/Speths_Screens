@@ -1,415 +1,436 @@
-// Package expr provides the Speth's Screens expression engine for calculated / virtual tags.
+// Package expr is the Speth's Screens expression language: a small,
+// side-effect-free subset of JavaScript syntax used by driven properties,
+// calculated tags and alarm conditions. An expression is parsed once by
+// Compile and evaluated on each tag update; nothing is handed to eval.
 //
-// Expressions are evaluated against a tag value lookup function:
+// packages/expr is the TypeScript twin. Both are held to the golden cases
+// in testdata/expr, so the IDE, the operator screen and the runtime give
+// the same result for the same expression.
 //
-//	eng := expr.New(func(path string) (float64, bool) { ... })
-//	val, err := eng.Eval("Average(T1, T2, T3) * 1.8 + 32")
-//
-// Supported:
-//   - Arithmetic:          + - * / ( )
-//   - Comparison:          > < >= <= == !=
-//   - Boolean:             && ||
-//   - Built-in functions:  Average, Min, Max, Sum, If, Clamp, Abs, Round
-//   - Tag references:      any unquoted identifier resolved via the lookup func
+// Tags are written in braces ({ns:Tank1/Level}, {opcua:ns=6;s=X}); value
+// is the widget's own tag. A result is a float64, bool or string, or
+// unknown with a reason: a Bad or missing input, division by zero, or a
+// type mismatch. && || and ?: evaluate only the side they need, so
+// good({x}) && {x} > 5 is false, not unknown, while {x} is Bad.
 package expr
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
-	"unicode"
+	"unicode/utf8"
 )
 
-// LookupFunc resolves a tag path to a float64.  Returns (value, true) if the
-// tag is known, (0, false) otherwise.
-type LookupFunc func(path string) (float64, bool)
-
-// Engine evaluates expression strings.
-type Engine struct {
-	lookup LookupFunc
+// Input is a tag value with its quality ("Good", "Uncertain" or "Bad").
+// Good and Uncertain values are used; Bad ones make the result unknown.
+type Input struct {
+	Value   any
+	Quality string
 }
 
-// New returns an Engine that resolves tag references with lookup.
-func New(lookup LookupFunc) *Engine {
-	return &Engine{lookup: lookup}
+// Env supplies tag values. Tag looks up a reference as written between
+// the braces ("ns:Tank1/Level"); Value is the widget's own tag and is nil
+// where there is none (calculated tags, alarms).
+type Env struct {
+	Tag   func(ref string) (Input, bool)
+	Value func() (Input, bool)
 }
 
-// Eval parses and evaluates expr against the engine's tag lookup.
-func (e *Engine) Eval(expression string) (float64, error) {
-	p := &parser{src: strings.TrimSpace(expression), lookup: e.lookup}
-	v, err := p.parseOr()
+// Expr is a compiled expression.
+type Expr struct {
+	root node
+	// Refs lists the tags the expression reads, in order of first use,
+	// as written between the braces.
+	Refs []string
+	// UsesValue is true when the expression reads value.
+	UsesValue bool
+	// Params lists the faceplate parameters ({name}) a template reads, in
+	// order of first use. Always empty for Compile.
+	Params []string
+}
+
+// Compile parses src. The error reads like "unexpected \")\" at column 6".
+func Compile(src string) (*Expr, error) { return compile(src, false) }
+
+// CompileTemplate parses an expression inside a faceplate, where {name}
+// (a name, no colon) is one of the faceplate's parameters. The faceplate
+// fills them in with tag paths before the expression is evaluated; a
+// parameter evaluated as it is has no value.
+func CompileTemplate(src string) (*Expr, error) { return compile(src, true) }
+
+func compile(src string, params bool) (*Expr, error) {
+	if utf8.RuneCountInString(src) > MaxLength {
+		return nil, fmt.Errorf("expression longer than %d characters", MaxLength)
+	}
+	if strings.Trim(src, " \t\n\r") == "" { // the whitespace the lexer skips
+		return nil, fmt.Errorf("empty expression")
+	}
+	toks, err := lex([]rune(src), params)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	if p.pos < len(p.src) {
-		return 0, fmt.Errorf("expr: unexpected character at %d: %q", p.pos, p.src[p.pos:])
-	}
-	return v, nil
-}
-
-// ── Parser ─────────────────────────────────────────────────────────────────
-
-type parser struct {
-	src    string
-	pos    int
-	lookup LookupFunc
-}
-
-func (p *parser) skipWS() {
-	for p.pos < len(p.src) && unicode.IsSpace(rune(p.src[p.pos])) {
-		p.pos++
-	}
-}
-
-func (p *parser) peek() byte {
-	p.skipWS()
-	if p.pos >= len(p.src) {
-		return 0
-	}
-	return p.src[p.pos]
-}
-
-func (p *parser) consume() byte {
-	p.skipWS()
-	if p.pos >= len(p.src) {
-		return 0
-	}
-	c := p.src[p.pos]
-	p.pos++
-	return c
-}
-
-func (p *parser) expect(c byte) error {
-	if p.consume() != c {
-		return fmt.Errorf("expr: expected %q at pos %d", c, p.pos)
-	}
-	return nil
-}
-
-// parseOr handles &&, ||
-func (p *parser) parseOr() (float64, error) {
-	left, err := p.parseAnd()
+	p := &parser{toks: toks, seen: map[string]bool{}}
+	root, err := p.parseExpr()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	for {
-		p.skipWS()
-		if p.pos+1 < len(p.src) && p.src[p.pos:p.pos+2] == "||" {
-			p.pos += 2
-			right, err := p.parseAnd()
-			if err != nil {
-				return 0, err
-			}
-			if left != 0 || right != 0 {
-				left = 1
-			} else {
-				left = 0
-			}
-		} else {
-			break
-		}
+	if t := p.peek(); t.kind != tEOF {
+		return nil, unexpected(t)
 	}
-	return left, nil
+	refs, ps := p.refs, p.params
+	if refs == nil {
+		refs = []string{}
+	}
+	if ps == nil {
+		ps = []string{}
+	}
+	return &Expr{root: root, Refs: refs, UsesValue: p.value, Params: ps}, nil
 }
 
-func (p *parser) parseAnd() (float64, error) {
-	left, err := p.parseCompare()
-	if err != nil {
-		return 0, err
-	}
-	for {
-		p.skipWS()
-		if p.pos+1 < len(p.src) && p.src[p.pos:p.pos+2] == "&&" {
-			p.pos += 2
-			right, err := p.parseCompare()
-			if err != nil {
-				return 0, err
-			}
-			if left != 0 && right != 0 {
-				left = 1
-			} else {
-				left = 0
-			}
-		} else {
-			break
-		}
-	}
-	return left, nil
+// Eval evaluates the expression. It returns the value (float64, bool or
+// string), or a non-empty reason when the result is unknown.
+func (e *Expr) Eval(env Env) (any, string) {
+	return e.root.eval(&env)
 }
 
-func (p *parser) parseCompare() (float64, error) {
-	left, err := p.parseAddSub()
-	if err != nil {
-		return 0, err
-	}
-	p.skipWS()
-	ops := []string{">=", "<=", "==", "!=", ">", "<"}
-	for _, op := range ops {
-		if strings.HasPrefix(p.src[p.pos:], op) {
-			p.pos += len(op)
-			right, err := p.parseAddSub()
-			if err != nil {
-				return 0, err
-			}
-			switch op {
-			case ">":
-				if left > right { return 1, nil }
-			case "<":
-				if left < right { return 1, nil }
-			case ">=":
-				if left >= right { return 1, nil }
-			case "<=":
-				if left <= right { return 1, nil }
-			case "==":
-				if left == right { return 1, nil }
-			case "!=":
-				if left != right { return 1, nil }
-			}
-			return 0, nil
-		}
-	}
-	return left, nil
+// ── nodes ───────────────────────────────────────────────────────────────────
+
+type node interface {
+	eval(env *Env) (any, string)
 }
 
-func (p *parser) parseAddSub() (float64, error) {
-	left, err := p.parseMulDiv()
-	if err != nil {
-		return 0, err
-	}
-	for {
-		c := p.peek()
-		if c != '+' && c != '-' {
-			break
-		}
-		p.consume()
-		right, err := p.parseMulDiv()
-		if err != nil {
-			return 0, err
-		}
-		if c == '+' {
-			left += right
-		} else {
-			left -= right
-		}
-	}
-	return left, nil
+type litNode struct{ v any }
+
+func (n *litNode) eval(*Env) (any, string) { return n.v, "" }
+
+type refNode struct {
+	key   string // between the braces; empty for value
+	value bool
 }
 
-func (p *parser) parseMulDiv() (float64, error) {
-	left, err := p.parseUnary()
-	if err != nil {
-		return 0, err
-	}
-	for {
-		c := p.peek()
-		if c != '*' && c != '/' {
-			break
+// lookup returns the input, or a reason when there is none.
+func (n *refNode) lookup(env *Env) (Input, string) {
+	if n.value {
+		if env.Value == nil {
+			return Input{}, "no widget value here"
 		}
-		p.consume()
-		right, err := p.parseUnary()
-		if err != nil {
-			return 0, err
+		in, ok := env.Value()
+		if !ok {
+			return Input{}, "input value has no value"
 		}
-		if c == '*' {
-			left *= right
-		} else {
-			if right == 0 {
-				return 0, fmt.Errorf("expr: division by zero")
-			}
-			left /= right
-		}
+		return in, ""
 	}
-	return left, nil
-}
-
-func (p *parser) parseUnary() (float64, error) {
-	p.skipWS()
-	if p.peek() == '-' {
-		p.consume()
-		v, err := p.parseAtom()
-		return -v, err
+	if env.Tag == nil {
+		return Input{}, n.name() + " has no value"
 	}
-	return p.parseAtom()
-}
-
-func (p *parser) parseAtom() (float64, error) {
-	p.skipWS()
-	if p.pos >= len(p.src) {
-		return 0, fmt.Errorf("expr: unexpected end of expression")
-	}
-
-	c := p.src[p.pos]
-
-	// Parenthesised expression
-	if c == '(' {
-		p.pos++
-		v, err := p.parseOr()
-		if err != nil {
-			return 0, err
-		}
-		if err := p.expect(')'); err != nil {
-			return 0, err
-		}
-		return v, nil
-	}
-
-	// Numeric literal
-	if c >= '0' && c <= '9' || c == '.' {
-		return p.parseNumber()
-	}
-
-	// Identifier: built-in function or tag reference
-	if unicode.IsLetter(rune(c)) || c == '_' {
-		return p.parseIdentOrFunc()
-	}
-
-	return 0, fmt.Errorf("expr: unexpected character %q at pos %d", c, p.pos)
-}
-
-func (p *parser) parseNumber() (float64, error) {
-	start := p.pos
-	for p.pos < len(p.src) {
-		c := p.src[p.pos]
-		if (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-' {
-			p.pos++
-		} else {
-			break
-		}
-	}
-	return strconv.ParseFloat(p.src[start:p.pos], 64)
-}
-
-func (p *parser) parseIdentOrFunc() (float64, error) {
-	start := p.pos
-	for p.pos < len(p.src) {
-		c := p.src[p.pos]
-		if unicode.IsLetter(rune(c)) || c == '_' || c == '.' || (c >= '0' && c <= '9') {
-			p.pos++
-		} else {
-			break
-		}
-	}
-	name := p.src[start:p.pos]
-
-	p.skipWS()
-	if p.pos < len(p.src) && p.src[p.pos] == '(' {
-		return p.callBuiltin(name)
-	}
-
-	// Tag reference
-	v, ok := p.lookup(name)
+	in, ok := env.Tag(n.key)
 	if !ok {
-		return 0, fmt.Errorf("expr: unknown tag %q", name)
+		return Input{}, n.name() + " has no value"
 	}
-	return v, nil
+	return in, ""
 }
 
-func (p *parser) callBuiltin(name string) (float64, error) {
-	p.pos++ // consume '('
-	var args []float64
-	for {
-		p.skipWS()
-		if p.peek() == ')' {
-			p.consume()
-			break
-		}
-		if len(args) > 0 {
-			if p.peek() != ',' {
-				return 0, fmt.Errorf("expr: expected ',' in argument list")
-			}
-			p.consume()
-		}
-		v, err := p.parseOr()
-		if err != nil {
-			return 0, err
-		}
-		args = append(args, v)
+func (n *refNode) name() string {
+	if n.value {
+		return "input value"
 	}
+	return "input {" + n.key + "}"
+}
 
-	switch strings.ToLower(name) {
-	case "average", "avg":
-		if len(args) == 0 {
-			return 0, fmt.Errorf("expr: Average requires at least 1 argument")
-		}
-		sum := 0.0
-		for _, a := range args {
-			sum += a
-		}
-		return sum / float64(len(args)), nil
-
-	case "min":
-		if len(args) == 0 {
-			return 0, fmt.Errorf("expr: Min requires at least 1 argument")
-		}
-		m := args[0]
-		for _, a := range args[1:] {
-			if a < m {
-				m = a
-			}
-		}
-		return m, nil
-
-	case "max":
-		if len(args) == 0 {
-			return 0, fmt.Errorf("expr: Max requires at least 1 argument")
-		}
-		m := args[0]
-		for _, a := range args[1:] {
-			if a > m {
-				m = a
-			}
-		}
-		return m, nil
-
-	case "sum":
-		s := 0.0
-		for _, a := range args {
-			s += a
-		}
-		return s, nil
-
-	case "if":
-		if len(args) != 3 {
-			return 0, fmt.Errorf("expr: If(cond,then,else) requires 3 arguments")
-		}
-		if args[0] != 0 {
-			return args[1], nil
-		}
-		return args[2], nil
-
-	case "clamp":
-		if len(args) != 3 {
-			return 0, fmt.Errorf("expr: Clamp(val,min,max) requires 3 arguments")
-		}
-		v := args[0]
-		if v < args[1] {
-			return args[1], nil
-		}
-		if v > args[2] {
-			return args[2], nil
-		}
-		return v, nil
-
-	case "abs":
-		if len(args) != 1 {
-			return 0, fmt.Errorf("expr: Abs requires 1 argument")
-		}
-		return math.Abs(args[0]), nil
-
-	case "round":
-		if len(args) != 1 {
-			return 0, fmt.Errorf("expr: Round requires 1 argument")
-		}
-		return math.Round(args[0]), nil
-
-	case "sqrt":
-		if len(args) != 1 {
-			return 0, fmt.Errorf("expr: Sqrt requires 1 argument")
-		}
-		return math.Sqrt(args[0]), nil
-
-	default:
-		return 0, fmt.Errorf("expr: unknown function %q", name)
+func (n *refNode) eval(env *Env) (any, string) {
+	in, why := n.lookup(env)
+	if why != "" {
+		return nil, why
 	}
+	if in.Quality == "Bad" {
+		return nil, n.name() + " is Bad"
+	}
+	v, ok := normalize(in.Value)
+	switch {
+	case in.Value == nil:
+		return nil, n.name() + " has no value"
+	case !ok:
+		return nil, n.name() + " has an unsupported value"
+	}
+	if f, isNum := v.(float64); isNum && (math.IsNaN(f) || math.IsInf(f, 0)) {
+		return nil, n.name() + " is not a finite number"
+	}
+	return v, ""
+}
+
+// good reports whether the input is there and Good.
+func (n *refNode) good(env *Env) bool {
+	in, why := n.lookup(env)
+	return why == "" && in.Quality == "Good" && in.Value != nil
+}
+
+// normalize turns a driver value into float64, bool or string.
+func normalize(v any) (any, bool) {
+	switch x := v.(type) {
+	case float64, bool, string:
+		return x, true
+	case float32:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	case int8:
+		return float64(x), true
+	case int16:
+		return float64(x), true
+	case int32:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	case uint:
+		return float64(x), true
+	case uint8:
+		return float64(x), true
+	case uint16:
+		return float64(x), true
+	case uint32:
+		return float64(x), true
+	case uint64:
+		return float64(x), true
+	case json.Number:
+		f, err := x.Float64()
+		return f, err == nil
+	}
+	return nil, false
+}
+
+type unaryNode struct {
+	op string
+	x  node
+}
+
+func (n *unaryNode) eval(env *Env) (any, string) {
+	v, why := n.x.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	if n.op == "!" {
+		return !truthy(v), ""
+	}
+	f, ok := num(v)
+	if !ok {
+		return nil, "- needs a number, got " + typeName(v)
+	}
+	return -f, ""
+}
+
+type logicNode struct {
+	or   bool
+	l, r node
+}
+
+func (n *logicNode) eval(env *Env) (any, string) {
+	l, why := n.l.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	if truthy(l) == n.or {
+		return n.or, ""
+	}
+	r, why := n.r.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	return truthy(r), ""
+}
+
+type condNode struct{ c, a, b node }
+
+func (n *condNode) eval(env *Env) (any, string) {
+	c, why := n.c.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	if truthy(c) {
+		return n.a.eval(env)
+	}
+	return n.b.eval(env)
+}
+
+type binNode struct {
+	op   string
+	l, r node
+}
+
+func (n *binNode) eval(env *Env) (any, string) {
+	l, why := n.l.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	r, why := n.r.eval(env)
+	if why != "" {
+		return nil, why
+	}
+	switch n.op {
+	case "==":
+		return equal(l, r), ""
+	case "!=":
+		return !equal(l, r), ""
+	case "<", "<=", ">", ">=":
+		c, why := compare(l, r)
+		if why != "" {
+			return nil, why
+		}
+		switch n.op {
+		case "<":
+			return c < 0, ""
+		case "<=":
+			return c <= 0, ""
+		case ">":
+			return c > 0, ""
+		}
+		return c >= 0, ""
+	case "+":
+		_, ls := l.(string)
+		_, rs := r.(string)
+		if ls || rs {
+			return toString(l) + toString(r), ""
+		}
+	}
+	a, aok := num(l)
+	b, bok := num(r)
+	if !aok || !bok {
+		bad := l
+		if aok {
+			bad = r
+		}
+		return nil, n.op + " needs numbers, got " + typeName(bad)
+	}
+	var v float64
+	switch n.op {
+	case "+":
+		v = a + b
+	case "-":
+		v = a - b
+	case "*":
+		v = a * b
+	case "/", "%":
+		if b == 0 {
+			return nil, "division by zero"
+		}
+		if n.op == "/" {
+			v = a / b
+		} else {
+			v = math.Mod(a, b)
+		}
+	}
+	return finite(v)
+}
+
+type callNode struct {
+	name string
+	fn   *function
+	args []node
+}
+
+func (n *callNode) eval(env *Env) (any, string) {
+	if n.fn.tag {
+		return n.args[0].(*refNode).good(env), ""
+	}
+	vals := make([]any, len(n.args))
+	for i, a := range n.args {
+		v, why := a.eval(env)
+		if why != "" {
+			return nil, why
+		}
+		vals[i] = v
+	}
+	return n.fn.eval(n.name, vals)
+}
+
+// ── value rules ─────────────────────────────────────────────────────────────
+
+// num reads a number; booleans count as 0 and 1, because PLC BOOLs arrive
+// as either.
+func num(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case bool:
+		if x {
+			return 1, true
+		}
+		return 0, true
+	}
+	return 0, false
+}
+
+func truthy(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case float64:
+		return x != 0
+	case string:
+		return x != ""
+	}
+	return false
+}
+
+func typeName(v any) string {
+	switch v.(type) {
+	case float64:
+		return "number"
+	case bool:
+		return "boolean"
+	}
+	return "string"
+}
+
+// equal never converts between strings and numbers.
+func equal(l, r any) bool {
+	ls, lStr := l.(string)
+	rs, rStr := r.(string)
+	if lStr || rStr {
+		return lStr && rStr && ls == rs
+	}
+	a, _ := num(l)
+	b, _ := num(r)
+	return a == b
+}
+
+// compare orders two numbers (booleans count) or two strings by code point.
+func compare(l, r any) (int, string) {
+	ls, lStr := l.(string)
+	rs, rStr := r.(string)
+	if lStr && rStr {
+		return strings.Compare(ls, rs), "" // UTF-8 byte order is code point order
+	}
+	if lStr || rStr {
+		return 0, "cannot compare " + typeName(l) + " with " + typeName(r)
+	}
+	a, _ := num(l)
+	b, _ := num(r)
+	switch {
+	case a < b:
+		return -1, ""
+	case a > b:
+		return 1, ""
+	}
+	return 0, ""
+}
+
+func finite(v float64) (any, string) {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return nil, "result is not a finite number"
+	}
+	return v, ""
+}
+
+func toString(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case bool:
+		if x {
+			return "true"
+		}
+		return "false"
+	}
+	return numString(v.(float64))
 }

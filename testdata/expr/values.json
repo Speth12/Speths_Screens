@@ -1,0 +1,28 @@
+[
+  { "expr": "42", "want": 42 },
+  { "expr": "3.25", "want": 3.25 },
+  { "expr": "1e3", "want": 1000 },
+  { "expr": "2.5E-3", "want": 0.0025 },
+  { "expr": "0xFF", "want": 255 },
+  { "expr": "0x10", "want": 16 },
+  { "expr": "true", "want": true },
+  { "expr": "false", "want": false },
+  { "expr": "\"pump\"", "want": "pump" },
+  { "expr": "'pump'", "want": "pump" },
+  { "expr": "\"say \\\"hi\\\"\"", "want": "say \"hi\"" },
+  { "expr": "'it\\'s'", "want": "it's" },
+  { "expr": "\"a\\nb\\tc\\\\\"", "want": "a\nb\tc\\" },
+  { "expr": "\"Grüße\"", "want": "Grüße" },
+  { "expr": "  7  ", "want": 7 },
+  { "expr": "\n7\t", "want": 7 },
+
+  { "expr": "{ns:Tank1/Level}", "tags": { "ns:Tank1/Level": 61.5 }, "want": 61.5, "refs": ["ns:Tank1/Level"] },
+  { "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read}", "tags": { "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read": 123 }, "want": 123,
+    "refs": ["opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"] },
+  { "expr": "{rest:Arp.Plc.Eclr/sREST_Read}", "tags": { "rest:Arp.Plc.Eclr/sREST_Read": "test" }, "want": "test" },
+  { "expr": "{ns:Run}", "tags": { "ns:Run": true }, "want": true },
+  { "expr": "{ns:a} + {ns:b} + {ns:a}", "tags": { "ns:a": 1, "ns:b": 2 }, "want": 4, "refs": ["ns:a", "ns:b"] },
+  { "expr": "{ns:a}", "tags": { "ns:a": { "value": 5, "quality": "Uncertain" } }, "want": 5 },
+  { "expr": "value", "value": 12, "want": 12, "refs": [], "usesValue": true },
+  { "expr": "value * 2 + {ns:a}", "value": 3, "tags": { "ns:a": 1 }, "want": 7, "refs": ["ns:a"], "usesValue": true }
+]

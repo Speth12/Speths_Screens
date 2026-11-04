@@ -3,13 +3,14 @@
 // navigation, the runtime API, alarms, images, faceplates) comes from the
 // WidgetHost the app provides (host.tsx). Widgets use format v2: settings in
 // props (typed per widget type), tags in bindings, actions in events.
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  Action, ButtonColor, Dynamic, FaceplateWidget, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
+  Action, ButtonColor, FaceplateWidget, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
+import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
 import { DEFAULT_STATES } from "./manifests";
@@ -96,21 +97,6 @@ export function KeypadModal({
   );
 }
 
-// ── Script expression evaluator ───────────────────────────────────────────
-// Uses new Function on project-written expressions: on the dead-ends list
-// and scheduled for removal in Phase 3 (one expression language, no eval).
-
-function evalExpression(expr: string, value: unknown): unknown {
-  try {
-    return new Function("value", `"use strict"; return (${expr})`)(value);
-  } catch {
-    return false;
-  }
-}
-
-// Context carries script-dynamic overrides (frame setting → value) from DynamicsApplicator into Frame
-const ScriptOverrideContext = createContext<Record<string, unknown>>({});
-
 // ── Typography helper ──────────────────────────────────────────────────────
 
 const FONT_SIZE_MAP: Record<string, string> = {
@@ -159,15 +145,13 @@ export function resolveColor(value: unknown, thresholds: Threshold[]): string | 
 const NO_THRESHOLDS: Threshold[] = [];
 
 function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const overrides = useContext(ScriptOverrideContext);
+  // Driven properties are already in w.props (DriveApplicator).
   const p: FrameProps = w.props ?? {};
   const colorThresholds = p.colorThresholds ?? NO_THRESHOLDS;
   const colorTag = useTag(colorThresholds.length ? (w.bindings?.color || w.bindings?.value) : undefined);
   const dynColor = resolveColor(colorTag.value, colorThresholds);
 
-  const bgColor = (overrides.bgColor as string | undefined) ?? p.bgColor;
-  const borderColor = (overrides.borderColor as string | undefined) ?? p.borderColor;
-  const textColor = (overrides.textColor as string | undefined) ?? p.textColor;
+  const { bgColor, borderColor, textColor } = p;
 
   const isTransparent = bgColor === "none" || bgColor === "transparent";
 
@@ -175,16 +159,18 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     background: isTransparent ? "transparent" : bgColor ?? "var(--card)",
     borderColor: dynColor ?? (borderColor === "none" ? "transparent" : borderColor ?? "var(--border)"),
     border: dynColor ? `2px solid ${dynColor}` : undefined,
-    boxShadow: dynColor ? `0 0 8px ${dynColor}44` : undefined,
+    boxShadow: dynColor ? `0 0 8px ${dynColor}44` : "var(--shadow, none)",
+    borderRadius: "var(--radius, 0.5rem)",
+    padding: p.noPadding ? 0 : "var(--pad, 0.75rem)",
     color: textColor ?? "var(--card-foreground)",
   };
   if (!dynColor && !bgColor) {
-    style.border = "1px solid var(--border)";
+    style.border = "var(--line-width, 1px) solid var(--border)";
   }
 
   return (
     <div
-      className={`h-full w-full rounded-lg flex flex-col gap-1 select-none transition-colors overflow-hidden ${p.noPadding ? "" : "p-3"}`}
+      className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
       style={style}
     >
       {p.label && (
@@ -974,7 +960,9 @@ function resolveInner(fw: FaceplateWidget, params: Record<string, string>): Widg
   const events: WidgetEvents | undefined = fw.events && Object.fromEntries(
     Object.entries(fw.events).map(([k, list]) => [k, (list as Action[]).map((a) => (a.tag ? { ...a, tag: rb(a.tag) } : a))]),
   );
-  const dynamics = fw.dynamics?.map((d) => (d.binding ? { ...d, binding: rb(d.binding) } : d));
+  const dynamics = fw.dynamics && Object.fromEntries(
+    Object.entries(fw.dynamics).map(([k, d]) => [k, { ...d, expr: rewriteExpr(d.expr, params) }]),
+  );
   const { localId, ...rest } = fw;
   return { ...rest, id: localId, bindings, events, dynamics } as Widget;
 }
@@ -1227,66 +1215,39 @@ function actionTags(w: Widget): string[] {
   return out;
 }
 
-// ── Dynamics and events ────────────────────────────────────────────────────
+// ── Driven properties and events ───────────────────────────────────────────
 
-const NO_DYNAMICS: Dynamic[] = [];
+/** Properties the applicator itself acts on; every other driven property
+ *  goes into the widget's props, where the frame and the widget read it. */
+const APPLICATOR_PROPS = new Set(["visible", "disabled", "opacity", "rotate", "blink"]);
 
-/** Applies a widget's visual dynamics and runs its events: onPress and
- *  onRelease write at once (momentary), onClick goes through requestWrite. */
-function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactNode }) {
-  const dynamics = w.dynamics ?? NO_DYNAMICS;
+/** Applies a widget's driven properties and runs its events: onPress and
+ *  onRelease write at once (momentary), onClick goes through requestWrite.
+ *  children gets the widget with its driven settings in props. */
+function DriveApplicator({ w, children }: { w: Widget; children: (w: Widget) => React.ReactNode }) {
   const host = useHost();
   const pressed = useRef(false);
+  const driven = useDrives(w);
+  const tags = useMemo(() => [...new Set(actionTags(w))], [w]);
+  const tagVals = useTags(tags);
 
-  const bindings = useMemo(() =>
-    [...new Set([...dynamics.map((d) => d.binding).filter(Boolean) as string[], ...actionTags(w)])],
-    [dynamics, w]
-  );
-  const tagVals = useTags(bindings);
-
-  // Blink state
-  const [blinkVisible, setBlinkVisible] = useState(true);
-  const blinkDyn = dynamics.find((d) => d.kind === "blink" && d.binding && !!tagVals[d.binding]?.value);
+  const p = (w.props ?? {}) as FrameProps;
+  const blinking = driven.blink === true;
+  const [blinkOn, setBlinkOn] = useState(true);
+  const half = (p.blinkPeriodMs ?? 800) / 2;
   useEffect(() => {
-    if (!blinkDyn) { setBlinkVisible(true); return; }
-    const half = (blinkDyn.blinkPeriodMs ?? 800) / 2;
-    const iv = setInterval(() => setBlinkVisible((v) => !v), half);
+    if (!blinking) { setBlinkOn(true); return; }
+    const iv = setInterval(() => setBlinkOn((v) => !v), half);
     return () => clearInterval(iv);
-  }, [blinkDyn?.id, blinkDyn?.blinkPeriodMs, !!blinkDyn]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [blinking, half]);
 
-  // Derive property dynamic values
-  let hidden = false;
-  let rotationDeg = 0;
-  let disabled = false;
-  let ringColor: string | undefined;
-  const scriptOverrides: Record<string, unknown> = {};
+  const key = JSON.stringify(driven);
+  const shown = useMemo(() => {
+    const props: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(driven)) if (!APPLICATOR_PROPS.has(k)) props[k] = v;
+    return Object.keys(props).length ? ({ ...w, props: { ...w.props, ...props } } as Widget) : w;
+  }, [w, key]); // eslint-disable-line react-hooks/exhaustive-deps -- key stands for driven
 
-  for (const d of dynamics) {
-    const rawVal = d.binding ? tagVals[d.binding]?.value : undefined;
-    const truthy = !!rawVal;
-    if (d.kind === "visibility" && d.binding && !truthy) { hidden = true; break; }
-    if (d.kind === "disable"    && d.binding && truthy)  disabled = true;
-    if (d.kind === "colorFill"  && d.binding) {
-      ringColor = truthy ? (d.trueColor ?? "#22c55e") : (d.falseColor ?? "#3f3f46");
-    }
-    if (d.kind === "rotation" && d.binding) {
-      const num = typeof rawVal === "number" ? rawVal : 0;
-      const vMin = d.minValue ?? 0, vMax = d.maxValue ?? 100;
-      const aMin = d.minAngle ?? -90, aMax = d.maxAngle ?? 90;
-      const frac = Math.max(0, Math.min(1, (num - vMin) / (vMax - vMin)));
-      rotationDeg = aMin + frac * (aMax - aMin);
-    }
-    if (d.kind === "script" && d.binding && d.targetProp) {
-      const result = evalExpression(d.expression ?? "value", rawVal);
-      if (d.targetProp === "visible") { if (!result) hidden = true; }
-      else {
-        const applied = result ? (d.trueValue ?? "") : (d.falseValue ?? "");
-        if (applied !== "") scriptOverrides[d.targetProp] = applied;
-      }
-    }
-  }
-
-  // Callbacks must be declared unconditionally before any early return (Rules of Hooks)
   const events = w.events;
   const run = useCallback((actions: Action[] | undefined, momentary: boolean) => {
     for (const a of actions ?? []) {
@@ -1306,31 +1267,35 @@ function DynamicsApplicator({ w, children }: { w: Widget; children: React.ReactN
   const hasClick = !!events?.onClick?.length;
   const hasPress = !!(events?.onPress?.length || events?.onRelease?.length);
 
-  if (hidden) return null;
+  if (driven.visible === false) return null;
+  const disabled = driven.disabled === true;
+  const rotate = typeof driven.rotate === "number" ? driven.rotate : 0;
+  const opacity = typeof driven.opacity === "number" ? Math.max(0, Math.min(1, driven.opacity)) : 1;
+  // Blinking flashes the blink color when there is one, else fades the widget.
+  const flash = blinking && blinkOn && p.blinkColor ? p.blinkColor : undefined;
+  const faded = blinking && !blinkOn && !p.blinkColor;
 
   return (
-    <ScriptOverrideContext.Provider value={scriptOverrides}>
-      <div
-        className="relative w-full h-full"
-        style={{
-          transform: rotationDeg ? `rotate(${rotationDeg.toFixed(1)}deg)` : undefined,
-          opacity: blinkDyn && !blinkVisible ? 0 : 1,
-          pointerEvents: disabled ? "none" : undefined,
-          cursor: (hasClick || hasPress) ? "pointer" : undefined,
-          outline: ringColor ? `2px solid ${ringColor}` : undefined,
-          outlineOffset: "-2px",
-          borderRadius: "0.5rem",
-          transition: "opacity 0.05s, outline-color 0.2s",
-        }}
-        onClick={hasClick ? () => run(events?.onClick, false) : undefined}
-        onPointerDown={hasPress ? () => { pressed.current = true; run(events?.onPress, true); } : undefined}
-        onPointerUp={hasPress ? release : undefined}
-        onPointerLeave={hasPress ? release : undefined}
-      >
-        {disabled && <div className="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none" />}
-        {children}
-      </div>
-    </ScriptOverrideContext.Provider>
+    <div
+      className="relative w-full h-full"
+      style={{
+        transform: rotate ? `rotate(${rotate.toFixed(1)}deg)` : undefined,
+        opacity: faded ? 0 : opacity,
+        pointerEvents: disabled ? "none" : undefined,
+        cursor: (hasClick || hasPress) ? "pointer" : undefined,
+        outline: flash ? `2px solid ${flash}` : undefined,
+        outlineOffset: "-2px",
+        borderRadius: "var(--radius, 0.5rem)",
+        transition: "opacity 0.05s, outline-color 0.2s",
+      }}
+      onClick={hasClick ? () => run(events?.onClick, false) : undefined}
+      onPointerDown={hasPress ? () => { pressed.current = true; run(events?.onPress, true); } : undefined}
+      onPointerUp={hasPress ? release : undefined}
+      onPointerLeave={hasPress ? release : undefined}
+    >
+      {disabled && <div className="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none" />}
+      {children(shown)}
+    </div>
   );
 }
 
@@ -1340,9 +1305,9 @@ export function WidgetRenderer({ w }: { w: Widget }) {
   ));
   return (
     <VisibilityGate w={w}>
-      <DynamicsApplicator w={w}>
-        <Frame w={w}><R w={w} /></Frame>
-      </DynamicsApplicator>
+      <DriveApplicator w={w}>
+        {(shown) => <Frame w={shown}><R w={shown} /></Frame>}
+      </DriveApplicator>
     </VisibilityGate>
   );
 }

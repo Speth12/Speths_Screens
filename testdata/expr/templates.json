@@ -1,0 +1,11 @@
+[
+  { "expr": "{run} && {ns:Plant/Auto}", "template": true, "tags": { "run": true, "ns:Plant/Auto": 1 }, "want": true,
+    "refs": ["ns:Plant/Auto"], "params": ["run"] },
+  { "expr": "{speed} * 2 + {speed}", "template": true, "tags": { "speed": 3 }, "want": 9, "refs": [], "params": ["speed"] },
+  { "expr": "{speed} * 2", "template": true, "unknown": "input {speed} has no value", "params": ["speed"] },
+  { "expr": "good({run})", "template": true, "want": false, "params": ["run"] },
+  { "expr": "{run} {x}", "template": true, "error": "unexpected tag {x} at column 7" },
+  { "expr": "{run} +", "template": true, "error": "unexpected end of expression" },
+  { "expr": "{my run}", "template": true, "error": "not a tag: {my run} (tags are written {ns:path} or {datasource:path}) at column 1" },
+  { "expr": "{run}", "error": "not a tag: {run} (tags are written {ns:path} or {datasource:path}) at column 1" }
+]

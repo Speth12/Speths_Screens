@@ -57,11 +57,18 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			source: SourceScreens, want: "plc:P",
 		},
 		{
-			name: "dynamic binding",
+			name: "driven property",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
-				Dynamics: []project.DynamicElement{{ID: "d", Kind: project.Blink, Binding: strp("plc:D")}},
+				Dynamics: map[string]project.Drive{"blink": {Expr: "{plc:D} && good({ns:E})"}},
 			}}}}},
 			source: SourceScreens, want: "plc:D",
+		},
+		{
+			name: "driven property, second tag",
+			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
+				Dynamics: map[string]project.Drive{"blink": {Expr: "{plc:D} && good({ns:E})"}},
+			}}}}},
+			source: SourceScreens, want: "ns:E",
 		},
 		{
 			name: "action tag",
@@ -87,14 +94,14 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 		},
 		{
 			name:   "alarm rule",
-			p:      project.Project{AlarmRules: []project.AlarmRule{{Binding: "plc:AL"}}},
+			p:      project.Project{AlarmRules: []project.AlarmRule{{Expr: "{plc:X} > 1 && {plc:AL}"}}},
 			source: SourceAlarms, want: "plc:AL",
 		},
 		{
 			name: "calculated tag input",
 			p: project.Project{Datasources: []project.Datasource{{
 				ID: "calc", Type: project.DatasourceTypeVirtual,
-				Config: project.DatasourceConfig{Tags: strp(`[{"path":"f","formula":"{plc:IN} * 9/5 + 32"}]`)},
+				Config: project.DatasourceConfig{Tags: []project.CalculatedTag{{Path: "f", Expr: "{plc:IN} * 9/5 + 32"}}},
 			}}},
 			source: SourceCalculated, want: "plc:IN",
 		},

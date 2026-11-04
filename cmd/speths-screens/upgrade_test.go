@@ -19,17 +19,17 @@ func TestRunUpgrade(t *testing.T) {
 		code    int
 		stdout  string
 		stderr  string
-		written string // file that must hold the v2 project
+		written string // file that must hold the current project
 		backup  bool
 	}{
 		{"in place, keeping a backup", v1Doc, func(_, f string) []string { return []string{f} }, 0,
 			"dropped setting decimals", "", "project.json", true},
 		{"to another file", v1Doc, func(d, f string) []string { return []string{"-o", filepath.Join(d, "v2.json"), f} }, 0,
 			"wrote", "", "v2.json", false},
-		{"already current", `{"schemaVersion":2,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}]}`,
-			func(_, f string) []string { return []string{f} }, 0, "already format 2", "", "", false},
+		{"already current", `{"schemaVersion":3,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}]}`,
+			func(_, f string) []string { return []string{f} }, 0, "already format 3", "", "", false},
 		{"newer format", `{"schemaVersion":7}`, func(_, f string) []string { return []string{f} }, 1,
-			"", "reads up to 2", "", false},
+			"", "reads up to 3", "", false},
 		{"upgraded project that does not validate", `{"version":"1","datasources":[],"pages":[]}`,
 			func(_, f string) []string { return []string{f} }, 1, "", "not written", "", false},
 		{"no file", v1Doc, func(_, _ string) []string { return nil }, 2, "", "usage", "", false},
@@ -53,8 +53,8 @@ func TestRunUpgrade(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if !strings.Contains(string(got), `"schemaVersion": 2`) || !strings.Contains(string(got), `"bindings"`) {
-					t.Errorf("%s is not the v2 project:\n%s", tc.written, got)
+				if !strings.Contains(string(got), `"schemaVersion": 3`) || !strings.Contains(string(got), `"bindings"`) {
+					t.Errorf("%s is not the v3 project:\n%s", tc.written, got)
 				}
 			} else if tc.code != 0 {
 				if got, _ := os.ReadFile(file); string(got) != tc.doc {

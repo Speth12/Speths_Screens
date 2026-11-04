@@ -10,3 +10,10 @@ export * from "./symbols";
 export type { Field, FieldKind, WidgetManifest, BindingSlot, WidgetEvent } from "./manifest";
 export { MANIFESTS, FRAME_SETTINGS, DEFAULT_STATES, manifestFor, type SettingsGroup } from "./manifests";
 export { BUILTIN_PRESETS } from "./presets";
+export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
+export {
+  THEMES, HIGH_PERFORMANCE, DEFAULT_THEME_ID, COLOR_TOKENS, themeById, themeVars, themeStyle, applyTheme, tokenColor,
+  type Theme, type ThemeColors,
+} from "./tokens";
+export { Gallery, GALLERY_STATES, galleryCell, galleryInsert, type GalleryState } from "./gallery";
+export type { GallerySample } from "./manifest";

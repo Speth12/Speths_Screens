@@ -1,0 +1,24 @@
+[
+  { "expr": "{ns:a}", "tags": { "ns:a": { "value": 4, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "{ns:a} + 1", "tags": { "ns:a": { "value": 4, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "{ns:a}", "unknown": "input {ns:a} has no value" },
+  { "expr": "{ns:a}", "tags": { "ns:a": null }, "unknown": "input {ns:a} has no value" },
+  { "expr": "{ns:a}", "tags": { "ns:a": { "value": null, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "{ns:a}", "tags": { "ns:a": [1, 2] }, "unknown": "input {ns:a} has an unsupported value" },
+  { "expr": "{ns:a}", "tags": { "ns:a": { "value": { "x": 1 }, "quality": "Good" } }, "unknown": "input {ns:a} has an unsupported value" },
+  { "expr": "{ns:a} + {ns:b}", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "{ns:b} + {ns:a}", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "unknown": "input {ns:b} has no value" },
+  { "expr": "value", "value": { "value": 1, "quality": "Bad" }, "unknown": "input value is Bad", "usesValue": true },
+  { "expr": "value", "unknown": "no widget value here", "usesValue": true },
+
+  { "expr": "false && {ns:a}", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "want": false },
+  { "expr": "true || {ns:a}", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "want": true },
+  { "expr": "true && {ns:a}", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "{ns:a} && false", "tags": { "ns:a": { "value": 1, "quality": "Bad" } }, "unknown": "input {ns:a} is Bad" },
+  { "expr": "good({ns:a}) && {ns:a} > 5", "tags": { "ns:a": { "value": 9, "quality": "Bad" } }, "want": false },
+  { "expr": "good({ns:a}) && {ns:a} > 5", "tags": { "ns:a": 9 }, "want": true },
+  { "expr": "good({ns:a}) ? {ns:a} : 0", "tags": { "ns:a": { "value": 9, "quality": "Bad" } }, "want": 0 },
+  { "expr": "{ns:c} ? 1 : 2", "tags": { "ns:c": { "value": 1, "quality": "Bad" } }, "unknown": "input {ns:c} is Bad" },
+  { "expr": "true ? 1 : {ns:a}", "want": 1 },
+  { "expr": "max(1, {ns:a})", "unknown": "input {ns:a} has no value" }
+]

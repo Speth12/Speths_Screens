@@ -1,7 +1,7 @@
 // One manifest per widget type, plus the frame settings every widget has.
 // Defaults here match what the widgets draw when a setting is unset.
 import type { WidgetType } from "@speths-screens/shared-types";
-import type { BindingSlot, Field, WidgetManifest } from "./manifest";
+import type { BindingSlot, Field, GallerySample, WidgetManifest } from "./manifest";
 
 type Config = Record<string, unknown>;
 
@@ -39,8 +39,29 @@ export const DEFAULT_STATES = [
 const tag = { name: "value", label: "Tag" } as const;
 const ALL_EVENTS = ["onClick", "onPress", "onRelease"] as const;
 
+/** What the widget gallery shows each widget type with. */
+const SAMPLES: Record<WidgetType, GallerySample> = {
+  gauge:          { value: 62, numeric: true, props: { min: 0, max: 100, unit: "%", label: "Level" } },
+  numericDisplay: { value: 62.5, numeric: true, props: { unit: "bar", label: "Pressure" } },
+  textDisplay:    { props: { staticText: "Pump 1", label: "Name" } },
+  led:            { value: true, on: true, off: false, props: { trueLabel: "ON", falseLabel: "OFF", label: "Run" } },
+  tank:           { value: 62, numeric: true, props: { min: 0, max: 100, unit: "%", label: "Tank" } },
+  button:         { value: false, on: true, off: false, props: { label: "Start" } },
+  setpoint:       { value: 62, numeric: true, props: { min: 0, max: 100, unit: "°C", label: "Setpoint" } },
+  multiState:     { value: 1, on: 1, off: 0, props: { label: "Pump" } },
+  trend:          { props: { label: "Trend" } },
+  numericInput:   { value: 62, numeric: true, props: { unit: "bar", label: "Pressure" } },
+  textInput:      { value: "Batch 7", props: { label: "Batch" } },
+  historyLog:     { props: { label: "History" } },
+  alarmBanner:    { props: { label: "Alarms" } },
+  image:          { props: { label: "Image" } },
+  faceplate:      { props: { label: "Faceplate" } },
+  table:          { props: { label: "Table" } },
+  symbol:         { value: true, on: true, off: false, props: { symbolId: "gate-valve", label: "Valve" } },
+};
+
 function widget(type: WidgetType, label: string, w: number, h: number, settings: Field[], opts: Partial<WidgetManifest> = {}): WidgetManifest {
-  return { type, label, defaultSize: { w, h }, bindings: [tag], events: [...ALL_EVENTS], settings, ...opts };
+  return { type, label, defaultSize: { w, h }, bindings: [tag], events: [...ALL_EVENTS], settings, sample: SAMPLES[type], ...opts };
 }
 
 /** In palette order. */
@@ -177,5 +198,9 @@ export const FRAME_SETTINGS: SettingsGroup[] = [
     { key: "textAlign", label: "Align", kind: "choice", default: "left",
       options: [{ value: "left" }, { value: "center" }, { value: "right" }] },
     { key: "textColor", label: "Text color", kind: "color", optional: true, default: "#e4e4e7" },
+  ] },
+  { title: "Blinking (while the blink property is driven on)", fields: [
+    { key: "blinkPeriodMs", label: "Period (ms)", kind: "number", default: 800, half: true },
+    { key: "blinkColor", label: "Flash color (blank fades the widget)", kind: "color", optional: true, default: "#ef4444", half: true },
   ] },
 ];

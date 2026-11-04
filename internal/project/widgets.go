@@ -21,10 +21,14 @@ type GaugeProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	Min             *float64    `json:"min,omitempty"`
-	Max             *float64    `json:"max,omitempty"`
-	Unit            *string     `json:"unit,omitempty"`
-	Thresholds      []Threshold `json:"thresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string     `json:"blinkColor,omitempty"`
+	Min        *float64    `json:"min,omitempty"`
+	Max        *float64    `json:"max,omitempty"`
+	Unit       *string     `json:"unit,omitempty"`
+	Thresholds []Threshold `json:"thresholds,omitempty"`
 }
 
 // NumericDisplayProps holds the settings of a numericDisplay widget.
@@ -46,9 +50,13 @@ type NumericDisplayProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	Min             *float64    `json:"min,omitempty"`
-	Max             *float64    `json:"max,omitempty"`
-	Unit            *string     `json:"unit,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string  `json:"blinkColor,omitempty"`
+	Min        *float64 `json:"min,omitempty"`
+	Max        *float64 `json:"max,omitempty"`
+	Unit       *string  `json:"unit,omitempty"`
 }
 
 // TextDisplayProps holds the settings of a textDisplay widget.
@@ -70,6 +78,10 @@ type TextDisplayProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// TextDisplay: fixed text shown instead of a tag value
 	StaticText *string `json:"staticText,omitempty"`
 }
@@ -93,6 +105,10 @@ type LedProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED color when false
@@ -122,10 +138,14 @@ type TankProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	Min             *float64    `json:"min,omitempty"`
-	Max             *float64    `json:"max,omitempty"`
-	Unit            *string     `json:"unit,omitempty"`
-	Thresholds      []Threshold `json:"thresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string     `json:"blinkColor,omitempty"`
+	Min        *float64    `json:"min,omitempty"`
+	Max        *float64    `json:"max,omitempty"`
+	Unit       *string     `json:"unit,omitempty"`
+	Thresholds []Threshold `json:"thresholds,omitempty"`
 }
 
 // ButtonProps holds the settings of a button widget.
@@ -146,10 +166,14 @@ type ButtonProps struct {
 	// Show the tag quality indicator
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
-	ColorThresholds []Threshold    `json:"colorThresholds,omitempty"`
-	BtnVariant      *ButtonVariant `json:"btnVariant,omitempty"`
-	BtnColor        *ButtonColor   `json:"btnColor,omitempty"`
-	BtnRounded      *ButtonRounded `json:"btnRounded,omitempty"`
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string        `json:"blinkColor,omitempty"`
+	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
+	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
+	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
 	// Button icon (emoji or short text)
 	Icon *string `json:"icon,omitempty"`
 	// Toggle button color when on
@@ -177,9 +201,13 @@ type SetpointProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	Min             *float64    `json:"min,omitempty"`
-	Max             *float64    `json:"max,omitempty"`
-	Unit            *string     `json:"unit,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string  `json:"blinkColor,omitempty"`
+	Min        *float64 `json:"min,omitempty"`
+	Max        *float64 `json:"max,omitempty"`
+	Unit       *string  `json:"unit,omitempty"`
 	// Setpoint slider step
 	Step *float64 `json:"step,omitempty"`
 }
@@ -203,6 +231,10 @@ type MultiStateProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// MultiState value→label→color map
 	States []StateEntry `json:"states,omitempty"`
 }
@@ -226,6 +258,10 @@ type TrendProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Trend history window in seconds
 	Duration *int64        `json:"duration,omitempty"`
 	XFormat  *TrendXFormat `json:"xFormat,omitempty"`
@@ -256,9 +292,13 @@ type NumericInputProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	Min             *float64    `json:"min,omitempty"`
-	Max             *float64    `json:"max,omitempty"`
-	Unit            *string     `json:"unit,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string  `json:"blinkColor,omitempty"`
+	Min        *float64 `json:"min,omitempty"`
+	Max        *float64 `json:"max,omitempty"`
+	Unit       *string  `json:"unit,omitempty"`
 }
 
 // TextInputProps holds the settings of a textInput widget.
@@ -280,6 +320,10 @@ type TextInputProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 }
 
 // HistoryLogProps holds the settings of a historyLog widget.
@@ -301,6 +345,10 @@ type HistoryLogProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// HistoryLog rows per page
 	PageSize *int64 `json:"pageSize,omitempty"`
 }
@@ -324,6 +372,10 @@ type AlarmBannerProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// AlarmBanner max visible rows
 	MaxRows *int64 `json:"maxRows,omitempty"`
 	// AlarmBanner: show acknowledged alarms
@@ -349,6 +401,10 @@ type ImageProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Image: data-URL, URL or 'lib:<imageId>'
 	Src *string `json:"src,omitempty"`
 	// Image object-fit, as set by the properties panel
@@ -374,6 +430,10 @@ type SymbolProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Symbol: id from a symbol pack
 	SymbolID *string `json:"symbolId,omitempty"`
 	// Symbol: stroke color
@@ -399,6 +459,10 @@ type FaceplateProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Faceplate widget: id of the faceplate to show
 	FaceplateID *string `json:"faceplateId,omitempty"`
 	// Faceplate widget: parameter name → binding
@@ -424,6 +488,10 @@ type TableProps struct {
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
 }
@@ -549,21 +617,21 @@ func (w Widget) AsTable() (TableProps, error) {
 
 // PropsKeys lists each widget type's settings, frame settings first.
 var PropsKeys = map[WidgetType][]string{
-	Gauge:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "thresholds"},
-	NumericDisplay: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit"},
-	TextDisplay:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "staticText"},
-	LED:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "trueColor", "falseColor", "trueLabel", "falseLabel"},
-	Tank:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "thresholds"},
-	Button:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
-	Setpoint:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit", "step"},
-	MultiState:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "states"},
-	Trend:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "duration", "xFormat", "min", "max", "tags", "refLines"},
-	NumericInput:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "min", "max", "unit"},
-	TextInput:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds"},
-	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "pageSize"},
-	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "maxRows", "showAcked"},
-	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "src", "fit"},
-	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "symbolId", "stroke"},
-	Faceplate:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "faceplateId", "params"},
-	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "rows"},
+	Gauge:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	NumericDisplay: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextDisplay:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
+	LED:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
+	Tank:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	Button:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
+	Setpoint:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
+	MultiState:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
+	Trend:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines"},
+	NumericInput:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextInput:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
+	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
+	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
+	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
+	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke"},
+	Faceplate:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "faceplateId", "params"},
+	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }

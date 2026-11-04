@@ -1,22 +1,18 @@
 {
   "alarmRules": [
     {
-      "binding": "rest:Arp.Plc.Eclr/MainInstance.iInteger",
-      "condition": "gt",
+      "expr": "{rest:Arp.Plc.Eclr/MainInstance.iInteger} > 900",
       "id": "alarm-integer-high",
       "message": "REST iInteger above 900",
       "name": "Integer High (REST)",
-      "severity": "warning",
-      "threshold": 900
+      "severity": "warning"
     },
     {
-      "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iInteger",
-      "condition": "gt",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iInteger} > 900",
       "id": "alarm-opcua-integer-high",
       "message": "OPC UA iInteger above 900",
       "name": "Integer High (OPC UA)",
-      "severity": "critical",
-      "threshold": 900
+      "severity": "critical"
     }
   ],
   "datasources": [
@@ -282,6 +278,7 @@
       ]
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 3,
+  "theme": "high-performance",
   "version": "0.1.0"
 }
