@@ -2,7 +2,9 @@ package mqtt
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -73,17 +75,57 @@ func startBroker(t *testing.T) (string, func()) {
 	return "", nil
 }
 
+// mqttConnect is a minimal MQTT 3.1.1 CONNECT (clean session, empty client id).
+var mqttConnect = []byte{0x10, 0x0c, 0x00, 0x04, 'M', 'Q', 'T', 'T', 0x04, 0x02, 0x00, 0x3c, 0x00, 0x00}
+
+// waitDial waits until a plain-TCP broker at addr answers an MQTT CONNECT.
+//
+// It completes the handshake instead of dialing and hanging up: mochi-mqtt
+// adds a connection to its client wait group on its own goroutine after
+// accepting it, so a probe that is dropped at once can still be unattached
+// when the test closes the broker, and Close's Wait then races that Add
+// (seen in CI on 2026-11-04: TestStatusAfterDisconnect, DATA RACE in
+// Listeners.CloseAll). Once the CONNACK arrives the connection is attached.
 func waitDial(addr string, timeout time.Duration) bool {
+	return waitBroker(addr, timeout, func() (net.Conn, error) {
+		return net.DialTimeout("tcp", addr, time.Second)
+	})
+}
+
+// waitDialTLS is waitDial for a broker with a TLS listener; it does not check the certificate.
+func waitDialTLS(addr string, timeout time.Duration) bool {
+	return waitBroker(addr, timeout, func() (net.Conn, error) {
+		return tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", addr, &tls.Config{InsecureSkipVerify: true})
+	})
+}
+
+func waitBroker(addr string, timeout time.Duration, dial func() (net.Conn, error)) bool {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		c, err := net.Dial("tcp", addr)
-		if err == nil {
+		if c, err := dial(); err == nil {
+			ok := probeConnack(c)
 			c.Close()
-			return true
+			if ok {
+				return true
+			}
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 	return false
+}
+
+// probeConnack sends CONNECT and reports whether the broker answered with a
+// CONNACK, whatever its return code (a broker that refuses logins still answers).
+func probeConnack(c net.Conn) bool {
+	_ = c.SetDeadline(time.Now().Add(time.Second))
+	if _, err := c.Write(mqttConnect); err != nil {
+		return false
+	}
+	ack := make([]byte, 4)
+	if _, err := io.ReadFull(c, ack); err != nil {
+		return false
+	}
+	return ack[0] == 0x20
 }
 
 func freePort() (int, error) {
