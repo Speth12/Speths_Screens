@@ -78,7 +78,7 @@ export function scriptProblems(p: Project): string[] {
 /** A script's writes list. An entry is a tag path "datasource:path" (or "ns:path"), or a
  *  prefix of one with a * as its last character ("mem:*", "ns:Line1/*"). Per entry, in this
  *  order: empty, listed twice, names no datasource, a * that is not last. */
-function writeListProblems(where: string, writes: string[] | undefined, datasources: Set<string>): string[] {
+export function writeListProblems(where: string, writes: string[] | undefined, datasources: Set<string>): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const w of writes ?? []) {

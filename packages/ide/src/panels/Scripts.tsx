@@ -3,7 +3,7 @@
 // runtime and deploy make) and shows each script's state on the runtime.
 import { useEffect, useMemo, useState } from "react";
 import type { Role, RuntimeScript, ScriptTrigger, SessionVar, Type } from "@speths-screens/shared-types";
-import { syntaxProblem } from "@speths-screens/shared-types/scripts";
+import { syntaxProblem, writeListProblems } from "@speths-screens/shared-types/scripts";
 import { useProject } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
 import { ScriptEditor } from "./ScriptEditor";
@@ -27,6 +27,18 @@ const field = "w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-
 /** The triggers as the form edits them. */
 export function triggerText(t: ScriptTrigger): { every: string; onChange: string } {
   return { every: t.every ? String(t.every) : "", onChange: (t.onChange ?? []).join(", ") };
+}
+
+/** A script's writes list as the form edits it: entries separated by commas. */
+export function writesText(s: RuntimeScript): string {
+  return (s.writes ?? []).join(", ");
+}
+
+/** The writes list from the form's text: entries split on commas, empty ones left out;
+ *  undefined when there are none (a script without the list writes nothing). */
+export function withWrites(text: string): string[] | undefined {
+  const list = text.split(",").map((w) => w.trim()).filter(Boolean);
+  return list.length ? list : undefined;
 }
 
 /** Applies a form change to a trigger, leaving out empty parts. */
@@ -79,6 +91,7 @@ export function Scripts() {
   const { project, addScript, updateScript, removeScript, setScriptRole } = useProject();
   const scripts = project.scripts ?? [];
   const rules = project.alarmRules ?? [];
+  const datasources = new Set(["ns", ...(project.datasources ?? []).map((d) => d.id)]);
   const [open, setOpen] = useState<string | null>(null);
   const status = useScriptStatus();
 
@@ -99,7 +112,7 @@ export function Scripts() {
         </select>
       </label>
       {scripts.map((s) => (
-        <ScriptRow key={s.id} script={s} rules={rules.map((r) => ({ id: r.id, name: r.name }))} status={status.get(s.id)}
+        <ScriptRow key={s.id} script={s} rules={rules.map((r) => ({ id: r.id, name: r.name }))} datasources={datasources} status={status.get(s.id)}
           open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)}
           onChange={(patch) => updateScript(s.id, patch)} onRemove={() => removeScript(s.id)} />
       ))}
@@ -108,9 +121,11 @@ export function Scripts() {
   );
 }
 
-function ScriptRow({ script, rules, status, open, onToggle, onChange, onRemove }: {
+function ScriptRow({ script, rules, datasources, status, open, onToggle, onChange, onRemove }: {
   script: RuntimeScript;
   rules: { id: string; name: string }[];
+  /** The ids a tag path may start with: the project's datasources and ns. */
+  datasources: Set<string>;
   status?: ScriptStatus;
   open: boolean;
   onToggle: () => void;
@@ -118,6 +133,10 @@ function ScriptRow({ script, rules, status, open, onToggle, onChange, onRemove }
   onRemove: () => void;
 }) {
   const problem = useMemo(() => syntaxProblem(script.source), [script.source]);
+  // The text as typed while the field has the focus, so a comma or a space typed last is not lost.
+  const [writesDraft, setWritesDraft] = useState<string | null>(null);
+  const writeProblems = writeListProblems(`script ${JSON.stringify(script.id)}`, script.writes, datasources)
+    .map((line) => line.slice(line.indexOf(": writes: ") + ": writes: ".length));
   const t = script.trigger;
   const text = triggerText(t);
   const setTrigger = (patch: Parameters<typeof withTrigger>[1]) => onChange({ trigger: withTrigger(t, patch) });
@@ -154,6 +173,14 @@ function ScriptRow({ script, rules, status, open, onToggle, onChange, onRemove }
                 </label>
               ))}
             </div>
+          )}
+          <input aria-label="writes" value={writesDraft ?? writesText(script)}
+            onChange={(e) => { setWritesDraft(e.target.value); onChange({ writes: withWrites(e.target.value) }); }}
+            onBlur={() => setWritesDraft(null)}
+            placeholder="may write: mem:*, plc:Run, ns:Line1/*" className={`${field} font-mono`} />
+          {writeProblems.map((line) => <div key={line} className="text-red-400 font-mono">writes: {line}</div>)}
+          {script.source.includes("writeTag") && !script.writes?.length && (
+            <div className="text-amber-400">The script calls writeTag but has no writes list: every write is refused.</div>
           )}
           {noTrigger && <div className="text-amber-400">A script needs at least one trigger.</div>}
           {t.every !== undefined && t.every < 100 && <div className="text-amber-400">every must be at least 100 ms.</div>}
