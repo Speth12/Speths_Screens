@@ -2,6 +2,8 @@
 // subscriber registry. Caches the last value so re-mounts hydrate immediately.
 
 import { onTokenChange, wsURL } from "../auth";
+import { sessionName } from "@speths-screens/script-api";
+import { sessionStore } from "./session";
 
 export type TagState = {
   value: unknown;
@@ -27,6 +29,8 @@ class Client {
 
   /** Subscribe a listener. Returns an unsubscribe function. */
   subscribe(path: string, fn: Listener): () => void {
+    const session = sessionName(path);
+    if (session !== undefined) return sessionStore.subscribe(session, fn);
     let set = this.listeners.get(path);
     const isFirst = !set;
     if (!set) {
@@ -55,6 +59,8 @@ class Client {
 
   /** Get the cached value (synchronous read). */
   get(path: string): TagState | undefined {
+    const session = sessionName(path);
+    if (session !== undefined) return sessionStore.get(session);
     return this.cache.get(path);
   }
 

@@ -4,6 +4,8 @@
 
 import { wsUrl } from "./runtimeTarget";
 import { virtualTagStore } from "./virtualTagStore";
+import { sessionName } from "@speths-screens/script-api";
+import { sessionStore } from "./session";
 
 export type TagState = {
   value: unknown;
@@ -28,6 +30,8 @@ class Client {
 
   /** Subscribe a listener. Returns an unsubscribe function. */
   subscribe(path: string, fn: Listener): () => void {
+    const session = sessionName(path);
+    if (session !== undefined) return sessionStore.subscribe(session, fn);
     if (virtualTagStore.isVirtual(path)) return virtualTagStore.subscribe(path, fn);
     let set = this.listeners.get(path);
     const isFirst = !set;
@@ -56,6 +60,8 @@ class Client {
 
   /** Get the cached value (synchronous read). */
   get(path: string): TagState | undefined {
+    const session = sessionName(path);
+    if (session !== undefined) return sessionStore.get(session);
     if (virtualTagStore.isVirtual(path)) return virtualTagStore.get(path);
     return this.cache.get(path);
   }

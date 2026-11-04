@@ -5,7 +5,7 @@ import schema from "../../../schema.json";
 import { v2ToV3 } from "./upgradeV3";
 
 /** The project format this build writes. A file without schemaVersion is 1. */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 type Obj = Record<string, unknown>;
 
@@ -37,7 +37,9 @@ export function upgradeProject(input: unknown): UpgradeResult {
   const doc = structuredClone(input);
   const notes: string[] = [];
   if (version < 2) v1ToV2(doc, notes);
-  v2ToV3(doc, notes);
+  if (version < 3) v2ToV3(doc, notes);
+  // v3 to v4 adds fields (scripts, memory tags, session variables) and
+  // changes nothing that exists: only the version moves.
   doc.schemaVersion = CURRENT_SCHEMA_VERSION;
   return { project: doc, notes };
 }

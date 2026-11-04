@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/coder/websocket v1.8.14
+	github.com/dop251/goja v0.0.0-20260930230021-de0448987fda
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -18,8 +19,11 @@ require (
 )
 
 require (
+	github.com/dlclark/regexp2/v2 v2.5.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/goburrow/serial v0.1.0 // indirect
+	github.com/google/pprof v0.0.0-20250317173921-a4b03ec1a45e // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

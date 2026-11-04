@@ -109,6 +109,7 @@ func (s *Server) routes(assets http.Handler) {
 		r.Get("/alive", s.handleAlive)
 		r.Get("/whoami", s.handleWhoAmI)
 		r.Get("/debug/demand", s.handleDebugDemand)
+		r.Get("/scripts", s.handleListScripts)
 
 		r.Get("/project", s.handleGetProject)
 		r.With(s.requirePerm("project.deploy")).Post("/project", s.handlePostProject)

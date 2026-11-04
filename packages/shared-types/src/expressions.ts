@@ -2,6 +2,7 @@
 // does: the same problems, in the same order, with the same words.
 import { compile } from "@speths-screens/expr";
 import type { Drive, Project } from "./project";
+import { scriptProblems, stateProblems, SESSION_PREFIX } from "./scripts";
 
 /** Every expression that does not compile, in a project that follows
  *  schema.json: calculated tags, alarm rules, then the driven properties of page,
@@ -11,17 +12,19 @@ export function expressionProblems(p: Project): string[] {
   const out: string[] = [];
   for (const ds of p.datasources ?? []) {
     for (const t of ds.config?.tags ?? []) {
-      const c = compile(t.expr);
-      if (!c.ok) out.push(`datasource ${JSON.stringify(ds.id)}, calculated tag ${t.path}: ${c.error}`);
+      const problem = runtimeExprProblem(t.expr);
+      if (problem) out.push(`datasource ${JSON.stringify(ds.id)}, calculated tag ${t.path}: ${problem}`);
     }
   }
   for (const r of p.alarmRules ?? []) {
-    const c = compile(r.expr);
-    if (!c.ok) out.push(`alarm rule ${JSON.stringify(r.id)}: ${c.error}`);
+    const problem = runtimeExprProblem(r.expr);
+    if (problem) out.push(`alarm rule ${JSON.stringify(r.id)}: ${problem}`);
   }
+  out.push(...stateProblems(p), ...scriptProblems(p));
+  const session = new Set((p.sessionVars ?? []).map((v) => v.name));
   const drives = (where: string, dynamics: Record<string, Drive> | undefined, params?: string[]) => {
     for (const name of Object.keys(dynamics ?? {}).sort()) {
-      const problem = driveProblem(dynamics![name]!.expr, params);
+      const problem = driveProblem(dynamics![name]!.expr, session, params);
       if (problem) out.push(`${where}: dynamics.${name}: ${problem}`);
     }
   };
@@ -40,11 +43,23 @@ export function expressionProblems(p: Project): string[] {
 
 // driveProblem compiles one driven property's expression; params is
 // undefined outside a faceplate, and inside one the expression is a template.
-function driveProblem(src: string, params?: string[]): string {
+function driveProblem(src: string, session: Set<string>, params?: string[]): string {
   const c = compile(src, { template: params !== undefined });
   if (!c.ok) return c.error;
+  for (const ref of c.expr.refs) {
+    if (ref.startsWith(SESSION_PREFIX) && !session.has(ref.slice(SESSION_PREFIX.length))) return `{${ref}} names no session variable`;
+  }
   for (const name of c.expr.params) {
     if (!params!.includes(name)) return `{${name}} is not a parameter of this faceplate`;
   }
   return "";
+}
+
+/** Compiles an expression the runtime evaluates (a calculated tag or an
+ *  alarm rule), which cannot read session variables. */
+function runtimeExprProblem(src: string): string {
+  const c = compile(src);
+  if (!c.ok) return c.error;
+  const ref = c.expr.refs.find((r) => r.startsWith(SESSION_PREFIX));
+  return ref ? `{${ref}} is a session variable, which only screens have` : "";
 }

@@ -29,9 +29,17 @@ type Types struct {
 	Recipes []Recipe `json:"recipes,omitempty"`
 	// Project file format. A file without it is format 1 and is upgraded when opened
 	SchemaVersion int64 `json:"schemaVersion"`
+	// The role runtime scripts write as (roles and limits apply, and the audit names the
+	// script); missing means operator
+	ScriptRole *Role `json:"scriptRole,omitempty"`
+	// Runtime scripts: JavaScript the runtime runs on its own (goja), on the triggers each one
+	// names
+	Scripts []RuntimeScript `json:"scripts,omitempty"`
 	// Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
 	// in the project
 	Security *Security `json:"security,omitempty"`
+	// Variables kept per browser tab, read as {session:name}; they never reach the runtime
+	SessionVars []SessionVar `json:"sessionVars,omitempty"`
 	// Default theme for every screen. A browser can still pick its own; that choice is not
 	// saved in the project
 	Theme *ThemeID `json:"theme,omitempty"`
@@ -97,8 +105,10 @@ type DatasourceConfig struct {
 	// OPC UA: opc.tcp://host:port
 	Endpoint *string `json:"endpoint,omitempty"`
 	// Modbus/MQTT/REST host
-	Host     *string `json:"host,omitempty"`
-	Password *string `json:"password,omitempty"`
+	Host *string `json:"host,omitempty"`
+	// Memory datasource: the typed tags it holds
+	MemoryTags []MemoryTag `json:"memoryTags,omitempty"`
+	Password   *string     `json:"password,omitempty"`
 	// TCP port
 	Port           *int64          `json:"port,omitempty"`
 	SecurityMode   *SecurityMode   `json:"securityMode,omitempty"`
@@ -108,6 +118,18 @@ type DatasourceConfig struct {
 	// Virtual driver: the calculated tags
 	Tags     []CalculatedTag `json:"tags,omitempty"`
 	Username *string         `json:"username,omitempty"`
+}
+
+// A typed value the runtime holds; other expressions read it as {datasource:path}
+type MemoryTag struct {
+	// The value before anything is written (and after a restart, unless retained); missing
+	// means false, 0 or empty text
+	Initial *TransformValue `json:"initial,omitempty"`
+	// The tag's name in this datasource
+	Path string `json:"path"`
+	// Keep the last value across a runtime restart
+	Retain *bool `json:"retain,omitempty"`
+	Type   Type  `json:"type"`
 }
 
 // A tag the virtual driver computes. Other expressions read it as {datasource:path}
@@ -609,10 +631,41 @@ type RecipeEntry struct {
 	Value   interface{} `json:"value"`
 }
 
+// JavaScript the runtime runs in its own sandbox, writing through the write pipeline as
+// scriptRole
+type RuntimeScript struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// JavaScript (the script API: readTag, writeTag, onChange, every, after, log, emit, alarms)
+	Source  string        `json:"source"`
+	Trigger ScriptTrigger `json:"trigger"`
+}
+
+// When a runtime script runs; it can name several
+type ScriptTrigger struct {
+	// Run every this many milliseconds
+	Every *int64 `json:"every,omitempty"`
+	// Alarm rule ids: run when one raises or clears
+	OnAlarm []string `json:"onAlarm,omitempty"`
+	// Tag paths (ds:path or ns:path): run when one changes
+	OnChange []string `json:"onChange,omitempty"`
+	// Run once when the project starts
+	OnStart *bool `json:"onStart,omitempty"`
+}
+
 // Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
 // in the project
 type Security struct {
 	Mode AuthMode `json:"mode"`
+}
+
+// A typed value kept per browser tab, read as {session:name}
+type SessionVar struct {
+	// The value when the tab opens; missing means false, 0 or empty text
+	Initial *TransformValue `json:"initial,omitempty"`
+	// Letters, digits and _
+	Name string `json:"name"`
+	Type Type   `json:"type"`
 }
 
 type Udt struct {
@@ -623,10 +676,10 @@ type Udt struct {
 }
 
 type UDTField struct {
-	Description *string      `json:"description,omitempty"`
-	Name        string       `json:"name"`
-	Type        UDTFieldType `json:"type"`
-	Unit        *string      `json:"unit,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	Type        Type    `json:"type"`
+	Unit        *string `json:"unit,omitempty"`
 }
 
 type AlarmSeverity string
@@ -674,6 +727,15 @@ const (
 	Trusted CERTCheck = "trusted"
 )
 
+type Type string
+
+const (
+	Bool   Type = "bool"
+	Int    Type = "int"
+	Real   Type = "real"
+	String Type = "string"
+)
+
 type SecurityMode string
 
 const (
@@ -696,6 +758,7 @@ type DatasourceType string
 const (
 	DatasourceTypeVirtual DatasourceType = "virtual"
 	Mbtcp                 DatasourceType = "mbtcp"
+	Memory                DatasourceType = "memory"
 	Mqtt                  DatasourceType = "mqtt"
 	Opcua                 DatasourceType = "opcua"
 	REST                  DatasourceType = "rest"
@@ -810,6 +873,17 @@ const (
 	Tag                      NamespaceNodeType = "tag"
 )
 
+// The role runtime scripts write as (roles and limits apply, and the audit names the
+// script); missing means operator
+type Role string
+
+const (
+	Admin      Role = "admin"
+	Engineer   Role = "engineer"
+	Operator   Role = "operator"
+	Supervisor Role = "supervisor"
+)
+
 // none: no login, anyone who reaches the runtime can read and write. login: every user must
 // log in
 type AuthMode string
@@ -829,20 +903,16 @@ const (
 	HighPerformance ThemeID = "high-performance"
 )
 
-type UDTFieldType string
-
-const (
-	Bool   UDTFieldType = "bool"
-	Int    UDTFieldType = "int"
-	Real   UDTFieldType = "real"
-	String UDTFieldType = "string"
-)
-
+// The value before anything is written (and after a restart, unless retained); missing
+// means false, 0 or empty text
+//
+// A text, number or flag value (transform values, initial values)
+//
 // thresholds: the value under the first step; missing leaves the property's own setting
 //
-// A property value: a color, text, number or flag
-//
 // map: the value when no case matches; missing leaves the property's own setting
+//
+// The value when the tab opens; missing means false, 0 or empty text
 type TransformValue struct {
 	Bool   *bool
 	Double *float64

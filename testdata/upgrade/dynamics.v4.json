@@ -1,0 +1,196 @@
+{
+  "datasources": [],
+  "faceplates": [
+    {
+      "id": "fp-pump",
+      "name": "Pump",
+      "params": [
+        {
+          "name": "run"
+        }
+      ],
+      "widgets": [
+        {
+          "bindings": {
+            "value": "{run}"
+          },
+          "dynamics": {
+            "blink": {
+              "expr": "{run}"
+            }
+          },
+          "h": 1,
+          "localId": "lamp",
+          "props": {
+            "blinkPeriodMs": 400
+          },
+          "type": "led",
+          "w": 1,
+          "x": 0,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "name": "Dynamics",
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Main",
+      "widgets": [
+        {
+          "dynamics": {
+            "visible": {
+              "expr": "{plc:Show}"
+            }
+          },
+          "h": 2,
+          "id": "vis",
+          "type": "gauge",
+          "w": 2,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "dynamics": {
+            "disabled": {
+              "expr": "{ns:Line1/Locked}"
+            }
+          },
+          "h": 1,
+          "id": "dis",
+          "type": "button",
+          "w": 2,
+          "x": 2,
+          "y": 0
+        },
+        {
+          "dynamics": {
+            "borderColor": {
+              "expr": "{plc:Run2} ? '#0000ff' : '#111111'"
+            }
+          },
+          "h": 1,
+          "id": "ring",
+          "type": "led",
+          "w": 1,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "dynamics": {
+            "blink": {
+              "expr": "{plc:Alarm}"
+            },
+            "rotate": {
+              "expr": "{plc:Angle}",
+              "transform": {
+                "in": [
+                  0,
+                  360
+                ],
+                "kind": "linear",
+                "out": [
+                  0,
+                  360
+                ]
+              }
+            }
+          },
+          "h": 1,
+          "id": "rot",
+          "props": {
+            "blinkColor": "#ff0000"
+          },
+          "type": "symbol",
+          "w": 1,
+          "x": 5,
+          "y": 0
+        },
+        {
+          "dynamics": {
+            "rotate": {
+              "expr": "{plc:Valve}",
+              "transform": {
+                "in": [
+                  0,
+                  100
+                ],
+                "kind": "linear",
+                "out": [
+                  -90,
+                  90
+                ]
+              }
+            }
+          },
+          "h": 1,
+          "id": "rot2",
+          "type": "symbol",
+          "w": 1,
+          "x": 6,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "plc:Other"
+          },
+          "dynamics": {
+            "bgColor": {
+              "expr": "({plc:Press} > 5000) ? '#dc2626' : ''"
+            },
+            "textColor": {
+              "expr": "(format({plc:T}, 1) == '20.0' && 'value' != {ns:value}) ? 'it\\'s red' : '#fff'"
+            },
+            "visible": {
+              "expr": "abs({plc:Press}) == 0"
+            }
+          },
+          "h": 1,
+          "id": "scr",
+          "type": "numericDisplay",
+          "w": 2,
+          "x": 0,
+          "y": 2
+        },
+        {
+          "dynamics": {
+            "borderColor": {
+              "expr": "({plc:X}.length > 2) ? '#f00' : ''"
+            }
+          },
+          "h": 1,
+          "id": "bad",
+          "type": "led",
+          "w": 1,
+          "x": 2,
+          "y": 2
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "ps1",
+      "name": "Alarm lamp",
+      "widgets": [
+        {
+          "dynamics": {
+            "visible": {
+              "expr": "{plc:Lamp}"
+            }
+          },
+          "h": 1,
+          "id": "w",
+          "type": "led",
+          "w": 1,
+          "x": 0,
+          "y": 0
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 4,
+  "theme": "high-performance",
+  "version": "1.0.0"
+}

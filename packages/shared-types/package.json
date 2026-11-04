@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./upgrade": "./src/upgrade.ts",
-    "./expressions": "./src/expressions.ts"
+    "./expressions": "./src/expressions.ts",
+    "./scripts": "./src/scripts.ts"
   },
   "scripts": {
     "build": "tsc --noEmit -p .",
@@ -21,6 +22,7 @@
     "eslint": "9.39.5"
   },
   "dependencies": {
-    "@speths-screens/expr": "*"
+    "@speths-screens/expr": "*",
+    "acorn": "^8.16.0"
   }
 }

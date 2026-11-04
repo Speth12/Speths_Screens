@@ -15,6 +15,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/assets"
 	"github.com/Speth12/Speths_Screens/internal/audit"
 	"github.com/Speth12/Speths_Screens/internal/drivers"
+	_ "github.com/Speth12/Speths_Screens/internal/drivers/memory"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/modbus"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/mqtt"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/opcua"
@@ -26,6 +27,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/namespace"
 	"github.com/Speth12/Speths_Screens/internal/project"
 	"github.com/Speth12/Speths_Screens/internal/recipestore"
+	"github.com/Speth12/Speths_Screens/internal/script"
 	"github.com/Speth12/Speths_Screens/internal/security"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
 )
@@ -45,6 +47,10 @@ type Runtime struct {
 	Assets     *assets.Registry
 	Faceplates *faceplate.Registry
 	Recipes    *recipestore.Store
+	// Scripts runs the project's runtime scripts.
+	Scripts *script.Engine
+	// Retain keeps memory-tag values across a restart (memstore); nil keeps none.
+	Retain drivers.Retainer
 
 	mu        sync.RWMutex
 	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
@@ -82,7 +88,7 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 	if store == nil {
 		store = tagstore.New()
 	}
-	return &Runtime{
+	r := &Runtime{
 		Store:     store,
 		Historian: h,
 		Alarms:    alarms.New(),
@@ -98,6 +104,8 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 
 		writeConfirm: 3 * time.Second,
 	}
+	r.Scripts = script.New(store, scriptHost{r})
+	return r
 }
 
 // Start begins the central pump goroutine. Call once.
@@ -116,10 +124,14 @@ func (r *Runtime) Start(ctx context.Context) {
 	}
 	r.wg.Add(1)
 	go r.markStaleLoop(pumpCtx)
+	sub := r.Alarms.SubscribeN(scriptAlarmQueue)
+	r.wg.Add(1)
+	go r.scriptAlarms(pumpCtx, sub)
 }
 
 // Stop disconnects all drivers and stops the pump.
 func (r *Runtime) Stop() {
+	r.Scripts.Stop()
 	r.mu.Lock()
 	for id, d := range r.drivers {
 		_ = d.Disconnect()
@@ -247,6 +259,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 		}
 	}
 	r.setDemands(projectDemand(p))
+	r.loadScripts(p)
 	for _, w := range certWarnings(p) {
 		log.Printf("[SECURITY] WARNING: %s", w)
 	}
@@ -449,7 +462,7 @@ func (r *Runtime) buildDriver(typ project.DatasourceType) (drivers.ProtocolDrive
 	if r.newDriver != nil {
 		return r.newDriver(typ)
 	}
-	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store})
+	return drivers.Build(string(typ), drivers.BuildCtx{Store: r.Store, Retain: r.Retain})
 }
 
 func buildConfig(ds project.Datasource) drivers.DriverConfig {
@@ -493,6 +506,13 @@ func buildConfig(ds project.Datasource) drivers.DriverConfig {
 	}
 	if c.BearerToken != nil {
 		cfg.Extra["bearerToken"] = *c.BearerToken
+	}
+	if c.MemoryTags != nil {
+		// The memory driver keys retained values by datasource id.
+		if b, err := json.Marshal(c.MemoryTags); err == nil {
+			cfg.Extra["memoryTags"] = string(b)
+		}
+		cfg.Extra["datasourceId"] = ds.ID
 	}
 	if c.Tags != nil {
 		// The virtual driver reads its tag list as JSON, like every Extra setting.

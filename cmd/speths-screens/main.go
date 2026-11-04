@@ -30,6 +30,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/historian"
 	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/memory"
 	_ "github.com/Speth12/Speths_Screens/internal/historian/providers/sqlite"
+	"github.com/Speth12/Speths_Screens/internal/memstore"
 	"github.com/Speth12/Speths_Screens/internal/project"
 	"github.com/Speth12/Speths_Screens/internal/recipestore"
 	"github.com/Speth12/Speths_Screens/internal/runtime"
@@ -79,6 +80,7 @@ func main() {
 	securityDB := flag.String("security-db", "security.db", "SQLite file for users and sessions")
 	auditDB := flag.String("audit-db", "", "SQLite file for audit log (empty = disabled)")
 	recipeDB := flag.String("recipe-db", "recipes.db", "SQLite file for recipe history and approvals")
+	memoryDB := flag.String("memory-db", "memory.db", "SQLite file for retained memory-tag values")
 	corsOrigins := flag.String("cors-origins", "", "comma-separated extra web origins (scheme://host:port) allowed to call the API")
 	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (random 32+ bytes); auto-generated if empty")
 	flag.Parse()
@@ -148,6 +150,12 @@ func main() {
 
 	rt := runtime.New(store, hist)
 	rt.AlarmStore = alarmSt
+	memSt, err := memstore.Open(*memoryDB)
+	if err != nil {
+		log.Fatalf("[Speth's Screens] memstore: %v", err)
+	}
+	defer memSt.Close()
+	rt.Retain = memSt
 
 	// Security: the user store is always open. Whether logins are needed
 	// comes from the project's security.mode; the first admin is created

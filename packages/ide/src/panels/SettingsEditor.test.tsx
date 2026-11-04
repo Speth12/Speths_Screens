@@ -103,7 +103,7 @@ describe("field kinds", () => {
 
 describe("properties panel", () => {
   const project = (widgets: Widget[]): Project => ({
-    schemaVersion: 3, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets }],
+    schemaVersion: 4, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets }],
   });
 
   for (const m of MANIFESTS) {

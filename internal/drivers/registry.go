@@ -7,9 +7,17 @@ import (
 )
 
 // BuildCtx carries dependencies a driver factory may need.
-// Most drivers ignore Store; the virtual driver uses it.
+// Most drivers ignore Store; the virtual driver uses it. Retain keeps
+// memory-tag values across a restart; it is nil when nothing is kept.
 type BuildCtx struct {
-	Store *tagstore.TagStore
+	Store  *tagstore.TagStore
+	Retain Retainer
+}
+
+// Retainer stores retained values (memory tags) by datasource and tag path.
+type Retainer interface {
+	Load(datasource string) (map[string]any, error)
+	Save(datasource string, values map[string]any) error
 }
 
 // DriverFactory creates a new ProtocolDriver instance from build context.

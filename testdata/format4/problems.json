@@ -1,0 +1,77 @@
+[
+  { "name": "all fine",
+    "project": {
+      "datasources": [{ "id": "mem", "type": "memory", "label": "Memory", "config": { "memoryTags": [
+        { "path": "Count", "type": "int", "initial": 0, "retain": true },
+        { "path": "Mode", "type": "string", "initial": "auto" },
+        { "path": "Ratio", "type": "real", "initial": 0.5 },
+        { "path": "Run", "type": "bool", "initial": false }
+      ] } }],
+      "alarmRules": [{ "id": "high", "name": "High", "expr": "{mem:Count} > 10", "severity": "info", "message": "m" }],
+      "sessionVars": [{ "name": "step", "type": "int", "initial": 1 }, { "name": "Operator_2", "type": "string" }],
+      "scriptRole": "supervisor",
+      "scripts": [{ "id": "count", "name": "Count", "trigger": { "onChange": ["mem:Run", "ns:Plant/Auto"], "every": 1000, "onStart": true, "onAlarm": ["high"] },
+        "source": "const n = readTag('mem:Count');\nif (n > 5) return;\nawait writeTag('mem:Count', n + 1);" }]
+    },
+    "want": [] },
+  { "name": "memory tags",
+    "project": { "datasources": [{ "id": "mem", "type": "memory", "label": "Memory", "config": { "memoryTags": [
+      { "path": "Count", "type": "int", "initial": 1.5 },
+      { "path": "Count", "type": "int" },
+      { "path": "Run", "type": "bool", "initial": "yes" },
+      { "path": "Name", "type": "string", "initial": 3 },
+      { "path": "Ratio", "type": "real", "initial": true }
+    ] } }] },
+    "want": [
+      "datasource \"mem\", memory tag Count: initial 1.5 is not of type int",
+      "datasource \"mem\", memory tag Count: the path is used twice",
+      "datasource \"mem\", memory tag Run: initial \"yes\" is not of type bool",
+      "datasource \"mem\", memory tag Name: initial 3 is not of type string",
+      "datasource \"mem\", memory tag Ratio: initial true is not of type real"
+    ] },
+  { "name": "session variables",
+    "project": { "sessionVars": [
+      { "name": "step", "type": "int" },
+      { "name": "step", "type": "int" },
+      { "name": "2nd", "type": "bool" },
+      { "name": "my var", "type": "string", "initial": 0 }
+    ] },
+    "want": [
+      "session variable \"step\": the name is used twice",
+      "session variable \"2nd\": a name is letters, digits and _, not starting with a digit",
+      "session variable \"my var\": a name is letters, digits and _, not starting with a digit",
+      "session variable \"my var\": initial 0 is not of type string"
+    ] },
+  { "name": "script triggers",
+    "project": {
+      "datasources": [{ "id": "plc", "type": "rest", "label": "PLC", "config": {} }],
+      "alarmRules": [{ "id": "high", "name": "High", "expr": "{plc:T} > 1", "severity": "info", "message": "m" }],
+      "scripts": [
+        { "id": "a", "name": "A", "trigger": { "onChange": ["plc:T", "other:X", "nocolon"], "onAlarm": ["high", "low"] }, "source": "log(1)" },
+        { "id": "a", "name": "A again", "trigger": { "onStart": true }, "source": "" }
+      ] },
+    "want": [
+      "script \"a\": onChange: other:X names no datasource",
+      "script \"a\": onChange: nocolon names no datasource",
+      "script \"a\": onAlarm: no alarm rule \"low\"",
+      "script \"a\": the id is used twice"
+    ] },
+  { "name": "session variables only on screens",
+    "project": {
+      "datasources": [
+        { "id": "calc", "type": "virtual", "label": "Calc", "config": { "tags": [{ "path": "Mode", "expr": "{session:shift} + 1" }] } },
+        { "id": "session", "type": "memory", "label": "Mine", "config": { "memoryTags": [] } }
+      ],
+      "alarmRules": [{ "id": "r", "name": "R", "expr": "{calc:Mode} > 1 && {session:shift} == 2", "severity": "info", "message": "m" }],
+      "sessionVars": [{ "name": "shift", "type": "int" }],
+      "presets": [{ "id": "p", "name": "P", "widgets": [
+        { "id": "w1", "type": "led", "x": 0, "y": 0, "w": 1, "h": 1, "dynamics": { "visible": { "expr": "{session:shift} > 1 && {session:nope}" }, "blink": { "expr": "{session:shift} == 3" } } }
+      ] }]
+    },
+    "want": [
+      "datasource \"calc\", calculated tag Mode: {session:shift} is a session variable, which only screens have",
+      "alarm rule \"r\": {session:shift} is a session variable, which only screens have",
+      "datasource \"session\": the id is kept for session variables",
+      "preset \"P\", widget w1 (led): dynamics.visible: {session:nope} names no session variable"
+    ] }
+]

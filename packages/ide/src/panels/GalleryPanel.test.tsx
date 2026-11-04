@@ -6,7 +6,7 @@ import { GalleryPanel, insertGalleryWidget } from "./GalleryPanel";
 afterEach(cleanup);
 
 const project = (more: Partial<Project> = {}): Project => ({
-  schemaVersion: 3, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...more,
+  schemaVersion: 4, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...more,
 });
 const widgets = () => useProject.getState().project.pages[0]!.widgets;
 

@@ -7,7 +7,7 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, SessionVar, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 
 export type {
@@ -66,6 +66,12 @@ type State = {
   updateRecipe: (id: string, patch: Partial<Recipe>) => void;
   removeRecipe: (id: string) => void;
 
+  addScript: (script: RuntimeScript) => void;
+  updateScript: (id: string, patch: Partial<RuntimeScript>) => void;
+  removeScript: (id: string) => void;
+  setScriptRole: (role: Role | undefined) => void;
+  setSessionVars: (vars: SessionVar[]) => void;
+
   importImage: (asset: ImageAsset) => void;
   deleteImage: (id: string) => void;
   renameImage: (id: string, name: string) => void;
@@ -94,7 +100,7 @@ type State = {
 };
 
 const blankProject = (): Project => ({
-  schemaVersion: 3,
+  schemaVersion: 4,
   version: "0.1.0",
   datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [] }],
@@ -401,6 +407,39 @@ export const useProject = create<State>((set, get) => {
           recipes: (s.project.recipes ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
         },
       }));
+    },
+
+    addScript: (script) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, scripts: [...(s.project.scripts ?? []), script] } }));
+    },
+
+    updateScript: (id, patch) => {
+      pushHistory();
+      set((s) => ({
+        project: { ...s.project, scripts: (s.project.scripts ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)) },
+      }));
+    },
+
+    removeScript: (id) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, scripts: (s.project.scripts ?? []).filter((r) => r.id !== id) } }));
+    },
+
+    setSessionVars: (vars) => {
+      pushHistory();
+      set((s) => {
+        const { sessionVars: _old, ...rest } = s.project;
+        return { project: vars.length ? { ...rest, sessionVars: vars } : rest };
+      });
+    },
+
+    setScriptRole: (role) => {
+      pushHistory();
+      set((s) => {
+        const { scriptRole: _old, ...rest } = s.project;
+        return { project: role ? { ...rest, scriptRole: role } : rest };
+      });
     },
 
     removeRecipe: (id) => {
