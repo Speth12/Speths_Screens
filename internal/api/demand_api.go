@@ -7,3 +7,8 @@ import "net/http"
 func (s *Server) handleDebugDemand(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, s.rt.Demand())
 }
+
+// handleListScripts lists the runtime scripts and how each is doing.
+func (s *Server) handleListScripts(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, 200, s.rt.Scripts.Status())
+}
