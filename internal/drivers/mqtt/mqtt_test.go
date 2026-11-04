@@ -14,6 +14,25 @@ import (
 	"github.com/mochi-mqtt/server/v2/listeners"
 )
 
+// closeBroker closes a test broker, giving up after two seconds: mochi-mqtt
+// v2.7.9 (the newest release) can deadlock in Server.Close, whose
+// Clients.GetByListener takes the clients' read lock and then takes it again
+// in Len, so a client connecting or dropping in between blocks it for good.
+// A hung Close is left behind instead of stalling the test run (seen in CI
+// on 2026-11-04: TestSetTagsReplacesSubscriptions/empty timed out after 10m).
+func closeBroker(t testing.TB, server *mochi.Server) {
+	done := make(chan struct{})
+	go func() {
+		_ = server.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Logf("test broker did not close in 2 s (mochi-mqtt lock bug); left it running")
+	}
+}
+
 // startBroker spins an in-process MQTT broker on a random port for testing.
 // Retries on port collision.
 func startBroker(t *testing.T) (string, func()) {
@@ -29,7 +48,7 @@ func startBroker(t *testing.T) (string, func()) {
 		}
 		addr := fmt.Sprintf("127.0.0.1:%d", port)
 		if err := server.AddListener(listeners.NewTCP(listeners.Config{ID: "t1", Address: addr})); err != nil {
-			_ = server.Close()
+			closeBroker(t, server)
 			continue
 		}
 		serveErr := make(chan error, 1)
@@ -38,11 +57,11 @@ func startBroker(t *testing.T) (string, func()) {
 		// wait until accept loop is up
 		ok := waitDial(addr, 2*time.Second)
 		if !ok {
-			_ = server.Close()
+			closeBroker(t, server)
 			continue
 		}
 		cleanup := func() {
-			_ = server.Close()
+			closeBroker(t, server)
 			select {
 			case <-serveErr:
 			case <-time.After(time.Second):

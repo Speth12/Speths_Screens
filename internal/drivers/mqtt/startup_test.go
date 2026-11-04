@@ -65,7 +65,7 @@ func mochiAt(t *testing.T, addr string, ledger *auth.Ledger) *mochi.Server {
 	if !waitDial(addr, 2*time.Second) {
 		t.Fatalf("broker on %s did not start", addr)
 	}
-	t.Cleanup(func() { _ = server.Close() })
+	t.Cleanup(func() { closeBroker(t, server) })
 	return server
 }
 
