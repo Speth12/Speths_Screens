@@ -278,7 +278,7 @@
       ]
     }
   ],
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "theme": "high-performance",
   "version": "0.1.0"
 }

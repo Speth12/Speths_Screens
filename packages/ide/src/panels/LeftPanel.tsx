@@ -914,6 +914,7 @@ const TYPE_DEFAULTS: Record<DatasourceType, { id: string; label: string }> = {
   mqtt:    { id: "mqtt",   label: "MQTT" },
   rest:    { id: "rest",   label: "PLCnext REST" },
   virtual: { id: "calc",   label: "Computed Tags" },
+  memory:  { id: "mem",    label: "Memory tags" }, // offered once the memory driver lands (Phase 4 step 2)
 };
 
 export function AddDatasourceModal({ onClose, onAdd }: {

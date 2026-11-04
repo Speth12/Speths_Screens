@@ -2,6 +2,7 @@
 // does: the same problems, in the same order, with the same words.
 import { compile } from "@speths-screens/expr";
 import type { Drive, Project } from "./project";
+import { scriptProblems, stateProblems } from "./scripts";
 
 /** Every expression that does not compile, in a project that follows
  *  schema.json: calculated tags, alarm rules, then the driven properties of page,
@@ -19,6 +20,7 @@ export function expressionProblems(p: Project): string[] {
     const c = compile(r.expr);
     if (!c.ok) out.push(`alarm rule ${JSON.stringify(r.id)}: ${c.error}`);
   }
+  out.push(...stateProblems(p), ...scriptProblems(p));
   const drives = (where: string, dynamics: Record<string, Drive> | undefined, params?: string[]) => {
     for (const name of Object.keys(dynamics ?? {}).sort()) {
       const problem = driveProblem(dynamics![name]!.expr, params);

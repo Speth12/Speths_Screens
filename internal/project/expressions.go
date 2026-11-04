@@ -42,6 +42,8 @@ func ExpressionProblems(p *Project) []string {
 			out = append(out, fmt.Sprintf("alarm rule %q: %s", r.ID, err))
 		}
 	}
+	out = append(out, stateProblems(p)...)
+	out = append(out, scriptProblems(p)...)
 	drives := func(where string, dynamics map[string]Drive, params []string) {
 		names := make([]string, 0, len(dynamics))
 		for name := range dynamics {

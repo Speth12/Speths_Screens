@@ -94,7 +94,7 @@ type State = {
 };
 
 const blankProject = (): Project => ({
-  schemaVersion: 3,
+  schemaVersion: 4,
   version: "0.1.0",
   datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [] }],

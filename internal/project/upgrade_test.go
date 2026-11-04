@@ -54,6 +54,7 @@ var upgradeNotes = func() map[string][]string {
 	}
 	all := map[string][]string{}
 	for name, n := range v2ToV3 {
+		all[name+".v3"] = nil // v3 to v4 only moves the version
 		all[name+".v2"] = n
 		if first, ok := v1ToV2[name]; ok {
 			all[name+".v1"] = append(append([]string{}, first...), n...)
@@ -64,7 +65,7 @@ var upgradeNotes = func() map[string][]string {
 
 // The golden files in testdata/upgrade are shared with the TypeScript
 // upgrader's tests: every <name>.v<N>.json must upgrade to exactly the
-// newest file of that name, <name>.v3.json.
+// newest file of that name, <name>.v4.json.
 func TestUpgradeGolden(t *testing.T) {
 	newest, _ := filepath.Glob(fmt.Sprintf("../../testdata/upgrade/*.v%d.json", CurrentSchemaVersion))
 	if len(newest) != 7 {
@@ -137,8 +138,9 @@ func TestUpgradeVersions(t *testing.T) {
 		{"missing means 1", `{"version":"1","pages":[]}`, ""},
 		{"1", `{"schemaVersion":1,"pages":[]}`, ""},
 		{"2", `{"schemaVersion":2,"pages":[]}`, ""},
-		{"current", `{"schemaVersion":3,"pages":[]}`, ""},
-		{"newer", `{"schemaVersion":4,"pages":[]}`, "the project is format 4; this version of Speth's Screens reads up to 3"},
+		{"3", `{"schemaVersion":3,"pages":[]}`, ""},
+		{"current", `{"schemaVersion":4,"pages":[]}`, ""},
+		{"newer", `{"schemaVersion":5,"pages":[]}`, "the project is format 5; this version of Speth's Screens reads up to 4"},
 		{"not a version", `{"schemaVersion":0}`, "is not a format version"},
 		{"not JSON", `{`, "unmarshal project"},
 	}
@@ -155,8 +157,8 @@ func TestUpgradeVersions(t *testing.T) {
 				t.Fatal(err)
 			}
 			var doc map[string]any
-			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(3) {
-				t.Errorf("got %s, want schemaVersion 3", out)
+			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(4) {
+				t.Errorf("got %s, want schemaVersion 4", out)
 			}
 		})
 	}

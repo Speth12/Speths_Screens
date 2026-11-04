@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 const projectWith = (dsId: string): Project => ({
-  schemaVersion: 3,
+  schemaVersion: 4,
   version: "0.1.0",
   datasources: [{ id: dsId, name: dsId, type: "rest", config: {} } as unknown as Project["datasources"][number]],
   pages: [{ id: "p1", name: "Main", widgets: [] }],

@@ -21,6 +21,7 @@
     "eslint": "9.39.5"
   },
   "dependencies": {
-    "@speths-screens/expr": "*"
+    "@speths-screens/expr": "*",
+    "acorn": "^8.16.0"
   }
 }

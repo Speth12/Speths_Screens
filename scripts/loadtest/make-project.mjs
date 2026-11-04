@@ -38,7 +38,7 @@ const widgets = Array.from({ length: WIDGETS }, (_, i) => {
 });
 
 const project = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   version: "1.0.0",
   name: "Load test: 500 driven properties",
   canvasSnap: "pixel",

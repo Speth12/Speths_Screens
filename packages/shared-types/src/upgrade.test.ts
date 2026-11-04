@@ -56,6 +56,7 @@ const V2_TO_V3: Record<string, string[]> = {
 // Notes for upgrading <name>.v<N>.json, as in internal/project/upgrade_test.go.
 const NOTES: Record<string, string[]> = {};
 for (const [name, n] of Object.entries(V2_TO_V3)) {
+  NOTES[`${name}.v3`] = []; // v3 to v4 only moves the version
   NOTES[`${name}.v2`] = n;
   if (V1_TO_V2[name]) NOTES[`${name}.v1`] = [...V1_TO_V2[name], ...n];
 }
@@ -109,11 +110,12 @@ describe("versions", () => {
     ["missing means 1", { version: "1", pages: [] }],
     ["1", { schemaVersion: 1, pages: [] }],
     ["2", { schemaVersion: 2, pages: [] }],
-    ["current", { schemaVersion: 3, pages: [] }],
-  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(3));
+    ["3", { schemaVersion: 3, pages: [] }],
+    ["current", { schemaVersion: 4, pages: [] }],
+  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(4));
 
   it.each([
-    ["newer", { schemaVersion: 4 }, "the project is format 4; this version of Speth's Screens reads up to 3"],
+    ["newer", { schemaVersion: 5 }, "the project is format 5; this version of Speth's Screens reads up to 4"],
     ["not a version", { schemaVersion: 0 }, "is not a format version"],
     ["not an object", [1, 2], "not a JSON object"],
   ])("%s is refused", (_, doc, msg) => {

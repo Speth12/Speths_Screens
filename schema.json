@@ -6,10 +6,10 @@
   "required": ["schemaVersion", "version", "datasources", "pages"],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": {
+"schemaVersion": {
       "type": "integer",
-      "minimum": 3,
-      "maximum": 3,
+      "minimum": 4,
+      "maximum": 4,
       "description": "Project file format. A file without it is format 1 and is upgraded when opened"
     },
     "version": {
@@ -48,6 +48,24 @@
     "alarmRules": {
       "type": "array",
       "items": { "$ref": "#/$defs/AlarmRule" }
+    },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RuntimeScript"
+      },
+      "description": "Runtime scripts: JavaScript the runtime runs on its own (goja), on the triggers each one names"
+    },
+    "scriptRole": {
+      "$ref": "#/$defs/Role",
+      "description": "The role runtime scripts write as (roles and limits apply, and the audit names the script); missing means operator"
+    },
+    "sessionVars": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SessionVar"
+      },
+      "description": "Variables kept per browser tab, read as {session:name}; they never reach the runtime"
     },
     "recipes": {
       "type": "array",
@@ -125,31 +143,86 @@
         "config": { "$ref": "#/$defs/DatasourceConfig" }
       }
     },
-    "DatasourceType": {
+"DatasourceType": {
       "title": "DatasourceType",
       "type": "string",
-      "enum": ["opcua", "mbtcp", "mqtt", "rest", "virtual"]
+      "enum": [
+        "opcua",
+        "mbtcp",
+        "mqtt",
+        "rest",
+        "virtual",
+        "memory"
+      ]
     },
-    "DatasourceConfig": {
+"DatasourceConfig": {
       "title": "DatasourceConfig",
       "type": "object",
       "description": "Driver-specific connection config. Fields used depend on 'type'.",
       "additionalProperties": false,
       "properties": {
-        "endpoint":      { "type": "string", "description": "OPC UA: opc.tcp://host:port" },
-        "securityMode":  { "$ref": "#/$defs/SecurityMode" },
-        "securityPolicy":{ "$ref": "#/$defs/SecurityPolicy" },
-        "username":      { "type": "string" },
-        "password":      { "type": "string" },
-        "host":          { "type": "string", "description": "Modbus/MQTT/REST host" },
-        "port":          { "type": "integer", "description": "TCP port" },
-        "slaveId":       { "type": "integer", "description": "Modbus slave/unit ID" },
-        "clientId":      { "type": "string", "description": "MQTT client ID" },
-        "basePath":      { "type": "string", "description": "REST base path, e.g. /_pxc_api/v1.14" },
-        "bearerToken":   { "type": "string", "description": "REST bearer token" },
-        "certCheck":     { "$ref": "#/$defs/CertCheck", "description": "How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security). Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off" },
-        "certFingerprint": { "type": "string", "description": "SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons optional)" },
-        "tags":          { "type": "array", "items": { "$ref": "#/$defs/CalculatedTag" }, "description": "Virtual driver: the calculated tags" }
+        "endpoint": {
+          "type": "string",
+          "description": "OPC UA: opc.tcp://host:port"
+        },
+        "securityMode": {
+          "$ref": "#/$defs/SecurityMode"
+        },
+        "securityPolicy": {
+          "$ref": "#/$defs/SecurityPolicy"
+        },
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string",
+          "description": "Modbus/MQTT/REST host"
+        },
+        "port": {
+          "type": "integer",
+          "description": "TCP port"
+        },
+        "slaveId": {
+          "type": "integer",
+          "description": "Modbus slave/unit ID"
+        },
+        "clientId": {
+          "type": "string",
+          "description": "MQTT client ID"
+        },
+        "basePath": {
+          "type": "string",
+          "description": "REST base path, e.g. /_pxc_api/v1.14"
+        },
+        "bearerToken": {
+          "type": "string",
+          "description": "REST bearer token"
+        },
+        "certCheck": {
+          "$ref": "#/$defs/CertCheck",
+          "description": "How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security). Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off"
+        },
+        "certFingerprint": {
+          "type": "string",
+          "description": "SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons optional)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CalculatedTag"
+          },
+          "description": "Virtual driver: the calculated tags"
+        },
+        "memoryTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MemoryTag"
+          },
+          "description": "Memory datasource: the typed tags it holds"
+        }
       }
     },
     "CertCheck": {
@@ -167,6 +240,137 @@
       "properties": {
         "path": { "type": "string", "description": "The tag's name in this datasource" },
         "expr": { "type": "string", "description": "Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing input makes the tag Bad" }
+      }
+    },
+    "Role": {
+      "title": "Role",
+      "type": "string",
+      "enum": [
+        "operator",
+        "supervisor",
+        "engineer",
+        "admin"
+      ]
+    },
+    "VarType": {
+      "title": "VarType",
+      "type": "string",
+      "enum": [
+        "bool",
+        "int",
+        "real",
+        "string"
+      ]
+    },
+    "MemoryTag": {
+      "title": "MemoryTag",
+      "type": "object",
+      "required": [
+        "path",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A typed value the runtime holds; other expressions read it as {datasource:path}",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "The tag's name in this datasource"
+        },
+        "type": {
+          "$ref": "#/$defs/VarType"
+        },
+        "initial": {
+          "$ref": "#/$defs/TransformValue",
+          "description": "The value before anything is written (and after a restart, unless retained); missing means false, 0 or empty text"
+        },
+        "retain": {
+          "type": "boolean",
+          "description": "Keep the last value across a runtime restart"
+        }
+      }
+    },
+    "SessionVar": {
+      "title": "SessionVar",
+      "type": "object",
+      "required": [
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A typed value kept per browser tab, read as {session:name}",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Letters, digits and _"
+        },
+        "type": {
+          "$ref": "#/$defs/VarType"
+        },
+        "initial": {
+          "$ref": "#/$defs/TransformValue",
+          "description": "The value when the tab opens; missing means false, 0 or empty text"
+        }
+      }
+    },
+    "ScriptTrigger": {
+      "title": "ScriptTrigger",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "When a runtime script runs; it can name several",
+      "properties": {
+        "onChange": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Tag paths (ds:path or ns:path): run when one changes"
+        },
+        "every": {
+          "type": "integer",
+          "minimum": 100,
+          "description": "Run every this many milliseconds"
+        },
+        "onStart": {
+          "type": "boolean",
+          "description": "Run once when the project starts"
+        },
+        "onAlarm": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Alarm rule ids: run when one raises or clears"
+        }
+      }
+    },
+    "RuntimeScript": {
+      "title": "RuntimeScript",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "trigger",
+        "source"
+      ],
+      "additionalProperties": false,
+      "description": "JavaScript the runtime runs in its own sandbox, writing through the write pipeline as scriptRole",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "trigger": {
+          "$ref": "#/$defs/ScriptTrigger"
+        },
+        "source": {
+          "type": "string",
+          "description": "JavaScript (the script API: readTag, writeTag, onChange, every, after, log, emit, alarms)"
+        }
       }
     },
     "SecurityMode": {
@@ -1763,14 +1967,14 @@
         }
       }
     },
-    "TransformValue": {
+"TransformValue": {
       "title": "TransformValue",
       "type": [
         "string",
         "number",
         "boolean"
       ],
-      "description": "A property value: a color, text, number or flag"
+      "description": "A text, number or flag value (transform values, initial values)"
     },
     "Widget": {
       "title": "Widget",

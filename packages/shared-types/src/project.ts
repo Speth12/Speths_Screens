@@ -44,10 +44,24 @@ export interface Project {
      */
     schemaVersion: number;
     /**
+     * The role runtime scripts write as (roles and limits apply, and the audit names the
+     * script); missing means operator
+     */
+    scriptRole?: Role;
+    /**
+     * Runtime scripts: JavaScript the runtime runs on its own (goja), on the triggers each one
+     * names
+     */
+    scripts?: RuntimeScript[];
+    /**
      * Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
      * in the project
      */
     security?: Security;
+    /**
+     * Variables kept per browser tab, read as {session:name}; they never reach the runtime
+     */
+    sessionVars?: SessionVar[];
     /**
      * Default theme for every screen. A browser can still pick its own; that choice is not
      * saved in the project
@@ -153,8 +167,12 @@ export interface DatasourceConfig {
     /**
      * Modbus/MQTT/REST host
      */
-    host?:     string;
-    password?: string;
+    host?: string;
+    /**
+     * Memory datasource: the typed tags it holds
+     */
+    memoryTags?: MemoryTag[];
+    password?:   string;
     /**
      * TCP port
      */
@@ -181,6 +199,28 @@ export interface DatasourceConfig {
  */
 export type CERTCheck = "off" | "pinned" | "trusted";
 
+/**
+ * A typed value the runtime holds; other expressions read it as {datasource:path}
+ */
+export interface MemoryTag {
+    /**
+     * The value before anything is written (and after a restart, unless retained); missing
+     * means false, 0 or empty text
+     */
+    initial?: boolean | number | string;
+    /**
+     * The tag's name in this datasource
+     */
+    path: string;
+    /**
+     * Keep the last value across a runtime restart
+     */
+    retain?: boolean;
+    type:    Type;
+}
+
+export type Type = "bool" | "int" | "real" | "string";
+
 export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
 
 export type SecurityPolicy = "None" | "Basic128Rsa15" | "Basic256" | "Basic256Sha256";
@@ -200,7 +240,7 @@ export interface CalculatedTag {
     path: string;
 }
 
-export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual";
+export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual" | "memory";
 
 export interface Faceplate {
     description?: string;
@@ -963,6 +1003,48 @@ export interface RecipeEntry {
 }
 
 /**
+ * The role runtime scripts write as (roles and limits apply, and the audit names the
+ * script); missing means operator
+ */
+export type Role = "operator" | "supervisor" | "engineer" | "admin";
+
+/**
+ * JavaScript the runtime runs in its own sandbox, writing through the write pipeline as
+ * scriptRole
+ */
+export interface RuntimeScript {
+    id:   string;
+    name: string;
+    /**
+     * JavaScript (the script API: readTag, writeTag, onChange, every, after, log, emit, alarms)
+     */
+    source:  string;
+    trigger: ScriptTrigger;
+}
+
+/**
+ * When a runtime script runs; it can name several
+ */
+export interface ScriptTrigger {
+    /**
+     * Run every this many milliseconds
+     */
+    every?: number;
+    /**
+     * Alarm rule ids: run when one raises or clears
+     */
+    onAlarm?: string[];
+    /**
+     * Tag paths (ds:path or ns:path): run when one changes
+     */
+    onChange?: string[];
+    /**
+     * Run once when the project starts
+     */
+    onStart?: boolean;
+}
+
+/**
  * Login settings. Missing means mode 'none'. Users live on the runtime (security.db), not
  * in the project
  */
@@ -975,6 +1057,21 @@ export interface Security {
  * log in
  */
 export type AuthMode = "none" | "login";
+
+/**
+ * A typed value kept per browser tab, read as {session:name}
+ */
+export interface SessionVar {
+    /**
+     * The value when the tab opens; missing means false, 0 or empty text
+     */
+    initial?: boolean | number | string;
+    /**
+     * Letters, digits and _
+     */
+    name: string;
+    type: Type;
+}
 
 /**
  * Default theme for every screen. A browser can still pick its own; that choice is not
@@ -994,8 +1091,6 @@ export interface Udt {
 export interface UDTField {
     description?: string;
     name:         string;
-    type:         UDTFieldType;
+    type:         Type;
     unit?:        string;
 }
-
-export type UDTFieldType = "bool" | "int" | "real" | "string";
