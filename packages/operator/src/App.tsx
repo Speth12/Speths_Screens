@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { WidgetHostProvider, WidgetRenderer } from "@speths-screens/widgets";
 import { useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
+import { createProjectSync } from "./projectSync";
 import { sessionStore } from "./store/session";
 import { onWriteResult } from "./writeTag";
 import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
@@ -230,18 +231,22 @@ export function App() {
   const [tokenRev, setTokenRev] = useState(0);
   useEffect(() => onTokenChange(() => setTokenRev((v) => v + 1)), []);
 
-  // Load project every 5 s
+  // Load project every 5 s; a poll that finds the same project changes nothing
+  const projectSync = useRef(createProjectSync());
   useEffect(() => {
+    const sync = projectSync.current;
     const load = () =>
       apiFetch("/api/v1/project")
         .then((r) => {
-          if (r.status === 401 || r.status === 403) { setNeedLogin(true); return null; }
+          if (r.status === 401 || r.status === 403) { setNeedLogin(true); sync.reset(); return null; }
           setNeedLogin(false);
-          return r.json();
+          return r.text();
         })
-        .then((p) => {
-          if (p === null) return;
-          if (p && p.pages) { sessionStore.define(p.sessionVars ?? []); setProject(p); setError(""); }
+        .then((text) => {
+          if (text === null) return;
+          const poll = sync.accept(text);
+          if (poll.kind === "changed") { sessionStore.define(poll.project.sessionVars ?? []); setProject(poll.project); setError(""); }
+          else if (poll.kind === "same") setError("");
           else setError("No project deployed to this runtime.");
         })
         .catch(() => setError("Cannot reach runtime API."));
