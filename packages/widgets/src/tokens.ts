@@ -12,6 +12,25 @@
 // plus shape, type, spacing and shadow, so a theme can change the feel too.
 import type { ThemeID } from "@speths-screens/shared-types";
 
+/** The text sizes widgets draw with, smallest to largest, as CSS lengths. Tailwind's text-xs to
+ *  text-3xl read them (--type-xs to --type-3xl), so a theme changes every widget's text at once. */
+export interface TypeScale { xs: string; sm: string; base: string; lg: string; xl: string; "2xl": string; "3xl": string }
+
+export const TYPE_SCALE: TypeScale = {
+  xs: "0.75rem", sm: "0.875rem", base: "1rem", lg: "1.125rem", xl: "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem",
+};
+
+/** The fonts a project can choose from. Inter, Roboto, Open Sans and Noto Sans ship with the widget
+ *  library (fonts/fonts.css); "system" is whatever the device has. Each stack ends in a generic family. */
+export const FONTS = {
+  inter: { name: "Inter", stack: "Inter, 'Segoe UI', system-ui, sans-serif" },
+  roboto: { name: "Roboto", stack: "Roboto, 'Segoe UI', system-ui, sans-serif" },
+  "open-sans": { name: "Open Sans", stack: "'Open Sans', 'Segoe UI', system-ui, sans-serif" },
+  "noto-sans": { name: "Noto Sans", stack: "'Noto Sans', 'Segoe UI', system-ui, sans-serif" },
+  system: { name: "System", stack: "system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" },
+} as const;
+export type FontId = keyof typeof FONTS;
+
 /** The colors of a theme, by token. */
 export interface ThemeColors {
   background: string; foreground: string;
@@ -35,7 +54,7 @@ export interface Theme {
   colors: ThemeColors;
   /** Corner radius and line weight of frames and controls. */
   shape: { radius: string; lineWidth: string };
-  type: { fontSans: string; fontMono: string; fontSize: string };
+  type: { fontSans: string; fontMono: string; fontSize: string; scale: TypeScale };
   /** Padding inside a widget's frame. */
   space: { pad: string };
   /** Shadow under a widget's frame ("none" for flat). */
@@ -63,7 +82,7 @@ export const HIGH_PERFORMANCE: Theme = {
     alarmCritical: "#c00000", alarmWarning: "#995000", alarmInfo: "#1957a6", alarmShelved: "#5c5c5c",
   },
   shape: { radius: "2px", lineWidth: "1px" },
-  type: { fontSans: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", fontMono: "Consolas, 'DejaVu Sans Mono', monospace", fontSize: "13px" },
+  type: { fontSans: FONTS.inter.stack, fontMono: "Consolas, 'DejaVu Sans Mono', monospace", fontSize: "13px", scale: TYPE_SCALE },
   space: { pad: "0.5rem" },
   shadow: "none",
 };
@@ -96,6 +115,7 @@ export function themeVars(t: Theme): Record<string, string> {
   vars["--font-sans"] = t.type.fontSans;
   vars["--font-mono"] = t.type.fontMono;
   vars["--font-size"] = t.type.fontSize;
+  for (const [k, v] of Object.entries(t.type.scale)) vars[`--type-${k}`] = v;
   vars["--pad"] = t.space.pad;
   vars["--shadow"] = t.shadow;
   return vars;

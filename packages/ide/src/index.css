@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../widgets/fonts/fonts.css";
 /* The shared widget library lives outside this app; Tailwind must scan it too. */
 @source "../../widgets/src";
 
@@ -22,6 +23,9 @@ html, body, #root { height: 100%; }
   --warning:              #ff9500;
   --success:              #30d158;
   --font-mono:            'JetBrains Mono', monospace;
+  /* Text sizes widgets draw with (Tailwind's text-xs … text-3xl read these); a theme sets them. */
+  --type-xs: 0.75rem; --type-sm: 0.875rem; --type-base: 1rem; --type-lg: 1.125rem;
+  --type-xl: 1.25rem; --type-2xl: 1.5rem; --type-3xl: 1.875rem;
 }
 
 /*
@@ -50,6 +54,13 @@ html, body, #root { height: 100%; }
  *   blue-500/40 → used in drag handles
  */
 @theme inline {
+  --text-xs: var(--type-xs);
+  --text-sm: var(--type-sm);
+  --text-base: var(--type-base);
+  --text-lg: var(--type-lg);
+  --text-xl: var(--type-xl);
+  --text-2xl: var(--type-2xl);
+  --text-3xl: var(--type-3xl);
   --color-zinc-950: var(--background);
   --color-zinc-900: var(--card);
   --color-zinc-800: var(--secondary);
