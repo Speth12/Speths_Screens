@@ -19,11 +19,11 @@ export function MCPModal({ onClose }: { onClose: () => void }) {
   const mcpUrl = `${base}/mcp`;
 
   const claudeConfig = JSON.stringify(
-    { mcpServers: { "x-hmi": { type: "http", url: mcpUrl } } },
+    { mcpServers: { "speths-screens": { type: "http", url: mcpUrl } } },
     null,
     2,
   );
-  const cliCmd = `claude mcp add --transport http x-hmi ${mcpUrl}`;
+  const cliCmd = `claude mcp add --transport http speths-screens ${mcpUrl}`;
   const curlList = curlCmd(mcpUrl, 1, "tools/list");
   const curlCall = curlCmd(
     mcpUrl, 2, "tools/call",
@@ -125,12 +125,12 @@ export function MCPModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
               <div className="text-[10px] text-zinc-600 pt-2">
-                Resources: <code className="text-zinc-500">xhmi://project</code>,{" "}
-                <code className="text-zinc-500">xhmi://pages</code>,{" "}
-                <code className="text-zinc-500">xhmi://page/:id</code>,{" "}
-                <code className="text-zinc-500">xhmi://alarms</code>,{" "}
-                <code className="text-zinc-500">xhmi://recipes</code>,{" "}
-                <code className="text-zinc-500">xhmi://datasources</code>
+                Resources: <code className="text-zinc-500">speths-screens://project</code>,{" "}
+                <code className="text-zinc-500">speths-screens://pages</code>,{" "}
+                <code className="text-zinc-500">speths-screens://page/:id</code>,{" "}
+                <code className="text-zinc-500">speths-screens://alarms</code>,{" "}
+                <code className="text-zinc-500">speths-screens://recipes</code>,{" "}
+                <code className="text-zinc-500">speths-screens://datasources</code>
               </div>
             </div>
           )}
