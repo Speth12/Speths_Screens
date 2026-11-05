@@ -3,9 +3,10 @@
 // golden files in testdata/upgrade.
 import schema from "../../../schema.json";
 import { v2ToV3 } from "./upgradeV3";
+import { v4ToV5 } from "./upgradeV5";
 
 /** The project format this build writes. A file without schemaVersion is 1. */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 type Obj = Record<string, unknown>;
 
@@ -40,6 +41,7 @@ export function upgradeProject(input: unknown): UpgradeResult {
   if (version < 3) v2ToV3(doc, notes);
   // v3 to v4 adds fields (scripts, memory tags, session variables) and
   // changes nothing that exists: only the version moves.
+  if (version < 5) v4ToV5(doc);
   doc.schemaVersion = CURRENT_SCHEMA_VERSION;
   return { project: doc, notes };
 }

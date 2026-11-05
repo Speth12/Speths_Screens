@@ -13,7 +13,7 @@ import (
 
 // CurrentSchemaVersion is the project format this build writes. A file
 // without schemaVersion is version 1.
-const CurrentSchemaVersion = 4
+const CurrentSchemaVersion = 5
 
 // Upgrade turns project JSON in any older format into the current one. It
 // returns the JSON unchanged when it is current, and notes describing
@@ -55,6 +55,9 @@ func Upgrade(data []byte) ([]byte, []string, error) {
 	}
 	// v3 to v4 adds fields (scripts, memory tags, session variables) and
 	// changes nothing that exists: only the version moves.
+	if version < 5 {
+		u.v4ToV5(doc)
+	}
 	doc["schemaVersion"] = CurrentSchemaVersion
 	var out bytes.Buffer
 	enc := json.NewEncoder(&out)

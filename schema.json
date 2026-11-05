@@ -8,8 +8,8 @@
   "properties": {
 "schemaVersion": {
       "type": "integer",
-      "minimum": 4,
-      "maximum": 4,
+      "minimum": 5,
+      "maximum": 5,
       "description": "Project file format. A file without it is format 1 and is upgraded when opened"
     },
     "version": {
@@ -29,8 +29,8 @@
       "description": "Disable all write widgets in the operator panel"
     },
     "theme": {
-      "$ref": "#/$defs/ThemeId",
-      "description": "Default theme for every screen. A browser can still pick its own; that choice is not saved in the project"
+      "$ref": "#/$defs/Theme",
+      "description": "The look of every screen: a preset, light or dark, and any element changed from the preset. A browser can still pick light or dark for itself; that choice is not saved in the project"
     },
     "security": {
       "$ref": "#/$defs/Security",
@@ -59,6 +59,23 @@
     "scriptRole": {
       "$ref": "#/$defs/Role",
       "description": "The role runtime scripts write as (roles and limits apply, and the audit names the script); missing means operator"
+    },
+    "shell": {
+      "$ref": "#/$defs/Shell"
+    },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$" },
+      "uniqueItems": true,
+      "description": "Language codes the screens can be shown in, such as en, de, es. The first is the language the project's text is written in; the operator screen offers a switch when there are two or more"
+    },
+    "translations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string" }
+      },
+      "description": "For each language, the project's text as written (page names, labels, alarm messages) mapped to its translation. A text with no entry shows as written"
     },
     "sessionVars": {
       "type": "array",
@@ -110,11 +127,67 @@
     }
   },
   "$defs": {
-    "ThemeId": {
-      "title": "ThemeId",
+    "Theme": {
+      "title": "Theme",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A preset sets every element; an element named here replaces the preset's choice, so a theme can be taken whole or built from its parts",
+      "properties": {
+        "preset": { "$ref": "#/$defs/ThemePreset" },
+        "mode": { "$ref": "#/$defs/ThemeMode" },
+        "palette": { "$ref": "#/$defs/ThemePalette" },
+        "corners": { "$ref": "#/$defs/ThemeCorners" },
+        "depth": { "$ref": "#/$defs/ThemeDepth" },
+        "density": { "$ref": "#/$defs/ThemeDensity" },
+        "font": { "$ref": "#/$defs/ThemeFont" },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "The main color of buttons and selections as #rrggbb; replaces the palette's"
+        }
+      }
+    },
+    "ThemePreset": {
+      "title": "ThemePreset",
       "type": "string",
-      "enum": ["high-performance"],
-      "description": "Screen themes. Phase 3 has one; each later theme adds its id"
+      "enum": ["calm", "clean", "modern"],
+      "description": "calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of shadows. Missing means calm"
+    },
+    "ThemeMode": {
+      "title": "ThemeMode",
+      "type": "string",
+      "enum": ["light", "dark"],
+      "description": "Missing means the preset's own (light for calm and clean, dark for modern)"
+    },
+    "ThemePalette": {
+      "title": "ThemePalette",
+      "type": "string",
+      "enum": ["calm", "modern"],
+      "description": "The colors: calm is gray with a muted blue; modern is cool white or charcoal with a bright blue"
+    },
+    "ThemeCorners": {
+      "title": "ThemeCorners",
+      "type": "string",
+      "enum": ["square", "soft", "round"],
+      "description": "Corner radius of cards and controls: 2, 6 or 12 px"
+    },
+    "ThemeDepth": {
+      "title": "ThemeDepth",
+      "type": "string",
+      "enum": ["flat", "raised", "borderless"],
+      "description": "flat: a 1 px border. raised: a soft shadow. borderless: neither, the cards stand out by color alone"
+    },
+    "ThemeDensity": {
+      "title": "ThemeDensity",
+      "type": "string",
+      "enum": ["compact", "comfortable", "touch"],
+      "description": "Padding and text size. touch is larger, with controls at least 44 px tall, for tablets and panels"
+    },
+    "ThemeFont": {
+      "title": "ThemeFont",
+      "type": "string",
+      "enum": ["inter", "roboto", "open-sans", "noto-sans", "system"],
+      "description": "The text font. All but system are bundled, so a PLC with no internet shows the same text"
     },
     "Security": {
       "title": "Security",
@@ -400,8 +473,30 @@
         "name":            { "type": "string" },
         "widgets":         { "type": "array", "items": { "$ref": "#/$defs/Widget" } },
         "backgroundColor": { "type": "string", "description": "CSS color for the page background" },
-        "script":          { "type": "string", "description": "Page script (JavaScript source)" }
+        "script":          { "type": "string", "description": "Page script (JavaScript source)" },
+        "icon":            { "$ref": "#/$defs/PageIcon", "description": "Shown beside the page's name in the navigation; missing shows the name's first letter" },
+        "group":           { "type": "string", "description": "Pages with the same group are listed together under that heading in the sidebar" }
       }
+    },
+    "PageIcon": {
+      "title": "PageIcon",
+      "type": "string",
+      "enum": ["home", "graph", "alarm", "settings", "pump", "vessel", "valve", "motor", "dial", "list", "chart", "map", "user", "tools", "bolt", "flask"]
+    },
+    "Shell": {
+      "title": "Shell",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The frame around the pages in the operator screen",
+      "properties": {
+        "nav": { "$ref": "#/$defs/ShellNav" }
+      }
+    },
+    "ShellNav": {
+      "title": "ShellNav",
+      "type": "string",
+      "enum": ["sidebar", "toolbar", "tabs"],
+      "description": "How a person moves between pages: a list on the left, a row of large icon buttons, or tabs. A phone always gets a bar along the bottom. Missing means tabs"
     },
     "WidgetType": {
       "title": "WidgetType",
@@ -423,7 +518,8 @@
         "image",
         "symbol",
         "faceplate",
-        "table"
+        "table",
+        "pipe"
       ]
     },
     "TrendXFormat": {
@@ -1158,6 +1254,65 @@
         "stroke": {
           "type": "string",
           "description": "Symbol: stroke color"
+        },
+        "motion": {
+          "$ref": "#/$defs/SymbolMotion",
+          "description": "Symbol: what it does while animate is true"
+        },
+        "animate": {
+          "type": "boolean",
+          "description": "Symbol: true while the symbol should move (a pump running); drive it from a tag"
+        },
+        "cycleSeconds": {
+          "type": "number",
+          "description": "Symbol: seconds for one turn or one pulse; missing means 2"
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "SymbolMotion": {
+      "title": "SymbolMotion",
+      "type": "string",
+      "enum": ["still", "spin", "pulse"],
+      "description": "still: never moves. spin: turns round. pulse: fades in and out. A person who asks the browser for less motion sees it still"
+    },
+    "PipeProps": {
+      "title": "PipeProps",
+      "type": "object",
+      "description": "Settings of a pipe widget: a line through points with an animated flow",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "points": {
+          "type": "string",
+          "description": "Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. \"0,50 60,50 60,100\""
+        },
+        "weight": {
+          "type": "number",
+          "description": "Pipe: line width in pixels; missing means 8"
+        },
+        "color": {
+          "type": "string",
+          "description": "Pipe: the pipe's color, a CSS color or a token such as token:process-running"
+        },
+        "flow": {
+          "type": "boolean",
+          "description": "Pipe: true while something flows; drive it from a tag"
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "Pipe: flow runs from the last point to the first"
+        },
+        "flowColor": {
+          "type": "string",
+          "description": "Pipe: the color of the moving dashes; missing means the theme's own"
+        },
+        "cycleSeconds": {
+          "type": "number",
+          "description": "Pipe: seconds for the dashes to move one step; missing means 1"
         }
       },
       "unevaluatedProperties": false
@@ -1647,7 +1802,32 @@
                   "textColor",
                   "blink",
                   "rotate",
-                  "stroke"
+                  "stroke",
+                  "animate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "pipe"
+            },
+            "props": {
+              "$ref": "#/$defs/PipeProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "opacity",
+                  "color",
+                  "flow",
+                  "reverse"
                 ]
               }
             }
@@ -2030,6 +2210,9 @@
           "type": "string",
           "description": "IDE-only: widgets with the same groupId move together"
         },
+        "layout": {
+          "$ref": "#/$defs/WidgetLayouts"
+        },
         "props": {
           "type": "object",
           "description": "This widget type's settings (see TypedProps)"
@@ -2053,6 +2236,29 @@
           "$ref": "#/$defs/TypedProps"
         }
       ]
+    },
+    "WidgetLayouts": {
+      "title": "WidgetLayouts",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where the widget sits on a smaller screen. x, y, w and h above are the desktop layout; a tablet (under 1024 px wide) uses what is set here, and a phone (under 640 px) uses its own, then the tablet's, then the desktop's, one field at a time",
+      "properties": {
+        "tablet": { "$ref": "#/$defs/WidgetPlacement" },
+        "phone": { "$ref": "#/$defs/WidgetPlacement" }
+      }
+    },
+    "WidgetPlacement": {
+      "title": "WidgetPlacement",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A widget's place on one screen size; a field left out is inherited from the next size up",
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "description": "Grid column or pixel" },
+        "y": { "type": "integer", "minimum": 0, "description": "Grid row or pixel" },
+        "w": { "type": "integer", "minimum": 1, "description": "Width" },
+        "h": { "type": "integer", "minimum": 1, "description": "Height" },
+        "hidden": { "type": "boolean", "description": "Not shown on this screen size" }
+      }
     },
     "FaceplateWidget": {
       "title": "FaceplateWidget",

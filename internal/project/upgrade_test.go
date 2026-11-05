@@ -54,6 +54,7 @@ var upgradeNotes = func() map[string][]string {
 	}
 	all := map[string][]string{}
 	for name, n := range v2ToV3 {
+		all[name+".v4"] = nil // v4 to v5 only changes the theme from an id to an object (no note)
 		all[name+".v3"] = nil // v3 to v4 only moves the version
 		all[name+".v2"] = n
 		if first, ok := v1ToV2[name]; ok {
@@ -65,7 +66,7 @@ var upgradeNotes = func() map[string][]string {
 
 // The golden files in testdata/upgrade are shared with the TypeScript
 // upgrader's tests: every <name>.v<N>.json must upgrade to exactly the
-// newest file of that name, <name>.v4.json.
+// newest file of that name, <name>.v5.json.
 func TestUpgradeGolden(t *testing.T) {
 	newest, _ := filepath.Glob(fmt.Sprintf("../../testdata/upgrade/*.v%d.json", CurrentSchemaVersion))
 	if len(newest) != 7 {
@@ -139,8 +140,9 @@ func TestUpgradeVersions(t *testing.T) {
 		{"1", `{"schemaVersion":1,"pages":[]}`, ""},
 		{"2", `{"schemaVersion":2,"pages":[]}`, ""},
 		{"3", `{"schemaVersion":3,"pages":[]}`, ""},
-		{"current", `{"schemaVersion":4,"pages":[]}`, ""},
-		{"newer", `{"schemaVersion":5,"pages":[]}`, "the project is format 5; this version of Speth's Screens reads up to 4"},
+		{"4", `{"schemaVersion":4,"pages":[]}`, ""},
+		{"current", `{"schemaVersion":5,"pages":[]}`, ""},
+		{"newer", `{"schemaVersion":6,"pages":[]}`, "the project is format 6; this version of Speth's Screens reads up to 5"},
 		{"not a version", `{"schemaVersion":0}`, "is not a format version"},
 		{"not JSON", `{`, "unmarshal project"},
 	}
@@ -157,8 +159,8 @@ func TestUpgradeVersions(t *testing.T) {
 				t.Fatal(err)
 			}
 			var doc map[string]any
-			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(4) {
-				t.Errorf("got %s, want schemaVersion 4", out)
+			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(5) {
+				t.Errorf("got %s, want schemaVersion 5", out)
 			}
 		})
 	}
@@ -182,8 +184,8 @@ func TestPropsKeysFromSchema(t *testing.T) {
 		{"textInput", "label", true},
 		{"textInput", "unit", false},
 	}
-	if len(keys) != 17 {
-		t.Errorf("%d widget types, want 17", len(keys))
+	if len(keys) != 18 {
+		t.Errorf("%d widget types, want 18", len(keys))
 	}
 	for _, tc := range tests {
 		if keys[tc.typ][tc.key] != tc.ok {
@@ -236,4 +238,30 @@ func sameJSON(t *testing.T, a, b []byte) bool {
 		t.Fatal(err)
 	}
 	return reflect.DeepEqual(x, y)
+}
+
+func TestUpgradeV4Theme(t *testing.T) {
+	tests := []struct {
+		name, in, want string
+	}{
+		{"an id becomes the calm preset in light mode", `{"schemaVersion":4,"theme":"high-performance","pages":[]}`, `{"mode":"light","preset":"calm"}`},
+		{"an object is left alone", `{"schemaVersion":4,"theme":{"preset":"modern","font":"roboto"},"pages":[]}`, `{"font":"roboto","preset":"modern"}`},
+		{"no theme stays none", `{"schemaVersion":4,"pages":[]}`, `null`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, notes, err := Upgrade([]byte(tt.in))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var doc map[string]any
+			if err := json.Unmarshal(out, &doc); err != nil {
+				t.Fatal(err)
+			}
+			got, _ := json.Marshal(doc["theme"])
+			if string(got) != tt.want || len(notes) != 0 {
+				t.Errorf("theme %s, notes %v; want %s and no notes", got, notes, tt.want)
+			}
+		})
+	}
 }

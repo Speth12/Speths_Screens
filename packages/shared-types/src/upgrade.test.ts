@@ -56,6 +56,7 @@ const V2_TO_V3: Record<string, string[]> = {
 // Notes for upgrading <name>.v<N>.json, as in internal/project/upgrade_test.go.
 const NOTES: Record<string, string[]> = {};
 for (const [name, n] of Object.entries(V2_TO_V3)) {
+  NOTES[`${name}.v4`] = []; // v4 to v5 only changes the theme from an id to an object (no note)
   NOTES[`${name}.v3`] = []; // v3 to v4 only moves the version
   NOTES[`${name}.v2`] = n;
   if (V1_TO_V2[name]) NOTES[`${name}.v1`] = [...V1_TO_V2[name], ...n];
@@ -111,11 +112,12 @@ describe("versions", () => {
     ["1", { schemaVersion: 1, pages: [] }],
     ["2", { schemaVersion: 2, pages: [] }],
     ["3", { schemaVersion: 3, pages: [] }],
-    ["current", { schemaVersion: 4, pages: [] }],
-  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(4));
+    ["4", { schemaVersion: 4, pages: [] }],
+    ["current", { schemaVersion: 5, pages: [] }],
+  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(5));
 
   it.each([
-    ["newer", { schemaVersion: 5 }, "the project is format 5; this version of Speth's Screens reads up to 4"],
+    ["newer", { schemaVersion: 6 }, "the project is format 6; this version of Speth's Screens reads up to 5"],
     ["not a version", { schemaVersion: 0 }, "is not a format version"],
     ["not an object", [1, 2], "not a JSON object"],
   ])("%s is refused", (_, doc, msg) => {
@@ -126,10 +128,22 @@ describe("versions", () => {
 
 it("reads each widget type's settings from schema.json", () => {
   const keys = propsKeys();
-  expect(keys.size).toBe(17);
+  expect(keys.size).toBe(18);
   expect(keys.get("gauge")?.has("min")).toBe(true);
   expect(keys.get("gauge")?.has("label")).toBe(true);
   expect(keys.get("gauge")?.has("momentary")).toBe(false);
   expect(keys.get("button")?.has("onValue")).toBe(false);
   expect(keys.get("numericInput")?.has("max")).toBe(true);
+});
+
+describe("v4 to v5 theme", () => {
+  it.each([
+    ["an id becomes the calm preset in light mode", { schemaVersion: 4, theme: "high-performance", pages: [] }, { preset: "calm", mode: "light" }],
+    ["an object is left alone", { schemaVersion: 4, theme: { preset: "modern", font: "roboto" }, pages: [] }, { preset: "modern", font: "roboto" }],
+    ["no theme stays none", { schemaVersion: 4, pages: [] }, undefined],
+  ])("%s", (_, doc, want) => {
+    const r = upgradeProject(doc);
+    expect(r.project.theme).toEqual(want);
+    expect(r.notes).toEqual([]);
+  });
 });

@@ -438,6 +438,51 @@ type SymbolProps struct {
 	SymbolID *string `json:"symbolId,omitempty"`
 	// Symbol: stroke color
 	Stroke *string `json:"stroke,omitempty"`
+	// Symbol: what it does while animate is true
+	Motion *SymbolMotion `json:"motion,omitempty"`
+	// Symbol: true while the symbol should move (a pump running); drive it from a tag
+	Animate *bool `json:"animate,omitempty"`
+	// Symbol: seconds for one turn or one pulse; missing means 2
+	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
+}
+
+// PipeProps holds the settings of a pipe widget.
+type PipeProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. "0,50 60,50 60,100"
+	Points *string `json:"points,omitempty"`
+	// Pipe: line width in pixels; missing means 8
+	Weight *float64 `json:"weight,omitempty"`
+	// Pipe: the pipe's color, a CSS color or a token such as token:process-running
+	Color *string `json:"color,omitempty"`
+	// Pipe: true while something flows; drive it from a tag
+	Flow *bool `json:"flow,omitempty"`
+	// Pipe: flow runs from the last point to the first
+	Reverse *bool `json:"reverse,omitempty"`
+	// Pipe: the color of the moving dashes; missing means the theme's own
+	FlowColor *string `json:"flowColor,omitempty"`
+	// Pipe: seconds for the dashes to move one step; missing means 1
+	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
 }
 
 // FaceplateProps holds the settings of a faceplate widget.
@@ -601,6 +646,13 @@ func (w Widget) AsSymbol() (SymbolProps, error) {
 	return p, decodeProps(w.Type, Symbol, w.Props, &p)
 }
 
+// AsPipe returns w's settings as a pipe widget's. It fails when w is
+// another type or has a setting a pipe does not have.
+func (w Widget) AsPipe() (PipeProps, error) {
+	var p PipeProps
+	return p, decodeProps(w.Type, Pipe, w.Props, &p)
+}
+
 // AsFaceplate returns w's settings as a faceplate widget's. It fails when w is
 // another type or has a setting a faceplate does not have.
 func (w Widget) AsFaceplate() (FaceplateProps, error) {
@@ -631,7 +683,8 @@ var PropsKeys = map[WidgetType][]string{
 	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
 	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
 	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
-	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke"},
+	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
+	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
 	Faceplate:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "faceplateId", "params"},
 	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }
