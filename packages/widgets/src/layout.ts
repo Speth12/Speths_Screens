@@ -58,3 +58,72 @@ export function fitScale(stage: Size, viewport: Size, opts: { maxScale?: number;
   const s = fitHeight ? Math.min(viewport.width / stage.width, viewport.height / stage.height) : viewport.width / stage.width;
   return Math.min(s, maxScale);
 }
+
+// ── Screen sizes ─────────────────────────────────────────────────────────
+
+/** A screen size. desktop is the layout in a widget's own x, y, w and h. */
+export type Device = "desktop" | "tablet" | "phone";
+
+/** A window under this width is a tablet, and under PHONE_MAX a phone. */
+export const TABLET_MAX = 1024;
+export const PHONE_MAX = 640;
+
+export function deviceFor(width: number): Device {
+  return width < PHONE_MAX ? "phone" : width < TABLET_MAX ? "tablet" : "desktop";
+}
+
+/** The width the editor draws a device's screen at. */
+export const DEVICE_WIDTH: Record<Device, number> = { desktop: 1280, tablet: 820, phone: 390 };
+
+type PlacementFields = { x?: number; y?: number; w?: number; h?: number; hidden?: boolean };
+type WithLayouts = { x?: number; y?: number; w: number; h: number; layout?: { tablet?: PlacementFields; phone?: PlacementFields } };
+
+/** Where a widget sits on a device: each field from the device's own layout, else the next size
+ *  up (a phone inherits from the tablet, then the desktop). */
+export function effectivePlacement(w: WithLayouts, device: Device): { x: number; y: number; w: number; h: number; hidden: boolean } {
+  const chain: PlacementFields[] = [...(device === "desktop" ? [] : device === "tablet" ? [w.layout?.tablet] : [w.layout?.phone, w.layout?.tablet]), w]
+    .filter((c): c is PlacementFields => !!c);
+  const pick = <K extends "x" | "y" | "w" | "h">(k: K, fallback: number): number => {
+    for (const c of chain) if (c[k] !== undefined) return c[k] as number;
+    return fallback;
+  };
+  // hidden is only a setting of a smaller device's layout, and the nearest one that says wins.
+  const hiddenIn = (device === "desktop" ? [] : device === "tablet" ? [w.layout?.tablet] : [w.layout?.phone, w.layout?.tablet]).find((c) => c?.hidden !== undefined);
+  return { x: pick("x", 0), y: pick("y", 0), w: pick("w", 1), h: pick("h", 1), hidden: hiddenIn?.hidden === true };
+}
+
+/** The widgets as they sit on a device. The IDE keeps hidden ones (`keepHidden`) to show them faded
+ *  and let them be shown again; a screen drops them. A desktop gets the widgets back as they are. */
+export function forDevice<W extends WithLayouts>(widgets: readonly W[], device: Device, keepHidden = false): (W & { hiddenOnDevice?: boolean })[] {
+  if (device === "desktop") return widgets as W[];
+  const out: (W & { hiddenOnDevice?: boolean })[] = [];
+  for (const w of widgets) {
+    const p = effectivePlacement(w, device);
+    if (p.hidden && !keepHidden) continue;
+    out.push({ ...w, x: p.x, y: p.y, w: p.w, h: p.h, ...(p.hidden ? { hiddenOnDevice: true } : {}) });
+  }
+  return out;
+}
+
+/** A change to a widget's x, y, w, h made while editing a device: the layout to store. On the desktop
+ *  the fields are the widget's own; on a smaller device they go into that device's layout, and a
+ *  field equal to what the device would inherit is not stored, so it keeps following the larger size. */
+export function placeFor<W extends WithLayouts>(w: W, device: Device, patch: PlacementFields): Partial<W> {
+  if (device === "desktop") {
+    const own: Partial<W> = {};
+    for (const k of ["x", "y", "w", "h"] as const) if (patch[k] !== undefined) (own as Record<string, unknown>)[k] = patch[k];
+    return own;
+  }
+  const inherited = effectivePlacement(
+    { ...w, layout: device === "phone" ? { tablet: w.layout?.tablet } : undefined } as WithLayouts, device === "phone" ? "tablet" : "desktop");
+  const mine: PlacementFields = { ...(w.layout?.[device] ?? {}) };
+  for (const k of ["x", "y", "w", "h"] as const) {
+    const v = patch[k];
+    if (v === undefined) continue;
+    if (v === inherited[k]) delete mine[k]; else mine[k] = v;
+  }
+  if (patch.hidden !== undefined) { if (patch.hidden) mine.hidden = true; else delete mine.hidden; }
+  const layout = { ...(w.layout ?? {}) } as { tablet?: PlacementFields; phone?: PlacementFields };
+  if (Object.keys(mine).length) layout[device] = mine; else delete layout[device];
+  return { layout: Object.keys(layout).length ? layout : undefined } as unknown as Partial<W>;
+}

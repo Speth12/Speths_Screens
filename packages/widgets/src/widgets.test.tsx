@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Faceplate, Widget } from "@speths-screens/shared-types";
-import { RENDERED_TYPES, WidgetRenderer, actionWrite, toggled, rewriteBinding } from "./widgets";
+import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, toggled, rewriteBinding } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost, type AlarmView } from "./host";
 import { SYMBOLS } from "./symbols";
 
@@ -72,6 +72,7 @@ describe("each widget renders", () => {
     { type: "alarmBanner",    w: {},                                                   shows: "Hot — temp high" },
     { type: "image",          w: { props: { src: "", label: "x" } },                   shows: "No image" },
     { type: "symbol",         w: { props: { symbolId: sym.id, label: "Valve 1" } },    shows: "Valve 1" },
+    { type: "pipe",           w: { props: { label: "Feed line", points: "0,50 100,50" } },  shows: "" },
     { type: "faceplate",      w: { props: { faceplateId: "fp1", params: { pump: "P1" } } }, shows: "1450" },
     { type: "table",          w: { props: { rows: [{ label: "Temp", binding: "plc:T" }] } }, shows: "42.50" },
   ];
@@ -186,5 +187,74 @@ describe("helpers", () => {
   it("rewriteBinding fills faceplate parameters and leaves unknown ones", () => {
     expect(rewriteBinding("plc:{pump}.{x}", { pump: "P1" })).toBe("plc:P1.{x}");
     expect(rewriteBinding(undefined, {})).toBeUndefined();
+  });
+});
+
+describe("process graphics", () => {
+  const polylines = (c: HTMLElement) => Array.from(c.querySelectorAll("polyline"));
+  const style = (c: HTMLElement) => c.querySelector("style")?.textContent ?? "";
+
+  it("a pipe draws its corners, a dark outline under its color", () => {
+    const { container } = draw({ type: "pipe", props: { points: "0,50 60,50 60,100", weight: 10, color: "#336699" } });
+    const lines = polylines(container);
+    expect(lines).toHaveLength(2);
+    expect(lines.map((l) => l.getAttribute("points"))).toEqual(["0,50 60,50 60,100", "0,50 60,50 60,100"]);
+    expect(lines[1]!.style.stroke).toBe("rgb(51, 102, 153)");
+    expect(lines[1]!.style.strokeWidth).toBe("10");
+    expect(Number(lines[0]!.style.strokeWidth)).toBeGreaterThan(10);
+  });
+
+  it("a pipe takes a design token as its color", () => {
+    const { container } = draw({ type: "pipe", props: { color: "var(--process-running)" } });
+    expect(container.querySelector("[data-pipe-body]")!.getAttribute("style")).toContain("var(--process-running)");
+  });
+
+  it("a pipe with no usable corners is a straight line, not nothing", () => {
+    const { container } = draw({ type: "pipe", props: { points: "nonsense 5" } });
+    expect(polylines(container)[0]!.getAttribute("points")).toBe("0,50 100,50");
+  });
+
+  it("corners outside the widget are held to its edge", () => {
+    expect(parsePipePoints("-20,50 150,300")).toEqual([[0, 50], [100, 100]]);
+  });
+
+  it("a pipe moves only while flow is true, and reverse runs the other way", () => {
+    expect(polylines(draw({ type: "pipe", props: { flow: false } }).container)).toHaveLength(2);
+    cleanup();
+    const on = draw({ type: "pipe", props: { flow: true } }).container;
+    const dashes = polylines(on)[2]!;
+    expect(dashes.getAttribute("data-ss-motion")).toBe("flow");
+    expect(dashes.getAttribute("style")).toContain("--ss-flow-step: -18");
+    cleanup();
+    const back = draw({ type: "pipe", props: { flow: true, reverse: true } }).container;
+    expect(polylines(back)[2]!.getAttribute("style")).toContain("--ss-flow-step: 18");
+  });
+
+  it("the flow honors a request for less motion", () => {
+    const { container } = draw({ type: "pipe", props: { flow: true } });
+    expect(style(container)).toContain("prefers-reduced-motion: reduce");
+    expect(style(container)).toContain("animation: none");
+  });
+
+  it("a symbol spins or pulses only while animate is true", () => {
+    const sym = SYMBOLS[0]!;
+    const motion = (c: HTMLElement) => c.querySelector("[data-ss-motion]");
+    expect(motion(draw({ type: "symbol", props: { symbolId: sym.id, motion: "spin", animate: false } }).container)).toBeNull();
+    cleanup();
+    const spin = motion(draw({ type: "symbol", props: { symbolId: sym.id, motion: "spin", animate: true, cycleSeconds: 3 } }).container)!;
+    expect(spin.getAttribute("data-ss-motion")).toBe("spin");
+    expect((spin as HTMLElement).style.animation).toContain("ss-spin 3s");
+    cleanup();
+    const pulse = motion(draw({ type: "symbol", props: { symbolId: sym.id, motion: "pulse", animate: true } }).container)!;
+    expect((pulse as HTMLElement).style.animation).toContain("ss-pulse 2s");
+    cleanup();
+    expect(motion(draw({ type: "symbol", props: { symbolId: sym.id, animate: true } }).container)).toBeNull();
+  });
+
+  it("a driven flow turns the flow on from a tag", () => {
+    const w = { type: "pipe", props: {}, dynamics: { flow: { expr: "{plc:Run} == 1" } } } as W;
+    expect(polylines(draw(w, fakeHost({ "plc:Run": 1 })).container)).toHaveLength(3);
+    cleanup();
+    expect(polylines(draw(w, fakeHost({ "plc:Run": 0 })).container)).toHaveLength(2);
   });
 });

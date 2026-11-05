@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COL_W, GAP, PREVIEW_MINIMUM, ROW_H, fitScale, pageExtent, placement, stageSize } from "./layout";
+import { COL_W, GAP, PREVIEW_MINIMUM, ROW_H, deviceFor, effectivePlacement, fitScale, forDevice, pageExtent, placeFor, placement, stageSize } from "./layout";
 
 const w = (x: number, y: number, ww: number, h: number) => ({ x, y, w: ww, h });
 
@@ -61,5 +61,65 @@ describe("fitScale", () => {
   it("is 1 before the window is measured", () => {
     expect(fitScale(stage, { width: 0, height: 0 })).toBe(1);
     expect(fitScale({ width: 0, height: 0 }, { width: 100, height: 100 })).toBe(1);
+  });
+});
+
+describe("screen sizes", () => {
+  const w = { x: 4, y: 2, w: 6, h: 3 };
+  const withLayout = { ...w, layout: { tablet: { x: 0, w: 8 }, phone: { x: 0, y: 5, w: 4, h: 2 } } };
+
+  it.each([[320, "phone"], [639, "phone"], [640, "tablet"], [1023, "tablet"], [1024, "desktop"], [2560, "desktop"]] as const)(
+    "%i px wide is a %s", (width, want) => expect(deviceFor(width)).toBe(want));
+
+  it("the desktop is the widget's own x, y, w, h", () => {
+    expect(effectivePlacement(withLayout, "desktop")).toEqual({ ...w, hidden: false });
+  });
+
+  it("a tablet takes its own fields and inherits the rest from the desktop", () => {
+    expect(effectivePlacement(withLayout, "tablet")).toEqual({ x: 0, y: 2, w: 8, h: 3, hidden: false });
+  });
+
+  it("a phone takes its own, then the tablet's, then the desktop's, one field at a time", () => {
+    expect(effectivePlacement({ ...w, layout: { tablet: { w: 8 }, phone: { y: 9 } } }, "phone")).toEqual({ x: 4, y: 9, w: 8, h: 3, hidden: false });
+  });
+
+  it("a widget with no layouts sits the same on every device", () => {
+    for (const d of ["desktop", "tablet", "phone"] as const) expect(effectivePlacement(w, d)).toEqual({ ...w, hidden: false });
+  });
+
+  it("hidden follows the nearest layout that says so: a phone can show what the tablet hides", () => {
+    const a = { ...w, layout: { tablet: { hidden: true } } };
+    expect(effectivePlacement(a, "tablet").hidden).toBe(true);
+    expect(effectivePlacement(a, "phone").hidden).toBe(true);
+    expect(effectivePlacement(a, "desktop").hidden).toBe(false);
+    expect(effectivePlacement({ ...w, layout: { tablet: { hidden: true }, phone: { hidden: false } } }, "phone").hidden).toBe(false);
+  });
+
+  it("forDevice drops hidden widgets for a screen and keeps them, marked, for the editor", () => {
+    const list = [{ id: "a", ...w }, { id: "b", ...w, layout: { phone: { hidden: true } } }];
+    expect(forDevice(list, "phone").map((x) => x.id)).toEqual(["a"]);
+    const kept = forDevice(list, "phone", true);
+    expect(kept.map((x) => [x.id, x.hiddenOnDevice])).toEqual([["a", undefined], ["b", true]]);
+    expect(forDevice(list, "desktop")).toBe(list);
+  });
+
+  describe("placeFor stores a change where it belongs", () => {
+    it("on the desktop it is the widget's own field", () => {
+      expect(placeFor(withLayout, "desktop", { x: 7 })).toEqual({ x: 7 });
+    });
+    it("on a tablet it goes into the tablet layout", () => {
+      expect(placeFor(w, "tablet", { x: 1, w: 8 })).toEqual({ layout: { tablet: { x: 1, w: 8 } } });
+    });
+    it("a field equal to what is inherited is not stored, so it keeps following the larger size", () => {
+      expect(placeFor({ ...w, layout: { tablet: { x: 1 } } }, "tablet", { x: 4 })).toEqual({ layout: undefined });
+      expect(placeFor({ ...w, layout: { tablet: { w: 8 } } }, "phone", { w: 8 })).toEqual({ layout: { tablet: { w: 8 } } });
+    });
+    it("hiding and showing", () => {
+      expect(placeFor(w, "phone", { hidden: true })).toEqual({ layout: { phone: { hidden: true } } });
+      expect(placeFor({ ...w, layout: { phone: { hidden: true } } }, "phone", { hidden: false })).toEqual({ layout: undefined });
+    });
+    it("other layouts are left alone", () => {
+      expect(placeFor(withLayout, "phone", { y: 6 })).toEqual({ layout: { tablet: { x: 0, w: 8 }, phone: { x: 0, y: 6, w: 4, h: 2 } } });
+    });
   });
 });
