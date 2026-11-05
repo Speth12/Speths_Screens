@@ -67,8 +67,8 @@ export function KeypadModal({
   return createPortal(
     <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center" onClick={onCancel}>
       <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-4 w-56 space-y-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        {label && <div className="text-[11px] text-zinc-500 truncate">{label}</div>}
-        <div className="text-2xl font-mono text-right bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100 min-h-[2.5rem]">
+        {label && <div className="text-xs text-zinc-500 truncate">{label}</div>}
+        <div className="text-2xl tabular-nums text-right bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100 min-h-[2.5rem]">
           {draft}
           {unit && <span className="text-sm text-zinc-500 ml-1">{unit}</span>}
         </div>
@@ -175,7 +175,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     >
       {p.label && (
         <div
-          className="text-[10px] uppercase tracking-wider truncate shrink-0"
+          className="text-xs uppercase tracking-wider truncate shrink-0"
           style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
         >
           {p.label}
@@ -228,9 +228,11 @@ function GaugeWidget({ w }: WP<"gauge">) {
 
   return (
     <div className="flex flex-col h-full justify-center gap-0.5">
-      <svg viewBox="0 0 100 75" className="w-full max-h-28">
+      {/* The value is HTML text over the gauge's opening, sized from the card, so it stays readable in a small one. */}
+      <div className="relative w-full min-h-0 flex-1" style={{ containerType: "size" }}>
+      <svg viewBox="0 0 100 75" className="absolute inset-0 w-full h-full">
         {/* Track */}
-        <path d={gaugeArcPath(GAUGE_START, GAUGE_SWEEP)} fill="none" stroke="#27272a" strokeWidth="7" strokeLinecap="round" />
+        <path d={gaugeArcPath(GAUGE_START, GAUGE_SWEEP)} fill="none" style={{ stroke: "var(--secondary)" }} strokeWidth="7" strokeLinecap="round" />
         {/* Fill */}
         {fillSweep > 0.5 && (
           <path d={gaugeArcPath(GAUGE_START, fillSweep)} fill="none" stroke={arcColor} strokeWidth="7" strokeLinecap="round" />
@@ -243,14 +245,14 @@ function GaugeWidget({ w }: WP<"gauge">) {
           return (
             <line key={q} x1={outer.x.toFixed(2)} y1={outer.y.toFixed(2)}
               x2={inner.x.toFixed(2)} y2={inner.y.toFixed(2)}
-              stroke="#52525b" strokeWidth={q === 0 || q === 1 ? 1.5 : 0.8} />
+              style={{ stroke: "var(--muted-foreground)" }} strokeWidth={q === 0 || q === 1 ? 1.5 : 0.8} />
           );
         })}
         {/* Min/max labels */}
         <text x={minPt.x.toFixed(1)} y={minPt.y.toFixed(1)} textAnchor="end"
-          fontSize="5" fill="#52525b" fontFamily="monospace">{min}</text>
+          fontSize="6" style={{ fill: "var(--muted-foreground)" }}>{min}</text>
         <text x={maxPt.x.toFixed(1)} y={maxPt.y.toFixed(1)} textAnchor="start"
-          fontSize="5" fill="#52525b" fontFamily="monospace">{max}</text>
+          fontSize="6" style={{ fill: "var(--muted-foreground)" }}>{max}</text>
         {/* Needle — rotated via CSS for smooth animation */}
         <g style={{
           transform: `rotate(${needleAngle}deg)`,
@@ -258,19 +260,19 @@ function GaugeWidget({ w }: WP<"gauge">) {
           transition: "transform 0.3s ease-out",
         }}>
           <line x1={GAUGE_CX} y1={GAUGE_CY + 6} x2={GAUGE_CX} y2={GAUGE_CY - (GAUGE_R - 4)}
-            stroke="#e4e4e7" strokeWidth="1.5" strokeLinecap="round" />
+            style={{ stroke: "var(--foreground)" }} strokeWidth="1.5" strokeLinecap="round" />
         </g>
-        <circle cx={GAUGE_CX} cy={GAUGE_CY} r="3.5" fill="#52525b" />
-        <circle cx={GAUGE_CX} cy={GAUGE_CY} r="1.5" fill="#a1a1aa" />
-        {/* Value */}
-        <text x={GAUGE_CX} y={GAUGE_CY + 14} textAnchor="middle"
-          fontSize="8" fill="#e4e4e7" fontWeight="600" fontFamily="monospace">
-          {typeof t.value === "number" ? t.value.toFixed(1) : "—"}
-          {p.unit ? ` ${p.unit}` : ""}
-        </text>
+        <circle cx={GAUGE_CX} cy={GAUGE_CY} r="3.5" style={{ fill: "var(--muted-foreground)" }} />
+        <circle cx={GAUGE_CX} cy={GAUGE_CY} r="1.5" style={{ fill: "var(--card)" }} />
       </svg>
+      <div className="absolute left-0 right-0 text-center font-semibold tabular-nums leading-none whitespace-nowrap"
+        style={{ bottom: "4%", color: "var(--foreground)", fontSize: "clamp(0.875rem, 11cqmin, 2rem)" }}>
+        {typeof t.value === "number" ? t.value.toFixed(1) : "—"}
+        {p.unit ? ` ${p.unit}` : ""}
+      </div>
+      </div>
       {(p.showQuality ?? true) && (
-        <div className={`text-[9px] text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
+        <div className={`text-xs text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
       )}
     </div>
   );
@@ -286,7 +288,7 @@ function NumericDisplayWidget({ w }: WP<"numericDisplay">) {
         {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
       </div>
       {(p.showQuality ?? true) && (
-        <div className={`text-[10px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
+        <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
       )}
     </div>
   );
@@ -348,8 +350,8 @@ function TankWidget({ w }: WP<"tank">) {
       {/* Value + quality */}
       <div className="flex flex-col justify-end pb-1">
         <div className="text-xl font-semibold tabular-nums leading-none">{fmt(t.value)}</div>
-        {p.unit && <div className="text-[10px] text-zinc-500">{p.unit}</div>}
-        {(p.showQuality ?? true) && <div className={`text-[9px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+        {p.unit && <div className="text-xs text-zinc-500">{p.unit}</div>}
+        {(p.showQuality ?? true) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
       </div>
     </div>
   );
@@ -423,7 +425,7 @@ function NumericInputWidget({ w }: WP<"numericInput">) {
         {fmt(t.value)}
         {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
       </div>
-      <div className={`text-[10px] mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>
+      <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>
         {(p.showQuality ?? true) ? t.quality : "tap to enter value"}
       </div>
       {open && (
@@ -462,10 +464,10 @@ function TextInputWidget({ w }: WP<"textInput">) {
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
-          className="text-sm bg-zinc-800 border border-blue-500 rounded px-2 py-1 w-full outline-none font-mono"
+          className="text-sm bg-zinc-800 border border-blue-500 rounded px-2 py-1 w-full outline-none tabular-nums"
         />
       ) : (
-        <div onClick={startEdit} className="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors font-mono">
+        <div onClick={startEdit} className="text-sm cursor-text hover:bg-zinc-800 rounded px-1 transition-colors tabular-nums">
           {fmt(t.value)}
         </div>
       )}
@@ -508,7 +510,7 @@ function SetpointWidget({ w }: WP<"setpoint">) {
         onTouchEnd={(e) => commit(Number((e.target as HTMLInputElement).value))}
         className="w-full accent-blue-500 cursor-pointer"
       />
-      <div className="flex justify-between text-[9px] text-zinc-600">
+      <div className="flex justify-between text-xs text-zinc-600">
         <span>{min}</span>
         {(p.showQuality ?? true) && (
           <span className={qualityColor[t.quality] ?? "text-zinc-600"}>{t.quality}</span>
@@ -577,6 +579,15 @@ function TrendWidget({ w }: WP<"trend">) {
   const [hoverFrac, setHoverFrac] = useState<number | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const svgRef      = useRef<SVGSVGElement>(null);
+  // The plot's width, so the time axis gets as many labels as fit (one per ~96 px).
+  const [plotW, setPlotW] = useState(400);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setPlotW(el.getBoundingClientRect().width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const panStartX   = useRef<number | null>(null);
   const panStartOff = useRef(0);
 
@@ -652,7 +663,7 @@ function TrendWidget({ w }: WP<"trend">) {
   const fmtTime = (ms: number) =>
     new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-  const X_TICKS = 5;
+  const X_TICKS = Math.max(2, Math.min(6, Math.floor(plotW / 96) + 1));
   const xTicks = Array.from({ length: X_TICKS }, (_, k) => {
     const frac = k / (X_TICKS - 1);
     return { frac, ms: tMin + frac * duration };
@@ -709,16 +720,16 @@ function TrendWidget({ w }: WP<"trend">) {
         {TREND_WINDOWS.map((tw) => (
           <button key={tw.sec}
             onClick={() => { setWindowSec(tw.sec); setPanOffsetMs(0); }}
-            className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ${windowSec === tw.sec && panOffsetMs === 0 && !paused ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
+            className={`text-xs px-1.5 py-0.5 rounded transition-colors ${windowSec === tw.sec && panOffsetMs === 0 && !paused ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
             {tw.label}
           </button>
         ))}
         <button onClick={togglePause}
-          className={`text-[9px] px-1.5 py-0.5 rounded ml-0.5 ${paused ? "bg-amber-700/80 text-amber-200" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
+          className={`text-xs px-1.5 py-0.5 rounded ml-0.5 ${paused ? "bg-amber-700/80 text-amber-200" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
           {paused ? "▶ Live" : "⏸"}
         </button>
         {panOffsetMs > 1000 && !paused && (
-          <button onClick={() => setPanOffsetMs(0)} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 hover:bg-zinc-700">
+          <button onClick={() => setPanOffsetMs(0)} className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 hover:bg-zinc-700">
             ↩ now
           </button>
         )}
@@ -730,7 +741,7 @@ function TrendWidget({ w }: WP<"trend">) {
         {yScales.map((sc, i) => {
           const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
           return (
-            <div key={i} className="flex flex-col justify-between text-[7px] font-mono shrink-0 w-7 text-right py-0.5 leading-none" style={{ color }}>
+            <div key={i} className="flex flex-col justify-between text-xs tabular-nums shrink-0 w-9 text-right py-0.5 leading-none" style={{ color }}>
               <span>{sc.hi.toFixed(sc.hi % 1 === 0 ? 0 : 1)}</span>
               <span>{((sc.lo + sc.hi) / 2).toFixed((sc.lo + sc.hi) / 2 % 1 === 0 ? 0 : 1)}</span>
               <span>{sc.lo.toFixed(sc.lo % 1 === 0 ? 0 : 1)}</span>
@@ -805,11 +816,11 @@ function TrendWidget({ w }: WP<"trend">) {
           </svg>
 
           {/* X-axis tick labels */}
-          <div className="relative shrink-0 h-3">
+          <div className="relative shrink-0 h-4">
             {xTicks.map(({ frac, ms }) => (
               <span
                 key={frac}
-                className="absolute text-[7px] font-mono text-zinc-500 whitespace-nowrap"
+                className="absolute text-xs tabular-nums text-zinc-500 whitespace-nowrap"
                 style={{
                   left: `${frac * 100}%`,
                   transform: frac === 0 ? "none" : frac === 1 ? "translateX(-100%)" : "translateX(-50%)",
@@ -823,7 +834,7 @@ function TrendWidget({ w }: WP<"trend">) {
           {/* Tooltip */}
           {hoverFrac != null && hoverTime != null && (
             <div
-              className="absolute top-0 pointer-events-none z-10 bg-zinc-950/95 border border-zinc-700 rounded px-2 py-1.5 text-[9px] font-mono space-y-0.5 shadow-xl"
+              className="absolute top-0 pointer-events-none z-10 bg-zinc-950/95 border border-zinc-700 rounded px-2 py-1.5 text-xs tabular-nums space-y-0.5 shadow-xl"
               style={{
                 left: hoverFrac > 0.65 ? undefined : `calc(${hoverFrac * 100}% + 6px)`,
                 right: hoverFrac > 0.65 ? `calc(${(1 - hoverFrac) * 100}% + 6px)` : undefined,
@@ -849,7 +860,7 @@ function TrendWidget({ w }: WP<"trend">) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-2 text-[9px] font-mono mt-0.5 shrink-0 flex-wrap">
+      <div className="flex items-center gap-2 text-xs tabular-nums mt-0.5 shrink-0 flex-wrap">
         {allPts.map((pts, i) => {
           const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
           const last  = pts.at(-1);
@@ -899,11 +910,11 @@ function HistoryLogWidget({ w }: WP<"historyLog">) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-end mb-0.5 shrink-0">
-        <button onClick={downloadCSV} className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">
+        <button onClick={downloadCSV} className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">
           ↓ CSV
         </button>
       </div>
-      <div className="flex-1 overflow-auto text-[10px] font-mono space-y-0.5">
+      <div className="flex-1 overflow-auto text-xs tabular-nums space-y-0.5">
         {rows.length === 0 && <div className="text-zinc-600 italic">No history</div>}
         {[...rows].reverse().map((r, i) => (
           <div key={i} className="flex gap-2 border-b border-zinc-800/50 pb-0.5">
@@ -975,15 +986,15 @@ function FaceplateWidget({ w }: WP<"faceplate">) {
   if (!fp) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
-        <span className="text-xs font-mono">faceplate</span>
-        <span className="text-[10px] text-zinc-600">{fpId ?? "no id"}</span>
+        <span className="text-xs tabular-nums">faceplate</span>
+        <span className="text-xs text-zinc-600">{fpId ?? "no id"}</span>
       </div>
     );
   }
 
   return (
     <div className="h-full relative border border-purple-700/50 rounded-lg overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 z-10 px-2 py-0.5 bg-purple-900/40 text-[9px] text-purple-300 font-medium tracking-wider truncate">
+      <div className="absolute top-0 left-0 right-0 z-10 px-2 py-0.5 bg-purple-900/40 text-xs text-purple-300 font-medium tracking-wider truncate">
         FP: {fp.name}
       </div>
       <div className="absolute inset-0 pt-5">
@@ -1013,7 +1024,7 @@ function TableWidget({ w }: WP<"table">) {
 
   return (
     <div className="h-full overflow-auto">
-      <table className="w-full text-[11px] border-collapse">
+      <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="border-b border-zinc-700">
             <th className="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
@@ -1023,7 +1034,7 @@ function TableWidget({ w }: WP<"table">) {
         </thead>
         <tbody>
           {!rows?.length && (
-            <tr><td colSpan={3} className="text-zinc-600 italic py-2 text-center text-[10px]">No rows configured</td></tr>
+            <tr><td colSpan={3} className="text-zinc-600 italic py-2 text-center text-xs">No rows configured</td></tr>
           )}
           {(rows ?? []).map((row, i) => {
             const t = tags[row.binding];
@@ -1032,12 +1043,12 @@ function TableWidget({ w }: WP<"table">) {
                 <td className="py-1 pr-2 text-zinc-400 truncate max-w-[120px]" title={row.binding}>
                   {row.label || row.binding}
                 </td>
-                <td className="py-1 pl-2 text-right font-mono text-zinc-100 tabular-nums">
+                <td className="py-1 pl-2 text-right text-zinc-100 tabular-nums">
                   {fmt(t?.value)}
-                  {row.unit && <span className="text-zinc-500 ml-1 text-[9px]">{row.unit}</span>}
+                  {row.unit && <span className="text-zinc-500 ml-1 text-xs">{row.unit}</span>}
                 </td>
                 {showQuality && (
-                  <td className={`py-1 pl-2 text-right text-[9px] ${qualityColor[t?.quality ?? ""] ?? "text-zinc-600"}`}>
+                  <td className={`py-1 pl-2 text-right text-xs ${qualityColor[t?.quality ?? ""] ?? "text-zinc-600"}`}>
                     {t?.quality ?? "—"}
                   </td>
                 )}
@@ -1063,7 +1074,7 @@ function ImageWidget({ w }: WP<"image">) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-1 text-zinc-600">
         <span className="text-2xl opacity-40">🖼</span>
-        <span className="text-[10px]">No image</span>
+        <span className="text-xs">No image</span>
       </div>
     );
   }
@@ -1095,7 +1106,7 @@ function SymbolWidget({ w }: WP<"symbol">) {
         <SymbolSVG svg={sym.svg} stroke={stroke} size={0} />
       </div>
       {w.props?.label && (
-        <span className="text-[9px] text-zinc-400 truncate max-w-full shrink-0">{w.props.label}</span>
+        <span className="text-xs text-zinc-400 truncate max-w-full shrink-0">{w.props.label}</span>
       )}
     </div>
   );
@@ -1128,13 +1139,13 @@ function AlarmBannerWidget({ w }: WP<"alarmBanner">) {
     <div className="flex flex-col gap-1 h-full overflow-hidden">
       {visible.map((a) => (
         <div key={a.id} className={`flex items-center gap-2 px-2 py-1 rounded border text-xs ${sevBg[a.severity] ?? "border-zinc-700"}`}>
-          <span className="font-bold shrink-0 text-[10px] uppercase w-14" style={{ color: sevColor[a.severity] }}>{a.severity}</span>
+          <span className="font-bold shrink-0 text-xs uppercase w-14" style={{ color: sevColor[a.severity] }}>{a.severity}</span>
           <span className="flex-1 truncate">{[a.ruleName, a.message].filter(Boolean).join(" — ")}</span>
-          {typeof a.value === "number" && <span className="font-mono text-[10px] text-zinc-400 shrink-0">{a.value.toFixed(1)}</span>}
-          {a.since !== undefined && <span className="text-[10px] text-zinc-600 shrink-0">{new Date(a.since).toLocaleTimeString()}</span>}
+          {typeof a.value === "number" && <span className="tabular-nums text-xs text-zinc-400 shrink-0">{a.value.toFixed(1)}</span>}
+          {a.since !== undefined && <span className="text-xs text-zinc-600 shrink-0">{new Date(a.since).toLocaleTimeString()}</span>}
           {ack && a.active && !a.acked && (
             <button onClick={() => ack(a.id)}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 hover:bg-zinc-600 shrink-0">ACK</button>
+              className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 hover:bg-zinc-600 shrink-0">ACK</button>
           )}
         </div>
       ))}
