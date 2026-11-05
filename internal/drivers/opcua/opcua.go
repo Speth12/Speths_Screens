@@ -27,7 +27,11 @@ const (
 	driverID      = "opcua"
 	defaultCert   = "opcua-cert.pem"
 	defaultKey    = "opcua-key.pem"
-	appURI        = "urn:x-hmi:runtime"
+	// certName is the subject of a certificate the runtime has to generate. An existing certificate keeps
+	// the names it was made with: gopcua sends the application URI found in the certificate file, and a
+	// controller already trusts that certificate.
+	certName = "Speth's Screens runtime"
+	appURI        = "urn:speths-screens:runtime"
 	browseDepth   = 10
 	browseMaxRefs = 1000
 	subInterval   = 500 * time.Millisecond
@@ -177,7 +181,7 @@ func (d *Driver) connect(ctx context.Context) error {
 		opts = append(opts, opcua.AuthAnonymous())
 	}
 	if ep.SecurityMode != ua.MessageSecurityModeNone {
-		if err := cert.Ensure(defaultCert, defaultKey, appURI, "x-hmi runtime"); err != nil {
+		if err := cert.Ensure(defaultCert, defaultKey, appURI, certName); err != nil {
 			return fmt.Errorf("opcua: ensure cert: %w", err)
 		}
 		opts = append(opts,

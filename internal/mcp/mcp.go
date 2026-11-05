@@ -166,7 +166,7 @@ func (h *Handler) handleInitialize(_ json.RawMessage) (any, *rpcError) {
 			Resources: &empty,
 			Tools:     &empty,
 		},
-		ServerInfo: serverInfo{Name: "x-hmi", Version: "0.1.0"},
+		ServerInfo: serverInfo{Name: "speths-screens", Version: "0.1.0"},
 	}, nil
 }
 
@@ -175,16 +175,16 @@ func (h *Handler) handleInitialize(_ json.RawMessage) (any, *rpcError) {
 func (h *Handler) handleResourcesList() (any, *rpcError) {
 	p := h.rt.Project()
 	resources := []resource{
-		{URI: "xhmi://project", Name: "Project", Description: "Full project JSON", MimeType: "application/json"},
-		{URI: "xhmi://pages", Name: "Pages", Description: "List of HMI pages", MimeType: "application/json"},
-		{URI: "xhmi://alarms", Name: "Active alarms", MimeType: "application/json"},
-		{URI: "xhmi://recipes", Name: "Recipes", MimeType: "application/json"},
-		{URI: "xhmi://datasources", Name: "Datasource status", MimeType: "application/json"},
+		{URI: "speths-screens://project", Name: "Project", Description: "Full project JSON", MimeType: "application/json"},
+		{URI: "speths-screens://pages", Name: "Pages", Description: "List of HMI pages", MimeType: "application/json"},
+		{URI: "speths-screens://alarms", Name: "Active alarms", MimeType: "application/json"},
+		{URI: "speths-screens://recipes", Name: "Recipes", MimeType: "application/json"},
+		{URI: "speths-screens://datasources", Name: "Datasource status", MimeType: "application/json"},
 	}
 	if p != nil {
 		for _, pg := range p.Pages {
 			resources = append(resources, resource{
-				URI:      "xhmi://page/" + pg.ID,
+				URI:      "speths-screens://page/" + pg.ID,
 				Name:     "Page: " + pg.Name,
 				MimeType: "application/json",
 			})
@@ -212,18 +212,25 @@ func (h *Handler) handleResourcesRead(ctx context.Context, params json.RawMessag
 	}, nil
 }
 
+// legacyScheme is what resource URIs started with before the rename; a client that kept one still reads.
+const legacyScheme = "xhmi://"
+
+// scheme is the start of every resource URI this server lists.
+const scheme = "speths-screens://"
+
 func (h *Handler) readResource(_ context.Context, uri string) (string, error) {
+	uri = canonicalURI(uri)
 	proj := h.rt.Project()
 
 	switch {
-	case uri == "xhmi://project":
+	case uri == "speths-screens://project":
 		b, err := json.MarshalIndent(project.RedactSecrets(proj), "", "  ")
 		if err != nil {
 			return "", err
 		}
 		return string(b), nil
 
-	case uri == "xhmi://pages":
+	case uri == "speths-screens://pages":
 		if proj == nil {
 			return "[]", nil
 		}
@@ -239,11 +246,11 @@ func (h *Handler) readResource(_ context.Context, uri string) (string, error) {
 		b, _ := json.MarshalIndent(pages, "", "  ")
 		return string(b), nil
 
-	case strings.HasPrefix(uri, "xhmi://page/"):
+	case strings.HasPrefix(uri, "speths-screens://page/"):
 		if proj == nil {
 			return "", fmt.Errorf("no project loaded")
 		}
-		id := strings.TrimPrefix(uri, "xhmi://page/")
+		id := strings.TrimPrefix(uri, "speths-screens://page/")
 		for _, pg := range proj.Pages {
 			if pg.ID == id || pg.Name == id {
 				b, _ := json.MarshalIndent(pg, "", "  ")
@@ -252,19 +259,19 @@ func (h *Handler) readResource(_ context.Context, uri string) (string, error) {
 		}
 		return "", fmt.Errorf("page not found: %s", id)
 
-	case uri == "xhmi://alarms":
+	case uri == "speths-screens://alarms":
 		alarms := h.rt.Alarms.Events()
 		b, _ := json.MarshalIndent(alarms, "", "  ")
 		return string(b), nil
 
-	case uri == "xhmi://recipes":
+	case uri == "speths-screens://recipes":
 		if proj == nil || len(proj.Recipes) == 0 {
 			return "[]", nil
 		}
 		b, _ := json.MarshalIndent(proj.Recipes, "", "  ")
 		return string(b), nil
 
-	case uri == "xhmi://datasources":
+	case uri == "speths-screens://datasources":
 		type dsStatus struct {
 			ID        string `json:"id"`
 			Connected bool   `json:"connected"`
@@ -585,4 +592,12 @@ func (h *Handler) callTool(ctx context.Context, name string, args map[string]any
 	default:
 		return "", true, fmt.Errorf("unknown tool: %s", name)
 	}
+}
+
+// canonicalURI turns a legacy xhmi:// URI into the current form and leaves any other URI alone.
+func canonicalURI(uri string) string {
+	if strings.HasPrefix(uri, legacyScheme) {
+		return scheme + strings.TrimPrefix(uri, legacyScheme)
+	}
+	return uri
 }

@@ -2,21 +2,21 @@ import type { Project } from "./projectStore";
 
 export function generateMCPManifest(project: Project): object {
   return {
-    name: "x-hmi",
+    name: "speths-screens",
     version: "1.0",
     description: `Speth's Screens project: ${project.name ?? "Untitled"}`,
     resources: [
-      { uri: "xhmi://project",    name: "Project metadata",   mimeType: "application/json" },
-      { uri: "xhmi://pages",      name: "Pages list",          mimeType: "application/json" },
+      { uri: "speths-screens://project",    name: "Project metadata",   mimeType: "application/json" },
+      { uri: "speths-screens://pages",      name: "Pages list",          mimeType: "application/json" },
       ...project.pages.map((p) => ({
-        uri: `xhmi://page/${p.id}`,
+        uri: `speths-screens://page/${p.id}`,
         name: `Page: ${p.name}`,
         mimeType: "application/json",
       })),
-      { uri: "xhmi://tags",    name: "Live tag values",  mimeType: "application/json" },
-      { uri: "xhmi://alarms",  name: "Active alarms",    mimeType: "application/json" },
-      { uri: "xhmi://recipes", name: "Recipes",          mimeType: "application/json" },
-      { uri: "xhmi://assets",  name: "Asset model",      mimeType: "application/json" },
+      { uri: "speths-screens://tags",    name: "Live tag values",  mimeType: "application/json" },
+      { uri: "speths-screens://alarms",  name: "Active alarms",    mimeType: "application/json" },
+      { uri: "speths-screens://recipes", name: "Recipes",          mimeType: "application/json" },
+      { uri: "speths-screens://assets",  name: "Asset model",      mimeType: "application/json" },
     ],
     tools: [
       {
