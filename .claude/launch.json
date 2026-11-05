@@ -10,7 +10,7 @@
     {
       "name": "operator",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "C:\\Users\\speth\\source\\repos\\x-hmi\\cmd\\speths-screens\\speths-screens.exe --mode=runtime --project=project/project.json --addr=:8080 || echo already running"],
+      "runtimeArgs": ["/c", "go run ./cmd/speths-screens --mode=runtime --project=project/project.json --addr=:8080 || echo already running"],
       "port": 8080
     }
   ]

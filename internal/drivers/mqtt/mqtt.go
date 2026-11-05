@@ -75,7 +75,7 @@ func (d *Driver) ID() string { return driverID }
 //
 // cfg.Endpoint:           tcp://host:port  or  ssl://host:port
 // cfg.Username/Password:  optional auth
-// cfg.Extra["clientId"]:  optional client id (default: x-hmi-<unix-nano>)
+// cfg.Extra["clientId"]:  optional client id (default: speths-screens-<unix-nano>)
 func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
 	if cfg.Endpoint == "" {
 		return fmt.Errorf("mqtt: endpoint is required")
@@ -96,7 +96,7 @@ func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<-
 	}
 	clientID := cfg.Extra["clientId"]
 	if clientID == "" {
-		clientID = fmt.Sprintf("x-hmi-%d", time.Now().UnixNano())
+		clientID = fmt.Sprintf("speths-screens-%d", time.Now().UnixNano())
 	}
 	runCtx, cancel := context.WithCancel(context.Background())
 

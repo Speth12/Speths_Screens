@@ -155,19 +155,19 @@ func TestConnectAndSubscribe(t *testing.T) {
 		t.Fatal("expected Connected=true")
 	}
 
-	if err := d.SetTags([]string{"x-hmi/test/+"}); err != nil {
+	if err := d.SetTags([]string{"speths-screens/test/+"}); err != nil {
 		t.Fatalf("SetTags: %v", err)
 	}
 
 	// publish a message via the same client
-	if err := d.Write(ctx, "x-hmi/test/temp", "23.5"); err != nil {
+	if err := d.Write(ctx, "speths-screens/test/temp", "23.5"); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
 
 	select {
 	case u := <-ch:
-		if u.Path != "x-hmi/test/temp" {
-			t.Errorf("path: got %q want x-hmi/test/temp", u.Path)
+		if u.Path != "speths-screens/test/temp" {
+			t.Errorf("path: got %q want speths-screens/test/temp", u.Path)
 		}
 		// parsePayload JSON-decodes numeric payloads → float64
 		if v, ok := u.State.Value.(float64); !ok || v != 23.5 {

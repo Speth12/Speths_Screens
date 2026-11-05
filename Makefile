@@ -3,8 +3,8 @@
 #   make dev          Start runtime (dev mode, :3001) in background + IDE dev server
 #   make runtime      Build & run runtime locally (embeds operator UI, :8080)
 #   make build        Build everything (Go + both frontends)
-#   make build-plc    Cross-compile ARM64 binary with embedded operator UI
-#   make deploy-plc   Build ARM64 + scp to PLC + restart service
+#   make build-plc    Cross-compile the linux/amd64 binary (AXC F 3152) with embedded operator UI
+#   make deploy-plc   Build linux/amd64 + scp to PLC (install-service sets up the service)
 #   make test         Go unit tests
 #   make test-race    Go unit tests with race detector
 #   make lint         go vet + staticcheck (if installed)
@@ -12,7 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 
 PLC_HOST     ?= admin@10.0.0.210
-PLC_DEST_DIR ?= /opt/plcnext/x-hmi
+PLC_DEST_DIR ?= /opt/plcnext/apps/speths-screens
 
 BINARY       := speths-screens
 BINARY_AMD   := speths-screens-linux-amd64
@@ -109,8 +109,8 @@ docker-down:
 # Install as a systemd service on the PLC (run once after first deploy-plc).
 install-service:
 	@echo "→ Installing systemd service on $(PLC_HOST)…"
-	@cat scripts/xhmi.service | ssh $(PLC_HOST) "cat > /etc/systemd/system/xhmi.service"
-	ssh $(PLC_HOST) "systemctl daemon-reload && systemctl enable xhmi && systemctl restart xhmi"
+	@cat scripts/speths-screens.service | ssh $(PLC_HOST) "cat > /etc/systemd/system/speths-screens.service"
+	ssh $(PLC_HOST) "systemctl daemon-reload && systemctl enable speths-screens && systemctl restart speths-screens"
 	@echo "✓ Service installed and started"
 
 # ── Tests ─────────────────────────────────────────────────────────────────
