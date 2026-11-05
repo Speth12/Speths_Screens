@@ -28,80 +28,10 @@ const storedMode = (): Mode | null => {
 import type { Project, Recipe } from "@speths-screens/shared-types";
 import { readMigrated } from "./storageKeys";
 import { PageNav, navMode, useWindowWidth, type NavMode } from "./Nav";
+import { TopBar } from "./TopBar";
+import { SettingsScreen } from "./SettingsScreen";
 
 
-
-// ── Alarm log panel ────────────────────────────────────────────────────────
-const severityRowBg: Record<string, string> = {
-  critical: "border-red-800 bg-red-950/30",
-  warning:  "border-amber-800 bg-amber-950/30",
-  info:     "border-blue-800 bg-blue-950/30",
-};
-const severityText: Record<string, string> = {
-  critical: "text-red-400",
-  warning:  "text-amber-400",
-  info:     "text-blue-400",
-};
-
-function AlarmLogPanel({ alarms, onAck, onClose }: {
-  alarms: AlarmEvent[];
-  onAck: (id: string) => void;
-  onClose: () => void;
-}) {
-  const sorted = [...alarms].sort((a, b) =>
-    new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()
-  );
-
-  return (
-    <div className="fixed inset-0 z-40 flex" onClick={onClose}>
-      <div className="flex-1" />
-      <div
-        className="w-96 bg-zinc-900 border-l border-zinc-700 flex flex-col h-full shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-          <span className="text-sm font-semibold">Alarm Log</span>
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] text-zinc-500">{alarms.length} events</span>
-            <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-          {sorted.length === 0 && (
-            <div className="text-zinc-600 text-xs italic text-center pt-6">No alarm events</div>
-          )}
-          {sorted.map((ev) => (
-            <div
-              key={ev.id}
-              className={`rounded border px-3 py-2 ${ev.active && !ev.acked ? severityRowBg[ev.severity] ?? "border-zinc-700" : "border-zinc-800 bg-zinc-900/40"}`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold ${ev.active ? (severityText[ev.severity] ?? "text-zinc-400") : "text-zinc-600"}`}>
-                  {ev.active ? "●" : "○"} {ev.severity.toUpperCase()}
-                </span>
-                <span className="text-[11px] font-medium flex-1 truncate">{ev.ruleName}</span>
-                {ev.active && !ev.acked && (
-                  <button
-                    onClick={() => onAck(ev.id)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 hover:bg-zinc-600 shrink-0"
-                  >
-                    ACK
-                  </button>
-                )}
-                {ev.acked && <span className="text-[10px] text-zinc-600 shrink-0">acked</span>}
-                {!ev.active && !ev.acked && <span className="text-[10px] text-emerald-700 shrink-0">normal</span>}
-              </div>
-              {ev.message && <div className="text-[10px] text-zinc-400 mt-0.5 truncate">{ev.message}</div>}
-              <div className="text-[10px] text-zinc-600 font-mono mt-0.5">
-                {`val=${ev.value.toFixed(2)} · ${new Date(ev.triggeredAt).toLocaleTimeString()}`}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Recipes panel ─────────────────────────────────────────────────────────
 function RecipesPanel({ onClose }: { onClose: () => void }) {
@@ -184,8 +114,7 @@ export function App() {
   const [error, setError] = useState("");
   const [alarms, setAlarms] = useState<AlarmEvent[]>([]);
   const [showRecipes, setShowRecipes] = useState(false);
-  const [showAlarmLog, setShowAlarmLog] = useState(false);
-  const [dsStatus, setDsStatus] = useState<Array<{ id: string; connected: boolean; tagCount: number }>>([]);
+  const [dsStatus, setDsStatus] = useState<Array<{ id: string; connected: boolean; tagCount: number; lastError?: string }>>([]);
   const wsAlarmRef = useRef<WebSocket | null>(null);
 
   // PIN auth
@@ -272,7 +201,7 @@ export function App() {
     const poll = () =>
       apiFetch("/api/v1/datasources")
         .then((r) => (r.ok ? r.json() : []))
-        .then((data: Array<{ id: string; connected: boolean; tagCount: number }>) => {
+        .then((data: Array<{ id: string; connected: boolean; tagCount: number; lastError?: string }>) => {
           if (Array.isArray(data)) setDsStatus(data);
         })
         .catch(() => {});
@@ -350,12 +279,6 @@ export function App() {
   }, []);
 
   const activeAlarms = alarms.filter((a) => a.active && !a.acked);
-  const hasAlarm = activeAlarms.length > 0;
-  const worstSeverity = activeAlarms.some((a) => a.severity === "critical")
-    ? "critical"
-    : activeAlarms.some((a) => a.severity === "warning")
-    ? "warning"
-    : activeAlarms.length > 0 ? "info" : null;
 
   if (needLogin) return <LoginScreen />;
 
@@ -400,7 +323,12 @@ export function App() {
 
   const page = project.pages[activePage] ?? project.pages[0];
   const tr = translator(project, language);
-  const navPages = project.pages.map((p) => ({ ...p, name: tr(p.name), group: p.group ? tr(p.group) : p.group }));
+  const settingsIndex = project.pages.length;
+  const settingsOpen = !isKiosk && activePage === settingsIndex;
+  const navPages = [
+    ...project.pages.map((p) => ({ ...p, name: tr(p.name), group: p.group ? tr(p.group) : p.group })),
+    { id: "__settings", name: tr("Settings"), icon: "settings" as const, widgets: [] },
+  ];
   const nav: NavMode = isKiosk ? "tabs" : navMode(project.shell?.nav, windowWidth);
   const phone = nav === "bottom";
   const securityOff = project.security?.mode !== "login";
@@ -424,107 +352,19 @@ export function App() {
         className={`${isKiosk ? "h-screen overflow-hidden" : "h-screen"} flex flex-col`}
         style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        {/* Header — hidden in kiosk mode */}
+        {/* Top bar — hidden in kiosk mode */}
         {!isKiosk && (
-          <div className="flex items-center gap-3 px-4 py-2 shrink-0 overflow-x-auto whitespace-nowrap"
-               style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-            <span className="font-semibold text-sm shrink-0">
-              {project.name
-                ? <>{project.name}{!phone && <span className="text-zinc-500 font-normal text-xs"> · Speth's Screens</span>}</>
-                : <>Speth's Screens <span className="text-zinc-500 font-normal">Operator</span></>
-              }
-            </span>
-            {securityOff ? (
-              <span title="security.mode is not &quot;login&quot;: anyone who reaches this runtime can read and write"
-                    className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                Security off
-              </span>
-            ) : getToken() && (
-              <button onClick={() => setToken(null)} className="text-[11px] text-zinc-400 hover:text-zinc-200 underline">
-                Log out
-              </button>
-            )}
-            {/* Datasource connection status dots */}
-            {dsStatus.length > 0 && !phone && (
-              <div className="flex gap-1.5 items-center">
-                {dsStatus.map((d) => (
-                  <div
-                    key={d.id}
-                    title={`${d.id}: ${d.connected ? `connected (${d.tagCount} tags)` : "disconnected"}`}
-                    className="flex items-center gap-1"
-                  >
-                    <div className={`w-2 h-2 rounded-full ${d.connected ? "bg-emerald-500" : "bg-red-500"}`}
-                      style={{ boxShadow: d.connected ? "0 0 4px #22c55e88" : undefined }} />
-                    <span className="text-[10px] text-zinc-500 font-mono">{d.id}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {nav === "tabs" && <PageNav mode="tabs" pages={navPages} active={activePage} onSelect={setActivePage} />}
-            <div className="flex-1" />
-            {hasAlarm && (
-              <div className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                worstSeverity === "critical" ? "bg-red-700 animate-pulse" : worstSeverity === "warning" ? "bg-amber-700" : "bg-blue-700"
-              }`}>
-                ⚠ {activeAlarms.length} alarm{activeAlarms.length !== 1 ? "s" : ""}
-              </div>
-            )}
-            <button
-              onClick={() => setShowAlarmLog(true)}
-              title="Open alarm log"
-              className="text-xs px-2 py-0.5 rounded transition-colors"
-              style={{ background: alarms.length > 0 ? "var(--warning)" : "var(--secondary)", color: alarms.length > 0 ? "#000" : "var(--muted-foreground)", border: "1px solid var(--border)" }}
-            >
-              🔔 Alarm Log
-            </button>
-            <button
-              onClick={() => setShowRecipes(true)}
-              title="Open recipes panel"
-              className="text-xs px-2 py-0.5 rounded transition-colors"
-              style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
-            >
-              ⚙ Recipes
-            </button>
-            {project.canvasResolution?.type !== "fixed" && !phone && <button
-              onClick={toggleScale}
-              title={scaleToFit ? "Show the page at full size" : "Scale the page to fit the window width"}
-              className="text-[11px] px-2 py-0.5 rounded transition-colors"
-              style={{
-                background: scaleToFit ? "var(--primary)" : "var(--secondary)",
-                color: scaleToFit ? "var(--primary-foreground)" : "var(--muted-foreground)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              ⤢ Fit
-            </button>}
-            {(project.languages?.length ?? 0) > 1 && (
-              <select aria-label="Language" value={language} onChange={(e) => chooseLanguage(e.target.value)}
-                className="text-[11px] rounded px-1.5 py-0.5"
-                style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)", border: "1px solid" }}
-                title="Language">
-                {project.languages!.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
-              </select>
-            )}
-            <select
-              value={chosenMode ?? ""}
-              onChange={(e) => setMode(e.target.value)}
-              className="text-[11px] rounded px-1.5 py-0.5 max-w-[140px] truncate"
-              style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)", border: "1px solid" }}
-              title="Light or dark"
-            >
-              <option value="">Project default</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-            {project.pin && (
-              <button
-                onClick={() => { setAuthed(false); sessionStorage.removeItem(AUTHED_KEY); }}
-                title="Lock screen"
-                className="text-xs px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
-              >
-                🔒
-              </button>
-            )}
+          <TopBar
+            projectName={project.name || "Speth's Screens"}
+            pageName={settingsOpen ? tr("Settings") : page ? tr(page.name) : undefined}
+            drivers={dsStatus.map((d) => ({ ...d, label: project.datasources.find((x) => x.id === d.id)?.label || d.id }))}
+            phone={phone}
+            menu={{ token: getToken(), loginRequired: !securityOff, onLogout: () => setToken(null) }}
+          />
+        )}
+        {!isKiosk && nav === "tabs" && project.pages.length > 1 && (
+          <div className="px-5 py-2 shrink-0" style={{ background: "var(--card)", borderBottom: "var(--line-width, 1px) solid var(--border)" }}>
+            <PageNav mode="tabs" pages={navPages} active={activePage} onSelect={setActivePage} />
           </div>
         )}
 
@@ -559,7 +399,19 @@ export function App() {
           onTouchStart={isKiosk ? handleTouchStart : undefined}
           onTouchEnd={isKiosk ? handleTouchEnd : undefined}
         >
-          {page.widgets.length === 0 ? (
+          {settingsOpen ? (
+            <SettingsScreen
+              t={tr}
+              mode={chosenMode ?? ""}
+              onMode={setMode}
+              languages={project.languages}
+              language={language}
+              onLanguage={chooseLanguage}
+              fit={project.canvasResolution?.type !== "fixed" && !phone ? { on: scaleToFit, toggle: toggleScale } : undefined}
+              onRecipes={() => setShowRecipes(true)}
+              onLock={project.pin ? () => { setAuthed(false); sessionStorage.removeItem(AUTHED_KEY); } : undefined}
+            />
+          ) : page.widgets.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-zinc-600 italic">No widgets on this page.</div>
           ) : (
             <PageStage
@@ -586,14 +438,6 @@ export function App() {
       {/* Recipes slide-out panel */}
       {showRecipes && <RecipesPanel onClose={() => setShowRecipes(false)} />}
 
-      {/* Alarm log slide-out panel */}
-      {showAlarmLog && (
-        <AlarmLogPanel
-          alarms={alarms}
-          onAck={ack}
-          onClose={() => setShowAlarmLog(false)}
-        />
-      )}
     </WidgetHostProvider>
     </AlarmContext.Provider>
   );
