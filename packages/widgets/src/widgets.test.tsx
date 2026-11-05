@@ -258,3 +258,22 @@ describe("process graphics", () => {
     expect(polylines(draw(w, fakeHost({ "plc:Run": 0 })).container)).toHaveLength(2);
   });
 });
+
+describe("a drawing is not a card", () => {
+  it("a pipe has no background, border or padding", () => {
+    const { container } = draw({ type: "pipe", props: { label: "Feed" } });
+    const el = container.querySelector("svg")!.closest("[style*='padding']") as HTMLElement;
+    expect(el.style.background).toBe("transparent");
+    expect(el.style.borderStyle).toBe("none");
+    expect(el.style.padding).toMatch(/^0/);
+  });
+  it("a symbol is bare unless it has its own background or border, and shows its label once", () => {
+    const sym = SYMBOLS[0]!;
+    const { container } = draw({ type: "symbol", props: { symbolId: sym.id, label: "Valve 1" } });
+    expect(screen.getAllByText("Valve 1")).toHaveLength(1);
+    expect(container.querySelector("[style*='padding: 0']")).toBeTruthy();
+    cleanup();
+    const boxed = draw({ type: "symbol", props: { symbolId: sym.id, label: "Valve 1", bgColor: "#fff" } }).container;
+    expect(boxed.querySelector("[style*='padding: 0']")).toBeNull();
+  });
+});

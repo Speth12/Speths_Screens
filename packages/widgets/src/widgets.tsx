@@ -169,13 +169,23 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   if (!dynColor && !bgColor) {
     style.border = "var(--line-width, 1px) solid var(--border)";
   }
+  // A pipe, and a symbol with no background or border of its own, is a drawing on the page, not a card:
+  // no frame, and no frame label (a symbol draws its own).
+  const bare = w.type === "pipe" || (w.type === "symbol" && !bgColor && !borderColor);
+  if (bare) {
+    style.background = "transparent";
+    style.border = "none";
+    style.boxShadow = "none";
+    style.borderRadius = 0;
+    style.padding = 0;
+  }
 
   return (
     <div
       className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
       style={style}
     >
-      {p.label && (
+      {p.label && !bare && (
         <div
           className="text-xs uppercase tracking-wider truncate shrink-0"
           style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
@@ -752,10 +762,12 @@ function TrendWidget({ w }: WP<"trend">) {
         })}
 
         {/* SVG wrapper */}
-        <div className="flex-1 relative min-w-0 flex flex-col">
+        {/* min-h-0: a flex item may not be taller than its card; without it a wide trend sized itself by the SVG's square
+            aspect ratio and the lines were clipped out of view */}
+        <div className="flex-1 relative min-w-0 min-h-0 flex flex-col">
           <svg
             ref={svgRef}
-            className="w-full flex-1 overflow-visible"
+            className="w-full flex-1 min-h-0 overflow-visible"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             style={{ cursor: isPanning ? "grabbing" : "crosshair", display: "block" }}
