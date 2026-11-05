@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { createProjectSync } from "./projectSync";
 
-const body = (name: string) => JSON.stringify({ schemaVersion: 4, version: "1", name, datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
+const body = (name: string) => JSON.stringify({ schemaVersion: 5, version: "1", name, datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
 
 it("the first poll is a change and the same body again is not", () => {
   const sync = createProjectSync();

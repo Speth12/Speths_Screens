@@ -2,7 +2,7 @@
 // runtime's WebSocket, writes through the write pipeline client, alarms from
 // the runtime with acknowledge, and the project's images and faceplates.
 import { useMemo } from "react";
-import type { AlarmView, WidgetHost, WriteRequest } from "@speths-screens/widgets";
+import { translator, type AlarmView, type WidgetHost, type WriteRequest } from "@speths-screens/widgets";
 import type { Project } from "@speths-screens/shared-types";
 import { useTag } from "./hooks/useTag";
 import { useTags } from "./hooks/useTags";
@@ -23,11 +23,14 @@ function useOperatorAlarms(): { alarms: AlarmView[]; ack: (id: string) => void }
 
 /** The host for the loaded project. A view-only project writes nothing,
  *  momentary button presses included. */
-export function useOperatorHost(project: Project | null, navigate: (pageId: string) => void): WidgetHost {
+export function useOperatorHost(project: Project | null, navigate: (pageId: string) => void, language?: string): WidgetHost {
   const viewOnly = !!project?.viewOnly;
   const images = project?.images;
   const faceplates = project?.faceplates;
+  const languages = project?.languages;
+  const translations = project?.translations;
   return useMemo(() => {
+    const translate = translator({ languages, translations }, language);
     const send = (req: WriteRequest) => {
       if (!viewOnly) void writeTag(req.binding, req.value, req.widgetId);
     };
@@ -41,6 +44,7 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
       useAlarms: useOperatorAlarms,
       useImage: (id: string) => (id ? images?.find((img) => img.id === id)?.dataUrl : undefined),
       useFaceplate: (id: string | undefined) => (id ? faceplates?.find((f) => f.id === id) : undefined),
+      useTranslate: () => translate,
     };
-  }, [viewOnly, images, faceplates, navigate]);
+  }, [viewOnly, images, faceplates, languages, translations, language, navigate]);
 }

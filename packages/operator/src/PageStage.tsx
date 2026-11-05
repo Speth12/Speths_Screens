@@ -3,7 +3,7 @@
 // resolution or the extent of the widgets, then scaled to the window by the
 // shared rules in packages/widgets/src/layout.ts. (The operator used to lay
 // every page out on its own 12-column grid and ignored both settings.)
-import { WidgetRenderer, fitScale, placement, stageSize, type Size } from "@speths-screens/widgets";
+import { WidgetRenderer, fitScale, forDevice, placement, stageSize, type Device, type Size } from "@speths-screens/widgets";
 import type { CanvasResolution, Widget } from "@speths-screens/shared-types";
 
 type Props = {
@@ -15,6 +15,8 @@ type Props = {
   fit: boolean;
   /** The room the page has, in pixels; zero until the window is measured. */
   viewport: Size;
+  /** The screen size: widgets sit where their tablet or phone layout puts them. Missing is the desktop. */
+  device?: Device;
 };
 
 /** The scale a page is drawn at: a fixed resolution always fits the window; a dynamic one fits its width when asked. */
@@ -23,7 +25,11 @@ export function pageScale(stage: Size & { fixed: boolean }, viewport: Size, fit:
   return fit ? fitScale(stage, viewport, { fitHeight: false }) : 1;
 }
 
-export function PageStage({ widgets, resolution, pixel, fit, viewport }: Props) {
+export function PageStage({ widgets: all, resolution: fixedOrNot, pixel, fit, viewport, device = "desktop" }: Props) {
+  const widgets = forDevice(all, device);
+  // A fixed stage is a desktop's size: a page with its own layout for this device is as big as its widgets.
+  const ownLayout = device !== "desktop" && all.some((w) => (device === "phone" ? w.layout?.phone || w.layout?.tablet : w.layout?.tablet));
+  const resolution = ownLayout ? undefined : fixedOrNot;
   const stage = stageSize(resolution, widgets, pixel);
   const scale = pageScale(stage, viewport, fit);
   return (

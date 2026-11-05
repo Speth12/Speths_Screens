@@ -79,3 +79,33 @@ describe("pageScale", () => {
     expect(pageScale(st, vp, fit)).toBe(want);
   });
 });
+
+describe("PageStage on a smaller screen", () => {
+  const widgets = [
+    { id: "a", type: "textDisplay", x: 0, y: 0, w: 4, h: 1, props: { staticText: "Alpha" } },
+    { id: "b", type: "textDisplay", x: 4, y: 0, w: 4, h: 1, props: { staticText: "Bravo" }, layout: { phone: { x: 0, y: 1, w: 4, hidden: false }, tablet: { x: 0, y: 1 } } },
+    { id: "c", type: "textDisplay", x: 8, y: 0, w: 4, h: 1, props: { staticText: "Charlie" }, layout: { phone: { hidden: true } } },
+  ] as never;
+  const view = { width: 400, height: 800 };
+  const left = (text: string) => screen.getByText(text).closest("[style*='position: absolute']") as HTMLElement;
+
+  it("the desktop keeps every widget where it is", () => {
+    render(<PageStage widgets={widgets} pixel={false} fit={false} viewport={view} />);
+    expect(screen.getByText("Charlie")).toBeTruthy();
+    expect(left("Bravo").style.left).toBe("352px");
+  });
+
+  it("a phone moves a widget to its phone place and drops one it hides", () => {
+    render(<PageStage widgets={widgets} pixel={false} fit={false} viewport={view} device="phone" />);
+    expect(screen.queryByText("Charlie")).toBeNull();
+    expect(left("Bravo").style.left).toBe("0px");
+    expect(left("Bravo").style.top).toBe("72px");
+    expect(left("Alpha").style.left).toBe("0px");
+  });
+
+  it("a fixed stage gives way to a page that has its own layout for the device", () => {
+    const res = { type: "fixed", width: 1920, height: 1080 } as never;
+    render(<PageStage widgets={widgets} resolution={res} pixel={false} fit={false} viewport={view} device="phone" />);
+    expect(Number.parseInt(screen.getByTestId("page-stage").style.height)).toBeLessThan(300);
+  });
+});
