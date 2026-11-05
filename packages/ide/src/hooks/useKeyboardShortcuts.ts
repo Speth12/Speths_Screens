@@ -92,7 +92,7 @@ export function useKeyboardShortcuts() {
 
       // ? — toggle help modal (fires a custom event the App listens to)
       if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
-        window.dispatchEvent(new CustomEvent("xhmi:toggleHelp"));
+        window.dispatchEvent(new CustomEvent("speths-screens:toggleHelp"));
         return;
       }
     };
