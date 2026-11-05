@@ -37,7 +37,7 @@ func Ensure(certPath, keyPath, appURI, commonName string) error {
 		SerialNumber: big.NewInt(time.Now().Unix()),
 		Subject: pkix.Name{
 			CommonName:   commonName,
-			Organization: []string{"x-hmi"},
+			Organization: []string{"Speth's Screens"},
 		},
 		NotBefore: time.Now().Add(-time.Hour),
 		NotAfter:  time.Now().Add(365 * 24 * time.Hour),
