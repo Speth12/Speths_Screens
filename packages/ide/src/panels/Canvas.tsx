@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
 import { GALLERY_DRAG, insertGalleryWidget } from "./GalleryPanel";
-import { SYMBOLS, themeById, themeVars } from "@speths-screens/widgets";
+import { DEVICE_WIDTH, SYMBOLS, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 
@@ -164,7 +165,13 @@ export function Canvas() {
   const [rubber, setRubber] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const rubberActive = useRef(false);
 
-  const page = project.pages.find((p) => p.id === activePageId);
+  const rawPage = project.pages.find((p) => p.id === activePageId);
+  // The page as it sits on the screen size being edited; a hidden widget stays, faded, to be shown again.
+  const device = useEditorView((s) => s.device);
+  const page = useMemo(
+    () => (rawPage && device !== "desktop" ? { ...rawPage, widgets: forDevice(rawPage.widgets, device, true) } : rawPage),
+    [rawPage, device],
+  );
   const snapMode   = project.canvasSnap ?? "grid";
   const resolution = project.canvasResolution ?? { type: "dynamic" };
 
@@ -543,7 +550,7 @@ export function Canvas() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   // The screen's theme applies inside the page, not to the IDE around it.
-  const screenTheme = themeVars(themeById(project.theme));
+  const screenTheme = themeVars(resolveTheme(project.theme));
   const pageBg = page.backgroundColor ?? "";
   const gridBg = isPixelMode
     ? { ...screenTheme, backgroundColor: pageBg || "var(--background)", backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${16 * zoom}px ${16 * zoom}px` }
@@ -716,7 +723,8 @@ export function Canvas() {
                       : "ring-2 ring-blue-500"
                     : "ring-1 ring-transparent hover:ring-zinc-700"
                 } ${locked ? "ring-amber-700/60" : ""}`}
-                style={widgetStyle}
+                style={(w as { hiddenOnDevice?: boolean }).hiddenOnDevice ? { ...widgetStyle, opacity: 0.3, outline: "1px dashed var(--border)" } : widgetStyle}
+                title={(w as { hiddenOnDevice?: boolean }).hiddenOnDevice ? `Hidden on ${device}` : undefined}
               >
                 <WidgetRenderer w={w} />
 
@@ -764,6 +772,12 @@ export function Canvas() {
               </div>
             );
           })}
+
+          {/* Where a tablet or phone screen ends: widgets past this line are off its edge */}
+          {device !== "desktop" && (
+            <div data-testid="device-edge" aria-hidden="true" className="absolute top-0 bottom-0 pointer-events-none z-30"
+              style={{ left: DEVICE_WIDTH[device] * zoom, borderLeft: "2px dashed #f59e0b99" }} />
+          )}
 
           {/* Group bounding-box overlays */}
           {(() => {
@@ -820,10 +834,15 @@ export function Canvas() {
 }
 
 export function PositionEditor({ pageId, widgetId }: { pageId: string; widgetId: string }) {
-  const { project, updateWidget } = useProject();
+  const { project, updateWidget, setWidgetHidden, resetWidgetLayout } = useProject();
+  const device = useEditorView((s) => s.device);
   const page = project.pages.find((p) => p.id === pageId);
-  const w = page?.widgets.find((x) => x.id === widgetId);
-  if (!w) return null;
+  const own = page?.widgets.find((x) => x.id === widgetId);
+  if (!own) return null;
+  // On a tablet or phone the fields show where the widget sits there, inherited or its own.
+  const eff = effectivePlacement(own, device);
+  const w = { ...own, x: eff.x, y: eff.y, w: eff.w, h: eff.h };
+  const hasOwnLayout = device !== "desktop" && !!own.layout?.[device];
 
   const num = (k: "x" | "y" | "w" | "h") => (
     <label className="flex items-center gap-2 text-[11px]">
@@ -838,5 +857,18 @@ export function PositionEditor({ pageId, widgetId }: { pageId: string; widgetId:
     </label>
   );
 
-  return <div className="grid grid-cols-2 gap-1.5">{num("x")}{num("y")}{num("w")}{num("h")}</div>;
+  return (
+    <>
+      {device !== "desktop" && (
+        <div className="text-[10px] text-amber-400 mb-1">Editing the {device} layout{hasOwnLayout ? "" : ": follows the larger layout until you change it"}</div>
+      )}
+      <div className="grid grid-cols-2 gap-1.5">{num("x")}{num("y")}{num("w")}{num("h")}</div>
+      {device !== "desktop" && (
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] text-zinc-300">
+          <label className="flex items-center gap-1"><input type="checkbox" checked={eff.hidden} onChange={(e) => setWidgetHidden(pageId, widgetId, e.target.checked)} />Hide on {device}</label>
+          {hasOwnLayout && <button onClick={() => resetWidgetLayout(pageId, widgetId)} className="text-blue-400 hover:text-blue-300">Follow the larger layout</button>}
+        </div>
+      )}
+    </>
+  );
 }

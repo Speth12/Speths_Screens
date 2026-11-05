@@ -3,7 +3,7 @@ import { exportGitFormat, importGitFormat, packGitFiles, unpackGitFiles } from "
 import type { Project } from "./projectStore";
 
 const project = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   version: "1.0.0",
   name: "Line",
   datasources: [],
@@ -26,7 +26,7 @@ it("writes each runtime script as its own .js file and reads them back", () => {
 
   const back = importGitFormat(files);
   expect(back.scripts).toEqual(project.scripts);
-  expect(back.schemaVersion).toBe(4);
+  expect(back.schemaVersion).toBe(5);
   expect(back.scriptRole).toBe("engineer");
   expect(back.sessionVars).toEqual(project.sessionVars);
 });
@@ -40,7 +40,7 @@ it("a project without scripts writes no scripts.json", () => {
 it("keeps the whole project through the downloaded file", () => {
   const full = {
     ...project,
-    theme: "high-performance",
+    theme: { preset: "calm" },
     security: { mode: "login" },
     historian: { retentionDays: 30 },
     namespace: [{ path: "Line1", type: "folder" }],

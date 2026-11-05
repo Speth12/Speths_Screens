@@ -1,3 +1,4 @@
+import { DataSwitch, DeviceSwitch } from "./DeviceSwitch";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useProject } from "../store/projectStore";
 import { openProject, openSummary } from "../store/openProject";
@@ -197,12 +198,14 @@ type HeaderProps = {
   onHelp: () => void;
   onDemo: () => void;
   onGallery: () => void;
+  onTheme: () => void;
+  onLanguages: () => void;
   showJSON: boolean;
   onToggleJSON: () => void;
   onPreview: () => void;
 };
 
-export function Header({ onHelp, onDemo, onGallery, showJSON, onToggleJSON, onPreview }: HeaderProps) {
+export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJSON, onToggleJSON, onPreview }: HeaderProps) {
   const { exportJSON, loadProject } = useProject();
   const { canUndo, canRedo, undo, redo } = useProject(
     useShallow((s) => ({ canUndo: s.canUndo, canRedo: s.canRedo, undo: s.undo, redo: s.redo }))
@@ -363,6 +366,12 @@ export function Header({ onHelp, onDemo, onGallery, showJSON, onToggleJSON, onPr
       </button>
 
       {/* Demo */}
+      <DeviceSwitch />
+      <DataSwitch />
+      <button onClick={onTheme} title="The look of the screens: a theme, or its elements mixed"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Theme</button>
+      <button onClick={onLanguages} title="The languages the screens can be shown in, and their translations"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Languages</button>
       <button onClick={onGallery} title="Every widget type in every state, under the theme"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Gallery</button>
       <button onClick={onDemo} title="Platform feature demo"

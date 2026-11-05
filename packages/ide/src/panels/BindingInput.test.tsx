@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 const load = () => useProject.getState().loadProject({
-  schemaVersion: 4, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
+  schemaVersion: 5, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
   datasources: [{ id: "plc", label: "plc", type: "rest", url: "" } as unknown as Project["datasources"][number]],
   namespace: [{ path: "plant.temp", type: "tag", driverId: "plc", driverAddr: "rTemp", description: "Tank temperature" }],
 });

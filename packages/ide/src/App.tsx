@@ -3,6 +3,8 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Canvas } from "./panels/Canvas";
 import { DemoModal } from "./panels/Demo";
 import { GalleryPanel } from "./panels/GalleryPanel";
+import { ThemePanel } from "./panels/ThemePanel";
+import { LanguagesPanel } from "./panels/LanguagesPanel";
 import { Header } from "./panels/Header";
 import { ImageLibrary } from "./panels/ImageLibrary";
 import { LeftPanel } from "./panels/LeftPanel";
@@ -90,6 +92,8 @@ export function App() {
   const [showHelp, setShowHelp]     = useState(false);
   const [showDemo, setShowDemo]     = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
+  const [showLanguages, setShowLanguages] = useState(false);
   const [showJSON, setShowJSON]     = useState(false);
   const [preview,  setPreview]      = useState(false);
   const [rightOpen, setRightOpen]   = useState(true);
@@ -129,6 +133,8 @@ export function App() {
         onHelp={() => setShowHelp((v) => !v)}
         onDemo={() => setShowDemo(true)}
         onGallery={() => setShowGallery((v) => !v)}
+        onTheme={() => setShowTheme((v) => !v)}
+        onLanguages={() => setShowLanguages((v) => !v)}
         showJSON={showJSON}
         onToggleJSON={() => setShowJSON((v) => !v)}
         onPreview={() => setPreview(true)}
@@ -204,6 +210,8 @@ export function App() {
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
       {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
       {showGallery && <GalleryPanel onClose={() => setShowGallery(false)} />}
+      {showTheme && <ThemePanel onClose={() => setShowTheme(false)} />}
+      {showLanguages && <LanguagesPanel onClose={() => setShowLanguages(false)} />}
       {preview  && <PreviewMode onExit={() => setPreview(false)} />}
     </div>
   );

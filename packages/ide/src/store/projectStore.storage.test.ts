@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 // The store restores the autosaved project when it is first imported, so each
 // test sets localStorage first and imports a fresh copy of the module.
 const saved = {
-  schemaVersion: 4, version: "1", name: "Autosaved before the rename",
+  schemaVersion: 5, version: "1", name: "Autosaved before the rename",
   datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
 };
 

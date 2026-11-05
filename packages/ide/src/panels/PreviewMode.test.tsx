@@ -18,7 +18,7 @@ afterEach(() => {
 const led = { id: "w1", type: "led" as const };
 const load = (more: Partial<Project>, x: number, y: number, w: number, h: number) =>
   useProject.getState().loadProject({
-    schemaVersion: 4, version: "1", datasources: [],
+    schemaVersion: 5, version: "1", datasources: [],
     pages: [{ id: "p1", name: "Main", widgets: [{ ...led, x, y, w, h }] }],
     ...more,
   });
