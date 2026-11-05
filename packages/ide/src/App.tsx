@@ -105,8 +105,8 @@ export function App() {
 
   useEffect(() => {
     const toggle = () => setShowHelp((v) => !v);
-    window.addEventListener("xhmi:toggleHelp", toggle);
-    return () => window.removeEventListener("xhmi:toggleHelp", toggle);
+    window.addEventListener("speths-screens:toggleHelp", toggle);
+    return () => window.removeEventListener("speths-screens:toggleHelp", toggle);
   }, []);
 
   useEffect(() => {

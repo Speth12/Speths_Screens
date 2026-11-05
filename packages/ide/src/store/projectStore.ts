@@ -9,6 +9,7 @@ import type {
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
   RecipeEntry, Role, RuntimeScript, SessionVar, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
+import { readMigrated } from "./storageKeys";
 
 export type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
@@ -601,12 +602,12 @@ useProject.subscribe((state) => {
 
 // ── LocalStorage auto-save / auto-restore ──────────────────────────────────
 
-const LS_KEY = "xhmi-project-v1";
+const LS_KEY = "speths-screens-project-v1";
 
 /** Restore any previously saved project from localStorage on startup. */
 (function restoreFromStorage() {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = readMigrated(LS_KEY, "xhmi-project-v1");
     if (!raw) return;
     const o = openProject(JSON.parse(raw));
     if (o.ok) useProject.getState().loadProject(o.project);

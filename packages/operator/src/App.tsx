@@ -14,10 +14,13 @@ import { AlarmContext, type AlarmEvent } from "./alarmContext";
 import { THEMES, applyTheme, themeById } from "@speths-screens/widgets";
 
 // A browser's own theme choice, kept on this device only.
-const THEME_KEY = "xhmi-theme";
-const storedTheme = () => { try { return localStorage.getItem(THEME_KEY); } catch { return null; } };
+const THEME_KEY = "speths-screens-theme";
+const SCALE_KEY = "speths-screens-scale";
+const AUTHED_KEY = "speths-screens-authed";
+const storedTheme = () => readMigrated(THEME_KEY, "xhmi-theme");
 
 import type { Project, Recipe } from "@speths-screens/shared-types";
+import { readMigrated } from "./storageKeys";
 
 
 
@@ -178,15 +181,15 @@ export function App() {
   const wsAlarmRef = useRef<WebSocket | null>(null);
 
   // PIN auth
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("xhmi-authed") === "1");
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTHED_KEY) === "1");
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
 
   // Scale-to-fit: a page with a dynamic resolution is scaled to the window's width when on
   // (a fixed resolution always fits the window); the room is the canvas area without its padding.
-  const [scaleToFit, setScaleToFit] = useState(() => localStorage.getItem("xhmi-scale") === "1");
+  const [scaleToFit, setScaleToFit] = useState(() => readMigrated(SCALE_KEY, "xhmi-scale") === "1");
   const [canvasRef, viewport] = useElementSize();
-  const toggleScale = () => setScaleToFit((s) => { localStorage.setItem("xhmi-scale", s ? "0" : "1"); return !s; });
+  const toggleScale = () => setScaleToFit((s) => { localStorage.setItem(SCALE_KEY, s ? "0" : "1"); return !s; });
 
   // Theme — persisted in localStorage via applyTheme
   const [chosenTheme, setChosenTheme] = useState(storedTheme);
@@ -290,7 +293,7 @@ export function App() {
   const tryPin = useCallback(() => {
     if (pinInput === (project?.pin ?? "")) {
       setAuthed(true);
-      sessionStorage.setItem("xhmi-authed", "1");
+      sessionStorage.setItem(AUTHED_KEY, "1");
     } else {
       setPinError(true);
       setTimeout(() => setPinError(false), 800);
@@ -498,7 +501,7 @@ export function App() {
             </select>
             {project.pin && (
               <button
-                onClick={() => { setAuthed(false); sessionStorage.removeItem("xhmi-authed"); }}
+                onClick={() => { setAuthed(false); sessionStorage.removeItem(AUTHED_KEY); }}
                 title="Lock screen"
                 className="text-xs px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
               >
