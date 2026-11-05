@@ -15,6 +15,10 @@ type Types struct {
 	// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 	Historian *HistorianSettings `json:"historian,omitempty"`
 	Images    []ImageAsset       `json:"images,omitempty"`
+	// Language codes the screens can be shown in, such as en, de, es. The first is the language
+	// the project's text is written in; the operator screen offers a switch when there are two
+	// or more
+	Languages []string `json:"languages,omitempty"`
 	// Human-readable project name
 	Name *string `json:"name,omitempty"`
 	// Unified Namespace — flat list of folders, assets and tags. Tags with driverId+driverAddr
@@ -40,10 +44,15 @@ type Types struct {
 	Security *Security `json:"security,omitempty"`
 	// Variables kept per browser tab, read as {session:name}; they never reach the runtime
 	SessionVars []SessionVar `json:"sessionVars,omitempty"`
-	// Default theme for every screen. A browser can still pick its own; that choice is not
-	// saved in the project
-	Theme *ThemeID `json:"theme,omitempty"`
-	Udts  []Udt    `json:"udts,omitempty"`
+	Shell       *Shell       `json:"shell,omitempty"`
+	// The look of every screen: a preset, light or dark, and any element changed from the
+	// preset. A browser can still pick light or dark for itself; that choice is not saved in
+	// the project
+	Theme *Theme `json:"theme,omitempty"`
+	// For each language, the project's text as written (page names, labels, alarm messages)
+	// mapped to its translation. A text with no entry shows as written
+	Translations map[string]map[string]string `json:"translations,omitempty"`
+	Udts         []Udt                        `json:"udts,omitempty"`
 	// Schema version, e.g. '0.1.0'
 	Version string `json:"version"`
 	// Disable all write widgets in the operator panel
@@ -291,6 +300,8 @@ type Action struct {
 //
 // # Settings of a symbol widget
 //
+// Settings of a pipe widget: a line through points with an animated flow
+//
 // # Settings of a faceplate widget
 //
 // Settings of a table widget
@@ -360,10 +371,30 @@ type FaceplateWidgetProps struct {
 	Fit *ImageFit `json:"fit,omitempty"`
 	// Image: data-URL, URL or 'lib:<imageId>'
 	Src *string `json:"src,omitempty"`
+	// Symbol: true while the symbol should move (a pump running); drive it from a tag
+	Animate *bool `json:"animate,omitempty"`
+	// Symbol: seconds for one turn or one pulse; missing means 2
+	//
+	// Pipe: seconds for the dashes to move one step; missing means 1
+	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
+	// Symbol: what it does while animate is true
+	Motion *SymbolMotion `json:"motion,omitempty"`
 	// Symbol: stroke color
 	Stroke *string `json:"stroke,omitempty"`
 	// Symbol: id from a symbol pack
 	SymbolID *string `json:"symbolId,omitempty"`
+	// Pipe: the pipe's color, a CSS color or a token such as token:process-running
+	Color *string `json:"color,omitempty"`
+	// Pipe: true while something flows; drive it from a tag
+	Flow *bool `json:"flow,omitempty"`
+	// Pipe: the color of the moving dashes; missing means the theme's own
+	FlowColor *string `json:"flowColor,omitempty"`
+	// Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. "0,50 60,50 60,100"
+	Points *string `json:"points,omitempty"`
+	// Pipe: flow runs from the last point to the first
+	Reverse *bool `json:"reverse,omitempty"`
+	// Pipe: line width in pixels; missing means 8
+	Weight *float64 `json:"weight,omitempty"`
 	// Faceplate widget: id of the faceplate to show
 	FaceplateID *string `json:"faceplateId,omitempty"`
 	// Faceplate widget: parameter name → binding
@@ -463,8 +494,12 @@ type NamespaceNode struct {
 type Page struct {
 	// CSS color for the page background
 	BackgroundColor *string `json:"backgroundColor,omitempty"`
-	ID              string  `json:"id"`
-	Name            string  `json:"name"`
+	// Pages with the same group are listed together under that heading in the sidebar
+	Group *string `json:"group,omitempty"`
+	// Shown beside the page's name in the navigation; missing shows the name's first letter
+	Icon *PageIcon `json:"icon,omitempty"`
+	ID   string    `json:"id"`
+	Name string    `json:"name"`
 	// Page script (JavaScript source)
 	Script  *string  `json:"script,omitempty"`
 	Widgets []Widget `json:"widgets"`
@@ -478,8 +513,9 @@ type Widget struct {
 	// IDE-only: widgets with the same groupId move together
 	GroupID *string `json:"groupId,omitempty"`
 	// Height in grid units
-	H  int64  `json:"h"`
-	ID string `json:"id"`
+	H      int64          `json:"h"`
+	ID     string         `json:"id"`
+	Layout *WidgetLayouts `json:"layout,omitempty"`
 	// IDE-only: widget cannot be moved or resized
 	Locked *bool `json:"locked,omitempty"`
 	// This widget type's settings (see TypedProps)
@@ -491,6 +527,28 @@ type Widget struct {
 	X int64 `json:"x"`
 	// Grid row
 	Y int64 `json:"y"`
+}
+
+// Where the widget sits on a smaller screen. x, y, w and h above are the desktop layout; a
+// tablet (under 1024 px wide) uses what is set here, and a phone (under 640 px) uses its
+// own, then the tablet's, then the desktop's, one field at a time
+type WidgetLayouts struct {
+	Phone  *WidgetPlacement `json:"phone,omitempty"`
+	Tablet *WidgetPlacement `json:"tablet,omitempty"`
+}
+
+// A widget's place on one screen size; a field left out is inherited from the next size up
+type WidgetPlacement struct {
+	// Height
+	H *int64 `json:"h,omitempty"`
+	// Not shown on this screen size
+	Hidden *bool `json:"hidden,omitempty"`
+	// Width
+	W *int64 `json:"w,omitempty"`
+	// Grid column or pixel
+	X *int64 `json:"x,omitempty"`
+	// Grid row or pixel
+	Y *int64 `json:"y,omitempty"`
 }
 
 // This widget type's settings (see TypedProps)
@@ -527,6 +585,8 @@ type Widget struct {
 // # Settings of a image widget
 //
 // # Settings of a symbol widget
+//
+// Settings of a pipe widget: a line through points with an animated flow
 //
 // # Settings of a faceplate widget
 //
@@ -597,10 +657,30 @@ type WidgetProps struct {
 	Fit *ImageFit `json:"fit,omitempty"`
 	// Image: data-URL, URL or 'lib:<imageId>'
 	Src *string `json:"src,omitempty"`
+	// Symbol: true while the symbol should move (a pump running); drive it from a tag
+	Animate *bool `json:"animate,omitempty"`
+	// Symbol: seconds for one turn or one pulse; missing means 2
+	//
+	// Pipe: seconds for the dashes to move one step; missing means 1
+	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
+	// Symbol: what it does while animate is true
+	Motion *SymbolMotion `json:"motion,omitempty"`
 	// Symbol: stroke color
 	Stroke *string `json:"stroke,omitempty"`
 	// Symbol: id from a symbol pack
 	SymbolID *string `json:"symbolId,omitempty"`
+	// Pipe: the pipe's color, a CSS color or a token such as token:process-running
+	Color *string `json:"color,omitempty"`
+	// Pipe: true while something flows; drive it from a tag
+	Flow *bool `json:"flow,omitempty"`
+	// Pipe: the color of the moving dashes; missing means the theme's own
+	FlowColor *string `json:"flowColor,omitempty"`
+	// Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. "0,50 60,50 60,100"
+	Points *string `json:"points,omitempty"`
+	// Pipe: flow runs from the last point to the first
+	Reverse *bool `json:"reverse,omitempty"`
+	// Pipe: line width in pixels; missing means 8
+	Weight *float64 `json:"weight,omitempty"`
 	// Faceplate widget: id of the faceplate to show
 	FaceplateID *string `json:"faceplateId,omitempty"`
 	// Faceplate widget: parameter name → binding
@@ -669,6 +749,29 @@ type SessionVar struct {
 	// Letters, digits and _
 	Name string `json:"name"`
 	Type Type   `json:"type"`
+}
+
+// The frame around the pages in the operator screen
+type Shell struct {
+	Nav *ShellNav `json:"nav,omitempty"`
+}
+
+// The look of every screen: a preset, light or dark, and any element changed from the
+// preset. A browser can still pick light or dark for itself; that choice is not saved in
+// the project
+//
+// A preset sets every element; an element named here replaces the preset's choice, so a
+// theme can be taken whole or built from its parts
+type Theme struct {
+	// The main color of buttons and selections as #rrggbb; replaces the palette's
+	Accent  *string       `json:"accent,omitempty"`
+	Corners *ThemeCorners `json:"corners,omitempty"`
+	Density *ThemeDensity `json:"density,omitempty"`
+	Depth   *ThemeDepth   `json:"depth,omitempty"`
+	Font    *ThemeFont    `json:"font,omitempty"`
+	Mode    *ThemeMode    `json:"mode,omitempty"`
+	Palette *ThemePalette `json:"palette,omitempty"`
+	Preset  *ThemePreset  `json:"preset,omitempty"`
 }
 
 type Udt struct {
@@ -770,9 +873,9 @@ const (
 type TransformKind string
 
 const (
-	Linear     TransformKind = "linear"
-	Map        TransformKind = "map"
-	Thresholds TransformKind = "thresholds"
+	Linear           TransformKind = "linear"
+	Thresholds       TransformKind = "thresholds"
+	TransformKindMap TransformKind = "map"
 )
 
 type ActionType string
@@ -811,11 +914,11 @@ const (
 type ButtonVariant string
 
 const (
-	Filled     ButtonVariant = "filled"
-	Flat       ButtonVariant = "flat"
-	Ghost      ButtonVariant = "ghost"
-	Industrial ButtonVariant = "industrial"
-	Outlined   ButtonVariant = "outlined"
+	ButtonVariantFlat ButtonVariant = "flat"
+	Filled            ButtonVariant = "filled"
+	Ghost             ButtonVariant = "ghost"
+	Industrial        ButtonVariant = "industrial"
+	Outlined          ButtonVariant = "outlined"
 )
 
 // Image object-fit, as set by the properties panel
@@ -825,6 +928,18 @@ const (
 	Contain ImageFit = "contain"
 	Cover   ImageFit = "cover"
 	Fill    ImageFit = "fill"
+)
+
+// Symbol: what it does while animate is true
+//
+// still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
+// browser for less motion sees it still
+type SymbolMotion string
+
+const (
+	Pulse SymbolMotion = "pulse"
+	Spin  SymbolMotion = "spin"
+	Still SymbolMotion = "still"
 )
 
 type TextAlign string
@@ -858,6 +973,7 @@ const (
 	MultiState     WidgetType = "multiState"
 	NumericDisplay WidgetType = "numericDisplay"
 	NumericInput   WidgetType = "numericInput"
+	Pipe           WidgetType = "pipe"
 	Setpoint       WidgetType = "setpoint"
 	Symbol         WidgetType = "symbol"
 	Table          WidgetType = "table"
@@ -874,6 +990,28 @@ const (
 	Folder                   NamespaceNodeType = "folder"
 	NamespaceNodeTypeVirtual NamespaceNodeType = "virtual"
 	Tag                      NamespaceNodeType = "tag"
+)
+
+// Shown beside the page's name in the navigation; missing shows the name's first letter
+type PageIcon string
+
+const (
+	Alarm       PageIcon = "alarm"
+	Bolt        PageIcon = "bolt"
+	Chart       PageIcon = "chart"
+	Dial        PageIcon = "dial"
+	Flask       PageIcon = "flask"
+	Graph       PageIcon = "graph"
+	Home        PageIcon = "home"
+	List        PageIcon = "list"
+	Motor       PageIcon = "motor"
+	PageIconMap PageIcon = "map"
+	Pump        PageIcon = "pump"
+	Settings    PageIcon = "settings"
+	Tools       PageIcon = "tools"
+	User        PageIcon = "user"
+	Valve       PageIcon = "valve"
+	Vessel      PageIcon = "vessel"
 )
 
 // The role runtime scripts write as (roles and limits apply, and the audit names the
@@ -896,14 +1034,82 @@ const (
 	Login        AuthMode = "login"
 )
 
-// Default theme for every screen. A browser can still pick its own; that choice is not
-// saved in the project
-//
-// Screen themes. Phase 3 has one; each later theme adds its id
-type ThemeID string
+// How a person moves between pages: a list on the left, a row of large icon buttons, or
+// tabs. A phone always gets a bar along the bottom. Missing means tabs
+type ShellNav string
 
 const (
-	HighPerformance ThemeID = "high-performance"
+	Sidebar ShellNav = "sidebar"
+	Tabs    ShellNav = "tabs"
+	Toolbar ShellNav = "toolbar"
+)
+
+// Corner radius of cards and controls: 2, 6 or 12 px
+type ThemeCorners string
+
+const (
+	Round  ThemeCorners = "round"
+	Soft   ThemeCorners = "soft"
+	Square ThemeCorners = "square"
+)
+
+// Padding and text size. touch is larger, with controls at least 44 px tall, for tablets
+// and panels
+type ThemeDensity string
+
+const (
+	Comfortable ThemeDensity = "comfortable"
+	Compact     ThemeDensity = "compact"
+	Touch       ThemeDensity = "touch"
+)
+
+// flat: a 1 px border. raised: a soft shadow. borderless: neither, the cards stand out by
+// color alone
+type ThemeDepth string
+
+const (
+	Borderless     ThemeDepth = "borderless"
+	Raised         ThemeDepth = "raised"
+	ThemeDepthFlat ThemeDepth = "flat"
+)
+
+// The text font. All but system are bundled, so a PLC with no internet shows the same text
+type ThemeFont string
+
+const (
+	Inter    ThemeFont = "inter"
+	NotoSans ThemeFont = "noto-sans"
+	OpenSans ThemeFont = "open-sans"
+	Roboto   ThemeFont = "roboto"
+	System   ThemeFont = "system"
+)
+
+// Missing means the preset's own (light for calm and clean, dark for modern)
+type ThemeMode string
+
+const (
+	Dark  ThemeMode = "dark"
+	Light ThemeMode = "light"
+)
+
+// The colors: calm is gray with a muted blue; modern is cool white or charcoal with a
+// bright blue
+type ThemePalette string
+
+const (
+	ThemePaletteCalm   ThemePalette = "calm"
+	ThemePaletteModern ThemePalette = "modern"
+)
+
+// calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white
+// cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of
+// shadows. Missing means calm
+type ThemePreset string
+
+const (
+	Clean             ThemePreset = "clean"
+	ThemePresetCalm   ThemePreset = "calm"
+	ThemePresetModern ThemePreset = "modern"
 )
 
 // The value before anything is written (and after a restart, unless retained); missing

@@ -20,6 +20,12 @@ export interface Project {
     historian?: HistorianSettings;
     images?:    ImageAsset[];
     /**
+     * Language codes the screens can be shown in, such as en, de, es. The first is the language
+     * the project's text is written in; the operator screen offers a switch when there are two
+     * or more
+     */
+    languages?: string[];
+    /**
      * Human-readable project name
      */
     name?: string;
@@ -62,12 +68,19 @@ export interface Project {
      * Variables kept per browser tab, read as {session:name}; they never reach the runtime
      */
     sessionVars?: SessionVar[];
+    shell?:       Shell;
     /**
-     * Default theme for every screen. A browser can still pick its own; that choice is not
-     * saved in the project
+     * The look of every screen: a preset, light or dark, and any element changed from the
+     * preset. A browser can still pick light or dark for itself; that choice is not saved in
+     * the project
      */
-    theme?: ThemeID;
-    udts?:  Udt[];
+    theme?: Theme;
+    /**
+     * For each language, the project's text as written (page names, labels, alarm messages)
+     * mapped to its translation. A text with no entry shows as written
+     */
+    translations?: { [key: string]: { [key: string]: string } };
+    udts?:         Udt[];
     /**
      * Schema version, e.g. '0.1.0'
      */
@@ -463,6 +476,8 @@ export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUr
  *
  * Settings of a symbol widget
  *
+ * Settings of a pipe widget: a line through points with an animated flow
+ *
  * Settings of a faceplate widget
  *
  * Settings of a table widget
@@ -582,6 +597,20 @@ export interface FaceplateWidgetProps {
      */
     src?: string;
     /**
+     * Symbol: true while the symbol should move (a pump running); drive it from a tag
+     */
+    animate?: boolean;
+    /**
+     * Symbol: seconds for one turn or one pulse; missing means 2
+     *
+     * Pipe: seconds for the dashes to move one step; missing means 1
+     */
+    cycleSeconds?: number;
+    /**
+     * Symbol: what it does while animate is true
+     */
+    motion?: SymbolMotion;
+    /**
      * Symbol: stroke color
      */
     stroke?: string;
@@ -589,6 +618,30 @@ export interface FaceplateWidgetProps {
      * Symbol: id from a symbol pack
      */
     symbolId?: string;
+    /**
+     * Pipe: the pipe's color, a CSS color or a token such as token:process-running
+     */
+    color?: string;
+    /**
+     * Pipe: true while something flows; drive it from a tag
+     */
+    flow?: boolean;
+    /**
+     * Pipe: the color of the moving dashes; missing means the theme's own
+     */
+    flowColor?: string;
+    /**
+     * Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. "0,50 60,50 60,100"
+     */
+    points?: string;
+    /**
+     * Pipe: flow runs from the last point to the first
+     */
+    reverse?: boolean;
+    /**
+     * Pipe: line width in pixels; missing means 8
+     */
+    weight?: number;
     /**
      * Faceplate widget: id of the faceplate to show
      */
@@ -628,6 +681,14 @@ export interface Threshold {
  */
 export type ImageFit = "contain" | "cover" | "fill";
 
+/**
+ * Symbol: what it does while animate is true
+ *
+ * still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
+ * browser for less motion sees it still
+ */
+export type SymbolMotion = "still" | "spin" | "pulse";
+
 export interface RefLine {
     color:  string;
     label?: string;
@@ -663,7 +724,7 @@ export type TextAlign = "left" | "center" | "right";
  */
 export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
 
-export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table";
+export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table" | "pipe";
 
 /**
  * What the historian stores and for how long. Missing means every change, plus one sample
@@ -751,14 +812,27 @@ export interface Page {
      * CSS color for the page background
      */
     backgroundColor?: string;
-    id:               string;
-    name:             string;
+    /**
+     * Pages with the same group are listed together under that heading in the sidebar
+     */
+    group?: string;
+    /**
+     * Shown beside the page's name in the navigation; missing shows the name's first letter
+     */
+    icon?: PageIcon;
+    id:    string;
+    name:  string;
     /**
      * Page script (JavaScript source)
      */
     script?: string;
     widgets: Widget[];
 }
+
+/**
+ * Shown beside the page's name in the navigation; missing shows the name's first letter
+ */
+export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask";
 
 export interface Widget {
     bindings?: WidgetBindings;
@@ -774,8 +848,9 @@ export interface Widget {
     /**
      * Height in grid units
      */
-    h:  number;
-    id: string;
+    h:       number;
+    id:      string;
+    layout?: WidgetLayouts;
     /**
      * IDE-only: widget cannot be moved or resized
      */
@@ -797,6 +872,42 @@ export interface Widget {
      * Grid row
      */
     y: number;
+}
+
+/**
+ * Where the widget sits on a smaller screen. x, y, w and h above are the desktop layout; a
+ * tablet (under 1024 px wide) uses what is set here, and a phone (under 640 px) uses its
+ * own, then the tablet's, then the desktop's, one field at a time
+ */
+export interface WidgetLayouts {
+    phone?:  WidgetPlacement;
+    tablet?: WidgetPlacement;
+}
+
+/**
+ * A widget's place on one screen size; a field left out is inherited from the next size up
+ */
+export interface WidgetPlacement {
+    /**
+     * Height
+     */
+    h?: number;
+    /**
+     * Not shown on this screen size
+     */
+    hidden?: boolean;
+    /**
+     * Width
+     */
+    w?: number;
+    /**
+     * Grid column or pixel
+     */
+    x?: number;
+    /**
+     * Grid row or pixel
+     */
+    y?: number;
 }
 
 /**
@@ -834,6 +945,8 @@ export interface Widget {
  * Settings of a image widget
  *
  * Settings of a symbol widget
+ *
+ * Settings of a pipe widget: a line through points with an animated flow
  *
  * Settings of a faceplate widget
  *
@@ -954,6 +1067,20 @@ export interface WidgetProps {
      */
     src?: string;
     /**
+     * Symbol: true while the symbol should move (a pump running); drive it from a tag
+     */
+    animate?: boolean;
+    /**
+     * Symbol: seconds for one turn or one pulse; missing means 2
+     *
+     * Pipe: seconds for the dashes to move one step; missing means 1
+     */
+    cycleSeconds?: number;
+    /**
+     * Symbol: what it does while animate is true
+     */
+    motion?: SymbolMotion;
+    /**
      * Symbol: stroke color
      */
     stroke?: string;
@@ -961,6 +1088,30 @@ export interface WidgetProps {
      * Symbol: id from a symbol pack
      */
     symbolId?: string;
+    /**
+     * Pipe: the pipe's color, a CSS color or a token such as token:process-running
+     */
+    color?: string;
+    /**
+     * Pipe: true while something flows; drive it from a tag
+     */
+    flow?: boolean;
+    /**
+     * Pipe: the color of the moving dashes; missing means the theme's own
+     */
+    flowColor?: string;
+    /**
+     * Pipe: the corners as x,y pairs from 0 to 100 across the widget, e.g. "0,50 60,50 60,100"
+     */
+    points?: string;
+    /**
+     * Pipe: flow runs from the last point to the first
+     */
+    reverse?: boolean;
+    /**
+     * Pipe: line width in pixels; missing means 8
+     */
+    weight?: number;
     /**
      * Faceplate widget: id of the faceplate to show
      */
@@ -1079,12 +1230,79 @@ export interface SessionVar {
 }
 
 /**
- * Default theme for every screen. A browser can still pick its own; that choice is not
- * saved in the project
- *
- * Screen themes. Phase 3 has one; each later theme adds its id
+ * The frame around the pages in the operator screen
  */
-export type ThemeID = "high-performance";
+export interface Shell {
+    nav?: ShellNav;
+}
+
+/**
+ * How a person moves between pages: a list on the left, a row of large icon buttons, or
+ * tabs. A phone always gets a bar along the bottom. Missing means tabs
+ */
+export type ShellNav = "sidebar" | "toolbar" | "tabs";
+
+/**
+ * The look of every screen: a preset, light or dark, and any element changed from the
+ * preset. A browser can still pick light or dark for itself; that choice is not saved in
+ * the project
+ *
+ * A preset sets every element; an element named here replaces the preset's choice, so a
+ * theme can be taken whole or built from its parts
+ */
+export interface Theme {
+    /**
+     * The main color of buttons and selections as #rrggbb; replaces the palette's
+     */
+    accent?:  string;
+    corners?: ThemeCorners;
+    density?: ThemeDensity;
+    depth?:   ThemeDepth;
+    font?:    ThemeFont;
+    mode?:    ThemeMode;
+    palette?: ThemePalette;
+    preset?:  ThemePreset;
+}
+
+/**
+ * Corner radius of cards and controls: 2, 6 or 12 px
+ */
+export type ThemeCorners = "square" | "soft" | "round";
+
+/**
+ * Padding and text size. touch is larger, with controls at least 44 px tall, for tablets
+ * and panels
+ */
+export type ThemeDensity = "compact" | "comfortable" | "touch";
+
+/**
+ * flat: a 1 px border. raised: a soft shadow. borderless: neither, the cards stand out by
+ * color alone
+ */
+export type ThemeDepth = "flat" | "raised" | "borderless";
+
+/**
+ * The text font. All but system are bundled, so a PLC with no internet shows the same text
+ */
+export type ThemeFont = "inter" | "roboto" | "open-sans" | "noto-sans" | "system";
+
+/**
+ * Missing means the preset's own (light for calm and clean, dark for modern)
+ */
+export type ThemeMode = "light" | "dark";
+
+/**
+ * The colors: calm is gray with a muted blue; modern is cool white or charcoal with a
+ * bright blue
+ */
+export type ThemePalette = "calm" | "modern";
+
+/**
+ * calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white
+ * cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of
+ * shadows. Missing means calm
+ */
+export type ThemePreset = "calm" | "clean" | "modern";
 
 export interface Udt {
     description?: string;

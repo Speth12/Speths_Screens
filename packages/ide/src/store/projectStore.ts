@@ -7,9 +7,11 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Role, RuntimeScript, SessionVar, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
+import { placeFor } from "@speths-screens/widgets";
 import { readMigrated } from "./storageKeys";
+import { useEditorView } from "./editorView";
 
 export type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
@@ -72,6 +74,18 @@ type State = {
   removeScript: (id: string) => void;
   setScriptRole: (role: Role | undefined) => void;
   setSessionVars: (vars: SessionVar[]) => void;
+  /** The project's look; an empty theme (no elements) removes it, which means the calm preset. */
+  setTheme: (theme: Theme | undefined) => void;
+  /** The frame around the pages; an empty shell removes it, which means tabs. */
+  setShell: (shell: Shell | undefined) => void;
+  /** Shows or hides a widget on the screen size being edited (not the desktop). */
+  setWidgetHidden: (pageId: string, id: string, hidden: boolean) => void;
+  /** Takes a widget's layout for the screen size being edited back to what it inherits. */
+  resetWidgetLayout: (pageId: string, id: string) => void;
+  /** The languages the screens can be shown in (the first is the one the text is written in). */
+  setLanguages: (languages: string[]) => void;
+  /** One translation; an empty value removes it. */
+  setTranslation: (language: string, text: string, value: string) => void;
 
   importImage: (asset: ImageAsset) => void;
   deleteImage: (id: string) => void;
@@ -100,8 +114,17 @@ type State = {
   exportJSON: () => string;
 };
 
+/** A widget change as it is stored: while a tablet or phone is being edited, a new x, y, w or h is
+ *  that size's layout and not the widget's own. */
+function forDevice(w: Widget, patch: Partial<Widget>): Partial<Widget> {
+  const device = useEditorView.getState().device;
+  if (device === "desktop" || (patch.x === undefined && patch.y === undefined && patch.w === undefined && patch.h === undefined)) return patch;
+  const { x, y, w: width, h, ...rest } = patch;
+  return { ...rest, ...placeFor(w, device, { x, y, w: width, h }) };
+}
+
 const blankProject = (): Project => ({
-  schemaVersion: 4,
+  schemaVersion: 5,
   version: "0.1.0",
   datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [] }],
@@ -246,7 +269,44 @@ export const useProject = create<State>((set, get) => {
           pages: s.project.pages.map((p) =>
             p.id !== pageId
               ? p
-              : { ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...patch } : w)) },
+              : { ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...forDevice(w, patch) } : w)) },
+          ),
+        },
+      }));
+    },
+
+    setWidgetHidden: (pageId, id, hidden) => {
+      const device = useEditorView.getState().device;
+      if (device === "desktop") return;
+      pushHistory();
+      set((s) => ({
+        project: {
+          ...s.project,
+          pages: s.project.pages.map((p) =>
+            p.id !== pageId ? p : { ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...placeFor(w, device, { hidden }) } : w)) },
+          ),
+        },
+      }));
+    },
+
+    resetWidgetLayout: (pageId, id) => {
+      const device = useEditorView.getState().device;
+      if (device === "desktop") return;
+      pushHistory();
+      set((s) => ({
+        project: {
+          ...s.project,
+          pages: s.project.pages.map((p) =>
+            p.id !== pageId ? p : {
+              ...p,
+              widgets: p.widgets.map((w) => {
+                if (w.id !== id || !w.layout) return w;
+                const layout = { ...w.layout };
+                delete layout[device];
+                const { layout: _old, ...rest } = w;
+                return Object.keys(layout).length ? { ...rest, layout } : rest;
+              }),
+            },
           ),
         },
       }));
@@ -272,7 +332,7 @@ export const useProject = create<State>((set, get) => {
               ...p,
               widgets: p.widgets.map((w) => {
                 const patch = patchMap.get(w.id);
-                return patch ? { ...w, ...patch } : w;
+                return patch ? { ...w, ...forDevice(w, patch) } : w;
               }),
             },
           ),
@@ -432,6 +492,49 @@ export const useProject = create<State>((set, get) => {
       set((s) => {
         const { sessionVars: _old, ...rest } = s.project;
         return { project: vars.length ? { ...rest, sessionVars: vars } : rest };
+      });
+    },
+
+    setTheme: (theme) => {
+      pushHistory();
+      set((s) => {
+        const { theme: _old, ...rest } = s.project;
+        return { project: theme && Object.keys(theme).length ? { ...rest, theme } : rest };
+      });
+    },
+
+    setShell: (shell) => {
+      pushHistory();
+      set((s) => {
+        const { shell: _old, ...rest } = s.project;
+        return { project: shell && Object.keys(shell).length ? { ...rest, shell } : rest };
+      });
+    },
+
+    setLanguages: (languages) => {
+      pushHistory();
+      set((s) => {
+        const { languages: _l, translations: _t, ...rest } = s.project;
+        const keep = Object.fromEntries(Object.entries(s.project.translations ?? {}).filter(([code]) => languages.includes(code) && code !== languages[0]));
+        return {
+          project: {
+            ...rest,
+            ...(languages.length ? { languages } : {}),
+            ...(Object.keys(keep).length ? { translations: keep } : {}),
+          },
+        };
+      });
+    },
+
+    setTranslation: (language, text, value) => {
+      pushHistory();
+      set((s) => {
+        const { translations: old, ...rest } = s.project;
+        const table = { ...(old?.[language] ?? {}) };
+        if (value) table[text] = value; else delete table[text];
+        const all = { ...(old ?? {}), [language]: table };
+        if (!Object.keys(table).length) delete all[language];
+        return { project: Object.keys(all).length ? { ...rest, translations: all } : rest };
       });
     },
 

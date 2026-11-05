@@ -158,6 +158,7 @@
       ]
     }
   ],
+  "languages": ["en", "de"],
   "name": "Speth's Screens Feature Showcase — Pump Station",
   "namespace": [
     {
@@ -630,7 +631,8 @@
           "x": 9,
           "y": 9
         }
-      ]
+      ],
+      "icon": "home"
     },
     {
       "id": "p-trends",
@@ -801,7 +803,8 @@
           "x": 0,
           "y": 10
         }
-      ]
+      ],
+      "icon": "graph"
     },
     {
       "id": "p-control",
@@ -1107,7 +1110,8 @@
           "x": 8,
           "y": 7
         }
-      ]
+      ],
+      "icon": "tools"
     },
     {
       "id": "p-namespace",
@@ -1424,7 +1428,8 @@
           "x": 6,
           "y": 7
         }
-      ]
+      ],
+      "icon": "map"
     },
     {
       "id": "p-alarms",
@@ -1642,6 +1647,188 @@
           "x": 6,
           "y": 7
         }
+      ],
+      "icon": "alarm"
+    },
+    {
+      "group": "Process",
+      "icon": "pump",
+      "id": "p-process",
+      "name": "Process",
+      "widgets": [
+        {
+          "h": 1,
+          "id": "pr-title",
+          "props": {
+            "label": "",
+            "staticText": "Pump station, animated",
+            "fontBold": true,
+            "fontSize": "xl",
+            "noPadding": true,
+            "bgColor": "none",
+            "borderColor": "none"
+          },
+          "type": "textDisplay",
+          "w": 8,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "bindings": {
+            "value": "sim:level"
+          },
+          "h": 5,
+          "id": "pr-tank",
+          "props": {
+            "label": "Feed tank",
+            "unit": "%",
+            "min": 0,
+            "max": 100
+          },
+          "type": "tank",
+          "w": 3,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "h": 1,
+          "id": "pr-pipe-1",
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 10,
+            "color": "token:process-normal"
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{sim:pump1_running} == 1"
+            },
+            "color": {
+              "expr": "{sim:pump1_running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          },
+          "type": "pipe",
+          "w": 2,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "h": 3,
+          "id": "pr-pump",
+          "props": {
+            "symbolId": "centrifugal-pump",
+            "label": "Pump 1",
+            "motion": "spin",
+            "cycleSeconds": 1.5
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{sim:pump1_running} == 1"
+            },
+            "stroke": {
+              "expr": "{sim:pump1_running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          },
+          "type": "symbol",
+          "w": 2,
+          "x": 5,
+          "y": 2
+        },
+        {
+          "h": 1,
+          "id": "pr-pipe-2",
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 10
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{sim:pump1_running} == 1"
+            },
+            "color": {
+              "expr": "{sim:pump1_running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          },
+          "type": "pipe",
+          "w": 2,
+          "x": 7,
+          "y": 3
+        },
+        {
+          "h": 3,
+          "id": "pr-valve",
+          "props": {
+            "symbolId": "gate-valve",
+            "label": "Outlet valve",
+            "motion": "pulse"
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{sim:fault_active} == 1"
+            },
+            "stroke": {
+              "expr": "{sim:fault_active}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:alarm-critical"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          },
+          "type": "symbol",
+          "w": 2,
+          "x": 9,
+          "y": 2
+        },
+        {
+          "bindings": {
+            "value": "sim:flow"
+          },
+          "h": 2,
+          "id": "pr-flow",
+          "props": {
+            "label": "Flow",
+            "unit": "m3/h"
+          },
+          "type": "numericDisplay",
+          "w": 3,
+          "x": 9,
+          "y": 5
+        }
       ]
     }
   ],
@@ -1715,7 +1902,42 @@
       "name": "Maintenance Mode"
     }
   ],
-  "schemaVersion": 4,
-  "theme": "high-performance",
+  "schemaVersion": 5,
+  "shell": { "nav": "sidebar" },
+  "theme": { "preset": "calm", "mode": "light" },
+  "translations": {
+    "de": {
+      "Overview": "Übersicht",
+      "Active Alarms": "Aktive Alarme",
+      "Inlet Pressure": "Eingangsdruck",
+      "Process Temp": "Prozesstemperatur",
+      "Pump 1": "Pumpe 1",
+      "Pump 2": "Pumpe 2",
+      "STOPPED": "GESTOPPT",
+      "RUNNING": "LÄUFT",
+      "System Fault": "Systemstörung",
+      "Efficiency": "Wirkungsgrad",
+      "Tank Level": "Tankfüllstand",
+      "Flow Rate": "Durchfluss",
+      "Live Process Trend": "Live-Prozesstrend",
+      "Trends & History": "Trends & Verlauf",
+      "Pressure": "Druck",
+      "Temperature": "Temperatur",
+      "Control Panel": "Bedienfeld",
+      "Fault": "Störung",
+      "Pump 1 Toggle": "Pumpe 1 schalten",
+      "Pump 2 Toggle": "Pumpe 2 schalten",
+      "Pressure Setpoint": "Druck-Sollwert",
+      "Flow Setpoint": "Durchfluss-Sollwert",
+      "Alarms & Status": "Alarme & Status",
+      "Process": "Prozess",
+      "Pump station, animated": "Pumpstation, animiert",
+      "Feed tank": "Zulauftank",
+      "Outlet valve": "Auslassventil",
+      "Flow": "Durchfluss",
+      "NORMAL": "NORMAL",
+      "Unified Namespace": "Einheitlicher Namensraum"
+    }
+  },
   "version": "0.1.0"
 }

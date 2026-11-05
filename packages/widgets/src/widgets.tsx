@@ -10,6 +10,7 @@ import type {
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
+import { translateWidget } from "./translate";
 import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
@@ -163,6 +164,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     borderRadius: "var(--radius, 0.5rem)",
     padding: p.noPadding ? 0 : "var(--pad, 0.75rem)",
     color: textColor ?? "var(--card-foreground)",
+    fontFamily: "var(--font-sans, inherit)",
   };
   if (!dynColor && !bgColor) {
     style.border = "var(--line-width, 1px) solid var(--border)";
@@ -1092,8 +1094,26 @@ function ImageWidget({ w }: WP<"image">) {
 
 // ── Symbol ─────────────────────────────────────────────────────────────────
 
+/** The keyframes process graphics use. A person who asks the browser for less motion sees
+ *  everything still: a running pump is still shown by its color, and a flowing pipe by its dashes. */
+export const MOTION_CSS = `
+@keyframes ss-spin { to { transform: rotate(360deg); } }
+@keyframes ss-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes ss-flow { to { stroke-dashoffset: var(--ss-flow-step, -18); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-ss-motion] { animation: none !important; }
+}`;
+
+function MotionStyles() {
+  return <style>{MOTION_CSS}</style>;
+}
+
 function SymbolWidget({ w }: WP<"symbol">) {
-  const stroke = w.props?.stroke ?? "#d4d4d8";
+  const stroke = w.props?.stroke ?? "var(--foreground)";
+  const motion = w.props?.animate ? w.props?.motion ?? "still" : "still";
+  const seconds = Math.max(0.2, w.props?.cycleSeconds ?? 2);
+  const animation = motion === "spin" ? `ss-spin ${seconds}s linear infinite`
+    : motion === "pulse" ? `ss-pulse ${seconds}s ease-in-out infinite` : undefined;
   const sym = SYMBOLS.find((s) => s.id === w.props?.symbolId);
   if (!sym) {
     return (
@@ -1103,12 +1123,54 @@ function SymbolWidget({ w }: WP<"symbol">) {
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-1 gap-0.5">
       <div className="flex-1 min-h-0 flex items-center justify-center w-full">
-        <SymbolSVG svg={sym.svg} stroke={stroke} size={0} />
+        {animation && <MotionStyles />}
+        <div className="w-full h-full" data-ss-motion={animation ? motion : undefined}
+          style={{ animation, transformOrigin: "center", transformBox: "fill-box" }}>
+          <SymbolSVG svg={sym.svg} stroke={stroke} size={0} />
+        </div>
       </div>
       {w.props?.label && (
         <span className="text-xs text-zinc-400 truncate max-w-full shrink-0">{w.props.label}</span>
       )}
     </div>
+  );
+}
+
+// ── Pipe ─────────────────────────────────────────────────────
+
+/** "0,50 60,50 60,100" as points; a pair that is not two numbers is left out. */
+export function parsePipePoints(src: string | undefined): [number, number][] {
+  const out: [number, number][] = [];
+  for (const pair of (src ?? "").trim().split(/\s+/)) {
+    const [x, y] = pair.split(",").map(Number);
+    if (pair && Number.isFinite(x) && Number.isFinite(y)) out.push([Math.min(100, Math.max(0, x!)), Math.min(100, Math.max(0, y!))]);
+  }
+  return out;
+}
+
+function PipeWidget({ w }: WP<"pipe">) {
+  const p = w.props ?? {};
+  const pts = parsePipePoints(p.points);
+  const line = (pts.length >= 2 ? pts : ([[0, 50], [100, 50]] as [number, number][])).map(([x, y]) => `${x},${y}`).join(" ");
+  const weight = Math.max(1, p.weight ?? 8);
+  const color = p.color ?? "var(--process-off)";
+  const flowing = !!p.flow;
+  const step = p.reverse ? 18 : -18;
+  const seconds = Math.max(0.2, p.cycleSeconds ?? 1);
+  // Colors go in style: an SVG attribute cannot hold var(--token).
+  const common = { fill: "none", strokeLinecap: "butt", strokeLinejoin: "round", vectorEffect: "non-scaling-stroke" } as const;
+  const paint = (stroke: string, width: number): React.CSSProperties => ({ stroke, strokeWidth: width });
+  return (
+    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={p.label ?? "Pipe"}
+      style={{ overflow: "visible" }}>
+      {flowing && <MotionStyles />}
+      <polyline points={line} {...common} style={paint("var(--border)", weight + 2)} />
+      <polyline points={line} {...common} data-pipe-body style={paint(color, weight)} />
+      {flowing && (
+        <polyline points={line} {...common} strokeDasharray="8 10" data-ss-motion="flow"
+          style={{ ...paint(p.flowColor ?? "var(--card)", Math.max(1, weight / 3)), animation: `ss-flow ${seconds}s linear infinite`, ["--ss-flow-step" as string]: String(step) }} />
+      )}
+    </svg>
   );
 }
 
@@ -1171,6 +1233,7 @@ const renderers: { [K in WidgetType]: React.ComponentType<WP<K>> } = {
   image:          ImageWidget,
   symbol:         SymbolWidget,
   alarmBanner:    AlarmBannerWidget,
+  pipe:           PipeWidget,
   faceplate:      FaceplateWidget,
   table:          TableWidget,
 };
@@ -1310,6 +1373,13 @@ function DriveApplicator({ w, children }: { w: Widget; children: (w: Widget) => 
   );
 }
 
+/** Draws the widget with its text in the language being shown. */
+function Translated({ w, children }: { w: Widget; children: (w: Widget) => React.ReactNode }) {
+  const translate = useHost().useTranslate();
+  const shown = useMemo(() => translateWidget(w, translate), [w, translate]);
+  return <>{children(shown)}</>;
+}
+
 export function WidgetRenderer({ w }: { w: Widget }) {
   const R = (renderers[w.type] as React.ComponentType<{ w: Widget }> | undefined) ?? (() => (
     <div className="flex items-center justify-center h-full text-zinc-500 text-xs">{w.type}</div>
@@ -1317,7 +1387,7 @@ export function WidgetRenderer({ w }: { w: Widget }) {
   return (
     <VisibilityGate w={w}>
       <DriveApplicator w={w}>
-        {(shown) => <Frame w={shown}><R w={shown} /></Frame>}
+        {(shown) => <Translated w={shown}>{(t) => <Frame w={t}><R w={t} /></Frame>}</Translated>}
       </DriveApplicator>
     </VisibilityGate>
   );

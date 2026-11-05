@@ -58,6 +58,7 @@ const SAMPLES: Record<WidgetType, GallerySample> = {
   faceplate:      { props: { label: "Faceplate" } },
   table:          { props: { label: "Table" } },
   symbol:         { value: true, on: true, off: false, props: { symbolId: "gate-valve", label: "Valve" } },
+  pipe:           { value: true, on: true, off: false, props: { points: "0,50 100,50", weight: 8, label: "Pipe" } },
 };
 
 function widget(type: WidgetType, label: string, w: number, h: number, settings: Field[], opts: Partial<WidgetManifest> = {}): WidgetManifest {
@@ -165,8 +166,22 @@ export const MANIFESTS: WidgetManifest[] = [
   ], { bindings: [] }),
   widget("symbol", "Symbol", 2, 2, [
     { key: "symbolId", label: "Symbol", kind: "symbol" },
-    { key: "stroke", label: "Stroke color", kind: "color", default: "#d4d4d8" },
+    { key: "stroke", label: "Stroke color", kind: "color", optional: true },
+    { key: "motion", label: "Moves while running", kind: "choice", display: "buttons", default: "still",
+      options: [{ value: "still", label: "Still" }, { value: "spin", label: "Spin" }, { value: "pulse", label: "Pulse" }] },
+    { key: "animate", label: "Moving now", kind: "boolean", default: false, note: "Drive this from a tag (Drives) so it moves while the machine runs." },
+    { key: "cycleSeconds", label: "Seconds per turn", kind: "number", default: 2, min: 0.2, step: 0.1, showIf: (c) => !!c.motion && c.motion !== "still" },
   ], { bindings: [], palette: false }),
+  widget("pipe", "Pipe", 4, 2, [
+    { key: "points", label: "Corners (x,y from 0 to 100)", kind: "text", default: "0,50 100,50", placeholder: "0,50 60,50 60,100",
+      note: "Each pair is a corner, as a percentage across and down the widget." },
+    { key: "weight", label: "Width (px)", kind: "number", default: 8, min: 1, step: 1, half: true },
+    { key: "cycleSeconds", label: "Seconds per step", kind: "number", default: 1, min: 0.2, step: 0.1, half: true },
+    { key: "color", label: "Pipe color", kind: "color", optional: true },
+    { key: "flowColor", label: "Flow color", kind: "color", optional: true },
+    { key: "flow", label: "Flowing now", kind: "boolean", default: false, note: "Drive this from a tag (Drives) so it flows while the line runs." },
+    { key: "reverse", label: "Flows from the last corner to the first", kind: "boolean", default: false },
+  ], { bindings: [], palette: true }),
 ];
 
 const BY_TYPE = new Map(MANIFESTS.map((m) => [m.type, m]));

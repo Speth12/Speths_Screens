@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COLOR_TOKENS, THEMES, themeById, themeStyle, themeVars, tokenColor, type ThemeColors } from "./tokens";
+import { COLOR_TOKENS, PRESETS, THEMES, resolveTheme, themeStyle, themeVars, tokenColor, type ThemeColors } from "./tokens";
 import { suit } from "./drive";
 
 // WCAG 2.1 relative luminance and contrast ratio.
@@ -45,9 +45,61 @@ describe.each(THEMES.map((t) => [t.id, t] as const))("theme %s", (_id, theme) =>
   });
 });
 
-it("an unknown or missing theme id is the default theme", () => {
-  expect(themeById("scada-dark").id).toBe("high-performance");
-  expect(themeById(undefined).id).toBe("high-performance");
+const MODES = ["light", "dark"] as const;
+const PALETTES = ["calm", "modern"] as const;
+
+// Every palette in both modes must pass, whichever preset or element mix picks it.
+describe.each(PALETTES.flatMap((p) => MODES.map((m) => [p, m] as const)))("palette %s, %s", (palette, mode) => {
+  const theme = resolveTheme({ palette, mode });
+  it.each(TEXT)("text %s on %s meets 4.5:1", (fg, bg) => {
+    expect(contrast(theme.colors[fg], theme.colors[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(GRAPHICS)("%s on %s meets 3:1", (fg, bg) => {
+    expect(contrast(theme.colors[fg], theme.colors[bg])).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("resolving a theme", () => {
+  it("a missing theme is the calm preset", () => {
+    expect(resolveTheme(undefined).id).toBe("calm");
+    expect(resolveTheme(null).colors.background).toBe("#c8c8c8");
+  });
+  it("each preset sets its own mode, palette, corners, depth and density", () => {
+    expect(resolveTheme({ preset: "modern" }).mode).toBe("dark");
+    expect(resolveTheme({ preset: "clean" }).shape.radius).toBe("12px");
+    expect(resolveTheme({ preset: "clean" }).shadow).not.toBe("none");
+    expect(resolveTheme({ preset: "calm" }).shape.radius).toBe("2px");
+  });
+  it("an element replaces the preset's choice and leaves the rest", () => {
+    const base = resolveTheme({ preset: "clean" });
+    const mixed = resolveTheme({ preset: "clean", corners: "square", density: "touch", font: "roboto" });
+    expect(mixed.shape.radius).toBe("2px");
+    expect(mixed.space.control).toBe("2.75rem");
+    expect(mixed.type.fontSans).toContain("Roboto");
+    expect(mixed.colors).toEqual(base.colors);
+    expect(mixed.shadow).toBe(base.shadow);
+  });
+  it("borderless has no line and no shadow", () => {
+    const t = resolveTheme({ depth: "borderless" });
+    expect([t.shape.lineWidth, t.shadow]).toEqual(["0px", "none"]);
+  });
+  it("a browser's mode beats the project's", () => {
+    expect(resolveTheme({ preset: "modern" }, "light").colors.background).toBe("#f4f6f9");
+    expect(resolveTheme({ preset: "calm", mode: "light" }, "dark").mode).toBe("dark");
+  });
+  it("an accent replaces the primary color, with text that reads on it", () => {
+    const light = resolveTheme({ accent: "#ffd400" }).colors;
+    const dark = resolveTheme({ accent: "#102a43" }).colors;
+    expect(light.primary).toBe("#ffd400");
+    expect(contrast(light.primary, light.primaryForeground)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(dark.primary, dark.primaryForeground)).toBeGreaterThanOrEqual(4.5);
+  });
+  it("the touch density has controls of at least 44 px", () => {
+    expect(parseFloat(resolveTheme({ density: "touch" }).space.control) * 16).toBeGreaterThanOrEqual(44);
+  });
+  it("every preset is listed", () => {
+    expect(THEMES.map((t) => t.id).sort()).toEqual(Object.keys(PRESETS).sort());
+  });
 });
 
 describe("color tokens in driven properties", () => {

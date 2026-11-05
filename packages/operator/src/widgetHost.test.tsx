@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 function project(extra: Partial<Project> = {}): Project {
-  return { schemaVersion: 4, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
+  return { schemaVersion: 5, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
 }
 
 function Screen({ p, w, alarms = [], ack = () => {} }: { p: Project; w: Widget; alarms?: AlarmEvent[]; ack?: (id: string) => void }) {

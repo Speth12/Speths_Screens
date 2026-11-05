@@ -11,16 +11,23 @@ import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
 import { applyAlarmMessage } from "./alarmMessages";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
-import { THEMES, applyTheme, themeById } from "@speths-screens/widgets";
+import { applyTheme, deviceFor, pickLanguage, resolveTheme, translator } from "@speths-screens/widgets";
 
 // A browser's own theme choice, kept on this device only.
 const THEME_KEY = "speths-screens-theme";
+const LANGUAGE_KEY = "speths-screens-language";
 const SCALE_KEY = "speths-screens-scale";
 const AUTHED_KEY = "speths-screens-authed";
-const storedTheme = () => readMigrated(THEME_KEY, "xhmi-theme");
+type Mode = "light" | "dark";
+/** The browser's own light or dark choice; anything else saved (an old theme id) means none. */
+const storedMode = (): Mode | null => {
+  const v = readMigrated(THEME_KEY, "xhmi-theme");
+  return v === "light" || v === "dark" ? v : null;
+};
 
 import type { Project, Recipe } from "@speths-screens/shared-types";
 import { readMigrated } from "./storageKeys";
+import { PageNav, navMode, useWindowWidth, type NavMode } from "./Nav";
 
 
 
@@ -173,6 +180,7 @@ function RecipesPanel({ onClose }: { onClose: () => void }) {
 export function App() {
   const [project, setProject] = useState<Project | null>(null);
   const [activePage, setActivePage] = useState(0);
+  const windowWidth = useWindowWidth();
   const [error, setError] = useState("");
   const [alarms, setAlarms] = useState<AlarmEvent[]>([]);
   const [showRecipes, setShowRecipes] = useState(false);
@@ -192,16 +200,26 @@ export function App() {
   const toggleScale = () => setScaleToFit((s) => { localStorage.setItem(SCALE_KEY, s ? "0" : "1"); return !s; });
 
   // Theme — persisted in localStorage via applyTheme
-  const [chosenTheme, setChosenTheme] = useState(storedTheme);
-  const themeId = themeById(chosenTheme ?? project?.theme).id;
-  const setThemeId = (id: string) => {
-    setChosenTheme(id);
-    try { localStorage.setItem(THEME_KEY, id); } catch { /* private mode: not kept */ }
+  const [chosenMode, setChosenMode] = useState<Mode | null>(storedMode);
+  const setMode = (v: string) => {
+    const m: Mode | null = v === "light" || v === "dark" ? v : null;
+    setChosenMode(m);
+    try { if (m) localStorage.setItem(THEME_KEY, m); else localStorage.removeItem(THEME_KEY); } catch { /* private mode: not kept */ }
   };
 
+  const [wantedLanguage, setWantedLanguage] = useState<string | null>(() => {
+    try { return localStorage.getItem(LANGUAGE_KEY); } catch { return null; }
+  });
+  const language = pickLanguage(project ?? undefined, wantedLanguage);
+  const chooseLanguage = (code: string) => {
+    setWantedLanguage(code);
+    try { localStorage.setItem(LANGUAGE_KEY, code); } catch { /* private mode: not kept */ }
+  };
+
+  const projectTheme = project?.theme;
   useEffect(() => {
-    applyTheme(themeById(themeId));
-  }, [themeId]);
+    applyTheme(resolveTheme(projectTheme, chosenMode));
+  }, [projectTheme, chosenMode]);
 
   // Kiosk swipe — touch start X ref
   const touchStartX = useRef(0);
@@ -307,7 +325,7 @@ export function App() {
     if (idx >= 0) setActivePage(idx);
   }, [project]);
 
-  const widgetHost = useOperatorHost(project, navigateToPage);
+  const widgetHost = useOperatorHost(project, navigateToPage, language);
 
   // The open page's script, in a worker; navigate takes a page name or id.
   const navigateByName = useCallback((nameOrId: string) => {
@@ -381,6 +399,10 @@ export function App() {
   }
 
   const page = project.pages[activePage] ?? project.pages[0];
+  const tr = translator(project, language);
+  const navPages = project.pages.map((p) => ({ ...p, name: tr(p.name), group: p.group ? tr(p.group) : p.group }));
+  const nav: NavMode = isKiosk ? "tabs" : navMode(project.shell?.nav, windowWidth);
+  const phone = nav === "bottom";
   const securityOff = project.security?.mode !== "login";
 
   return (
@@ -404,11 +426,11 @@ export function App() {
       >
         {/* Header — hidden in kiosk mode */}
         {!isKiosk && (
-          <div className="flex items-center gap-3 px-4 py-2 shrink-0"
+          <div className="flex items-center gap-3 px-4 py-2 shrink-0 overflow-x-auto whitespace-nowrap"
                style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-            <span className="font-semibold text-sm">
+            <span className="font-semibold text-sm shrink-0">
               {project.name
-                ? <>{project.name} <span className="text-zinc-500 font-normal text-xs">· Speth's Screens</span></>
+                ? <>{project.name}{!phone && <span className="text-zinc-500 font-normal text-xs"> · Speth's Screens</span>}</>
                 : <>Speth's Screens <span className="text-zinc-500 font-normal">Operator</span></>
               }
             </span>
@@ -423,7 +445,7 @@ export function App() {
               </button>
             )}
             {/* Datasource connection status dots */}
-            {dsStatus.length > 0 && (
+            {dsStatus.length > 0 && !phone && (
               <div className="flex gap-1.5 items-center">
                 {dsStatus.map((d) => (
                   <div
@@ -438,20 +460,7 @@ export function App() {
                 ))}
               </div>
             )}
-            <div className="flex gap-1">
-              {project.pages.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => setActivePage(i)}
-                  className="text-xs px-3 py-1 rounded transition-colors"
-                  style={i === activePage
-                    ? { background: "var(--primary)", color: "var(--primary-foreground)" }
-                    : { background: "var(--secondary)", color: "var(--muted-foreground)" }}
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
+            {nav === "tabs" && <PageNav mode="tabs" pages={navPages} active={activePage} onSelect={setActivePage} />}
             <div className="flex-1" />
             {hasAlarm && (
               <div className={`text-xs font-semibold px-2 py-0.5 rounded ${
@@ -476,7 +485,7 @@ export function App() {
             >
               ⚙ Recipes
             </button>
-            {project.canvasResolution?.type !== "fixed" && <button
+            {project.canvasResolution?.type !== "fixed" && !phone && <button
               onClick={toggleScale}
               title={scaleToFit ? "Show the page at full size" : "Scale the page to fit the window width"}
               className="text-[11px] px-2 py-0.5 rounded transition-colors"
@@ -488,16 +497,24 @@ export function App() {
             >
               ⤢ Fit
             </button>}
+            {(project.languages?.length ?? 0) > 1 && (
+              <select aria-label="Language" value={language} onChange={(e) => chooseLanguage(e.target.value)}
+                className="text-[11px] rounded px-1.5 py-0.5"
+                style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)", border: "1px solid" }}
+                title="Language">
+                {project.languages!.map((code) => <option key={code} value={code}>{code.toUpperCase()}</option>)}
+              </select>
+            )}
             <select
-              value={themeId}
-              onChange={(e) => setThemeId(e.target.value)}
+              value={chosenMode ?? ""}
+              onChange={(e) => setMode(e.target.value)}
               className="text-[11px] rounded px-1.5 py-0.5 max-w-[140px] truncate"
               style={{ background: "var(--secondary)", color: "var(--foreground)", borderColor: "var(--border)", border: "1px solid" }}
-              title="Switch theme"
+              title="Light or dark"
             >
-              {THEMES.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              <option value="">Project default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
             </select>
             {project.pin && (
               <button
@@ -510,6 +527,8 @@ export function App() {
             )}
           </div>
         )}
+
+        {!isKiosk && nav === "toolbar" && <PageNav mode="toolbar" pages={navPages} active={activePage} onSelect={setActivePage} />}
 
         {/* Kiosk page switcher — touch-friendly tab bar at the top */}
         {isKiosk && project.pages.length > 1 && (
@@ -530,6 +549,8 @@ export function App() {
           </div>
         )}
 
+        <div className="flex flex-1 min-h-0">
+        {!isKiosk && nav === "sidebar" && <PageNav mode="sidebar" pages={navPages} active={activePage} onSelect={setActivePage} />}
         {/* Canvas — responsive, swipe-enabled in kiosk */}
         <div
           ref={canvasRef}
@@ -545,11 +566,15 @@ export function App() {
               widgets={page.widgets}
               resolution={project.canvasResolution}
               pixel={project.canvasSnap === "pixel"}
-              fit={scaleToFit}
+              fit={scaleToFit || phone}
+              device={deviceFor(windowWidth)}
               viewport={viewport}
             />
           )}
         </div>
+
+        </div>
+        {!isKiosk && nav === "bottom" && <PageNav mode="bottom" pages={navPages} active={activePage} onSelect={setActivePage} />}
 
         {/* Kiosk status bar — clock + alarm count */}
         {isKiosk && (

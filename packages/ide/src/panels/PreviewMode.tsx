@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
-import { PREVIEW_MINIMUM, fitScale, placement, stageSize, themeById, themeVars } from "@speths-screens/widgets";
+import { PREVIEW_MINIMUM, fitScale, placement, stageSize, resolveTheme, themeVars } from "@speths-screens/widgets";
 import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
@@ -174,7 +174,7 @@ export function PreviewMode({ onExit }: Props) {
               transform: `scale(${scale})`,
               transformOrigin: "center center",
               flexShrink: 0,
-              ...themeVars(themeById(project.theme)),
+              ...themeVars(resolveTheme(project.theme)),
               background: page.backgroundColor ?? "var(--background)",
             }}
           >

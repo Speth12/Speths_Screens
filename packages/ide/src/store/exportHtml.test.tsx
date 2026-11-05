@@ -8,7 +8,7 @@ import type { Project, Widget } from "./projectStore";
 const at = new Date("2026-10-24T12:00:00Z");
 const none = () => undefined;
 const page = (widgets: Widget[], more: Partial<Project> = {}): Project => ({
-  schemaVersion: 4, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets }], ...more,
+  schemaVersion: 5, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets }], ...more,
 });
 const html = (p: Project, tag: (path: string) => TagState | undefined = none, css = "") =>
   generateStandaloneHtml(p, { tag, css, exportedAt: at });
@@ -89,10 +89,16 @@ describe("snapshotHost", () => {
 describe("the exported page's look", () => {
   it("carries the project's screen theme, not the IDE's own look", () => {
     document.documentElement.style.setProperty("--background", "#0c0e10"); // the IDE's dark chrome
-    const look = ideLook("high-performance");
+    const look = ideLook({ preset: "calm", mode: "light" });
     expect(look.root?.style).toContain("--background: #c8c8c8");
     expect(look.root?.style).toContain("--alarm-critical: #c00000");
-    expect(look.root?.attrs?.["data-theme-id"]).toBe("high-performance");
+    expect(look.root?.attrs?.["data-theme-id"]).toBe("calm");
+  });
+  it("builds a mixed theme: a preset with its dark mode, round corners and an accent", () => {
+    const look = ideLook({ preset: "calm", mode: "dark", corners: "round", accent: "#ff8800" });
+    expect(look.root?.style).toContain("--background: #2b2b2b");
+    expect(look.root?.style).toContain("--radius: 12px");
+    expect(look.root?.style).toContain("--primary: #ff8800");
   });
   it("uses the default theme for a project without one", () => {
     expect(ideLook(undefined).root?.style).toContain("--background: #c8c8c8");

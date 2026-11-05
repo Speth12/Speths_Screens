@@ -53,10 +53,14 @@ export interface WidgetHost {
   /** The data URL of a project library image. */
   useImage(id: string): string | undefined;
   useFaceplate(id: string | undefined): Faceplate | undefined;
+  /** Turns text into the language being shown; a text with no translation stays as written.
+   *  A hook, so a widget draws again when the language changes. */
+  useTranslate(): (text: string) => string;
 }
 
 export const EMPTY_TAG: TagState = { value: null, quality: "Unknown", ts: 0 };
 const NO_ALARMS = { alarms: [] as AlarmView[] };
+const IDENTITY = (text: string) => text;
 
 /** A host with nothing behind it: no values, writes go nowhere. */
 export const inertHost: WidgetHost = {
@@ -69,6 +73,7 @@ export const inertHost: WidgetHost = {
   useAlarms: () => NO_ALARMS,
   useImage: () => undefined,
   useFaceplate: () => undefined,
+  useTranslate: () => IDENTITY,
 };
 
 const HostContext = createContext<WidgetHost>(inertHost);

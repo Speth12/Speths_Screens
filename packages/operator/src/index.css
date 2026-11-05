@@ -3,7 +3,7 @@
 /* The shared widget library lives outside this app; Tailwind must scan it too. */
 @source "../../widgets/src";
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* No reset here: Tailwind's preflight does it, inside a layer. An unlayered "* { padding: 0 }" beat every padding and margin utility. */
 body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans, system-ui, sans-serif); }
 
 /* ── HMI theme CSS variables (defaults = SCADA Industrial) ────────────────── */

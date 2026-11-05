@@ -2,7 +2,7 @@
 // theme, with a slider for the simulated value. Click a cell to add that widget
 // to the page, or drag it onto the canvas (Phase 3, step 7).
 import { useState } from "react";
-import { Gallery, MANIFESTS, THEMES, galleryInsert, themeById, type WidgetManifest } from "@speths-screens/widgets";
+import { Gallery, MANIFESTS, THEMES, galleryInsert, type WidgetManifest } from "@speths-screens/widgets";
 import { useProject, newWidgetId, type Widget } from "../store/projectStore";
 import { instantiatePreset } from "../store/presets";
 
@@ -25,7 +25,7 @@ export function insertGalleryWidget(type: string, at?: { x: number; y: number })
 
 export function GalleryPanel({ onClose }: { onClose: () => void }) {
   const projectTheme = useProject((s) => s.project.theme);
-  const [themeId, setThemeId] = useState<string>(themeById(projectTheme).id);
+  const [themeId, setThemeId] = useState<string>(projectTheme?.preset ?? "calm");
   const [slider, setSlider] = useState(62);
   const drag = (m: WidgetManifest, e: React.DragEvent) => {
     e.dataTransfer.setData(GALLERY_DRAG, m.type);
@@ -53,7 +53,7 @@ export function GalleryPanel({ onClose }: { onClose: () => void }) {
         const m = cell && MANIFESTS.find((x) => cell.dataset.testid?.startsWith(`gallery-${x.type}-`));
         if (m) insertGalleryWidget(m.type);
       }}>
-        <Gallery theme={themeById(themeId)} slider={slider} onDragCell={drag} />
+        <Gallery theme={THEMES.find((t) => t.id === themeId) ?? THEMES[0]!} slider={slider} onDragCell={drag} />
       </div>
     </div>
   );
