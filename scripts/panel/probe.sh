@@ -50,7 +50,7 @@ say "network"
 if have ip; then try ip addr; else try ifconfig; fi
 if have ss; then try ss -ltnp; elif have netstat; then try netstat -ltn; fi
 
-say "where WebIQ was or would be installed (read only)"
+say "where a web runtime would be installed (read only)"
 for d in /opt /usr/local /home /data /var/lib; do [ -d "$d" ] && { echo "--- $d"; ls -la "$d" | head -30; }; done
 
 say "the panel's own browser (what shows the screen)"
