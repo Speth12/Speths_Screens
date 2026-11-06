@@ -50,7 +50,7 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			source: SourceScreens, want: "plc:R",
 		},
 		{
-			name: "faceplate instance param",
+			name: "custom widget instance param",
 			p: project.Project{Pages: []project.Page{{Widgets: []project.Widget{{
 				Props: &project.WidgetProps{Params: map[string]string{"state": "plc:P"}},
 			}}}}},
@@ -86,9 +86,9 @@ func TestProjectDemandFindsEveryBinding(t *testing.T) {
 			source: SourceScreens, want: "plc:B",
 		},
 		{
-			name: "fixed binding inside a faceplate",
-			p: project.Project{Faceplates: []project.FaceplateElement{{
-				Widgets: []project.FaceplateWidget{{Bindings: &project.WidgetBindings{Value: strp("plc:F")}}},
+			name: "fixed binding inside a custom widget",
+			p: project.Project{CustomWidgets: []project.CustomWidgetElement{{
+				Widgets: []project.CustomWidgetPart{{Bindings: &project.WidgetBindings{Value: strp("plc:F")}}},
 			}}},
 			source: SourceScreens, want: "plc:F",
 		},

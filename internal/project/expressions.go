@@ -26,8 +26,8 @@ func (e *ExpressionError) Error() string {
 
 // ExpressionProblems compiles every expression in a project that follows
 // schema.json: calculated tags, alarm rules, then the driven properties of page,
-// faceplate and preset widgets (by property name). A faceplate widget's
-// expressions are templates, and may read only the faceplate's parameters.
+// custom widget and preset widgets (by property name). A custom widget part's
+// expressions are templates, and may read only the custom widget's parameters.
 func ExpressionProblems(p *Project) []string {
 	var out []string
 	for _, ds := range p.Datasources {
@@ -48,6 +48,7 @@ func ExpressionProblems(p *Project) []string {
 	}
 	out = append(out, stateProblems(p)...)
 	out = append(out, scriptProblems(p)...)
+	out = append(out, customWidgetProblems(p)...)
 	drives := func(where string, dynamics map[string]Drive, params []string) {
 		names := make([]string, 0, len(dynamics))
 		for name := range dynamics {
@@ -65,13 +66,13 @@ func ExpressionProblems(p *Project) []string {
 			drives(fmt.Sprintf("page %q, widget %s (%s)", pg.Name, w.ID, w.Type), w.Dynamics, nil)
 		}
 	}
-	for _, fp := range p.Faceplates {
+	for _, fp := range p.CustomWidgets {
 		params := []string{}
 		for _, prm := range fp.Params {
 			params = append(params, prm.Name)
 		}
 		for _, w := range fp.Widgets {
-			drives(fmt.Sprintf("faceplate %q, widget %s (%s)", fp.Name, w.LocalID, w.Type), w.Dynamics, params)
+			drives(fmt.Sprintf("custom widget %q, widget %s (%s)", fp.Name, w.LocalID, w.Type), w.Dynamics, params)
 		}
 	}
 	for _, ps := range p.Presets {
@@ -83,7 +84,7 @@ func ExpressionProblems(p *Project) []string {
 }
 
 // driveProblem compiles one driven property's expression. params is nil
-// outside a faceplate; inside one, the expression is a template.
+// outside a custom widget; inside one, the expression is a template.
 func driveProblem(src string, params []string, session map[string]bool) string {
 	compile := expr.Compile
 	if params != nil {
@@ -100,7 +101,7 @@ func driveProblem(src string, params []string, session map[string]bool) string {
 	}
 	for _, name := range e.Params {
 		if !slices.Contains(params, name) {
-			return fmt.Sprintf("{%s} is not a parameter of this faceplate", name)
+			return fmt.Sprintf("{%s} is not a parameter of this custom widget", name)
 		}
 	}
 	return ""

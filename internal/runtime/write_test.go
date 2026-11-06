@@ -103,10 +103,10 @@ func str(s string) *string   { return &s }
 //	SHOWN  only a numeric display: not writable
 //	NS1    a namespace tag
 //	DYN    written by a dynamic's writeTo
-//	FP_SP  faceplate parameter written by a 0..10 numeric input
+//	FP_SP  custom widget parameter written by a 0..10 numeric input
 //	RCP    named by a recipe only
 func writeProject() *project.Project {
-	fpType := project.Faceplate
+	fpType := project.CustomWidget
 	return &project.Project{
 		Version:     "0.1.0",
 		Datasources: []project.Datasource{{ID: "plc", Label: "plc", Type: project.REST}, {ID: "broker", Label: "broker", Type: project.Mqtt}},
@@ -116,11 +116,11 @@ func writeProject() *project.Project {
 			{ID: "free", Type: project.TextInput, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("plc:FREE")}},
 			{ID: "shown", Type: project.NumericDisplay, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("plc:SHOWN")}},
 			{ID: "sym", Type: project.Symbol, W: 1, H: 1, Events: &project.WidgetEvents{OnClick: []project.Action{{Type: project.Write, Tag: str("plc:DYN")}}}},
-			{ID: "fp", Type: fpType, W: 1, H: 1, Props: &project.WidgetProps{FaceplateID: str("fp1"), Params: map[string]string{"sp": "plc:FP_SP"}}},
+			{ID: "fp", Type: fpType, W: 1, H: 1, Props: &project.WidgetProps{CustomWidgetID: str("fp1"), Params: map[string]string{"sp": "plc:FP_SP"}}},
 			{ID: "mq", Type: project.Button, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("broker:cmd/start")}, Events: &project.WidgetEvents{OnPress: []project.Action{{Type: project.Write, Value: true}}}},
 		}}},
-		Faceplates: []project.FaceplateElement{{ID: "fp1", Name: "Pump", Widgets: []project.FaceplateWidget{
-			{LocalID: "in", Type: project.NumericInput, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("{sp}")}, Props: &project.FaceplateWidgetProps{Min: f64(0), Max: f64(10)}},
+		CustomWidgets: []project.CustomWidgetElement{{ID: "fp1", Name: "Pump", Widgets: []project.CustomWidgetPart{
+			{LocalID: "in", Type: project.NumericInput, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("{sp}")}, Props: &project.CustomWidgetPartProps{Min: f64(0), Max: f64(10)}},
 		}}},
 		Namespace: []project.NamespaceNode{{Path: "plant.ns1", Type: project.Tag, DriverID: str("plc"), DriverAddr: str("NS1")}},
 		Recipes:   []project.Recipe{{ID: "r1", Name: "R1", Entries: []project.RecipeEntry{{Binding: "plc:RCP", Value: 1.0}}}},
@@ -160,8 +160,8 @@ func TestWriteTag(t *testing.T) {
 		{"namespace tag", WriteRequest{Binding: "plc:NS1", Value: 3.0}, nil, WriteConfirmed, 200, ""},
 		{"namespace tag by ns path", WriteRequest{Binding: "ns:plant.ns1", Value: 4.0}, nil, WriteConfirmed, 200, ""},
 		{"action tag", WriteRequest{Binding: "plc:DYN", Value: true}, nil, WriteConfirmed, 200, ""},
-		{"faceplate parameter", WriteRequest{Binding: "plc:FP_SP", Value: 5.0}, nil, WriteConfirmed, 200, ""},
-		{"faceplate parameter above its max", WriteRequest{Binding: "plc:FP_SP", Value: 50.0}, nil, WriteFailed, 400, "above the maximum 10"},
+		{"custom widget parameter", WriteRequest{Binding: "plc:FP_SP", Value: 5.0}, nil, WriteConfirmed, 200, ""},
+		{"custom widget parameter above its max", WriteRequest{Binding: "plc:FP_SP", Value: 50.0}, nil, WriteFailed, 400, "above the maximum 10"},
 		{"recipe-only tag, not polled otherwise", WriteRequest{Binding: "plc:RCP", Value: 2.0}, nil, WriteConfirmed, 200, ""},
 		{"recipe write of any tag", WriteRequest{Binding: "plc:ELSEWHERE", Value: 2.0, Recipe: true}, nil, WriteConfirmed, 200, ""},
 		{"text input, no limits", WriteRequest{Binding: "plc:FREE", Value: "hello"}, nil, WriteConfirmed, 200, ""},

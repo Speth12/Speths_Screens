@@ -17,7 +17,7 @@ interface GoldenCase {
   usesValue?: boolean;
   /** Compare to 12 significant digits (sin, cos, log, pow can differ from Go in the last digit). */
   near?: boolean;
-  /** Compile as a faceplate template. */
+  /** Compile as a custom widget template. */
   template?: boolean;
   params?: string[];
 }

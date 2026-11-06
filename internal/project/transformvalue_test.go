@@ -41,7 +41,7 @@ func TestTransformValueJSON(t *testing.T) {
 // A project whose transforms hold text, numbers and flags loads, and writes
 // them back unchanged.
 func TestProjectWithTransformValuesRoundTrips(t *testing.T) {
-	doc := []byte(`{"schemaVersion":5,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[
+	doc := []byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[
 	  {"id":"w1","type":"led","x":0,"y":0,"w":1,"h":1,"dynamics":{
 	    "bgColor":{"expr":"{plc:L}","transform":{"kind":"thresholds","steps":[{"above":80,"value":"#dc2626"}],"below":"#3f3f46"}},
 	    "visible":{"expr":"{plc:M}","transform":{"kind":"map","cases":[{"equals":1,"value":true},{"equals":"off","value":false}],"default":true}},

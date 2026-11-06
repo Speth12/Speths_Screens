@@ -4,9 +4,10 @@
 import schema from "../../../schema.json";
 import { v2ToV3 } from "./upgradeV3";
 import { v4ToV5 } from "./upgradeV5";
+import { v5ToV6 } from "./upgradeV6";
 
 /** The project format this build writes. A file without schemaVersion is 1. */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 type Obj = Record<string, unknown>;
 
@@ -42,6 +43,7 @@ export function upgradeProject(input: unknown): UpgradeResult {
   // v3 to v4 adds fields (scripts, memory tags, session variables) and
   // changes nothing that exists: only the version moves.
   if (version < 5) v4ToV5(doc);
+  if (version < 6) v5ToV6(doc);
   doc.schemaVersion = CURRENT_SCHEMA_VERSION;
   return { project: doc, notes };
 }
@@ -95,7 +97,7 @@ function widget(w: Obj, where: string, notes: string[]) {
   }
 
   // Settings: only the ones this widget type has. "" meant "default".
-  const allowed = propsKeys().get(type) ?? new Set<string>();
+  const allowed = (type === "faceplate" ? legacyFaceplateKeys() : propsKeys().get(type)) ?? new Set<string>();
   for (const k of Object.keys(cfg).sort()) {
     const v = cfg[k];
     if (MOVED_CONFIG_KEYS.has(k) || (type === "button" && BUTTON_ACTION_KEYS.has(k))) continue;
@@ -189,6 +191,17 @@ export function propsKeys(): Map<string, Set<string>> {
     out.set(type, keys);
   }
   keysCache = out;
+  return out;
+}
+
+/** Until format 6 a custom widget was a "faceplate" with a faceplateId setting; the steps before
+ *  v5ToV6 still see that name. */
+function legacyFaceplateKeys(): Set<string> | undefined {
+  const keys = propsKeys().get("customWidget");
+  if (!keys) return undefined;
+  const out = new Set(keys);
+  out.delete("customWidgetId");
+  out.add("faceplateId");
   return out;
 }
 

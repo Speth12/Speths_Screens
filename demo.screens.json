@@ -43,62 +43,7 @@
       "severity": "warning"
     }
   ],
-  "datasources": [
-    {
-      "config": {
-        "tags": [
-          {
-            "expr": "50 + sin({sim:phase}) * 18",
-            "path": "pressure"
-          },
-          {
-            "expr": "65 + cos({sim:phase}) * 10",
-            "path": "temperature"
-          },
-          {
-            "expr": "clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)",
-            "path": "flow"
-          },
-          {
-            "expr": "clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)",
-            "path": "level"
-          },
-          {
-            "expr": "((good({sim:phase}) ? {sim:phase} : 0) + 0.012) % 6.283",
-            "path": "phase"
-          },
-          {
-            "expr": "clamp(sign(sin({sim:phase}) + 0.3), 0, 1)",
-            "path": "pump1_running"
-          },
-          {
-            "expr": "clamp(sign(cos({sim:phase})), 0, 1)",
-            "path": "pump2_running"
-          },
-          {
-            "expr": "clamp(sign({sim:pressure} - 64), 0, 1)",
-            "path": "fault_active"
-          },
-          {
-            "expr": "{sim:pressure} * 14.504",
-            "path": "pressure_psi"
-          },
-          {
-            "expr": "{sim:temperature} * 9/5 + 32",
-            "path": "temp_f"
-          },
-          {
-            "expr": "clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)",
-            "path": "efficiency"
-          }
-        ]
-      },
-      "id": "sim",
-      "label": "Simulation",
-      "type": "virtual"
-    }
-  ],
-  "faceplates": [
+  "customWidgets": [
     {
       "id": "fp-pump-card",
       "name": "Pump Card",
@@ -158,7 +103,65 @@
       ]
     }
   ],
-  "languages": ["en", "de"],
+  "datasources": [
+    {
+      "config": {
+        "tags": [
+          {
+            "expr": "50 + sin({sim:phase}) * 18",
+            "path": "pressure"
+          },
+          {
+            "expr": "65 + cos({sim:phase}) * 10",
+            "path": "temperature"
+          },
+          {
+            "expr": "clamp(35 + sin({sim:phase} * 1.3) * 22, 0, 100)",
+            "path": "flow"
+          },
+          {
+            "expr": "clamp(60 + sin({sim:phase} * 0.7) * 28, 0, 100)",
+            "path": "level"
+          },
+          {
+            "expr": "((good({sim:phase}) ? {sim:phase} : 0) + 0.012) % 6.283",
+            "path": "phase"
+          },
+          {
+            "expr": "clamp(sign(sin({sim:phase}) + 0.3), 0, 1)",
+            "path": "pump1_running"
+          },
+          {
+            "expr": "clamp(sign(cos({sim:phase})), 0, 1)",
+            "path": "pump2_running"
+          },
+          {
+            "expr": "clamp(sign({sim:pressure} - 64), 0, 1)",
+            "path": "fault_active"
+          },
+          {
+            "expr": "{sim:pressure} * 14.504",
+            "path": "pressure_psi"
+          },
+          {
+            "expr": "{sim:temperature} * 9/5 + 32",
+            "path": "temp_f"
+          },
+          {
+            "expr": "clamp(map({sim:flow}, 0, 100, 42, 94), 0, 100)",
+            "path": "efficiency"
+          }
+        ]
+      },
+      "id": "sim",
+      "label": "Simulation",
+      "type": "virtual"
+    }
+  ],
+  "languages": [
+    "en",
+    "de"
+  ],
   "name": "Speth's Screens Feature Showcase — Pump Station",
   "namespace": [
     {
@@ -275,6 +278,7 @@
   ],
   "pages": [
     {
+      "icon": "home",
       "id": "p-overview",
       "name": "Overview",
       "widgets": [
@@ -631,10 +635,10 @@
           "x": 9,
           "y": 9
         }
-      ],
-      "icon": "home"
+      ]
     },
     {
+      "icon": "graph",
       "id": "p-trends",
       "name": "Trends & History",
       "widgets": [
@@ -803,10 +807,10 @@
           "x": 0,
           "y": 10
         }
-      ],
-      "icon": "graph"
+      ]
     },
     {
+      "icon": "tools",
       "id": "p-control",
       "name": "Control Panel",
       "widgets": [
@@ -1057,13 +1061,13 @@
           "h": 5,
           "id": "c-fp-pump1",
           "props": {
-            "faceplateId": "fp-pump-card",
+            "customWidgetId": "fp-pump-card",
             "params": {
               "flow": "sim:flow",
               "state": "sim:pump1_running"
             }
           },
-          "type": "faceplate",
+          "type": "customWidget",
           "w": 4,
           "x": 0,
           "y": 7
@@ -1072,13 +1076,13 @@
           "h": 5,
           "id": "c-fp-pump2",
           "props": {
-            "faceplateId": "fp-pump-card",
+            "customWidgetId": "fp-pump-card",
             "params": {
               "flow": "sim:flow",
               "state": "sim:pump2_running"
             }
           },
-          "type": "faceplate",
+          "type": "customWidget",
           "w": 4,
           "x": 4,
           "y": 7
@@ -1110,10 +1114,10 @@
           "x": 8,
           "y": 7
         }
-      ],
-      "icon": "tools"
+      ]
     },
     {
+      "icon": "map",
       "id": "p-namespace",
       "name": "Unified Namespace",
       "widgets": [
@@ -1428,10 +1432,10 @@
           "x": 6,
           "y": 7
         }
-      ],
-      "icon": "map"
+      ]
     },
     {
+      "icon": "alarm",
       "id": "p-alarms",
       "name": "Alarms & Status",
       "widgets": [
@@ -1647,8 +1651,7 @@
           "x": 6,
           "y": 7
         }
-      ],
-      "icon": "alarm"
+      ]
     },
     {
       "group": "Process",
@@ -1660,13 +1663,13 @@
           "h": 1,
           "id": "pr-title",
           "props": {
-            "label": "",
-            "staticText": "Pump station, animated",
+            "bgColor": "none",
+            "borderColor": "none",
             "fontBold": true,
             "fontSize": "xl",
+            "label": "",
             "noPadding": true,
-            "bgColor": "none",
-            "borderColor": "none"
+            "staticText": "Pump station, animated"
           },
           "type": "textDisplay",
           "w": 8,
@@ -1681,9 +1684,9 @@
           "id": "pr-tank",
           "props": {
             "label": "Feed tank",
-            "unit": "%",
+            "max": 100,
             "min": 0,
-            "max": 100
+            "unit": "%"
           },
           "type": "tank",
           "w": 3,
@@ -1691,30 +1694,30 @@
           "y": 1
         },
         {
-          "h": 1,
-          "id": "pr-pipe-1",
-          "props": {
-            "points": "0,50 100,50",
-            "weight": 10,
-            "color": "token:process-normal"
-          },
           "dynamics": {
-            "flow": {
-              "expr": "{sim:pump1_running} == 1"
-            },
             "color": {
               "expr": "{sim:pump1_running}",
               "transform": {
-                "kind": "map",
                 "cases": [
                   {
                     "equals": 1,
                     "value": "token:process-running"
                   }
                 ],
-                "default": "token:process-off"
+                "default": "token:process-off",
+                "kind": "map"
               }
+            },
+            "flow": {
+              "expr": "{sim:pump1_running} == 1"
             }
+          },
+          "h": 1,
+          "id": "pr-pipe-1",
+          "props": {
+            "color": "token:process-normal",
+            "points": "0,50 100,50",
+            "weight": 10
           },
           "type": "pipe",
           "w": 2,
@@ -1722,14 +1725,6 @@
           "y": 3
         },
         {
-          "h": 3,
-          "id": "pr-pump",
-          "props": {
-            "symbolId": "centrifugal-pump",
-            "label": "Pump 1",
-            "motion": "spin",
-            "cycleSeconds": 1.5
-          },
           "dynamics": {
             "animate": {
               "expr": "{sim:pump1_running} == 1"
@@ -1737,16 +1732,24 @@
             "stroke": {
               "expr": "{sim:pump1_running}",
               "transform": {
-                "kind": "map",
                 "cases": [
                   {
                     "equals": 1,
                     "value": "token:process-running"
                   }
                 ],
-                "default": "token:process-off"
+                "default": "token:process-off",
+                "kind": "map"
               }
             }
+          },
+          "h": 3,
+          "id": "pr-pump",
+          "props": {
+            "cycleSeconds": 1.5,
+            "label": "Pump 1",
+            "motion": "spin",
+            "symbolId": "centrifugal-pump"
           },
           "type": "symbol",
           "w": 2,
@@ -1754,29 +1757,29 @@
           "y": 2
         },
         {
-          "h": 1,
-          "id": "pr-pipe-2",
-          "props": {
-            "points": "0,50 100,50",
-            "weight": 10
-          },
           "dynamics": {
-            "flow": {
-              "expr": "{sim:pump1_running} == 1"
-            },
             "color": {
               "expr": "{sim:pump1_running}",
               "transform": {
-                "kind": "map",
                 "cases": [
                   {
                     "equals": 1,
                     "value": "token:process-running"
                   }
                 ],
-                "default": "token:process-off"
+                "default": "token:process-off",
+                "kind": "map"
               }
+            },
+            "flow": {
+              "expr": "{sim:pump1_running} == 1"
             }
+          },
+          "h": 1,
+          "id": "pr-pipe-2",
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 10
           },
           "type": "pipe",
           "w": 2,
@@ -1784,13 +1787,6 @@
           "y": 3
         },
         {
-          "h": 3,
-          "id": "pr-valve",
-          "props": {
-            "symbolId": "gate-valve",
-            "label": "Outlet valve",
-            "motion": "pulse"
-          },
           "dynamics": {
             "animate": {
               "expr": "{sim:fault_active} == 1"
@@ -1798,16 +1794,23 @@
             "stroke": {
               "expr": "{sim:fault_active}",
               "transform": {
-                "kind": "map",
                 "cases": [
                   {
                     "equals": 1,
                     "value": "token:alarm-critical"
                   }
                 ],
-                "default": "token:process-off"
+                "default": "token:process-off",
+                "kind": "map"
               }
             }
+          },
+          "h": 3,
+          "id": "pr-valve",
+          "props": {
+            "label": "Outlet valve",
+            "motion": "pulse",
+            "symbolId": "gate-valve"
           },
           "type": "symbol",
           "w": 2,
@@ -1902,40 +1905,45 @@
       "name": "Maintenance Mode"
     }
   ],
-  "schemaVersion": 5,
-  "shell": { "nav": "sidebar" },
-  "theme": { "preset": "calm", "mode": "light" },
+  "schemaVersion": 6,
+  "shell": {
+    "nav": "sidebar"
+  },
+  "theme": {
+    "mode": "light",
+    "preset": "calm"
+  },
   "translations": {
     "de": {
-      "Overview": "Übersicht",
       "Active Alarms": "Aktive Alarme",
+      "Alarms & Status": "Alarme & Status",
+      "Control Panel": "Bedienfeld",
+      "Efficiency": "Wirkungsgrad",
+      "Fault": "Störung",
+      "Feed tank": "Zulauftank",
+      "Flow": "Durchfluss",
+      "Flow Rate": "Durchfluss",
+      "Flow Setpoint": "Durchfluss-Sollwert",
       "Inlet Pressure": "Eingangsdruck",
+      "Live Process Trend": "Live-Prozesstrend",
+      "NORMAL": "NORMAL",
+      "Outlet valve": "Auslassventil",
+      "Overview": "Übersicht",
+      "Pressure": "Druck",
+      "Pressure Setpoint": "Druck-Sollwert",
+      "Process": "Prozess",
       "Process Temp": "Prozesstemperatur",
       "Pump 1": "Pumpe 1",
-      "Pump 2": "Pumpe 2",
-      "STOPPED": "GESTOPPT",
-      "RUNNING": "LÄUFT",
-      "System Fault": "Systemstörung",
-      "Efficiency": "Wirkungsgrad",
-      "Tank Level": "Tankfüllstand",
-      "Flow Rate": "Durchfluss",
-      "Live Process Trend": "Live-Prozesstrend",
-      "Trends & History": "Trends & Verlauf",
-      "Pressure": "Druck",
-      "Temperature": "Temperatur",
-      "Control Panel": "Bedienfeld",
-      "Fault": "Störung",
       "Pump 1 Toggle": "Pumpe 1 schalten",
+      "Pump 2": "Pumpe 2",
       "Pump 2 Toggle": "Pumpe 2 schalten",
-      "Pressure Setpoint": "Druck-Sollwert",
-      "Flow Setpoint": "Durchfluss-Sollwert",
-      "Alarms & Status": "Alarme & Status",
-      "Process": "Prozess",
       "Pump station, animated": "Pumpstation, animiert",
-      "Feed tank": "Zulauftank",
-      "Outlet valve": "Auslassventil",
-      "Flow": "Durchfluss",
-      "NORMAL": "NORMAL",
+      "RUNNING": "LÄUFT",
+      "STOPPED": "GESTOPPT",
+      "System Fault": "Systemstörung",
+      "Tank Level": "Tankfüllstand",
+      "Temperature": "Temperatur",
+      "Trends & History": "Trends & Verlauf",
       "Unified Namespace": "Einheitlicher Namensraum"
     }
   },

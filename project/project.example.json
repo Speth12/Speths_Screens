@@ -278,7 +278,10 @@
       ]
     }
   ],
-  "schemaVersion": 5,
-  "theme": { "preset": "calm", "mode": "light" },
+  "schemaVersion": 6,
+  "theme": {
+    "mode": "light",
+    "preset": "calm"
+  },
   "version": "0.1.0"
 }

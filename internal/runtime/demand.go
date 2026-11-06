@@ -165,7 +165,7 @@ func (r *Runtime) applyDemand() {
 
 // resolveBinding maps a binding to a datasource id and driver path.
 // "ds:path" maps directly; "ns:x" goes through the namespace node's driver
-// binding. Faceplate templates ("{param}") and unbound ns paths do not resolve.
+// binding. Custom widget templates ("{param}") and unbound ns paths do not resolve.
 func (r *Runtime) resolveBinding(b string) (driverID, path string, ok bool) {
 	if strings.Contains(b, "{") {
 		return "", "", false
@@ -187,14 +187,14 @@ func (r *Runtime) resolveBinding(b string) (driverID, path string, ok bool) {
 // projectDemand returns the bindings each project source needs.
 func projectDemand(p *project.Project) map[string][]string {
 	var screens []string
-	// Every tag a widget reads or writes; inside faceplates the "{param}"
+	// Every tag a widget reads or writes; inside custom widgets the "{param}"
 	// templates do not resolve, since the instance params cover them.
 	for _, pg := range p.Pages {
 		for _, w := range pg.Widgets {
 			screens = append(screens, w.View().Tags()...)
 		}
 	}
-	for _, fp := range p.Faceplates {
+	for _, fp := range p.CustomWidgets {
 		for _, w := range fp.Widgets {
 			screens = append(screens, w.View().Tags()...)
 		}

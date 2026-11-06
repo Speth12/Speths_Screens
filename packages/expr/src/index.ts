@@ -30,7 +30,7 @@ export class Expr {
     readonly refs: readonly string[],
     /** Whether the expression reads value. */
     readonly usesValue: boolean,
-    /** The faceplate parameters ({name}) a template reads, in order of first use. */
+    /** The custom widget parameters ({name}) a template reads, in order of first use. */
     readonly params: readonly string[] = [],
   ) {}
 
@@ -41,8 +41,8 @@ export class Expr {
 }
 
 /** Parses src. The error reads like `unexpected ")" at column 6`. With
- *  template, the expression is inside a faceplate and {name} (a name, no
- *  colon) is one of its parameters, which the faceplate fills in with tag
+ *  template, the expression is inside a custom widget and {name} (a name, no
+ *  colon) is one of its parameters, which the custom widget fills in with tag
  *  paths before evaluating; evaluated as it is, a parameter has no value. */
 export function compile(src: string, opts: { template?: boolean } = {}): { ok: true; expr: Expr } | { ok: false; error: string } {
   try {

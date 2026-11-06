@@ -510,8 +510,8 @@ export interface PipeProps {
   cycleSeconds?: number;
 }
 
-/** Settings of a faceplate widget. */
-export interface FaceplateProps {
+/** Settings of a customWidget widget. */
+export interface CustomWidgetProps {
   label?: string;
   bgColor?: string;
   borderColor?: string;
@@ -533,10 +533,153 @@ export interface FaceplateProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
-  /** Faceplate widget: id of the faceplate to show */
-  faceplateId?: string;
-  /** Faceplate widget: parameter name → binding */
+  /** Custom widget: id of the custom widget to show */
+  customWidgetId?: string;
+  /** Custom widget: parameter name → binding */
   params?: Record<string, string>;
+}
+
+/** Settings of a pageList widget. */
+export interface PageListProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  fontSize?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** list: icon and name down the side, grouped; tabs: names in a row; icons: large icon buttons in a row; bar: icon over name, sharing the width */
+  style?: string;
+  /** list: show each page group's heading (default true) */
+  showGroups?: boolean;
+}
+
+/** Settings of a clock widget. */
+export interface ClockProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  fontSize?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** What to show; missing means timeSeconds */
+  format?: string;
+  /** 12-hour clock instead of 24-hour */
+  hour12?: boolean;
+  /** Put the weekday first (default true) */
+  showWeekday?: boolean;
+}
+
+/** Settings of a driverStatus widget. */
+export interface DriverStatusProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  fontSize?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** One summary (2/3) instead of a chip for each datasource */
+  compact?: boolean;
+}
+
+/** Settings of a userMenu widget. */
+export interface UserMenuProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  fontSize?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** Show the signed-in name beside the icon */
+  showName?: boolean;
+}
+
+/** Settings of a recipes widget. */
+export interface RecipesProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  fontSize?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** Show only this recipe; missing shows every recipe */
+  recipeId?: string;
+  /** List each recipe's tags and values (default true) */
+  showEntries?: boolean;
 }
 
 /** Settings of a table widget. */
@@ -584,7 +727,12 @@ export interface PropsByType {
   image: ImageProps;
   symbol: SymbolProps;
   pipe: PipeProps;
-  faceplate: FaceplateProps;
+  customWidget: CustomWidgetProps;
+  pageList: PageListProps;
+  clock: ClockProps;
+  driverStatus: DriverStatusProps;
+  userMenu: UserMenuProps;
+  recipes: RecipesProps;
   table: TableProps;
 }
 
@@ -612,7 +760,12 @@ export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByTy
   image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"],
   symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"],
   pipe: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"],
-  faceplate: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "faceplateId", "params"],
+  customWidget: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"],
+  pageList: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"],
+  clock: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"],
+  driverStatus: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"],
+  userMenu: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"],
+  recipes: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"],
   table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"],
 };
 
@@ -634,7 +787,12 @@ export const DRIVEN_PROPS: { readonly [K in WidgetType]: readonly string[] } = {
   image: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "src"],
   symbol: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "stroke", "animate"],
   pipe: ["visible", "opacity", "color", "flow", "reverse"],
-  faceplate: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  customWidget: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  pageList: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  clock: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  driverStatus: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  userMenu: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  recipes: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
   table: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
 };
 

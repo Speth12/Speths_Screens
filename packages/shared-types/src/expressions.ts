@@ -3,11 +3,12 @@
 import { compile } from "@speths-screens/expr";
 import type { Drive, Project } from "./project";
 import { scriptProblems, stateProblems, SESSION_PREFIX } from "./scripts";
+import { customWidgetProblems } from "./customWidgets";
 
 /** Every expression that does not compile, in a project that follows
  *  schema.json: calculated tags, alarm rules, then the driven properties of page,
- *  faceplate and preset widgets (by property name). A faceplate widget's
- *  expressions are templates, and may read only the faceplate's parameters. */
+ *  custom widget and preset widgets (by property name). A custom widget part's
+ *  expressions are templates, and may read only the custom widget's parameters. */
 export function expressionProblems(p: Project): string[] {
   const out: string[] = [];
   for (const ds of p.datasources ?? []) {
@@ -20,7 +21,7 @@ export function expressionProblems(p: Project): string[] {
     const problem = runtimeExprProblem(r.expr);
     if (problem) out.push(`alarm rule ${JSON.stringify(r.id)}: ${problem}`);
   }
-  out.push(...stateProblems(p), ...scriptProblems(p));
+  out.push(...stateProblems(p), ...scriptProblems(p), ...customWidgetProblems(p));
   const session = new Set((p.sessionVars ?? []).map((v) => v.name));
   const drives = (where: string, dynamics: Record<string, Drive> | undefined, params?: string[]) => {
     for (const name of Object.keys(dynamics ?? {}).sort()) {
@@ -31,9 +32,9 @@ export function expressionProblems(p: Project): string[] {
   for (const pg of p.pages ?? []) {
     for (const w of pg.widgets ?? []) drives(`page ${JSON.stringify(pg.name)}, widget ${w.id} (${w.type})`, w.dynamics);
   }
-  for (const fp of p.faceplates ?? []) {
+  for (const fp of p.customWidgets ?? []) {
     const params = (fp.params ?? []).map((prm) => prm.name);
-    for (const w of fp.widgets ?? []) drives(`faceplate ${JSON.stringify(fp.name)}, widget ${w.localId} (${w.type})`, w.dynamics, params);
+    for (const w of fp.widgets ?? []) drives(`custom widget ${JSON.stringify(fp.name)}, widget ${w.localId} (${w.type})`, w.dynamics, params);
   }
   for (const ps of p.presets ?? []) {
     for (const w of ps.widgets ?? []) drives(`preset ${JSON.stringify(ps.name)}, widget ${w.id} (${w.type})`, w.dynamics);
@@ -42,7 +43,7 @@ export function expressionProblems(p: Project): string[] {
 }
 
 // driveProblem compiles one driven property's expression; params is
-// undefined outside a faceplate, and inside one the expression is a template.
+// undefined outside a custom widget, and inside one the expression is a template.
 function driveProblem(src: string, session: Set<string>, params?: string[]): string {
   const c = compile(src, { template: params !== undefined });
   if (!c.ok) return c.error;
@@ -50,7 +51,7 @@ function driveProblem(src: string, session: Set<string>, params?: string[]): str
     if (ref.startsWith(SESSION_PREFIX) && !session.has(ref.slice(SESSION_PREFIX.length))) return `{${ref}} names no session variable`;
   }
   for (const name of c.expr.params) {
-    if (!params!.includes(name)) return `{${name}} is not a parameter of this faceplate`;
+    if (!params!.includes(name)) return `{${name}} is not a parameter of this custom widget`;
   }
   return "";
 }

@@ -62,18 +62,18 @@ func TestExpressionProblems(t *testing.T) {
 			`page "Main", widget w1 (gauge): dynamics.bgColor: unknown function avrg at column 1`,
 			`page "Main", widget w1 (gauge): dynamics.textColor: unexpected end of expression`,
 		}},
-		{"a parameter outside a faceplate", Project{
+		{"a parameter outside a custom widget", Project{
 			Pages: []Page{{Name: "Main", Widgets: []Widget{{ID: "w1", Type: LED, Dynamics: map[string]Drive{"blink": {Expr: "{run}"}}}}}},
 		}, []string{`page "Main", widget w1 (led): dynamics.blink: not a tag: {run} (tags are written {ns:path} or {datasource:path}) at column 1`}},
-		{"faceplate templates", Project{
-			Faceplates: []FaceplateElement{{Name: "Pump", Params: []FaceplateParam{{Name: "run"}}, Widgets: []FaceplateWidget{
+		{"custom widget templates", Project{
+			CustomWidgets: []CustomWidgetElement{{Name: "Pump", Params: []CustomWidgetParam{{Name: "run"}}, Widgets: []CustomWidgetPart{
 				{LocalID: "a", Type: LED, Dynamics: map[string]Drive{"blink": {Expr: "{run} && {ns:Auto}"}}},
 				{LocalID: "b", Type: LED, Dynamics: map[string]Drive{"blink": {Expr: "{speed} > 1"}}},
 				{LocalID: "c", Type: LED, Dynamics: map[string]Drive{"blink": {Expr: "{run} +"}}},
 			}}},
 		}, []string{
-			`faceplate "Pump", widget b (led): dynamics.blink: {speed} is not a parameter of this faceplate`,
-			`faceplate "Pump", widget c (led): dynamics.blink: unexpected end of expression`,
+			`custom widget "Pump", widget b (led): dynamics.blink: {speed} is not a parameter of this custom widget`,
+			`custom widget "Pump", widget c (led): dynamics.blink: unexpected end of expression`,
 		}},
 		{"presets", Project{
 			Presets: []Preset{{Name: "Lamp", Widgets: []Widget{{ID: "w", Type: LED, Dynamics: map[string]Drive{"visible": {Expr: "=1"}}}}}},

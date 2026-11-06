@@ -485,8 +485,8 @@ type PipeProps struct {
 	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
 }
 
-// FaceplateProps holds the settings of a faceplate widget.
-type FaceplateProps struct {
+// CustomWidgetProps holds the settings of a customWidget widget.
+type CustomWidgetProps struct {
 	Label       *string `json:"label,omitempty"`
 	BgColor     *string `json:"bgColor,omitempty"`
 	BorderColor *string `json:"borderColor,omitempty"`
@@ -508,10 +508,153 @@ type FaceplateProps struct {
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
-	// Faceplate widget: id of the faceplate to show
-	FaceplateID *string `json:"faceplateId,omitempty"`
-	// Faceplate widget: parameter name → binding
+	// Custom widget: id of the custom widget to show
+	CustomWidgetID *string `json:"customWidgetId,omitempty"`
+	// Custom widget: parameter name → binding
 	Params map[string]string `json:"params,omitempty"`
+}
+
+// PageListProps holds the settings of a pageList widget.
+type PageListProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon buttons in a row; bar: icon over name, sharing the width
+	Style *string `json:"style,omitempty"`
+	// list: show each page group's heading (default true)
+	ShowGroups *bool `json:"showGroups,omitempty"`
+}
+
+// ClockProps holds the settings of a clock widget.
+type ClockProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// What to show; missing means timeSeconds
+	Format *string `json:"format,omitempty"`
+	// 12-hour clock instead of 24-hour
+	Hour12 *bool `json:"hour12,omitempty"`
+	// Put the weekday first (default true)
+	ShowWeekday *bool `json:"showWeekday,omitempty"`
+}
+
+// DriverStatusProps holds the settings of a driverStatus widget.
+type DriverStatusProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// One summary (2/3) instead of a chip for each datasource
+	Compact *bool `json:"compact,omitempty"`
+}
+
+// UserMenuProps holds the settings of a userMenu widget.
+type UserMenuProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Show the signed-in name beside the icon
+	ShowName *bool `json:"showName,omitempty"`
+}
+
+// RecipesProps holds the settings of a recipes widget.
+type RecipesProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	FontSize      *string    `json:"fontSize,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Show only this recipe; missing shows every recipe
+	RecipeID *string `json:"recipeId,omitempty"`
+	// List each recipe's tags and values (default true)
+	ShowEntries *bool `json:"showEntries,omitempty"`
 }
 
 // TableProps holds the settings of a table widget.
@@ -653,11 +796,46 @@ func (w Widget) AsPipe() (PipeProps, error) {
 	return p, decodeProps(w.Type, Pipe, w.Props, &p)
 }
 
-// AsFaceplate returns w's settings as a faceplate widget's. It fails when w is
-// another type or has a setting a faceplate does not have.
-func (w Widget) AsFaceplate() (FaceplateProps, error) {
-	var p FaceplateProps
-	return p, decodeProps(w.Type, Faceplate, w.Props, &p)
+// AsCustomWidget returns w's settings as a customWidget widget's. It fails when w is
+// another type or has a setting a customWidget does not have.
+func (w Widget) AsCustomWidget() (CustomWidgetProps, error) {
+	var p CustomWidgetProps
+	return p, decodeProps(w.Type, CustomWidget, w.Props, &p)
+}
+
+// AsPageList returns w's settings as a pageList widget's. It fails when w is
+// another type or has a setting a pageList does not have.
+func (w Widget) AsPageList() (PageListProps, error) {
+	var p PageListProps
+	return p, decodeProps(w.Type, PageList, w.Props, &p)
+}
+
+// AsClock returns w's settings as a clock widget's. It fails when w is
+// another type or has a setting a clock does not have.
+func (w Widget) AsClock() (ClockProps, error) {
+	var p ClockProps
+	return p, decodeProps(w.Type, Clock, w.Props, &p)
+}
+
+// AsDriverStatus returns w's settings as a driverStatus widget's. It fails when w is
+// another type or has a setting a driverStatus does not have.
+func (w Widget) AsDriverStatus() (DriverStatusProps, error) {
+	var p DriverStatusProps
+	return p, decodeProps(w.Type, DriverStatus, w.Props, &p)
+}
+
+// AsUserMenu returns w's settings as a userMenu widget's. It fails when w is
+// another type or has a setting a userMenu does not have.
+func (w Widget) AsUserMenu() (UserMenuProps, error) {
+	var p UserMenuProps
+	return p, decodeProps(w.Type, UserMenu, w.Props, &p)
+}
+
+// AsRecipes returns w's settings as a recipes widget's. It fails when w is
+// another type or has a setting a recipes does not have.
+func (w Widget) AsRecipes() (RecipesProps, error) {
+	var p RecipesProps
+	return p, decodeProps(w.Type, Recipes, w.Props, &p)
 }
 
 // AsTable returns w's settings as a table widget's. It fails when w is
@@ -685,6 +863,11 @@ var PropsKeys = map[WidgetType][]string{
 	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
 	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
 	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
-	Faceplate:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "faceplateId", "params"},
+	CustomWidget:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
+	PageList:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"},
+	Clock:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
+	DriverStatus:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
+	UserMenu:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
+	Recipes:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"},
 	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }

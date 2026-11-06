@@ -3,14 +3,14 @@ package project
 // Speth's Screens project file — single source of truth. Generated types:
 // internal/project/types.go + packages/shared-types/src/project.ts
 type Types struct {
-	AlarmRules       []AlarmRule       `json:"alarmRules,omitempty"`
-	Assets           []AssetNode       `json:"assets,omitempty"`
-	CanvasResolution *CanvasResolution `json:"canvasResolution,omitempty"`
-	CanvasSnap       *CanvasSnap       `json:"canvasSnap,omitempty"`
-	Datasources      []Datasource      `json:"datasources"`
+	AlarmRules       []AlarmRule           `json:"alarmRules,omitempty"`
+	Assets           []AssetNode           `json:"assets,omitempty"`
+	CanvasResolution *CanvasResolution     `json:"canvasResolution,omitempty"`
+	CanvasSnap       *CanvasSnap           `json:"canvasSnap,omitempty"`
+	CustomWidgets    []CustomWidgetElement `json:"customWidgets,omitempty"`
+	Datasources      []Datasource          `json:"datasources"`
 	// Symbol pack ids shown in the IDE symbol library. Missing means all packs
-	EnabledSymbolPacks []string           `json:"enabledSymbolPacks,omitempty"`
-	Faceplates         []FaceplateElement `json:"faceplates,omitempty"`
+	EnabledSymbolPacks []string `json:"enabledSymbolPacks,omitempty"`
 	// What the historian stores and for how long. Missing means every change, plus one sample
 	// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 	Historian *HistorianSettings `json:"historian,omitempty"`
@@ -89,97 +89,76 @@ type CanvasResolution struct {
 	Width *int64 `json:"width,omitempty"`
 }
 
-type Datasource struct {
-	Config DatasourceConfig `json:"config"`
-	// Unique driver instance ID, e.g. 'opcua', 'mbtcp1'
-	ID    string         `json:"id"`
-	Label string         `json:"label"`
-	Type  DatasourceType `json:"type"`
-}
-
-// Driver-specific connection config. Fields used depend on 'type'.
-type DatasourceConfig struct {
-	// REST base path, e.g. /_pxc_api/v1.14
-	BasePath *string `json:"basePath,omitempty"`
-	// REST bearer token
-	BearerToken *string `json:"bearerToken,omitempty"`
-	// How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
-	// Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
-	CERTCheck *CERTCheck `json:"certCheck,omitempty"`
-	// SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
-	// optional)
-	CERTFingerprint *string `json:"certFingerprint,omitempty"`
-	// MQTT client ID
-	ClientID *string `json:"clientId,omitempty"`
-	// OPC UA: opc.tcp://host:port
-	Endpoint *string `json:"endpoint,omitempty"`
-	// Modbus/MQTT/REST host
-	Host *string `json:"host,omitempty"`
-	// Memory datasource: the typed tags it holds
-	MemoryTags []MemoryTag `json:"memoryTags,omitempty"`
-	Password   *string     `json:"password,omitempty"`
-	// TCP port
-	Port           *int64          `json:"port,omitempty"`
-	SecurityMode   *SecurityMode   `json:"securityMode,omitempty"`
-	SecurityPolicy *SecurityPolicy `json:"securityPolicy,omitempty"`
-	// Modbus slave/unit ID
-	SlaveID *int64 `json:"slaveId,omitempty"`
-	// Virtual driver: the calculated tags
-	Tags     []CalculatedTag `json:"tags,omitempty"`
-	Username *string         `json:"username,omitempty"`
-}
-
-// A typed value the runtime holds; other expressions read it as {datasource:path}
-type MemoryTag struct {
-	// The value before anything is written (and after a restart, unless retained); missing
-	// means false, 0 or empty text
-	Initial *TransformValue `json:"initial,omitempty"`
-	// The tag's name in this datasource
-	Path string `json:"path"`
-	// Keep the last value across a runtime restart
-	Retain *bool `json:"retain,omitempty"`
-	Type   Type  `json:"type"`
-}
-
-// A tag the virtual driver computes. Other expressions read it as {datasource:path}
-type CalculatedTag struct {
-	// Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
-	// input makes the tag Bad
-	Expr string `json:"expr"`
-	// The tag's name in this datasource
-	Path string `json:"path"`
-}
-
-type FaceplateElement struct {
-	Description *string           `json:"description,omitempty"`
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Params      []FaceplateParam  `json:"params"`
-	Widgets     []FaceplateWidget `json:"widgets"`
-}
-
-type FaceplateParam struct {
+type CustomWidgetElement struct {
 	Description *string `json:"description,omitempty"`
-	// Used as {name} in bindings inside the faceplate
+	ID          string  `json:"id"`
+	// How the parts are placed; missing means free (each at its own x, y, w, h)
+	Layout  *CustomWidgetLayout `json:"layout,omitempty"`
+	Name    string              `json:"name"`
+	Params  []CustomWidgetParam `json:"params"`
+	Widgets []CustomWidgetPart  `json:"widgets"`
+}
+
+// How the parts are placed; missing means free (each at its own x, y, w, h)
+//
+// How a custom widget places its parts. In a stack the parts follow each other in a row or
+// a column and share the room by their flex settings; tablet and phone replace any field
+// for that screen size
+type CustomWidgetLayout struct {
+	// Across the direction
+	Align     *Align     `json:"align,omitempty"`
+	Direction *Direction `json:"direction,omitempty"`
+	// Pixels between parts
+	Gap *int64 `json:"gap,omitempty"`
+	// Along the direction
+	Justify *Justify `json:"justify,omitempty"`
+	// free: each part at its own place; stack: parts follow each other
+	Mode *Mode `json:"mode,omitempty"`
+	// Pixels around the parts
+	Padding *int64                      `json:"padding,omitempty"`
+	Phone   *CustomWidgetLayoutOverride `json:"phone,omitempty"`
+	Tablet  *CustomWidgetLayoutOverride `json:"tablet,omitempty"`
+	// Parts that do not fit start a new line
+	Wrap *bool `json:"wrap,omitempty"`
+}
+
+// The stack settings that differ on a smaller screen; a phone inherits from the tablet and
+// the tablet from the desktop
+type CustomWidgetLayoutOverride struct {
+	Align     *Align     `json:"align,omitempty"`
+	Direction *Direction `json:"direction,omitempty"`
+	Gap       *int64     `json:"gap,omitempty"`
+	Justify   *Justify   `json:"justify,omitempty"`
+	Padding   *int64     `json:"padding,omitempty"`
+	Wrap      *bool      `json:"wrap,omitempty"`
+}
+
+type CustomWidgetParam struct {
+	Description *string `json:"description,omitempty"`
+	// Used as {name} in bindings inside the custom widget
 	Name string `json:"name"`
 }
 
-// A widget inside a faceplate. Same as Widget, but identified by localId
-type FaceplateWidget struct {
+// A widget inside a custom widget. Same as Widget, but identified by localId, and it may
+// say how it is laid out in a stack (flex, hiddenOn)
+type CustomWidgetPart struct {
 	Bindings *WidgetBindings `json:"bindings,omitempty"`
 	// Driven properties, by property name; which names a widget type has is listed in TypedProps
 	Dynamics map[string]Drive `json:"dynamics,omitempty"`
 	Events   *WidgetEvents    `json:"events,omitempty"`
+	Flex     *PartFlex        `json:"flex,omitempty"`
 	// IDE-only: widgets with the same groupId move together
 	GroupID *string `json:"groupId,omitempty"`
 	// Height in grid units
-	H       int64  `json:"h"`
-	LocalID string `json:"localId"`
+	H int64 `json:"h"`
+	// Screen sizes this part is left out of
+	HiddenOn []HiddenOn `json:"hiddenOn,omitempty"`
+	LocalID  string     `json:"localId"`
 	// IDE-only: widget cannot be moved or resized
 	Locked *bool `json:"locked,omitempty"`
 	// This widget type's settings (see TypedProps)
-	Props *FaceplateWidgetProps `json:"props,omitempty"`
-	Type  WidgetType            `json:"type"`
+	Props *CustomWidgetPartProps `json:"props,omitempty"`
+	Type  WidgetType             `json:"type"`
 	// Width in grid units
 	W int64 `json:"w"`
 	// Grid column
@@ -188,8 +167,8 @@ type FaceplateWidget struct {
 	Y int64 `json:"y"`
 }
 
-// The tags a widget reads, by slot. Values are ds:path or ns:path (faceplate widgets may
-// use {param})
+// The tags a widget reads, by slot. Values are ds:path or ns:path (widgets inside a custom
+// widget may use {param})
 type WidgetBindings struct {
 	// Tag the frame's color thresholds read; missing means the value tag
 	Color *string `json:"color,omitempty"`
@@ -265,6 +244,24 @@ type Action struct {
 	Value interface{} `json:"value,omitempty"`
 }
 
+// How a part takes room in a stack; a part with no flex keeps the size it has in the layout
+// (w and h as grid units)
+type PartFlex struct {
+	// Size along the direction in pixels; 0 or missing fits the content
+	Basis *int64 `json:"basis,omitempty"`
+	// Share of the free room; 0 keeps the part at its basis
+	Grow   *float64          `json:"grow,omitempty"`
+	Phone  *PartFlexOverride `json:"phone,omitempty"`
+	Tablet *PartFlexOverride `json:"tablet,omitempty"`
+}
+
+// What differs on a smaller screen; a phone inherits from the tablet and the tablet from
+// the desktop
+type PartFlexOverride struct {
+	Basis *int64   `json:"basis,omitempty"`
+	Grow  *float64 `json:"grow,omitempty"`
+}
+
 // This widget type's settings (see TypedProps)
 //
 // # Settings of a gauge widget
@@ -302,10 +299,22 @@ type Action struct {
 //
 // Settings of a pipe widget: a line through points with an animated flow
 //
-// # Settings of a faceplate widget
+// # Settings of a custom widget placement
+//
+// Settings of a page list widget: the project's pages as navigation, the open one
+// highlighted
+//
+// Settings of a clock widget: the time in the operator's browser
+//
+// Settings of a driver status widget: whether each datasource is connected
+//
+// Settings of a user menu widget: who is signed in, and signing in or out
+//
+// Settings of a recipes widget: the project's recipes, each with a button that writes its
+// values
 //
 // Settings of a table widget
-type FaceplateWidgetProps struct {
+type CustomWidgetPartProps struct {
 	Max        *float64    `json:"max,omitempty"`
 	Min        *float64    `json:"min,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
@@ -395,10 +404,29 @@ type FaceplateWidgetProps struct {
 	Reverse *bool `json:"reverse,omitempty"`
 	// Pipe: line width in pixels; missing means 8
 	Weight *float64 `json:"weight,omitempty"`
-	// Faceplate widget: id of the faceplate to show
-	FaceplateID *string `json:"faceplateId,omitempty"`
-	// Faceplate widget: parameter name → binding
+	// Custom widget: id of the custom widget to show
+	CustomWidgetID *string `json:"customWidgetId,omitempty"`
+	// Custom widget: parameter name → binding
 	Params map[string]string `json:"params,omitempty"`
+	// list: show each page group's heading (default true)
+	ShowGroups *bool `json:"showGroups,omitempty"`
+	// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+	// buttons in a row; bar: icon over name, sharing the width
+	Style *Style `json:"style,omitempty"`
+	// What to show; missing means timeSeconds
+	Format *Format `json:"format,omitempty"`
+	// 12-hour clock instead of 24-hour
+	Hour12 *bool `json:"hour12,omitempty"`
+	// Put the weekday first (default true)
+	ShowWeekday *bool `json:"showWeekday,omitempty"`
+	// One summary (2/3) instead of a chip for each datasource
+	Compact *bool `json:"compact,omitempty"`
+	// Show the signed-in name beside the icon
+	ShowName *bool `json:"showName,omitempty"`
+	// Show only this recipe; missing shows every recipe
+	RecipeID *string `json:"recipeId,omitempty"`
+	// List each recipe's tags and values (default true)
+	ShowEntries *bool `json:"showEntries,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
 }
@@ -438,6 +466,67 @@ type TrendSeries struct {
 	Label   *string  `json:"label,omitempty"`
 	YMax    *float64 `json:"yMax,omitempty"`
 	YMin    *float64 `json:"yMin,omitempty"`
+}
+
+type Datasource struct {
+	Config DatasourceConfig `json:"config"`
+	// Unique driver instance ID, e.g. 'opcua', 'mbtcp1'
+	ID    string         `json:"id"`
+	Label string         `json:"label"`
+	Type  DatasourceType `json:"type"`
+}
+
+// Driver-specific connection config. Fields used depend on 'type'.
+type DatasourceConfig struct {
+	// REST base path, e.g. /_pxc_api/v1.14
+	BasePath *string `json:"basePath,omitempty"`
+	// REST bearer token
+	BearerToken *string `json:"bearerToken,omitempty"`
+	// How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+	// Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+	CERTCheck *CERTCheck `json:"certCheck,omitempty"`
+	// SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
+	// optional)
+	CERTFingerprint *string `json:"certFingerprint,omitempty"`
+	// MQTT client ID
+	ClientID *string `json:"clientId,omitempty"`
+	// OPC UA: opc.tcp://host:port
+	Endpoint *string `json:"endpoint,omitempty"`
+	// Modbus/MQTT/REST host
+	Host *string `json:"host,omitempty"`
+	// Memory datasource: the typed tags it holds
+	MemoryTags []MemoryTag `json:"memoryTags,omitempty"`
+	Password   *string     `json:"password,omitempty"`
+	// TCP port
+	Port           *int64          `json:"port,omitempty"`
+	SecurityMode   *SecurityMode   `json:"securityMode,omitempty"`
+	SecurityPolicy *SecurityPolicy `json:"securityPolicy,omitempty"`
+	// Modbus slave/unit ID
+	SlaveID *int64 `json:"slaveId,omitempty"`
+	// Virtual driver: the calculated tags
+	Tags     []CalculatedTag `json:"tags,omitempty"`
+	Username *string         `json:"username,omitempty"`
+}
+
+// A typed value the runtime holds; other expressions read it as {datasource:path}
+type MemoryTag struct {
+	// The value before anything is written (and after a restart, unless retained); missing
+	// means false, 0 or empty text
+	Initial *TransformValue `json:"initial,omitempty"`
+	// The tag's name in this datasource
+	Path string `json:"path"`
+	// Keep the last value across a runtime restart
+	Retain *bool `json:"retain,omitempty"`
+	Type   Type  `json:"type"`
+}
+
+// A tag the virtual driver computes. Other expressions read it as {datasource:path}
+type CalculatedTag struct {
+	// Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
+	// input makes the tag Bad
+	Expr string `json:"expr"`
+	// The tag's name in this datasource
+	Path string `json:"path"`
 }
 
 // What the historian stores and for how long. Missing means every change, plus one sample
@@ -588,7 +677,19 @@ type WidgetPlacement struct {
 //
 // Settings of a pipe widget: a line through points with an animated flow
 //
-// # Settings of a faceplate widget
+// # Settings of a custom widget placement
+//
+// Settings of a page list widget: the project's pages as navigation, the open one
+// highlighted
+//
+// Settings of a clock widget: the time in the operator's browser
+//
+// Settings of a driver status widget: whether each datasource is connected
+//
+// Settings of a user menu widget: who is signed in, and signing in or out
+//
+// Settings of a recipes widget: the project's recipes, each with a button that writes its
+// values
 //
 // Settings of a table widget
 type WidgetProps struct {
@@ -681,10 +782,29 @@ type WidgetProps struct {
 	Reverse *bool `json:"reverse,omitempty"`
 	// Pipe: line width in pixels; missing means 8
 	Weight *float64 `json:"weight,omitempty"`
-	// Faceplate widget: id of the faceplate to show
-	FaceplateID *string `json:"faceplateId,omitempty"`
-	// Faceplate widget: parameter name → binding
+	// Custom widget: id of the custom widget to show
+	CustomWidgetID *string `json:"customWidgetId,omitempty"`
+	// Custom widget: parameter name → binding
 	Params map[string]string `json:"params,omitempty"`
+	// list: show each page group's heading (default true)
+	ShowGroups *bool `json:"showGroups,omitempty"`
+	// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+	// buttons in a row; bar: icon over name, sharing the width
+	Style *Style `json:"style,omitempty"`
+	// What to show; missing means timeSeconds
+	Format *Format `json:"format,omitempty"`
+	// 12-hour clock instead of 24-hour
+	Hour12 *bool `json:"hour12,omitempty"`
+	// Put the weekday first (default true)
+	ShowWeekday *bool `json:"showWeekday,omitempty"`
+	// One summary (2/3) instead of a chip for each datasource
+	Compact *bool `json:"compact,omitempty"`
+	// Show the signed-in name beside the icon
+	ShowName *bool `json:"showName,omitempty"`
+	// Show only this recipe; missing shows every recipe
+	RecipeID *string `json:"recipeId,omitempty"`
+	// List each recipe's tags and values (default true)
+	ShowEntries *bool `json:"showEntries,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
 }
@@ -753,7 +873,36 @@ type SessionVar struct {
 
 // The frame around the pages in the operator screen
 type Shell struct {
-	Nav *ShellNav `json:"nav,omitempty"`
+	// builtin (the default) draws the operator's own top bar and navigation; custom draws the
+	// frame slots instead
+	Chrome *Chrome `json:"chrome,omitempty"`
+	// With chrome custom: custom widgets pinned to the edges of every page, drawn around the
+	// page
+	Frame []FrameSlot `json:"frame,omitempty"`
+	Nav   *ShellNav   `json:"nav,omitempty"`
+}
+
+// A custom widget pinned to an edge of the screen, with the page drawn in the room that is
+// left. A smaller screen can move it to another edge or give it another size
+type FrameSlot struct {
+	CustomWidgetID string `json:"customWidgetId"`
+	// Screen sizes it is drawn on; missing means all
+	Devices []DeviceElement `json:"devices,omitempty"`
+	Edge    FrameEdge       `json:"edge"`
+	ID      string          `json:"id"`
+	// Parameter name to binding, as on a custom widget placed on a page
+	Params map[string]string  `json:"params,omitempty"`
+	Phone  *FrameSlotOverride `json:"phone,omitempty"`
+	// Pixels high for a top or bottom edge, wide for a left or right edge
+	Size   int64              `json:"size"`
+	Tablet *FrameSlotOverride `json:"tablet,omitempty"`
+}
+
+// What differs on a smaller screen; a phone inherits from the tablet and the tablet from
+// the desktop
+type FrameSlotOverride struct {
+	Edge *FrameEdge `json:"edge,omitempty"`
+	Size *int64     `json:"size,omitempty"`
 }
 
 // The look of every screen: a preset, light or dark, and any element changed from the
@@ -820,6 +969,187 @@ const (
 	Pixel CanvasSnap = "pixel"
 )
 
+// Across the direction
+type Align string
+
+const (
+	AlignCenter Align = "center"
+	AlignEnd    Align = "end"
+	AlignStart  Align = "start"
+	Stretch     Align = "stretch"
+)
+
+type Direction string
+
+const (
+	Column Direction = "column"
+	Row    Direction = "row"
+)
+
+// Along the direction
+type Justify string
+
+const (
+	Between       Justify = "between"
+	JustifyCenter Justify = "center"
+	JustifyEnd    Justify = "end"
+	JustifyStart  Justify = "start"
+)
+
+// free: each part at its own place; stack: parts follow each other
+type Mode string
+
+const (
+	Free  Mode = "free"
+	Stack Mode = "stack"
+)
+
+type TransformKind string
+
+const (
+	Linear           TransformKind = "linear"
+	Thresholds       TransformKind = "thresholds"
+	TransformKindMap TransformKind = "map"
+)
+
+type ActionType string
+
+const (
+	Increment ActionType = "increment"
+	Navigate  ActionType = "navigate"
+	OpenURL   ActionType = "openUrl"
+	Toggle    ActionType = "toggle"
+	Write     ActionType = "write"
+)
+
+type HiddenOn string
+
+const (
+	HiddenOnPhone  HiddenOn = "phone"
+	HiddenOnTablet HiddenOn = "tablet"
+)
+
+type ButtonColor string
+
+const (
+	Amber  ButtonColor = "amber"
+	Blue   ButtonColor = "blue"
+	Green  ButtonColor = "green"
+	Orange ButtonColor = "orange"
+	Purple ButtonColor = "purple"
+	Red    ButtonColor = "red"
+	White  ButtonColor = "white"
+	Zinc   ButtonColor = "zinc"
+)
+
+type ButtonRounded string
+
+const (
+	ButtonRoundedNone ButtonRounded = "none"
+	Full              ButtonRounded = "full"
+	Lg                ButtonRounded = "lg"
+	Md                ButtonRounded = "md"
+	Sm                ButtonRounded = "sm"
+)
+
+type ButtonVariant string
+
+const (
+	ButtonVariantFlat ButtonVariant = "flat"
+	Filled            ButtonVariant = "filled"
+	Ghost             ButtonVariant = "ghost"
+	Industrial        ButtonVariant = "industrial"
+	Outlined          ButtonVariant = "outlined"
+)
+
+// Image object-fit, as set by the properties panel
+type ImageFit string
+
+const (
+	Contain ImageFit = "contain"
+	Cover   ImageFit = "cover"
+	Fill    ImageFit = "fill"
+)
+
+// What to show; missing means timeSeconds
+type Format string
+
+const (
+	Date        Format = "date"
+	DateTime    Format = "dateTime"
+	FormatTime  Format = "time"
+	TimeSeconds Format = "timeSeconds"
+)
+
+// Symbol: what it does while animate is true
+//
+// still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
+// browser for less motion sees it still
+type SymbolMotion string
+
+const (
+	Pulse SymbolMotion = "pulse"
+	Spin  SymbolMotion = "spin"
+	Still SymbolMotion = "still"
+)
+
+// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+// buttons in a row; bar: icon over name, sharing the width
+type Style string
+
+const (
+	Bar       Style = "bar"
+	Icons     Style = "icons"
+	StyleList Style = "list"
+	StyleTabs Style = "tabs"
+)
+
+type TextAlign string
+
+const (
+	TextAlignCenter TextAlign = "center"
+	TextAlignLeft   TextAlign = "left"
+	TextAlignRight  TextAlign = "right"
+)
+
+// Trend X-axis label format
+type TrendXFormat string
+
+const (
+	Datetime         TrendXFormat = "datetime"
+	Relative         TrendXFormat = "relative"
+	TimeShort        TrendXFormat = "time-short"
+	TrendXFormatTime TrendXFormat = "time"
+)
+
+type WidgetType string
+
+const (
+	AlarmBanner    WidgetType = "alarmBanner"
+	Button         WidgetType = "button"
+	Clock          WidgetType = "clock"
+	CustomWidget   WidgetType = "customWidget"
+	DriverStatus   WidgetType = "driverStatus"
+	Gauge          WidgetType = "gauge"
+	HistoryLog     WidgetType = "historyLog"
+	Image          WidgetType = "image"
+	LED            WidgetType = "led"
+	MultiState     WidgetType = "multiState"
+	NumericDisplay WidgetType = "numericDisplay"
+	NumericInput   WidgetType = "numericInput"
+	PageList       WidgetType = "pageList"
+	Pipe           WidgetType = "pipe"
+	Recipes        WidgetType = "recipes"
+	Setpoint       WidgetType = "setpoint"
+	Symbol         WidgetType = "symbol"
+	Table          WidgetType = "table"
+	Tank           WidgetType = "tank"
+	TextDisplay    WidgetType = "textDisplay"
+	TextInput      WidgetType = "textInput"
+	Trend          WidgetType = "trend"
+	UserMenu       WidgetType = "userMenu"
+)
+
 // How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
 // Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
 //
@@ -870,119 +1200,6 @@ const (
 	REST                  DatasourceType = "rest"
 )
 
-type TransformKind string
-
-const (
-	Linear           TransformKind = "linear"
-	Thresholds       TransformKind = "thresholds"
-	TransformKindMap TransformKind = "map"
-)
-
-type ActionType string
-
-const (
-	Increment ActionType = "increment"
-	Navigate  ActionType = "navigate"
-	OpenURL   ActionType = "openUrl"
-	Toggle    ActionType = "toggle"
-	Write     ActionType = "write"
-)
-
-type ButtonColor string
-
-const (
-	Amber  ButtonColor = "amber"
-	Blue   ButtonColor = "blue"
-	Green  ButtonColor = "green"
-	Orange ButtonColor = "orange"
-	Purple ButtonColor = "purple"
-	Red    ButtonColor = "red"
-	White  ButtonColor = "white"
-	Zinc   ButtonColor = "zinc"
-)
-
-type ButtonRounded string
-
-const (
-	ButtonRoundedNone ButtonRounded = "none"
-	Full              ButtonRounded = "full"
-	Lg                ButtonRounded = "lg"
-	Md                ButtonRounded = "md"
-	Sm                ButtonRounded = "sm"
-)
-
-type ButtonVariant string
-
-const (
-	ButtonVariantFlat ButtonVariant = "flat"
-	Filled            ButtonVariant = "filled"
-	Ghost             ButtonVariant = "ghost"
-	Industrial        ButtonVariant = "industrial"
-	Outlined          ButtonVariant = "outlined"
-)
-
-// Image object-fit, as set by the properties panel
-type ImageFit string
-
-const (
-	Contain ImageFit = "contain"
-	Cover   ImageFit = "cover"
-	Fill    ImageFit = "fill"
-)
-
-// Symbol: what it does while animate is true
-//
-// still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
-// browser for less motion sees it still
-type SymbolMotion string
-
-const (
-	Pulse SymbolMotion = "pulse"
-	Spin  SymbolMotion = "spin"
-	Still SymbolMotion = "still"
-)
-
-type TextAlign string
-
-const (
-	Center TextAlign = "center"
-	Left   TextAlign = "left"
-	Right  TextAlign = "right"
-)
-
-// Trend X-axis label format
-type TrendXFormat string
-
-const (
-	Datetime  TrendXFormat = "datetime"
-	Relative  TrendXFormat = "relative"
-	Time      TrendXFormat = "time"
-	TimeShort TrendXFormat = "time-short"
-)
-
-type WidgetType string
-
-const (
-	AlarmBanner    WidgetType = "alarmBanner"
-	Button         WidgetType = "button"
-	Faceplate      WidgetType = "faceplate"
-	Gauge          WidgetType = "gauge"
-	HistoryLog     WidgetType = "historyLog"
-	Image          WidgetType = "image"
-	LED            WidgetType = "led"
-	MultiState     WidgetType = "multiState"
-	NumericDisplay WidgetType = "numericDisplay"
-	NumericInput   WidgetType = "numericInput"
-	Pipe           WidgetType = "pipe"
-	Setpoint       WidgetType = "setpoint"
-	Symbol         WidgetType = "symbol"
-	Table          WidgetType = "table"
-	Tank           WidgetType = "tank"
-	TextDisplay    WidgetType = "textDisplay"
-	TextInput      WidgetType = "textInput"
-	Trend          WidgetType = "trend"
-)
-
 type NamespaceNodeType string
 
 const (
@@ -996,22 +1213,22 @@ const (
 type PageIcon string
 
 const (
-	Alarm       PageIcon = "alarm"
-	Bolt        PageIcon = "bolt"
-	Chart       PageIcon = "chart"
-	Dial        PageIcon = "dial"
-	Flask       PageIcon = "flask"
-	Graph       PageIcon = "graph"
-	Home        PageIcon = "home"
-	List        PageIcon = "list"
-	Motor       PageIcon = "motor"
-	PageIconMap PageIcon = "map"
-	Pump        PageIcon = "pump"
-	Settings    PageIcon = "settings"
-	Tools       PageIcon = "tools"
-	User        PageIcon = "user"
-	Valve       PageIcon = "valve"
-	Vessel      PageIcon = "vessel"
+	Alarm        PageIcon = "alarm"
+	Bolt         PageIcon = "bolt"
+	Chart        PageIcon = "chart"
+	Dial         PageIcon = "dial"
+	Flask        PageIcon = "flask"
+	Graph        PageIcon = "graph"
+	Home         PageIcon = "home"
+	Motor        PageIcon = "motor"
+	PageIconList PageIcon = "list"
+	PageIconMap  PageIcon = "map"
+	Pump         PageIcon = "pump"
+	Settings     PageIcon = "settings"
+	Tools        PageIcon = "tools"
+	User         PageIcon = "user"
+	Valve        PageIcon = "valve"
+	Vessel       PageIcon = "vessel"
 )
 
 // The role runtime scripts write as (roles and limits apply, and the audit names the
@@ -1034,14 +1251,40 @@ const (
 	Login        AuthMode = "login"
 )
 
+// builtin (the default) draws the operator's own top bar and navigation; custom draws the
+// frame slots instead
+type Chrome string
+
+const (
+	Builtin Chrome = "builtin"
+	Custom  Chrome = "custom"
+)
+
+type DeviceElement string
+
+const (
+	Desktop      DeviceElement = "desktop"
+	DevicePhone  DeviceElement = "phone"
+	DeviceTablet DeviceElement = "tablet"
+)
+
+type FrameEdge string
+
+const (
+	Bottom         FrameEdge = "bottom"
+	FrameEdgeLeft  FrameEdge = "left"
+	FrameEdgeRight FrameEdge = "right"
+	Top            FrameEdge = "top"
+)
+
 // How a person moves between pages: a list on the left, a row of large icon buttons, or
 // tabs. A phone always gets a bar along the bottom. Missing means tabs
 type ShellNav string
 
 const (
-	Sidebar ShellNav = "sidebar"
-	Tabs    ShellNav = "tabs"
-	Toolbar ShellNav = "toolbar"
+	ShellNavTabs ShellNav = "tabs"
+	Sidebar      ShellNav = "sidebar"
+	Toolbar      ShellNav = "toolbar"
 )
 
 // Corner radius of cards and controls: 2, 6 or 12 px
@@ -1112,14 +1355,14 @@ const (
 	ThemePresetModern ThemePreset = "modern"
 )
 
-// The value before anything is written (and after a restart, unless retained); missing
-// means false, 0 or empty text
+// thresholds: the value under the first step; missing leaves the property's own setting
 //
 // A text, number or flag value (transform values, initial values)
 //
-// thresholds: the value under the first step; missing leaves the property's own setting
-//
 // map: the value when no case matches; missing leaves the property's own setting
+//
+// The value before anything is written (and after a restart, unless retained); missing
+// means false, 0 or empty text
 //
 // The value when the tab opens; missing means false, 0 or empty text
 type TransformValue struct {

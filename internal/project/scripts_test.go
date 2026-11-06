@@ -29,11 +29,13 @@ func TestFormat4Problems(t *testing.T) {
 			if err := json.Unmarshal(c.Project, &doc); err != nil {
 				t.Fatal(err)
 			}
-			doc["schemaVersion"], doc["version"] = 5, "1"
+			doc["schemaVersion"], doc["version"] = 6, "1"
 			if doc["datasources"] == nil {
 				doc["datasources"] = []any{}
 			}
-			doc["pages"] = []any{map[string]any{"id": "p1", "name": "Main", "widgets": []any{}}}
+			if doc["pages"] == nil {
+				doc["pages"] = []any{map[string]any{"id": "p1", "name": "Main", "widgets": []any{}}}
+			}
 			b, _ := json.Marshal(doc)
 			if err := ValidateJSON(b); err != nil {
 				t.Fatalf("does not follow the schema: %v", err)

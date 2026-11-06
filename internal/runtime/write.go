@@ -150,7 +150,7 @@ type writer struct {
 }
 
 // writableBy returns the widgets that write key (a resolved "ds:path"),
-// directly or through a faceplate parameter, and whether key is a
+// directly or through a custom widget parameter, and whether key is a
 // namespace tag. A widget writes its value tag when it is an input (numeric
 // input, text input, setpoint), and the tags its actions write.
 func writableBy(p *project.Project, key string, resolve func(string) (string, string, bool)) (ws []writer, nsTag bool) {
@@ -167,9 +167,9 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 		ws = append(ws, w)
 	}
 
-	// Faceplate parameters written by a widget inside the faceplate.
-	writtenParams := map[string]map[string]project.WidgetView{} // faceplate id → param → inner widget
-	for _, fp := range p.Faceplates {
+	// Custom widget parameters written by a widget inside the custom widget.
+	writtenParams := map[string]map[string]project.WidgetView{} // custom widget id → param → inner widget
+	for _, fp := range p.CustomWidgets {
 		for _, fw := range fp.Widgets {
 			v := fw.View()
 			for _, b := range v.WriteTargets() {
@@ -191,8 +191,8 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 					add(v)
 				}
 			}
-			if w.Type == project.Faceplate && w.Props != nil && w.Props.FaceplateID != nil {
-				for param, inner := range writtenParams[*w.Props.FaceplateID] {
+			if w.Type == project.CustomWidget && w.Props != nil && w.Props.CustomWidgetID != nil {
+				for param, inner := range writtenParams[*w.Props.CustomWidgetID] {
 					if b, ok := w.Props.Params[param]; ok && is(b) {
 						inner.ID = w.ID // the instance writes, with the inner widget's limits
 						add(inner)
@@ -229,7 +229,7 @@ type limits struct{ min, max *float64 }
 
 // limitsFor gives the named widget's limits, or the widest limits of all
 // writers when no widget is named or the name is not one of them (widgets
-// inside a faceplate carry their own ids): a side is bounded only if every
+// inside a custom widget carry their own ids): a side is bounded only if every
 // writer bounds it.
 func limitsFor(ws []writer, widgetID string) limits {
 	for _, w := range ws {
