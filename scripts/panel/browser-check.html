@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speth's Screens: panel browser check</title>
+<!-- Open this on the panel's own browser. It reports the browser's version and whether it supports what
+     the operator screen needs. Deliberately plain: old-style JavaScript and basic CSS, so it runs even in
+     a browser too old for the operator screen. It sends nothing anywhere. -->
+<style>
+body { margin: 0; padding: 16px; font: 18px/1.35 Arial, Helvetica, sans-serif; background: #fff; color: #111; }
+h1 { font-size: 24px; margin: 0 0 8px; }
+h2 { font-size: 20px; margin: 20px 0 6px; border-bottom: 2px solid #999; }
+#verdict { padding: 14px; font-size: 22px; font-weight: bold; border: 4px solid #999; margin: 10px 0; }
+.ok { border-color: #1a7f37 !important; background: #e7f6ea; }
+.bad { border-color: #c00 !important; background: #fde8e8; }
+.warn { border-color: #b26a00 !important; background: #fff3dc; }
+table { border-collapse: collapse; width: 100%; }
+td, th { border: 1px solid #aaa; padding: 6px 8px; text-align: left; vertical-align: top; }
+td.r { font-weight: bold; white-space: nowrap; }
+td.pass { color: #1a7f37; }
+td.fail { color: #c00; }
+td.na { color: #b26a00; }
+button { font-size: 20px; padding: 12px 20px; margin: 8px 8px 8px 0; }
+pre { background: #eee; padding: 10px; font-size: 15px; white-space: pre-wrap; word-wrap: break-word; }
+.small { font-size: 15px; color: #444; }
+#stage { position: relative; height: 240px; overflow: hidden; border: 1px solid #aaa; margin-top: 8px; }
+.card { position: absolute; width: 60px; height: 34px; border: 1px solid #888; border-radius: 6px; background: #f3f3f3; font-size: 12px; text-align: center; line-height: 34px; }
+</style>
+</head>
+<body>
+<h1>Panel browser check</h1>
+<div class="small">Speth's Screens operator screen. Nothing is sent anywhere. Take a photo or screenshot of the whole result.</div>
+<div id="verdict">Running the checks...</div>
+
+<h2>This browser</h2>
+<table id="info"></table>
+
+<h2>What the operator screen needs</h2>
+<table id="checks"><tr><th>Check</th><th>Result</th><th>Needed for</th></tr></table>
+
+<h2>Speed test (about 8 seconds)</h2>
+<div class="small">Moves 150 small cards, spins 20, and changes every number once a second: a rough, not exact, picture of a busy screen. Do not touch the panel while it runs.</div>
+<button id="run">Run speed test</button>
+<div id="speed"></div>
+<div id="stage"></div>
+
+<h2>Plain-text result</h2>
+<pre id="report"></pre>
+
+<script>
+(function () {
+  var rows = [], required = [], report = [];
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function supportsCSS(prop, val) {
+    try { return !!(window.CSS && CSS.supports && (val === undefined ? CSS.supports(prop) : CSS.supports(prop, val))); } catch (e) { return false; }
+  }
+  function tryFn(src) { try { new Function(src)(); return true; } catch (e) { return false; } }
+  function has(fn) { try { return !!fn(); } catch (e) { return false; } }
+
+  // [label, test, why it matters, required for the operator screen?]
+  var tests = [
+    ['Container queries (gauge text sizes itself)', function () { return supportsCSS('container-type: size'); }, 'operator', true],
+    ['Container query units, cqmin (gauge value size)', function () { return supportsCSS('width', '10cqmin'); }, 'operator', true],
+    ['color-mix() (theme colors, Tailwind v4)', function () { return supportsCSS('color: color-mix(in srgb, red 50%, blue)'); }, 'operator', true],
+    ['CSS cascade layers, @layer (Tailwind v4)', function () { return typeof window.CSSLayerBlockRule !== 'undefined'; }, 'operator', true],
+    [':is() and :where() selectors (Tailwind v4)', function () { return supportsCSS('selector(:is(a))') && supportsCSS('selector(:where(a))'); }, 'operator', true],
+    ['clamp() (gauge value size)', function () { return supportsCSS('width: clamp(1px, 2px, 3px)'); }, 'operator', true],
+    ['CSS variables (all theme colors)', function () { return supportsCSS('--a', '1'); }, 'operator', true],
+    ['Variable fonts (Inter, Roboto, Open Sans, Noto Sans)', function () { return supportsCSS('font-variation-settings: "wght" 400'); }, 'operator', true],
+    ['SVG vector-effect (pipes keep their width)', function () { return supportsCSS('vector-effect', 'non-scaling-stroke'); }, 'operator', true],
+    ['transform-box: fill-box (spinning symbols)', function () { return supportsCSS('transform-box: fill-box'); }, 'operator', true],
+    ['@property (Tailwind v4 effects)', function () { return !!(window.CSS && typeof CSS.registerProperty === 'function'); }, 'operator', false],
+    [':has() selector', function () { return supportsCSS('selector(:has(a))'); }, 'IDE', false],
+    ['aspect-ratio', function () { return supportsCSS('aspect-ratio: 1 / 1'); }, 'IDE', false],
+    ['dvh units', function () { return supportsCSS('height: 100dvh'); }, 'nice to have', false],
+    ['Optional chaining and ??', function () { return tryFn('var a = null; return a?.b ?? 1;'); }, 'operator', true],
+    ['async / await', function () { return tryFn('return (async function () { await 1; })();'); }, 'operator', true],
+    ['Class fields', function () { return tryFn('class A { x = 1 }; return new A().x;'); }, 'operator', true],
+    ['Array.at, Object.hasOwn, replaceAll', function () { return has(function () { return [1].at(0) === 1 && Object.hasOwn({ a: 1 }, 'a') && 'a-a'.replaceAll('-', '') === 'aa'; }); }, 'operator', true],
+    ['Object.fromEntries, Promise.allSettled', function () { return has(function () { return Object.fromEntries([['a', 1]]).a === 1 && typeof Promise.allSettled === 'function'; }); }, 'operator', true],
+    ['structuredClone', function () { return typeof structuredClone === 'function'; }, 'IDE', false],
+    ['WebSocket (live values)', function () { return typeof WebSocket !== 'undefined'; }, 'operator', true],
+    ['fetch', function () { return typeof fetch === 'function'; }, 'operator', true],
+    ['ResizeObserver (trend widget)', function () { return typeof ResizeObserver !== 'undefined'; }, 'operator', true],
+    ['requestAnimationFrame', function () { return typeof requestAnimationFrame === 'function'; }, 'operator', true],
+    ['localStorage and sessionStorage', function () { localStorage.setItem('t', '1'); localStorage.removeItem('t'); sessionStorage.setItem('t', '1'); sessionStorage.removeItem('t'); return true; }, 'operator', true],
+    ['Intl weekday and 24 hour clock (top bar)', function () { var d = new Date(2026, 10, 5, 7, 49, 12); return d.toLocaleDateString(undefined, { weekday: 'short' }).length > 0 && d.toLocaleTimeString(undefined, { hour12: false }).length > 0; }, 'operator', true],
+    ['Pointer and touch events', function () { return typeof window.PointerEvent !== 'undefined'; }, 'operator', true]
+  ];
+
+  function addRow(label, pass, why, req, extra) {
+    var verdictText = pass === null ? 'checking' : pass ? 'works' : (req ? 'MISSING' : 'missing (optional)');
+    var cls = pass === null ? 'na' : pass ? 'pass' : (req ? 'fail' : 'na');
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + esc(label) + '</td><td class="r ' + cls + '">' + verdictText + '</td><td>' + esc(why) + (req ? '' : ' (optional)') + '</td>';
+    el('checks').appendChild(tr);
+    return tr;
+  }
+
+  var missing = [], optionalMissing = [];
+  for (var i = 0; i < tests.length; i++) {
+    var t = tests[i], pass = false;
+    try { pass = !!t[1](); } catch (e) { pass = false; }
+    addRow(t[0], pass, t[2], t[3]);
+    report.push((pass ? 'works   ' : (t[3] ? 'MISSING ' : 'missing ')) + t[0]);
+    if (!pass) { (t[3] ? missing : optionalMissing).push(t[0]); }
+  }
+
+  // A web worker built from a Blob (page scripts) has to start and answer.
+  var workerRow = addRow('Web worker from a Blob (page scripts)', null, 'operator', true);
+  function workerDone(ok) {
+    var cell = workerRow.getElementsByTagName('td')[1];
+    cell.className = 'r ' + (ok ? 'pass' : 'fail');
+    cell.innerHTML = ok ? 'works' : 'MISSING';
+    report.push((ok ? 'works   ' : 'MISSING ') + 'Web worker from a Blob (page scripts)');
+    if (!ok) missing.push('Web worker from a Blob (page scripts)');
+    finish();
+  }
+  var workerSettled = false;
+  try {
+    var blob = new Blob(["self.onmessage=function(e){self.postMessage(e.data+1)}"], { type: 'text/javascript' });
+    var w = new Worker(URL.createObjectURL(blob));
+    w.onmessage = function (e) { if (!workerSettled) { workerSettled = true; w.terminate(); workerDone(e.data === 2); } };
+    w.onerror = function () { if (!workerSettled) { workerSettled = true; workerDone(false); } };
+    w.postMessage(1);
+    setTimeout(function () { if (!workerSettled) { workerSettled = true; workerDone(false); } }, 2500);
+  } catch (e) { workerSettled = true; workerDone(false); }
+
+  // About this browser
+  var ua = navigator.userAgent || '';
+  var m = /Chrom(?:e|ium)\/(\d+)/.exec(ua), q = /QtWebEngine\/([\d.]+)/.exec(ua);
+  var chromeMajor = m ? parseInt(m[1], 10) : null;
+  var info = [
+    ['User agent', ua],
+    ['Chromium engine', chromeMajor ? 'version ' + chromeMajor : 'not a Chromium-based browser (or hidden)'],
+    ['QtWebEngine', q ? q[1] : 'not shown'],
+    ['Screen', screen.width + ' x ' + screen.height + ' px, window ' + window.innerWidth + ' x ' + window.innerHeight + ', pixel ratio ' + (window.devicePixelRatio || 1)],
+    ['Touch points', String(navigator.maxTouchPoints === undefined ? 'unknown' : navigator.maxTouchPoints)],
+    ['CPU cores', String(navigator.hardwareConcurrency || 'unknown')],
+    ['Memory (GB, rounded by the browser)', String(navigator.deviceMemory || 'not shown')],
+    ['Language', navigator.language || 'unknown'],
+    ['Page address', location.href]
+  ];
+  for (var j = 0; j < info.length; j++) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<th style="width:30%">' + esc(info[j][0]) + '</th><td>' + esc(info[j][1]) + '</td>';
+    el('info').appendChild(tr);
+    report.push(info[j][0] + ': ' + info[j][1]);
+  }
+
+  function finish() {
+    var v = el('verdict');
+    if (missing.length === 0) {
+      v.className = 'ok';
+      v.innerHTML = 'The operator screen should render on this browser.' + (optionalMissing.length ? '<div class="small">Optional features missing: ' + esc(optionalMissing.join('; ')) + '</div>' : '');
+    } else {
+      v.className = 'bad';
+      v.innerHTML = 'The operator screen will NOT work right on this browser.<div class="small">Missing: ' + esc(missing.join('; ')) + '</div>';
+    }
+    var head = (missing.length === 0 ? 'RESULT: operator screen should render' : 'RESULT: operator screen will NOT work right; missing: ' + missing.join('; '));
+    el('report').textContent = head + '\n\n' + report.join('\n');
+  }
+
+  // Speed test: rough, honest, and clearly labelled as such.
+  el('run').onclick = function () {
+    var stage = el('stage'), cards = [], N = 150, k, c;
+    stage.innerHTML = '';
+    for (k = 0; k < N; k++) {
+      c = document.createElement('div');
+      c.className = 'card';
+      c.style.left = ((k % 15) * 66 + 4) + 'px';
+      c.style.top = (Math.floor(k / 15) * 38 + 4) + 'px';
+      c.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+      c.textContent = '0';
+      stage.appendChild(c);
+      cards.push(c);
+    }
+    el('run').disabled = true;
+    el('speed').innerHTML = 'Running...';
+    var frames = [], last = null, start = null, lastTick = 0, n = 0;
+    function frame(ts) {
+      if (start === null) start = ts;
+      if (last !== null) frames.push(ts - last);
+      last = ts;
+      var t = ts - start;
+      for (var s = 0; s < 20; s++) cards[s].style.transform = 'rotate(' + ((t / 8) % 360) + 'deg)';
+      if (t - lastTick >= 1000) { lastTick = t; n++; for (var u = 0; u < N; u++) cards[u].textContent = String((n * 7 + u) % 100); }
+      if (t < 8000) { requestAnimationFrame(frame); } else { done(); }
+    }
+    function done() {
+      frames.shift();
+      var sorted = frames.slice().sort(function (a, b) { return a - b; }), total = 0, slow = 0, f;
+      for (f = 0; f < frames.length; f++) { total += frames[f]; if (frames[f] > 33.4) slow++; }
+      var fps = (frames.length / (total / 1000)).toFixed(1), p99 = sorted[Math.floor(sorted.length * 0.99)].toFixed(1), worst = sorted[sorted.length - 1].toFixed(1);
+      var text = 'Speed test: ' + fps + ' frames per second, 99% of frames under ' + p99 + ' ms, slowest ' + worst + ' ms, ' + slow + ' frames slower than 33 ms.';
+      el('speed').innerHTML = '<div id="speedresult" class="' + (parseFloat(fps) >= 25 && slow < frames.length * 0.05 ? 'ok' : 'warn') + '" style="padding:10px;border:3px solid #999;font-weight:bold">' + esc(text) + '</div>';
+      report.push(text);
+      el('report').textContent += '\n' + text;
+      el('run').disabled = false;
+    }
+    requestAnimationFrame(frame);
+  };
+})();
+</script>
+</body>
+</html>
