@@ -1,4 +1,4 @@
-// The operator's own settings: how this browser shows the screens, and a few tools. Nothing here
+// The operator's own settings: how this browser shows the screens, and the lock screen. Nothing here
 // changes the project; the view choices are kept in this browser only.
 import type { ReactNode } from "react";
 
@@ -11,7 +11,6 @@ export type SettingsProps = {
   onLanguage: (v: string) => void;
   /** Offered for a page that can be fitted to the window's width. */
   fit?: { on: boolean; toggle: () => void };
-  onRecipes: () => void;
   onLock?: () => void;
   /** The text of a label in the language being shown. */
   t?: (text: string) => string;
@@ -62,12 +61,13 @@ export function SettingsScreen(p: SettingsProps) {
           </Row>
         )}
       </Card>
-      <Card title={t("Tools")}>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={p.onRecipes} className="px-3 py-1.5 text-sm font-medium" style={field}>{t("Recipes")}</button>
-          {p.onLock && <button onClick={p.onLock} className="px-3 py-1.5 text-sm font-medium" style={field}>{t("Lock screen")}</button>}
-        </div>
-      </Card>
+      {p.onLock && (
+        <Card title={t("Tools")}>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={p.onLock} className="px-3 py-1.5 text-sm font-medium" style={field}>{t("Lock screen")}</button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

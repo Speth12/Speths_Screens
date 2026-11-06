@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { WidgetHostProvider, WidgetRenderer } from "@speths-screens/widgets";
+import { WidgetHostProvider, WidgetRenderer, type AppValues } from "@speths-screens/widgets";
 import type { Project, Widget } from "@speths-screens/shared-types";
 import { useOperatorHost } from "./widgetHost";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
@@ -14,11 +14,11 @@ afterEach(() => {
 });
 
 function project(extra: Partial<Project> = {}): Project {
-  return { schemaVersion: 5, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
+  return { schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra };
 }
 
-function Screen({ p, w, alarms = [], ack = () => {} }: { p: Project; w: Widget; alarms?: AlarmEvent[]; ack?: (id: string) => void }) {
-  const host = useOperatorHost(p, () => {});
+function Screen({ p, w, alarms = [], ack = () => {}, app }: { p: Project; w: Widget; alarms?: AlarmEvent[]; ack?: (id: string) => void; app?: AppValues }) {
+  const host = useOperatorHost(p, () => {}, undefined, app);
   return (
     <AlarmContext.Provider value={{ alarms, ack }}>
       <WidgetHostProvider value={host}><WidgetRenderer w={w} /></WidgetHostProvider>
@@ -86,4 +86,56 @@ it("alarm banner shows the runtime's alarms and acknowledges them", () => {
   expect(screen.getByText("Tank high — level 98")).toBeTruthy();
   fireEvent.click(screen.getByText("ACK"));
   expect(ack).toHaveBeenCalledWith("e1");
+});
+
+describe("app values", () => {
+  it("a text widget bound to app:pageName shows the open page, and app:projectName the project", () => {
+    const p = project({ name: "Pump station" });
+    render(<><Screen p={p} app={{ pageName: "Overview", projectName: p.name }} w={widget("textDisplay", { bindings: { value: "app:pageName" } })} />
+      <Screen p={p} app={{ pageName: "Overview", projectName: p.name }} w={widget("textDisplay", { id: "w2", bindings: { value: "app:projectName" } })} /></>);
+    expect(screen.getByText("Overview")).toBeTruthy();
+    expect(screen.getByText("Pump station")).toBeTruthy();
+  });
+
+  it("the page name reads in the language being shown", () => {
+    const p = project({ languages: ["en", "de"], translations: { de: { Overview: "Übersicht" } } });
+    function German() {
+      const host = useOperatorHost(p, () => {}, "de", { pageName: "Overview" });
+      return <WidgetHostProvider value={host}><WidgetRenderer w={widget("textDisplay", { bindings: { value: "app:pageName" } })} /></WidgetHostProvider>;
+    }
+    render(<German />);
+    expect(screen.getByText("Übersicht")).toBeTruthy();
+  });
+});
+
+describe("page list, recipes and user", () => {
+  const p = project({ pages: [{ id: "p1", name: "Overview", widgets: [] }, { id: "p2", name: "Pumps", widgets: [] }], recipes: [{ id: "r1", name: "Batch", entries: [] }] });
+  const navigate = vi.fn();
+
+  function Shell({ shell, app }: { shell?: Parameters<typeof useOperatorHost>[4]; app?: AppValues }) {
+    const host = useOperatorHost(p, navigate, undefined, app, shell);
+    return <WidgetHostProvider value={host}><WidgetRenderer w={widget("pageList", { id: "pl", props: { style: "tabs" } })} /><WidgetRenderer w={widget("recipes", { id: "rc" })} /></WidgetHostProvider>;
+  }
+
+  it("the page list shows the project's pages, with the open one marked, and goes to the one clicked", () => {
+    render(<Shell app={{ pageId: "p2" }} />);
+    expect(screen.getByRole("tab", { name: "Pumps" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.queryByRole("tab", { name: "Settings" })).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    expect(navigate).toHaveBeenCalledWith("p1");
+  });
+
+  it("offers the built-in Settings screen as the last page when asked to", () => {
+    render(<Shell shell={{ settings: true }} app={{ pageId: "settings" }} />);
+    const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
+    expect(tabs).toEqual(["Overview", "Pumps", "Settings"]);
+    expect(screen.getByRole("tab", { name: "Settings" }).getAttribute("aria-selected")).toBe("true");
+    fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
+    expect(navigate).toHaveBeenLastCalledWith("settings");
+  });
+
+  it("the recipes widget lists the project's recipes", () => {
+    render(<Shell />);
+    expect(screen.getByText("Batch")).toBeTruthy();
+  });
 });
