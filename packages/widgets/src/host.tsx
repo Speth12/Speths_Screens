@@ -2,7 +2,8 @@
 // The IDE (canvas, preview) and the operator screen each provide one; the
 // widgets never import app code, so one library serves both.
 import { createContext, useContext } from "react";
-import type { Faceplate } from "@speths-screens/shared-types";
+import type { CustomWidget, PageIcon, Recipe } from "@speths-screens/shared-types";
+import type { Device } from "./layout";
 
 export type Quality = "Good" | "Bad" | "Uncertain" | "Unknown";
 
@@ -52,15 +53,36 @@ export interface WidgetHost {
   useAlarms(): { alarms: AlarmView[]; ack?: (id: string) => void };
   /** The data URL of a project library image. */
   useImage(id: string): string | undefined;
-  useFaceplate(id: string | undefined): Faceplate | undefined;
+  useCustomWidget(id: string | undefined): CustomWidget | undefined;
+  /** The screen size being drawn, which picks a custom widget's tablet and phone layout. */
+  useDevice(): Device;
+  /** The project's pages and the one being shown (the page list). */
+  usePages(): { pages: PageInfo[]; activeId: string | undefined };
+  /** The datasources and whether they are connected (driver status). */
+  useDrivers(): DriverInfo[];
+  /** Who is signed in (user menu). */
+  useUser(): UserInfo;
+  /** The project's recipes (recipes widget). */
+  useRecipes(): Recipe[];
   /** Turns text into the language being shown; a text with no translation stays as written.
    *  A hook, so a widget draws again when the language changes. */
   useTranslate(): (text: string) => string;
 }
 
+/** A page of the project, as the page list shows it. */
+export interface PageInfo { id: string; name: string; icon?: PageIcon; group?: string }
+/** A datasource and whether its driver is connected. */
+export interface DriverInfo { id: string; label?: string; connected: boolean; lastError?: string; tagCount?: number }
+/** Who is using the screen. A name means signed in; loginRequired false means security is off. */
+export interface UserInfo { name?: string; role?: string; loginRequired: boolean; logout?: () => void }
+
 export const EMPTY_TAG: TagState = { value: null, quality: "Unknown", ts: 0 };
 const NO_ALARMS = { alarms: [] as AlarmView[] };
 const IDENTITY = (text: string) => text;
+const NO_PAGES = { pages: [] as PageInfo[], activeId: undefined };
+const NO_DRIVERS: DriverInfo[] = [];
+const NO_USER: UserInfo = { loginRequired: false };
+const NO_RECIPES: Recipe[] = [];
 
 /** A host with nothing behind it: no values, writes go nowhere. */
 export const inertHost: WidgetHost = {
@@ -72,7 +94,12 @@ export const inertHost: WidgetHost = {
   apiFetch: () => Promise.resolve(new Response("[]", { status: 200 })),
   useAlarms: () => NO_ALARMS,
   useImage: () => undefined,
-  useFaceplate: () => undefined,
+  useCustomWidget: () => undefined,
+  useDevice: () => "desktop",
+  usePages: () => NO_PAGES,
+  useDrivers: () => NO_DRIVERS,
+  useUser: () => NO_USER,
+  useRecipes: () => NO_RECIPES,
   useTranslate: () => IDENTITY,
 };
 

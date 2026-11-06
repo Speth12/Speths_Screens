@@ -3,9 +3,14 @@
 export { WidgetRenderer, KeypadModal, RENDERED_TYPES, fmt, resolveColor, rewriteBinding, toggled, actionWrite } from "./widgets";
 export {
   WidgetHostProvider, useHost, useTag, useTags, inertHost, EMPTY_TAG,
-  type WidgetHost, type TagState, type Quality, type WriteRequest, type AlarmView,
+  type WidgetHost, type TagState, type Quality, type WriteRequest, type AlarmView, type PageInfo, type DriverInfo, type UserInfo,
 } from "./host";
+export { formatClock, groupPages, driverSummary } from "./shell";
+export { applyResult } from "./recipes";
+export { ChromeFrame } from "./ChromeFrame";
+export { DEFAULT_IDS, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget, type ChromeNav } from "./chrome";
 export { SymbolSVG } from "./SymbolSVG";
+export { APP_PREFIX, APP_NAMES, appTag, isAppPath, splitApp, type AppValues } from "./app";
 export * from "./symbols";
 export type { Field, FieldKind, WidgetManifest, BindingSlot, WidgetEvent } from "./manifest";
 export { Icon, ICON_NAMES } from "./icons";
@@ -16,6 +21,8 @@ export {
   COL_W, ROW_H, GAP, PREVIEW_MINIMUM, placement, pageExtent, stageSize, fitScale,
   DEVICE_WIDTH, PHONE_MAX, TABLET_MAX, deviceFor, effectivePlacement, forDevice, placeFor, type Device,
   type Size, type Box, type Placeable, type CanvasResolutionLike,
+  stackFor, stackStyle, partStyle, type StackSpec, type StackLayoutLike, type StackPart,
+  slotFor, slotsByEdge, type FrameEdge, type SlotLike,
 } from "./layout";
 export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
 export {

@@ -127,3 +127,107 @@ export function placeFor<W extends WithLayouts>(w: W, device: Device, patch: Pla
   if (Object.keys(mine).length) layout[device] = mine; else delete layout[device];
   return { layout: Object.keys(layout).length ? layout : undefined } as unknown as Partial<W>;
 }
+
+// ── Custom widget stacks ─────────────────────────────────────────────────
+
+/** A custom widget's stack as it applies on one screen size. */
+export type StackSpec = {
+  direction: "row" | "column";
+  gap: number;
+  padding: number;
+  justify: "start" | "center" | "end" | "between";
+  align: "start" | "center" | "end" | "stretch";
+  wrap: boolean;
+};
+
+type StackFields = Partial<StackSpec>;
+/** What the stack needs of a custom widget's layout (the generated type satisfies it). */
+export type StackLayoutLike = StackFields & {
+  mode?: "free" | "stack";
+  tablet?: StackFields;
+  phone?: StackFields;
+};
+
+const STACK_DEFAULTS: StackSpec = { direction: "row", gap: 8, padding: 0, justify: "start", align: "stretch", wrap: false };
+
+/** The stack settings on a device, each field from that device's own settings, else from the next
+ *  size up (a phone from the tablet, the tablet from the desktop); null when the layout is free. */
+export function stackFor(layout: StackLayoutLike | undefined, device: Device): StackSpec | null {
+  if (layout?.mode !== "stack") return null;
+  const chain: (StackFields | undefined)[] = [...(device === "phone" ? [layout.phone, layout.tablet] : device === "tablet" ? [layout.tablet] : []), layout];
+  const out: Record<string, unknown> = { ...STACK_DEFAULTS };
+  for (const key of Object.keys(STACK_DEFAULTS)) {
+    for (const c of chain) {
+      const v = (c as Record<string, unknown> | undefined)?.[key];
+      if (v !== undefined) { out[key] = v; break; }
+    }
+  }
+  return out as StackSpec;
+}
+
+const JUSTIFY = { start: "flex-start", center: "center", end: "flex-end", between: "space-between" } as const;
+const ALIGN = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch" } as const;
+
+/** The CSS of the stack container. */
+export function stackStyle(s: StackSpec): Record<string, string | number> {
+  return {
+    display: "flex", flexDirection: s.direction, flexWrap: s.wrap ? "wrap" : "nowrap",
+    gap: s.gap, padding: s.padding, justifyContent: JUSTIFY[s.justify], alignItems: ALIGN[s.align],
+  };
+}
+
+/** What a stack needs of a part. */
+type FlexFields = { grow?: number; basis?: number };
+export type StackPart = Placeable & { flex?: FlexFields & { tablet?: FlexFields; phone?: FlexFields }; hiddenOn?: readonly ("tablet" | "phone")[] };
+
+/** The CSS of one part in a stack, or null when it is left out on this device. A part keeps the
+ *  size it has in grid units unless it says a basis (pixels along the direction) or a share of
+ *  the free room (grow). */
+export function partStyle(part: StackPart, spec: StackSpec, device: Device): Record<string, string | number> | null {
+  if (device !== "desktop" && part.hiddenOn?.includes(device)) return null;
+  const box = placement({ w: part.w, h: part.h }, false);
+  const row = spec.direction === "row";
+  const natural = row ? box.width : box.height;
+  // grow and basis each come from the device's own settings, else the next size up
+  const chain = [...(device === "phone" ? [part.flex?.phone, part.flex?.tablet] : device === "tablet" ? [part.flex?.tablet] : []), part.flex];
+  const pick = (key: "grow" | "basis") => chain.find((c) => c?.[key] !== undefined)?.[key];
+  const grow = pick("grow") ?? 0;
+  const basis = pick("basis") ? pick("basis")! : grow > 0 ? 0 : natural;
+  const style: Record<string, string | number> = { flex: `${grow} 1 ${basis}px`, minWidth: 0, minHeight: 0 };
+  if (spec.align !== "stretch") style[row ? "height" : "width"] = row ? box.height : box.width;
+  return style;
+}
+
+// ── Frame slots ──────────────────────────────────────────────────────────
+
+export type FrameEdge = "top" | "right" | "bottom" | "left";
+
+/** What the frame needs of a slot (the generated type satisfies it). */
+export type SlotLike = {
+  edge: FrameEdge;
+  size: number;
+  devices?: readonly Device[];
+  tablet?: { edge?: FrameEdge; size?: number };
+  phone?: { edge?: FrameEdge; size?: number };
+};
+
+/** Where a slot sits on a device, or null when it is not drawn there. Each field comes from the
+ *  device's own override, else the next size up (a phone from the tablet, the tablet from the desktop). */
+export function slotFor(slot: SlotLike, device: Device): { edge: FrameEdge; size: number } | null {
+  if (slot.devices && !slot.devices.includes(device)) return null;
+  const chain = device === "phone" ? [slot.phone, slot.tablet] : device === "tablet" ? [slot.tablet] : [];
+  return {
+    edge: chain.find((c) => c?.edge !== undefined)?.edge ?? slot.edge,
+    size: chain.find((c) => c?.size !== undefined)?.size ?? slot.size,
+  };
+}
+
+/** The slots a device draws, by edge, in the order the project lists them. */
+export function slotsByEdge<S extends SlotLike>(slots: readonly S[], device: Device): Record<FrameEdge, { slot: S; size: number }[]> {
+  const out: Record<FrameEdge, { slot: S; size: number }[]> = { top: [], right: [], bottom: [], left: [] };
+  for (const slot of slots) {
+    const at = slotFor(slot, device);
+    if (at) out[at.edge].push({ slot, size: at.size });
+  }
+  return out;
+}

@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { Faceplate, Widget } from "@speths-screens/shared-types";
+import type { CustomWidget, Widget } from "@speths-screens/shared-types";
 import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, toggled, rewriteBinding } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost, type AlarmView } from "./host";
 import { SYMBOLS } from "./symbols";
+import { driverSummary, formatClock } from "./shell";
 
 afterEach(cleanup);
 
@@ -43,16 +44,20 @@ describe("widget types", () => {
 
 // One case per widget type: what it shows for a given setup.
 describe("each widget renders", () => {
-  const fp: Faceplate = {
+  const fp: CustomWidget = {
     id: "fp1", name: "Pump", params: [{ name: "pump" }],
     widgets: [{ localId: "v", type: "numericDisplay", x: 0, y: 0, w: 2, h: 2, bindings: { value: "plc:{pump}.speed" } }],
   };
   const alarms: AlarmView[] = [{ id: "a1", severity: "warning", ruleName: "Hot", message: "temp high", active: true, acked: false }];
   const values = { "plc:T": 42.5, "plc:On": true, "plc:Name": "Mixer", "plc:P1.speed": 1450, "plc:State": 1 };
   const host = fakeHost(values, {
-    useFaceplate: (id) => (id === "fp1" ? fp : undefined),
+    useCustomWidget: (id) => (id === "fp1" ? fp : undefined),
     useAlarms: () => ({ alarms }),
     useImage: (id) => (id === "img1" ? "data:image/png;base64,AAAA" : undefined),
+    usePages: () => ({ pages: [{ id: "p1", name: "Overview" }, { id: "p2", name: "Pumps" }], activeId: "p1" }),
+    useDrivers: () => [{ id: "plc", label: "PLC", connected: true }, { id: "mqtt", label: "Broker", connected: false }],
+    useUser: () => ({ name: "dan", role: "admin", loginRequired: true, logout: () => {} }),
+    useRecipes: () => [{ id: "r1", name: "Batch A", entries: [{ binding: "plc:Setpoint", value: 40 }] }],
   });
   const sym = SYMBOLS[0]!;
   const cases: { type: string; w: Omit<W, "type">; shows: string | RegExp }[] = [
@@ -73,8 +78,13 @@ describe("each widget renders", () => {
     { type: "image",          w: { props: { src: "", label: "x" } },                   shows: "No image" },
     { type: "symbol",         w: { props: { symbolId: sym.id, label: "Valve 1" } },    shows: "Valve 1" },
     { type: "pipe",           w: { props: { label: "Feed line", points: "0,50 100,50" } },  shows: "" },
-    { type: "faceplate",      w: { props: { faceplateId: "fp1", params: { pump: "P1" } } }, shows: "1450" },
+    { type: "customWidget",      w: { props: { customWidgetId: "fp1", params: { pump: "P1" } } }, shows: "1450" },
     { type: "table",          w: { props: { rows: [{ label: "Temp", binding: "plc:T" }] } }, shows: "42.50" },
+    { type: "pageList",       w: {},                                                   shows: "Pumps" },
+    { type: "clock",          w: { props: { format: "date", showWeekday: false } },    shows: /\d/ },
+    { type: "driverStatus",   w: {},                                                   shows: "Broker" },
+    { type: "userMenu",       w: {},                                                   shows: "" },
+    { type: "recipes",        w: {},                                                   shows: "Batch A" },
   ];
   for (const c of cases) {
     it(`${c.type}: ${String(c.shows)}`, () => {
@@ -148,13 +158,49 @@ describe("events go through the host", () => {
     expect(host.requestWrite).toHaveBeenCalledWith({ binding: "plc:SP", value: 7, widgetId: "w1" });
   });
 
-  it("a faceplate fills its parameters into its widgets' action tags", () => {
-    const fp: Faceplate = { id: "fp1", name: "Pump", params: [{ name: "pump" }], widgets: [
+  describe("a custom widget laid out as a stack", () => {
+    const header: CustomWidget = {
+      id: "hdr", name: "Header", params: [],
+      layout: { mode: "stack", direction: "row", gap: 4, phone: { direction: "column" } },
+      widgets: [
+        { localId: "title", type: "textDisplay", x: 0, y: 0, w: 2, h: 1, props: { staticText: "Plant" }, flex: { grow: 1 } },
+        { localId: "clock", type: "textDisplay", x: 0, y: 0, w: 2, h: 1, props: { staticText: "12:00" }, hiddenOn: ["phone"] },
+      ],
+    };
+    const show = (device: "desktop" | "tablet" | "phone") =>
+      draw({ type: "customWidget", props: { customWidgetId: "hdr" } }, fakeHost({}, { useCustomWidget: () => header, useDevice: () => device }));
+
+    it("lays its parts out in a flex container that grows the title", () => {
+      const { container } = show("desktop");
+      const stack = screen.getByText("Plant").closest("[style*='flex: 1 1 0px']")!.parentElement!;
+      expect(stack.style.display).toBe("flex");
+      expect(stack.style.flexDirection).toBe("row");
+      expect(screen.getByText("12:00")).toBeTruthy();
+      expect(container.querySelectorAll(".absolute").length).toBe(0);
+    });
+
+    it("turns to a column and leaves the clock out on a phone", () => {
+      show("phone");
+      expect(screen.getByText("Plant").closest("[style*='flex']")!.parentElement!.style.flexDirection).toBe("column");
+      expect(screen.queryByText("12:00")).toBeNull();
+    });
+  });
+
+  it("a custom widget that contains itself stops instead of looping", () => {
+    const loop: CustomWidget = { id: "loop", name: "Loop", params: [], widgets: [
+      { localId: "again", type: "customWidget", x: 0, y: 0, w: 4, h: 4, props: { customWidgetId: "loop" } },
+    ] };
+    draw({ type: "customWidget", props: { customWidgetId: "loop" } }, fakeHost({}, { useCustomWidget: () => loop }));
+    expect(screen.getAllByText("nested too deep").length).toBe(1);
+  });
+
+  it("a custom widget fills its parameters into its widgets' action tags", () => {
+    const fp: CustomWidget = { id: "fp1", name: "Pump", params: [{ name: "pump" }], widgets: [
       { localId: "run", type: "button", x: 0, y: 0, w: 2, h: 2, props: { label: "Run" },
         events: { onPress: [{ type: "write", tag: "plc:{pump}.run", value: true }] } },
     ] };
-    const host = fakeHost({}, { useFaceplate: () => fp });
-    draw({ type: "faceplate", props: { faceplateId: "fp1", params: { pump: "P7" } } }, host);
+    const host = fakeHost({}, { useCustomWidget: () => fp });
+    draw({ type: "customWidget", props: { customWidgetId: "fp1", params: { pump: "P7" } } }, host);
     fireEvent.pointerDown(screen.getByRole("button"));
     expect(host.write).toHaveBeenCalledWith({ binding: "plc:P7.run", value: true, widgetId: "run" });
   });
@@ -184,7 +230,7 @@ describe("helpers", () => {
     [true, false], [false, true], [1, 0], [0, 1], [null, 1], ["", 1],
   ])("toggled(%j) = %j", (cur, want) => expect(toggled(cur)).toBe(want));
 
-  it("rewriteBinding fills faceplate parameters and leaves unknown ones", () => {
+  it("rewriteBinding fills custom widget parameters and leaves unknown ones", () => {
     expect(rewriteBinding("plc:{pump}.{x}", { pump: "P1" })).toBe("plc:P1.{x}");
     expect(rewriteBinding(undefined, {})).toBeUndefined();
   });
@@ -275,5 +321,137 @@ describe("a drawing is not a card", () => {
     cleanup();
     const boxed = draw({ type: "symbol", props: { symbolId: sym.id, label: "Valve 1", bgColor: "#fff" } }).container;
     expect(boxed.querySelector("[style*='padding: 0']")).toBeNull();
+  });
+});
+
+describe("header and navigation widgets", () => {
+  const pages = [{ id: "p1", name: "Overview", icon: "home" as const }, { id: "p2", name: "Pumps", group: "Plant" }, { id: "p3", name: "Tanks", group: "Plant" }];
+  const withPages = (navigate = vi.fn()) => fakeHost({}, { usePages: () => ({ pages, activeId: "p2" }), navigate });
+
+  it("the page list marks the open page and goes to the one clicked", () => {
+    const host = withPages();
+    draw({ type: "pageList" }, host);
+    expect(screen.getByRole("button", { name: /Pumps/ }).getAttribute("aria-current")).toBe("page");
+    fireEvent.click(screen.getByRole("button", { name: /Tanks/ }));
+    expect(host.navigate).toHaveBeenCalledWith("p3");
+  });
+
+  it("the list groups pages under their heading, and the heading can be left out", () => {
+    draw({ type: "pageList" }, withPages());
+    expect(screen.getByText("Plant")).toBeTruthy();
+    cleanup();
+    draw({ type: "pageList", props: { showGroups: false } }, withPages());
+    expect(screen.queryByText("Plant")).toBeNull();
+  });
+
+  it.each(["tabs", "icons", "bar"] as const)("the %s style lists every page", (style) => {
+    draw({ type: "pageList", props: { style } }, withPages());
+    expect(screen.getAllByText(/Overview|Pumps|Tanks/).length).toBe(3);
+  });
+
+  it("the page names read in the language shown", () => {
+    draw({ type: "pageList", props: { style: "tabs" } }, fakeHost({}, { usePages: () => ({ pages, activeId: "p1" }), useTranslate: () => (t: string) => (t === "Pumps" ? "Pumpen" : t) }));
+    expect(screen.getByRole("tab", { name: "Pumpen" })).toBeTruthy();
+  });
+
+  it("formatClock follows the chosen format", () => {
+    const d = new Date(2026, 10, 6, 15, 4, 9); // Friday
+    expect(formatClock(d, { format: "time", showWeekday: false }, "en-GB")).toBe("15:04");
+    expect(formatClock(d, { showWeekday: false }, "en-GB")).toBe("15:04:09");
+    expect(formatClock(d, { format: "date", showWeekday: false }, "en-GB")).toBe("6 Nov");
+    expect(formatClock(d, { format: "dateTime" }, "en-GB")).toBe("Fri 6 Nov 15:04");
+    expect(formatClock(d, { format: "time", hour12: true, showWeekday: false }, "en-US")).toMatch(/^0?3:04\s?PM$/);
+  });
+
+  it("driver status shows a chip each with the state in words, or one summary", () => {
+    const drivers = [{ id: "plc", label: "PLC", connected: true }, { id: "mqtt", label: "Broker", connected: false, lastError: "refused" }];
+    draw({ type: "driverStatus" }, fakeHost({}, { useDrivers: () => drivers }));
+    expect(screen.getByTestId("driver-mqtt").getAttribute("data-connected")).toBe("false");
+    expect(screen.getByTestId("driver-mqtt").title).toContain("refused");
+    expect(screen.getByText("(not connected)")).toBeTruthy();
+    cleanup();
+    draw({ type: "driverStatus", props: { compact: true } }, fakeHost({}, { useDrivers: () => drivers }));
+    expect(screen.getByTestId("driver-summary").textContent).toBe("1/2");
+  });
+
+  it("driverSummary tells none, all, some and no drivers apart", () => {
+    const d = (connected: boolean) => ({ id: "x", connected });
+    expect(driverSummary([]).state).toBe("none");
+    expect(driverSummary([d(true), d(true)]).state).toBe("ok");
+    expect(driverSummary([d(true), d(false)]).state).toBe("partial");
+    expect(driverSummary([d(false)]).state).toBe("down");
+  });
+
+  it("the user menu shows who is signed in and logs out", () => {
+    const logout = vi.fn();
+    draw({ type: "userMenu" }, fakeHost({}, { useUser: () => ({ name: "dan", role: "admin", loginRequired: true, logout }) }));
+    fireEvent.click(screen.getByRole("button", { name: "Signed in as dan" }));
+    expect(screen.getByText("admin")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    expect(logout).toHaveBeenCalled();
+  });
+
+  it("the menu is drawn outside the widget, so a header that clips its contents cannot hide it", () => {
+    const { container } = draw({ type: "userMenu" }, fakeHost({}, { useUser: () => ({ name: "dan", loginRequired: true }) }));
+    fireEvent.click(screen.getByRole("button", { name: "Signed in as dan" }));
+    const menu = screen.getByRole("menu");
+    expect(container.contains(menu)).toBe(false);
+    expect(menu.parentElement).toBe(document.body);
+  });
+
+  it("with login required and nobody in, it says so; with security off, it says that", () => {
+    draw({ type: "userMenu" }, fakeHost({}, { useUser: () => ({ loginRequired: true }) }));
+    fireEvent.click(screen.getByRole("button", { name: "User" }));
+    expect(screen.getByText("Not signed in.")).toBeTruthy();
+    cleanup();
+    draw({ type: "userMenu" }, fakeHost({}, { useUser: () => ({ loginRequired: false }) }));
+    fireEvent.click(screen.getByRole("button", { name: "User" }));
+    expect(screen.getByText("Security is off")).toBeTruthy();
+  });
+});
+
+describe("recipes widget", () => {
+  const recipes = [
+    { id: "r1", name: "Batch A", description: "Slow ramp", entries: [{ binding: "plc:Setpoint", value: 40 }, { binding: "plc:Mode", value: "auto" }] },
+    { id: "r2", name: "Batch B", entries: [{ binding: "plc:Setpoint", value: 80 }] },
+  ];
+  const withRecipes = (answer: { status?: number; body: unknown }) => {
+    const apiFetch = vi.fn(async () => new Response(JSON.stringify(answer.body), { status: answer.status ?? 200 }));
+    return { apiFetch, host: fakeHost({}, { useRecipes: () => recipes, apiFetch }) };
+  };
+
+  it("lists every recipe with its tags and values, or just the chosen one", () => {
+    draw({ type: "recipes" }, withRecipes({ body: {} }).host);
+    expect(screen.getByText("Batch A")).toBeTruthy();
+    expect(screen.getByText("Batch B")).toBeTruthy();
+    expect(screen.getByText("Slow ramp")).toBeTruthy();
+    expect(screen.getAllByText("Setpoint = 40").length).toBe(1);
+    cleanup();
+    draw({ type: "recipes", props: { recipeId: "r2", showEntries: false } }, withRecipes({ body: {} }).host);
+    expect(screen.queryByText("Batch A")).toBeNull();
+    expect(screen.queryByText(/Setpoint/)).toBeNull();
+  });
+
+  it("applies through the runtime and says how many tags were written", async () => {
+    const { apiFetch, host } = withRecipes({ body: { ok: true, applied: 2 } });
+    draw({ type: "recipes", props: { recipeId: "r1" } }, host);
+    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
+    expect(await screen.findByText(/Applied 2 tags/)).toBeTruthy();
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recipes/r1/apply", { method: "POST" });
+  });
+
+  it("shows why a recipe was refused", async () => {
+    draw({ type: "recipes", props: { recipeId: "r1" } }, withRecipes({ status: 403, body: { error: "forbidden" } }).host);
+    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
+    expect(await screen.findByText(/Not allowed/)).toBeTruthy();
+    cleanup();
+    draw({ type: "recipes", props: { recipeId: "r1" } }, withRecipes({ status: 200, body: { ok: false, errors: ["plc:Setpoint: above the maximum 50"] } }).host);
+    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
+    expect(await screen.findByText(/above the maximum 50/)).toBeTruthy();
+  });
+
+  it("says so when there are no recipes", () => {
+    draw({ type: "recipes" }, fakeHost());
+    expect(screen.getByText("No recipes")).toBeTruthy();
   });
 });

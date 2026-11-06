@@ -109,7 +109,7 @@ export function useDrives(w: Widget): Record<string, DrivenValue> {
   return out;
 }
 
-/** Fills a faceplate's parameters ({name}) into an expression: each becomes
+/** Fills a custom widget's parameters ({name}) into an expression: each becomes
  *  the instance's tag reference. Unknown names are left as they are. */
 export function rewriteExpr(src: string, params: Record<string, string>): string {
   return src.replace(/\{(\w+)\}/g, (m, key: string) => (params[key] !== undefined ? `{${params[key]}}` : m));

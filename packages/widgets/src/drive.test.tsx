@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
-import type { Faceplate, Transform, Widget } from "@speths-screens/shared-types";
+import type { CustomWidget, Transform, Widget } from "@speths-screens/shared-types";
 import { applyTransform, rewriteExpr, suit } from "./drive";
 import { WidgetRenderer } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost } from "./host";
@@ -42,7 +42,7 @@ describe("suit", () => {
   ] as const)("%s from %j", (prop, v, want) => expect(suit(prop, v)).toBe(want));
 });
 
-it("rewriteExpr fills in faceplate parameters", () => {
+it("rewriteExpr fills in custom widget parameters", () => {
   expect(rewriteExpr("{run} && {ns:Auto} || {other}", { run: "plc:P1/Run" })).toBe("{plc:P1/Run} && {ns:Auto} || {other}");
 });
 
@@ -117,12 +117,12 @@ describe("driven properties on screen", () => {
     expect(wrap.style.outline).toBe("");
   });
 
-  it("a faceplate fills its parameters into its widgets' expressions", () => {
-    const fp: Faceplate = { id: "fp", name: "Pump", params: [{ name: "run" }], widgets: [
+  it("a custom widget fills its parameters into its widgets' expressions", () => {
+    const fp: CustomWidget = { id: "fp", name: "Pump", params: [{ name: "run" }], widgets: [
       { localId: "t", type: "textDisplay", x: 0, y: 0, w: 2, h: 1, props: { staticText: "x" }, dynamics: { label: { expr: "{run} ? 'running' : 'stopped'" } } },
     ] };
-    const h = { ...host({ "plc:P1": true }), useFaceplate: (id: string) => (id === "fp" ? fp : undefined) };
-    render(<WidgetHostProvider value={h}><WidgetRenderer w={{ id: "i", type: "faceplate", x: 0, y: 0, w: 4, h: 4, props: { faceplateId: "fp", params: { run: "plc:P1" } } } as Widget} /></WidgetHostProvider>);
+    const h = { ...host({ "plc:P1": true }), useCustomWidget: (id: string) => (id === "fp" ? fp : undefined) };
+    render(<WidgetHostProvider value={h}><WidgetRenderer w={{ id: "i", type: "customWidget", x: 0, y: 0, w: 4, h: 4, props: { customWidgetId: "fp", params: { run: "plc:P1" } } } as Widget} /></WidgetHostProvider>);
     expect(screen.getByText("running")).toBeTruthy();
   });
 });
