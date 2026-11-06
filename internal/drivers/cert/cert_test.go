@@ -48,8 +48,8 @@ func TestEnsureGeneratesWithTheGivenNames(t *testing.T) {
 func TestEnsureLeavesAnExistingCertificateAlone(t *testing.T) {
 	dir := t.TempDir()
 	certPath, keyPath := filepath.Join(dir, "c.pem"), filepath.Join(dir, "k.pem")
-	// A certificate made before the rename, with the old names.
-	if err := Ensure(certPath, keyPath, "urn:x-hmi:runtime", "x-hmi runtime"); err != nil {
+	// A certificate made earlier, with other names.
+	if err := Ensure(certPath, keyPath, "urn:example:first-runtime", "first runtime"); err != nil {
 		t.Fatal(err)
 	}
 	before, _ := os.ReadFile(certPath)
@@ -64,7 +64,7 @@ func TestEnsureLeavesAnExistingCertificateAlone(t *testing.T) {
 		t.Fatal("an existing certificate or key was rewritten")
 	}
 	c := read(t, certPath)
-	if c.Subject.CommonName != "x-hmi runtime" || c.URIs[0].String() != "urn:x-hmi:runtime" {
+	if c.Subject.CommonName != "first runtime" || c.URIs[0].String() != "urn:example:first-runtime" {
 		t.Errorf("the existing certificate lost its names: %q %v", c.Subject.CommonName, c.URIs)
 	}
 }
@@ -72,7 +72,7 @@ func TestEnsureLeavesAnExistingCertificateAlone(t *testing.T) {
 func TestEnsureGeneratesAgainWhenOnlyOneFileIsLeft(t *testing.T) {
 	dir := t.TempDir()
 	certPath, keyPath := filepath.Join(dir, "c.pem"), filepath.Join(dir, "k.pem")
-	if err := Ensure(certPath, keyPath, "urn:x-hmi:runtime", "x-hmi runtime"); err != nil {
+	if err := Ensure(certPath, keyPath, "urn:example:first-runtime", "first runtime"); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Remove(keyPath); err != nil {

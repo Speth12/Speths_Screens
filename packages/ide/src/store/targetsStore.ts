@@ -2,7 +2,7 @@
 // A target is a name + base URL for a runtime instance.
 // "local" is always present and cannot be deleted.
 
-import { readMigrated } from "./storageKeys";
+import { readStored } from "./storage";
 
 export type Target = {
   id: string;
@@ -16,7 +16,7 @@ const LS_ACTIVE = "speths-screens-active-target-v1";
 
 function loadTargets(): Target[] {
   try {
-    const raw = readMigrated(LS_KEY, "xhmi-targets-v1");
+    const raw = readStored(LS_KEY);
     if (!raw) return [LOCAL];
     const parsed = JSON.parse(raw) as Target[];
     // Ensure local is always first and present.
@@ -34,7 +34,7 @@ function saveTargets(targets: Target[]) {
 
 // In-memory state (module-level, triggers re-render via subscribeTargets).
 let _targets: Target[] = loadTargets();
-let _activeId: string = readMigrated(LS_ACTIVE, "xhmi-active-target-v1") ?? "local";
+let _activeId: string = readStored(LS_ACTIVE) ?? "local";
 const _listeners = new Set<() => void>();
 
 function notify() {

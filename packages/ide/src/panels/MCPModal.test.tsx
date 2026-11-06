@@ -10,9 +10,7 @@ describe("MCPModal", () => {
     const text = container.textContent ?? "";
     expect(text).toContain("claude mcp add --transport http speths-screens ");
     expect(text).toContain('"speths-screens"');
-    expect(text).not.toMatch(/x-hmi|xhmi/);
     fireEvent.click(screen.getByRole("button", { name: /tools/i }));
     expect(container.textContent).toContain("speths-screens://project");
-    expect(container.textContent).not.toMatch(/x-hmi|xhmi/);
   });
 });

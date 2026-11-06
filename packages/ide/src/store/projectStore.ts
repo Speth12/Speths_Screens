@@ -10,7 +10,7 @@ import type {
   RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { placeFor } from "@speths-screens/widgets";
-import { readMigrated } from "./storageKeys";
+import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
 
 export type {
@@ -710,7 +710,7 @@ const LS_KEY = "speths-screens-project-v1";
 /** Restore any previously saved project from localStorage on startup. */
 (function restoreFromStorage() {
   try {
-    const raw = readMigrated(LS_KEY, "xhmi-project-v1");
+    const raw = readStored(LS_KEY);
     if (!raw) return;
     const o = openProject(JSON.parse(raw));
     if (o.ok) useProject.getState().loadProject(o.project);

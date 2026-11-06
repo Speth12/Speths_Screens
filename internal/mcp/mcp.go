@@ -212,14 +212,7 @@ func (h *Handler) handleResourcesRead(ctx context.Context, params json.RawMessag
 	}, nil
 }
 
-// legacyScheme is what resource URIs started with before the rename; a client that kept one still reads.
-const legacyScheme = "xhmi://"
-
-// scheme is the start of every resource URI this server lists.
-const scheme = "speths-screens://"
-
 func (h *Handler) readResource(_ context.Context, uri string) (string, error) {
-	uri = canonicalURI(uri)
 	proj := h.rt.Project()
 
 	switch {
@@ -592,12 +585,4 @@ func (h *Handler) callTool(ctx context.Context, name string, args map[string]any
 	default:
 		return "", true, fmt.Errorf("unknown tool: %s", name)
 	}
-}
-
-// canonicalURI turns a legacy xhmi:// URI into the current form and leaves any other URI alone.
-func canonicalURI(uri string) string {
-	if strings.HasPrefix(uri, legacyScheme) {
-		return scheme + strings.TrimPrefix(uri, legacyScheme)
-	}
-	return uri
 }

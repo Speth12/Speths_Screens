@@ -1,5 +1,4 @@
 # Build artifacts
-/x-hmi*
 /speths-screens*
 
 # Frontend dev artifacts (built inside Docker, not needed from host)

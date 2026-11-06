@@ -136,7 +136,7 @@ func TestProjectSecretsStayOnTheRuntime(t *testing.T) {
 
 	_, project := s.do(t, "GET", "/api/v1/project", s.adminToken, "")
 	_, version := s.do(t, "GET", "/api/v1/versions/2", s.adminToken, "") // 1 is the setup deploy
-	_, mcpProject := s.do(t, "POST", "/mcp", s.adminToken, `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"xhmi://project"}}`)
+	_, mcpProject := s.do(t, "POST", "/mcp", s.adminToken, `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"speths-screens://project"}}`)
 	for name, body := range map[string]string{"GET /project": project, "GET /versions/2": version, "MCP project": mcpProject} {
 		if strings.Contains(body, "plc-secret") {
 			t.Errorf("%s returned a datasource secret: %s", name, body)

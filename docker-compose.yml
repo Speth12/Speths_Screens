@@ -4,14 +4,13 @@ services:
     image: speths-screens:latest
     restart: unless-stopped
     ports:
-      # SPETHS_PORT sets the port; XHMI_PORT, its old name, still works when SPETHS_PORT is not set.
-      - "${SPETHS_PORT:-${XHMI_PORT:-8080}}:8080"
+      # SPETHS_PORT sets the port the runtime is published on.
+      - "${SPETHS_PORT:-8080}:8080"
     volumes:
       # Project JSON files — edit in the IDE, read by the runtime.
       - ./project:/project
-      # Historian, users, alarms and recipes: persists across restarts. The volume keeps its
-      # old name, xhmi-data, on purpose: renaming a volume would start an install empty.
-      - xhmi-data:/data
+      # Historian, users, alarms and recipes: persists across restarts.
+      - speths-data:/data
     environment:
       - TZ=${TZ:-America/Chicago}
     healthcheck:
@@ -22,4 +21,4 @@ services:
       start_period: 5s
 
 volumes:
-  xhmi-data:
+  speths-data:

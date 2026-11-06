@@ -11,13 +11,13 @@ import (
 )
 
 // TestOPCUALive runs against a real OPC UA server. Skipped unless
-// X_HMI_OPCUA_ENDPOINT is set, e.g.
+// SPETHS_OPCUA_ENDPOINT is set, e.g.
 //
-//	X_HMI_OPCUA_ENDPOINT=opc.tcp://192.168.88.10:4840 go test -run TestOPCUALive ./internal/drivers/opcua/...
+//	SPETHS_OPCUA_ENDPOINT=opc.tcp://192.168.88.10:4840 go test -run TestOPCUALive ./internal/drivers/opcua/...
 func TestOPCUALive(t *testing.T) {
-	endpoint := os.Getenv("X_HMI_OPCUA_ENDPOINT")
+	endpoint := os.Getenv("SPETHS_OPCUA_ENDPOINT")
 	if endpoint == "" {
-		t.Skip("set X_HMI_OPCUA_ENDPOINT to run live OPC UA test")
+		t.Skip("set SPETHS_OPCUA_ENDPOINT to run live OPC UA test")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -28,8 +28,8 @@ func TestOPCUALive(t *testing.T) {
 	if err := d.Connect(ctx, drivers.DriverConfig{
 		Endpoint: endpoint,
 		Extra: map[string]string{
-			"securityMode":   os.Getenv("X_HMI_OPCUA_MODE"),   // default SignAndEncrypt
-			"securityPolicy": os.Getenv("X_HMI_OPCUA_POLICY"), // default Basic256Sha256
+			"securityMode":   os.Getenv("SPETHS_OPCUA_MODE"),   // default SignAndEncrypt
+			"securityPolicy": os.Getenv("SPETHS_OPCUA_POLICY"), // default Basic256Sha256
 		},
 	}, ch); err != nil {
 		t.Fatalf("Connect: %v", err)

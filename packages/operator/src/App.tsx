@@ -21,12 +21,12 @@ const AUTHED_KEY = "speths-screens-authed";
 type Mode = "light" | "dark";
 /** The browser's own light or dark choice; anything else saved (an old theme id) means none. */
 const storedMode = (): Mode | null => {
-  const v = readMigrated(THEME_KEY, "xhmi-theme");
+  const v = readStored(THEME_KEY);
   return v === "light" || v === "dark" ? v : null;
 };
 
 import type { Project, Recipe } from "@speths-screens/shared-types";
-import { readMigrated } from "./storageKeys";
+import { readStored } from "./storage";
 import { PageNav, navMode, useWindowWidth, type NavMode } from "./Nav";
 import { TopBar } from "./TopBar";
 import { SettingsScreen } from "./SettingsScreen";
@@ -125,7 +125,7 @@ export function App() {
 
   // Scale-to-fit: a page with a dynamic resolution is scaled to the window's width when on
   // (a fixed resolution always fits the window); the room is the canvas area without its padding.
-  const [scaleToFit, setScaleToFit] = useState(() => readMigrated(SCALE_KEY, "xhmi-scale") === "1");
+  const [scaleToFit, setScaleToFit] = useState(() => readStored(SCALE_KEY) === "1");
   const [canvasRef, viewport] = useElementSize();
   const toggleScale = () => setScaleToFit((s) => { localStorage.setItem(SCALE_KEY, s ? "0" : "1"); return !s; });
 
