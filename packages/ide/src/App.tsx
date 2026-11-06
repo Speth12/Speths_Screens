@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Canvas } from "./panels/Canvas";
-import { DemoModal } from "./panels/Demo";
 import { GalleryPanel } from "./panels/GalleryPanel";
 import { ThemePanel } from "./panels/ThemePanel";
 import { LanguagesPanel } from "./panels/LanguagesPanel";
@@ -90,7 +89,6 @@ function useDrag(
 
 export function App() {
   const [showHelp, setShowHelp]     = useState(false);
-  const [showDemo, setShowDemo]     = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
   const [showLanguages, setShowLanguages] = useState(false);
@@ -131,7 +129,6 @@ export function App() {
       {/* ── Top bar ───────────────────────────────────────────────────── */}
       <Header
         onHelp={() => setShowHelp((v) => !v)}
-        onDemo={() => setShowDemo(true)}
         onGallery={() => setShowGallery((v) => !v)}
         onTheme={() => setShowTheme((v) => !v)}
         onLanguages={() => setShowLanguages((v) => !v)}
@@ -208,7 +205,6 @@ export function App() {
 
       <StatusBar />
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
-      {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
       {showGallery && <GalleryPanel onClose={() => setShowGallery(false)} />}
       {showTheme && <ThemePanel onClose={() => setShowTheme(false)} />}
       {showLanguages && <LanguagesPanel onClose={() => setShowLanguages(false)} />}

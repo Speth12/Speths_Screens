@@ -6,12 +6,10 @@ import "./index.css";
 import "./store/alarmEngine";
 import { bootAuditTrail } from "./store/auditTrail";
 import { bootExpressionEngine } from "./store/expressionEngine";
-import { bootHistorian } from "./store/historian";
 import { bindSessionVars } from "./store/session";
 
 bootAuditTrail();
 bootExpressionEngine();
-bootHistorian();
 bindSessionVars();
 
 createRoot(document.getElementById("root")!).render(

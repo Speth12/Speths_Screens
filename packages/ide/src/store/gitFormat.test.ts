@@ -45,7 +45,7 @@ it("keeps the whole project through the downloaded file", () => {
     historian: { retentionDays: 30 },
     namespace: [{ path: "Line1", type: "folder" }],
     presets: [{ id: "ps", name: "Pump", widgets: [] }],
-    alarmRules: [], recipes: [], assets: [], udts: [], faceplates: [],
+    alarmRules: [], recipes: [], assets: [], faceplates: [],
   } as unknown as Project;
   const downloaded = JSON.parse(JSON.stringify({ _gitFormat: true, _files: packGitFiles(exportGitFormat(full)) })) as { _files: Record<string, unknown> };
   expect(downloaded._files["scripts/count.js"]).toBe("state.n = (state.n ?? 0) + 1;\n");

@@ -7,7 +7,7 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { placeFor } from "@speths-screens/widgets";
 import { readStored } from "./storage";
@@ -17,9 +17,8 @@ export type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam, FaceplateWidget,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe, RecipeEntry,
-  UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  Widget, WidgetBindings, WidgetEvents, WidgetType,
 };
-export type UDT = Udt;
 
 const MAX_HISTORY = 50;
 
@@ -91,9 +90,6 @@ type State = {
   deleteImage: (id: string) => void;
   renameImage: (id: string, name: string) => void;
 
-  addUDT: (udt: UDT) => void;
-  updateUDT: (id: string, patch: Partial<UDT>) => void;
-  removeUDT: (id: string) => void;
 
   addAsset: (node: AssetNode) => void;
   updateAsset: (id: string, patch: Partial<AssetNode>) => void;
@@ -578,19 +574,6 @@ export const useProject = create<State>((set, get) => {
           images: (s.project.images ?? []).map((img) => img.id === id ? { ...img, name } : img),
         },
       }));
-    },
-
-    addUDT: (udt) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: [...(s.project.udts ?? []), udt] } }));
-    },
-    updateUDT: (id, patch) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: (s.project.udts ?? []).map((u) => u.id === id ? { ...u, ...patch } : u) } }));
-    },
-    removeUDT: (id) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: (s.project.udts ?? []).filter((u) => u.id !== id) } }));
     },
 
     addAsset: (node) => {

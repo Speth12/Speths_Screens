@@ -1,5 +1,5 @@
 import type { Project, Page, Datasource, AlarmRule, Recipe } from "./projectStore";
-import type { UDT, AssetNode, Faceplate } from "./projectStore";
+import type { AssetNode, Faceplate } from "./projectStore";
 import type { RuntimeScript } from "@speths-screens/shared-types";
 
 /** A runtime script in scripts.json; its source is in its own .js file. */
@@ -22,9 +22,8 @@ export function exportGitFormat(project: Project): GitFiles {
   const {
     datasources: _ds, pages: _pages, alarmRules: _alarms, recipes: _recipes, scripts: _scripts,
     namespace, presets, images: _images, ...meta
-  } = project as Project & { assets?: unknown; udts?: unknown; faceplates?: unknown };
+  } = project as Project & { assets?: unknown; faceplates?: unknown };
   delete (meta as Record<string, unknown>).assets;
-  delete (meta as Record<string, unknown>).udts;
   delete (meta as Record<string, unknown>).faceplates;
 
   const files: GitFiles = {};
@@ -34,7 +33,6 @@ export function exportGitFormat(project: Project): GitFiles {
   files["alarms.json"] = sortedJson(project.alarmRules ?? []);
   files["recipes.json"] = sortedJson(project.recipes ?? []);
   files["assets.json"] = sortedJson((project as Project & { assets?: AssetNode[] }).assets ?? []);
-  files["udts.json"] = sortedJson((project as Project & { udts?: UDT[] }).udts ?? []);
   files["faceplates.json"] = sortedJson((project as Project & { faceplates?: Faceplate[] }).faceplates ?? []);
   if (namespace?.length) files["namespace.json"] = sortedJson(namespace);
   if (presets?.length) files["presets.json"] = sortedJson(presets);
@@ -75,7 +73,6 @@ export function importGitFormat(files: GitFiles): Project {
   const alarmRules: AlarmRule[] = files["alarms.json"] ? JSON.parse(files["alarms.json"]) as AlarmRule[] : [];
   const recipes: Recipe[] = files["recipes.json"] ? JSON.parse(files["recipes.json"]) as Recipe[] : [];
   const assets: AssetNode[] = files["assets.json"] ? JSON.parse(files["assets.json"]) as AssetNode[] : [];
-  const udts: UDT[] = files["udts.json"] ? JSON.parse(files["udts.json"]) as UDT[] : [];
   const faceplates: Faceplate[] = files["faceplates.json"] ? JSON.parse(files["faceplates.json"]) as Faceplate[] : [];
 
   const scripts: RuntimeScript[] = files["scripts.json"]
@@ -97,12 +94,11 @@ export function importGitFormat(files: GitFiles): Project {
     alarmRules,
     recipes,
     assets,
-    udts,
     faceplates,
     ...(scripts.length ? { scripts } : {}),
     ...(namespace ? { namespace } : {}),
     ...(presets ? { presets } : {}),
-  } as Project & { assets: AssetNode[]; udts: UDT[]; faceplates: Faceplate[] };
+  } as Project & { assets: AssetNode[]; faceplates: Faceplate[] };
 }
 
 /** The files as the one downloaded file holds them: JSON files as JSON,

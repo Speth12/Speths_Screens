@@ -6,7 +6,6 @@ import { newWidgetId } from "../store/projectStore";
 
 // Module-level clipboard — survives page switches and effect re-runs.
 let _clipboard: Widget | Widget[] | null = null;
-export const getClipboard = () => _clipboard;
 export const setClipboard = (w: Widget | Widget[] | null) => { _clipboard = w; };
 
 export function useKeyboardShortcuts() {
