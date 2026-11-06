@@ -38,3 +38,6 @@ packages/ide/vite.config.js
 
 # soak test output (scripts/soak/run-soak.ps1)
 soak-runs/
+
+# A panel probe holds the panel's network and hardware addresses: never commit it
+scripts/panel/panel-probe*.txt
