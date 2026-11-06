@@ -47,7 +47,7 @@ COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=go-builder /speths-screens /speths-screens
 
-# /project  → mount your .xhmi.json project files here (read-write for IDE save)
+# /project  → mount your .screens.json project files here (read-write for IDE save)
 # /data     → SQLite historian database lives here
 VOLUME ["/project", "/data"]
 

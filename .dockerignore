@@ -14,7 +14,7 @@ cmd/speths-screens/ui
 
 # Data files that should come from volume mounts, not the image
 *.db
-*.xhmi.json
+*.screens.json
 project/
 
 # Git / editor

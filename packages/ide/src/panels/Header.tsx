@@ -256,7 +256,7 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.xhmi.json`;
+    a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.screens.json`;
     a.click();
     URL.revokeObjectURL(url);
     setMsg("saved");
@@ -355,7 +355,7 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↓ Save</button>
       <button onClick={() => fileInputRef.current?.click()} title="Load from file"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↑ Load</button>
-      <input ref={fileInputRef} type="file" accept=".json,.xhmi.json" className="hidden" onChange={loadFromFile} />
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={loadFromFile} />
       <button onClick={pullFromRuntime} disabled={busy !== "none"}
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 shrink-0">
         {busy === "pull" ? "…" : "Pull"}

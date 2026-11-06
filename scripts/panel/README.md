@@ -18,7 +18,7 @@ npm run build --workspace=packages/operator
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "-s -w" -o speths-screens ./cmd/speths-screens
 ```
 
-Put `speths-screens`, a project (for example `samples/design-directions.xhmi.json`) and the three scripts in one
+Put `speths-screens`, a project (for example `samples/design-directions.screens.json`) and the three scripts in one
 folder on the panel (`/home/admin/panel-test` was used), then run `install-service.sh`. Point the panel's
 Web application URL at `http://localhost:8090/?perf` to show the screen and the perf readout.
 

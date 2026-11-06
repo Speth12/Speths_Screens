@@ -3,7 +3,7 @@
 #
 #   cd /home/admin/panel-test
 #   sh install-service.sh                       # the design directions sample
-#   sh install-service.sh loadtest.xhmi.json    # or another project in this folder
+#   sh install-service.sh loadtest.screens.json    # or another project in this folder
 #
 # It adds ONE file, ~/.config/systemd/user/speths-screens.service, and starts it as a systemd *user*
 # service (the panel already runs a user session for admin at boot). It touches nothing outside your
@@ -11,7 +11,7 @@
 # To undo it: sh uninstall-service.sh
 set -e
 DIR=$(cd "$(dirname "$0")" && pwd)
-PROJECT="${1:-design-directions.xhmi.json}"
+PROJECT="${1:-design-directions.screens.json}"
 [ -f "$DIR/$PROJECT" ] || { echo "no such project file in $DIR: $PROJECT"; exit 1; }
 chmod +x "$DIR/speths-screens"
 mkdir -p "$HOME/.config/systemd/user"

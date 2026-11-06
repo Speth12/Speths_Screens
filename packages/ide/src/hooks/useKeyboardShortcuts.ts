@@ -51,7 +51,7 @@ export function useKeyboardShortcuts() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.xhmi.json`;
+        a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.screens.json`;
         a.click();
         URL.revokeObjectURL(url);
         return;

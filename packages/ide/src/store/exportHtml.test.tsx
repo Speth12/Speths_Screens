@@ -15,7 +15,7 @@ const html = (p: Project, tag: (path: string) => TagState | undefined = none, cs
 
 describe("generateStandaloneHtml", () => {
   it("draws the whole demo project with the widget library, with no scripts", async () => {
-    const demo = JSON.parse(readFileSync(resolve(__dirname, "../../../../demo.xhmi.json"), "utf8")) as Project;
+    const demo = JSON.parse(readFileSync(resolve(__dirname, "../../../../demo.screens.json"), "utf8")) as Project;
     const out = await html(demo);
     expect(out).not.toMatch(/<script/i);
     expect(out).not.toMatch(/\son[a-z]+=/i); // no inline handlers either
