@@ -4,18 +4,19 @@ import { openProject } from "./openProject";
 
 // Project types are generated from schema.json (npm run gen:types).
 import type {
-  Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
-  Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
-  FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
+  Action, ActionType, AlarmRule, AlarmSeverity, CanvasResolution, CanvasSnap,
+  Datasource, DatasourceType, Drive, CustomWidget, CustomWidgetParam,
+  CustomWidgetPart, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
   RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { placeFor } from "@speths-screens/widgets";
 import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
+import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
 
 export type {
-  Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
-  Datasource, DatasourceType, Drive, Faceplate, FaceplateParam, FaceplateWidget,
+  Action, ActionType, AlarmRule, AlarmSeverity, CanvasResolution, CanvasSnap,
+  Datasource, DatasourceType, Drive, CustomWidget, CustomWidgetParam, CustomWidgetPart,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe, RecipeEntry,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 };
@@ -91,13 +92,10 @@ type State = {
   renameImage: (id: string, name: string) => void;
 
 
-  addAsset: (node: AssetNode) => void;
-  updateAsset: (id: string, patch: Partial<AssetNode>) => void;
-  removeAsset: (id: string) => void;
 
-  addFaceplate: (fp: Faceplate) => void;
-  updateFaceplate: (id: string, patch: Partial<Faceplate>) => void;
-  removeFaceplate: (id: string) => void;
+  addCustomWidget: (fp: CustomWidget) => void;
+  updateCustomWidget: (id: string, patch: Partial<CustomWidget>) => void;
+  removeCustomWidget: (id: string) => void;
   addPreset: (p: Preset) => void;
   updatePreset: (id: string, patch: Partial<Preset>) => void;
   removePreset: (id: string) => void;
@@ -106,7 +104,10 @@ type State = {
   removeNamespaceNode: (path: string) => void;
 
   loadProject: (p: Project) => void;
-  newProject: () => void;
+  /** A blank project. With chrome "custom" it starts with the default header and navigation as custom widgets. */
+  newProject: (opts?: { chrome?: "builtin" | "custom" }) => void;
+  /** Adds the default header and navigation that the project lacks and switches to custom chrome. */
+  addDefaultChrome: () => void;
   exportJSON: () => string;
 };
 
@@ -120,7 +121,7 @@ function forDevice(w: Widget, patch: Partial<Widget>): Partial<Widget> {
 }
 
 const blankProject = (): Project => ({
-  schemaVersion: 5,
+  schemaVersion: 6,
   version: "0.1.0",
   datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [] }],
@@ -576,30 +577,17 @@ export const useProject = create<State>((set, get) => {
       }));
     },
 
-    addAsset: (node) => {
+    addCustomWidget: (fp) => {
       pushHistory();
-      set((s) => ({ project: { ...s.project, assets: [...(s.project.assets ?? []), node] } }));
+      set((s) => ({ project: { ...s.project, customWidgets: [...(s.project.customWidgets ?? []), fp] } }));
     },
-    updateAsset: (id, patch) => {
+    updateCustomWidget: (id, patch) => {
       pushHistory();
-      set((s) => ({ project: { ...s.project, assets: (s.project.assets ?? []).map((a) => a.id === id ? { ...a, ...patch } : a) } }));
+      set((s) => ({ project: { ...s.project, customWidgets: (s.project.customWidgets ?? []).map((f) => f.id === id ? { ...f, ...patch } : f) } }));
     },
-    removeAsset: (id) => {
+    removeCustomWidget: (id) => {
       pushHistory();
-      set((s) => ({ project: { ...s.project, assets: (s.project.assets ?? []).filter((a) => a.id !== id) } }));
-    },
-
-    addFaceplate: (fp) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, faceplates: [...(s.project.faceplates ?? []), fp] } }));
-    },
-    updateFaceplate: (id, patch) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, faceplates: (s.project.faceplates ?? []).map((f) => f.id === id ? { ...f, ...patch } : f) } }));
-    },
-    removeFaceplate: (id) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, faceplates: (s.project.faceplates ?? []).filter((f) => f.id !== id) } }));
+      set((s) => ({ project: { ...s.project, customWidgets: (s.project.customWidgets ?? []).filter((f) => f.id !== id) } }));
     },
 
     addPreset: (p) => {
@@ -650,9 +638,24 @@ export const useProject = create<State>((set, get) => {
         canRedo: false,
       }),
 
-    newProject: () =>
+    addDefaultChrome: () => {
+      pushHistory();
+      set((s) => {
+        const have = { customWidgets: s.project.customWidgets, frame: s.project.shell?.frame };
+        const add = missingDefaults(have);
+        return { project: {
+          ...s.project,
+          customWidgets: [...(s.project.customWidgets ?? []), ...add.customWidgets],
+          shell: { ...s.project.shell, chrome: "custom", frame: [...(s.project.shell?.frame ?? []), ...add.frame] },
+        } };
+      });
+    },
+
+    newProject: (opts) =>
       set({
-        project: blankProject(),
+        project: opts?.chrome === "custom"
+          ? { ...blankProject(), customWidgets: defaultCustomWidgets(), shell: { chrome: "custom", frame: defaultFrame() } }
+          : blankProject(),
         activePageId: "p1",
         selectedWidgetId: null,
         _past: [],

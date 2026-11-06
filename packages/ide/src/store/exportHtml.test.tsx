@@ -8,7 +8,7 @@ import type { Project, Widget } from "./projectStore";
 const at = new Date("2026-10-24T12:00:00Z");
 const none = () => undefined;
 const page = (widgets: Widget[], more: Partial<Project> = {}): Project => ({
-  schemaVersion: 5, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets }], ...more,
+  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets }], ...more,
 });
 const html = (p: Project, tag: (path: string) => TagState | undefined = none, css = "") =>
   generateStandaloneHtml(p, { tag, css, exportedAt: at });
@@ -68,17 +68,17 @@ describe("placement", () => {
 describe("snapshotHost", () => {
   const project = page([], {
     images: [{ id: "img1", name: "logo", dataUrl: "data:image/png;base64,AA", mimeType: "image/png", width: 1, height: 1, size: 1 }],
-    faceplates: [{ id: "fp", name: "Pump", params: [], widgets: [] }],
+    customWidgets: [{ id: "fp", name: "Pump", params: [], widgets: [] }],
   });
   const host = snapshotHost(project, (p) => (p === "plc:a" ? { value: 1, quality: "Good", ts: 1 } : undefined));
 
-  it("serves snapshot values, images and faceplates", () => {
+  it("serves snapshot values, images and custom widgets", () => {
     expect(host.useTag("plc:a").value).toBe(1);
     expect(host.useTag("plc:missing").quality).toBe("Unknown");
     expect(host.useTag(undefined).quality).toBe("Unknown");
     expect(host.useTags(["plc:a", "plc:b"])).toMatchObject({ "plc:a": { value: 1 }, "plc:b": { quality: "Unknown" } });
     expect(host.useImage("img1")).toBe("data:image/png;base64,AA");
-    expect(host.useFaceplate("fp")?.name).toBe("Pump");
+    expect(host.useCustomWidget("fp")?.name).toBe("Pump");
   });
 
   it("writes and navigates nowhere", () => {

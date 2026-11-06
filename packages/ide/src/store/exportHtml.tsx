@@ -23,7 +23,7 @@ export type Snapshot = {
   exportedAt: Date;
 };
 
-/** A host that serves the snapshot's values and the project's images and faceplates; it writes nothing. */
+/** A host that serves the snapshot's values and the project's images and custom widgets; it writes nothing. */
 export function snapshotHost(project: Project, tag: Snapshot["tag"]): WidgetHost {
   const get = (p: string | undefined) => (p ? tag(p) ?? EMPTY_TAG : EMPTY_TAG);
   return {
@@ -31,7 +31,7 @@ export function snapshotHost(project: Project, tag: Snapshot["tag"]): WidgetHost
     useTag: get,
     useTags: (paths) => Object.fromEntries(paths.map((p) => [p, get(p)])),
     useImage: (id) => project.images?.find((i) => i.id === id)?.dataUrl,
-    useFaceplate: (id) => (id ? project.faceplates?.find((f) => f.id === id) : undefined),
+    useCustomWidget: (id) => (id ? project.customWidgets?.find((f) => f.id === id) : undefined),
   };
 }
 

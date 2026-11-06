@@ -73,7 +73,7 @@ describe("convertWidget", () => {
 });
 
 describe("built-in presets", () => {
-  const base: Project = { schemaVersion: 5, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }] };
+  const base: Project = { schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }] };
 
   it("all follow schema.json", () => {
     expect(validateProject({ ...base, presets: BUILTIN_PRESETS })).toEqual([]);

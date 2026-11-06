@@ -4,7 +4,8 @@ import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
 import { GALLERY_DRAG, insertGalleryWidget } from "./GalleryPanel";
-import { DEVICE_WIDTH, SYMBOLS, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { DEVICE_WIDTH, SYMBOLS, effectiveFrame, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { ScreenFrame } from "./ScreenFrame";
 import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
@@ -621,6 +622,7 @@ export function Canvas() {
           />
         )}
 
+        <ScreenFrame frame={effectiveFrame(project)} device={device} theme={screenTheme}>
         <div
           ref={gridRef}
           className={isPixelMode ? "relative" : "grid relative"}
@@ -818,6 +820,8 @@ export function Canvas() {
             </div>
           )}
         </div>
+
+        </ScreenFrame>
 
         {ctxMenu && (
           <ContextMenu

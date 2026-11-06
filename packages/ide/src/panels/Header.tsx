@@ -1,3 +1,5 @@
+import { NewProjectDialog } from "./NewProjectDialog";
+import { setIdeMode, storedIdeMode, type IdeMode } from "../store/ideTheme";
 import { DataSwitch, DeviceSwitch } from "./DeviceSwitch";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useProject } from "../store/projectStore";
@@ -205,7 +207,7 @@ type HeaderProps = {
 };
 
 export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onToggleJSON, onPreview }: HeaderProps) {
-  const { exportJSON, loadProject } = useProject();
+  const { exportJSON, loadProject, newProject } = useProject();
   const { canUndo, canRedo, undo, redo } = useProject(
     useShallow((s) => ({ canUndo: s.canUndo, canRedo: s.canRedo, undo: s.undo, redo: s.redo }))
   );
@@ -217,6 +219,8 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
   const [msg, setMsg]               = useState("");
   const [showManage, setShowManage] = useState(false);
   const [showLogin, setShowLogin]   = useState(false);
+  const [showNew, setShowNew]       = useState(false);
+  const [ideMode, setIdeModeState]  = useState<IdeMode>(storedIdeMode);
   const fileInputRef                = useRef<HTMLInputElement>(null);
 
   // Keep apiBase + WebSocket in sync whenever the active target changes.
@@ -304,6 +308,25 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
 
       <div className="w-px h-4 bg-zinc-700 mx-1 shrink-0" />
 
+      {/* The project's file actions: New, Save, Load, Pull, Deploy */}
+      <button onClick={() => setShowNew(true)} title="New project"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">New</button>
+      <button onClick={saveToFile} title="Save to file"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↓ Save</button>
+      <button onClick={() => fileInputRef.current?.click()} title="Load from file"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↑ Load</button>
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={loadFromFile} />
+      <button onClick={pullFromRuntime} disabled={busy !== "none"} title="Pull the project from the runtime"
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 shrink-0">
+        {busy === "pull" ? "…" : "Pull"}
+      </button>
+      <button onClick={doDeploy} disabled={busy !== "none"} title="Deploy the project to the target"
+        className="text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 font-medium shrink-0">
+        {busy === "deploy" ? "deploying…" : "Deploy"}
+      </button>
+
+      <div className="w-px h-4 bg-zinc-700 mx-1 shrink-0" />
+
       {/* Undo / Redo */}
       <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)"
         className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 font-mono">↩</button>
@@ -349,21 +372,6 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         }`}
       >{"{ }"}</button>
 
-      {/* Save / Load / Pull / Deploy */}
-      <button onClick={saveToFile} title="Save to file"
-        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↓ Save</button>
-      <button onClick={() => fileInputRef.current?.click()} title="Load from file"
-        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↑ Load</button>
-      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={loadFromFile} />
-      <button onClick={pullFromRuntime} disabled={busy !== "none"}
-        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 shrink-0">
-        {busy === "pull" ? "…" : "Pull"}
-      </button>
-      <button onClick={doDeploy} disabled={busy !== "none"}
-        className="text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 font-medium shrink-0">
-        {busy === "deploy" ? "deploying…" : "Deploy"}
-      </button>
-
       {/* What the editor shows: screen size and where the values come from */}
       <DeviceSwitch />
       <DataSwitch />
@@ -374,10 +382,17 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       <button onClick={onGallery} title="Every widget type in every state, under the theme"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Gallery</button>
 
+      {/* The editor's own light or dark look (the screens keep the project's theme) */}
+      <button onClick={() => { const next = ideMode === "dark" ? "light" : "dark"; setIdeMode(next); setIdeModeState(next); }}
+        title={ideMode === "dark" ? "Switch the editor to the light look" : "Switch the editor to the dark look"}
+        aria-label={ideMode === "dark" ? "Light look" : "Dark look"}
+        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 shrink-0">{ideMode === "dark" ? "☀" : "☾"}</button>
+
       {/* Help */}
       <button onClick={onHelp} title="Keyboard shortcuts (?)"
         className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-mono shrink-0">?</button>
 
+      {showNew && <NewProjectDialog onCancel={() => setShowNew(false)} onCreate={(chrome) => { newProject({ chrome }); setShowNew(false); }} />}
       {showManage && <ManageTargetsModal onClose={() => setShowManage(false)} />}
       {showLogin && (
         <RuntimeLoginModal

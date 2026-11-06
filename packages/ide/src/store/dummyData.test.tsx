@@ -60,7 +60,7 @@ describe("the IDE host with demo values", () => {
   it("a write with demo values never reaches the runtime", () => {
     const fetchMock = vi.fn(() => Promise.resolve(new Response("{}")));
     vi.stubGlobal("fetch", fetchMock);
-    useProject.getState().loadProject({ schemaVersion: 5, version: "1", datasources: [], pages: [] });
+    useProject.getState().loadProject({ schemaVersion: 6, version: "1", datasources: [], pages: [] });
     useEditorView.setState({ data: "dummy" });
     ideHost.write({ binding: "plc:Pump", value: 1 });
     expect(fetchMock).not.toHaveBeenCalled();

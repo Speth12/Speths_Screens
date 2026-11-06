@@ -1,5 +1,5 @@
 import type { Project, Page, Datasource, AlarmRule, Recipe } from "./projectStore";
-import type { AssetNode, Faceplate } from "./projectStore";
+import type { CustomWidget } from "./projectStore";
 import type { RuntimeScript } from "@speths-screens/shared-types";
 
 /** A runtime script in scripts.json; its source is in its own .js file. */
@@ -22,9 +22,8 @@ export function exportGitFormat(project: Project): GitFiles {
   const {
     datasources: _ds, pages: _pages, alarmRules: _alarms, recipes: _recipes, scripts: _scripts,
     namespace, presets, images: _images, ...meta
-  } = project as Project & { assets?: unknown; faceplates?: unknown };
-  delete (meta as Record<string, unknown>).assets;
-  delete (meta as Record<string, unknown>).faceplates;
+  } = project as Project & { customWidgets?: unknown };
+  delete (meta as Record<string, unknown>).customWidgets;
 
   const files: GitFiles = {};
 
@@ -32,8 +31,7 @@ export function exportGitFormat(project: Project): GitFiles {
   files["datasources.json"] = sortedJson(project.datasources ?? []);
   files["alarms.json"] = sortedJson(project.alarmRules ?? []);
   files["recipes.json"] = sortedJson(project.recipes ?? []);
-  files["assets.json"] = sortedJson((project as Project & { assets?: AssetNode[] }).assets ?? []);
-  files["faceplates.json"] = sortedJson((project as Project & { faceplates?: Faceplate[] }).faceplates ?? []);
+  files["customWidgets.json"] = sortedJson((project as Project & { customWidgets?: CustomWidget[] }).customWidgets ?? []);
   if (namespace?.length) files["namespace.json"] = sortedJson(namespace);
   if (presets?.length) files["presets.json"] = sortedJson(presets);
 
@@ -72,8 +70,7 @@ export function importGitFormat(files: GitFiles): Project {
   const datasources: Datasource[] = files["datasources.json"] ? JSON.parse(files["datasources.json"]) as Datasource[] : [];
   const alarmRules: AlarmRule[] = files["alarms.json"] ? JSON.parse(files["alarms.json"]) as AlarmRule[] : [];
   const recipes: Recipe[] = files["recipes.json"] ? JSON.parse(files["recipes.json"]) as Recipe[] : [];
-  const assets: AssetNode[] = files["assets.json"] ? JSON.parse(files["assets.json"]) as AssetNode[] : [];
-  const faceplates: Faceplate[] = files["faceplates.json"] ? JSON.parse(files["faceplates.json"]) as Faceplate[] : [];
+  const customWidgets: CustomWidget[] = files["customWidgets.json"] ? JSON.parse(files["customWidgets.json"]) as CustomWidget[] : [];
 
   const scripts: RuntimeScript[] = files["scripts.json"]
     ? (JSON.parse(files["scripts.json"]) as ScriptEntry[]).map(({ file, ...rest }) => ({ ...rest, source: files[file] ?? "" }))
@@ -93,12 +90,11 @@ export function importGitFormat(files: GitFiles): Project {
     pages: pages.length ? pages : [{ id: "p1", name: "Main", widgets: [] }],
     alarmRules,
     recipes,
-    assets,
-    faceplates,
+    customWidgets,
     ...(scripts.length ? { scripts } : {}),
     ...(namespace ? { namespace } : {}),
     ...(presets ? { presets } : {}),
-  } as Project & { assets: AssetNode[]; faceplates: Faceplate[] };
+  } as Project & { customWidgets: CustomWidget[] };
 }
 
 /** The files as the one downloaded file holds them: JSON files as JSON,

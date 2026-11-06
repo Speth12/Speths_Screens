@@ -62,7 +62,7 @@ describe("DrivesEditor", () => {
 describe("live preview", () => {
   // Tags of a virtual datasource ("sim:") come from virtualTagStore.
   const project = (): Project => ({
-    schemaVersion: 5, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
+    schemaVersion: 6, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
     datasources: [{ id: "sim", type: "virtual", label: "Sim", config: { tags: [] } }],
   });
   beforeEach(() => useProject.getState().loadProject(project()));

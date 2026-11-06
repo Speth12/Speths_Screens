@@ -100,7 +100,7 @@ function widgetAware(project: unknown, errors: ErrorObject[]): ErrorObject[] {
   return out;
 }
 
-const OWNERS: Record<string, string> = { pages: "page", faceplates: "faceplate", presets: "preset" };
+const OWNERS: Record<string, string> = { pages: "page", customWidgets: "custom widget", presets: "preset" };
 
 function widgetAt(project: unknown, loc: string[]): Obj | undefined {
   if (loc.length < 4 || loc[2] !== "widgets" || !OWNERS[loc[0]!]) return undefined;
@@ -120,7 +120,7 @@ function describe(project: unknown, e: ErrorObject): string {
   const w = widgetAt(project, loc);
   if (w) {
     const owner = item((project as Obj)[loc[0]!], loc[1]!);
-    const isFp = loc[0] === "faceplates";
+    const isFp = loc[0] === "customWidgets";
     where = `${OWNERS[loc[0]!]} ${JSON.stringify(owner?.name ?? "")}, widget ${String(isFp ? w.localId : w.id)} (${String(w.type)})`;
     rest = loc.slice(4);
   } else if (loc.length) {
