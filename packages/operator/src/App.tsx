@@ -30,6 +30,7 @@ import { readMigrated } from "./storageKeys";
 import { PageNav, navMode, useWindowWidth, type NavMode } from "./Nav";
 import { TopBar } from "./TopBar";
 import { SettingsScreen } from "./SettingsScreen";
+import { PerfReadout, perfEnabled } from "./PerfReadout";
 
 
 
@@ -164,6 +165,7 @@ export function App() {
 
   // Kiosk mode: ?kiosk or ?kiosk=1 hides nav bar and page switcher.
   const isKiosk = new URLSearchParams(location.search).has("kiosk");
+  const showPerf = perfEnabled(location.search);
 
   // Login: with security.mode "login" the runtime answers 401 without a
   // token (403 for a token that only allows a password change).
@@ -341,6 +343,7 @@ export function App() {
           Security off
         </div>
       )}
+      {showPerf && <PerfReadout />}
       {writeNotice && (
         <div role="alert"
              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[90vw] rounded-md bg-red-900/90 text-red-100 text-sm px-4 py-2 shadow-lg">
