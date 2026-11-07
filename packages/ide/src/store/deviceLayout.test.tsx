@@ -8,7 +8,7 @@ import { DeviceSwitch } from "../panels/DeviceSwitch";
 afterEach(cleanup);
 
 const project = (): Project => ({
-  schemaVersion: 5, version: "1", datasources: [],
+  schemaVersion: 6, version: "1", datasources: [],
   pages: [{ id: "p1", name: "Main", widgets: [
     { id: "a", type: "led", x: 4, y: 2, w: 6, h: 3 } as never,
     { id: "b", type: "led", x: 0, y: 0, w: 2, h: 2 } as never,

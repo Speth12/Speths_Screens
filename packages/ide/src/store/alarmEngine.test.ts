@@ -6,7 +6,7 @@ import { virtualTagStore } from "./virtualTagStore";
 // Tags of a virtual datasource ("sim:") come from virtualTagStore, so the
 // test can set them directly.
 const project = (alarmRules: AlarmRule[]): Project => ({
-  schemaVersion: 5, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }], alarmRules,
+  schemaVersion: 6, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }], alarmRules,
   datasources: [{ id: "sim", type: "virtual", label: "Sim", config: { tags: [] } }],
 });
 const rule = (expr: string): AlarmRule => ({ id: "r1", name: "Tank high", expr, severity: "critical", message: "" });

@@ -5,7 +5,7 @@ import { SettingsScreen, type SettingsProps } from "./SettingsScreen";
 
 afterEach(cleanup);
 
-const props = (more: Partial<SettingsProps> = {}): SettingsProps => ({ mode: "", onMode: vi.fn(), onLanguage: vi.fn(), onRecipes: vi.fn(), ...more });
+const props = (more: Partial<SettingsProps> = {}): SettingsProps => ({ mode: "", onMode: vi.fn(), onLanguage: vi.fn(), ...more });
 
 describe("SettingsScreen", () => {
   it("light or dark acts", () => {
@@ -35,11 +35,9 @@ describe("SettingsScreen", () => {
     expect(toggle).toHaveBeenCalled();
   });
 
-  it("Recipes opens the recipes; Lock screen only with a PIN", () => {
-    const p = props();
-    render(<SettingsScreen {...p} />);
-    fireEvent.click(screen.getByText("Recipes"));
-    expect(p.onRecipes).toHaveBeenCalled();
+  it("recipes are not here (the recipes widget has them); Lock screen only with a PIN", () => {
+    render(<SettingsScreen {...props()} />);
+    expect(screen.queryByText("Recipes")).toBeNull();
     expect(screen.queryByText("Lock screen")).toBeNull();
     cleanup();
     const onLock = vi.fn();

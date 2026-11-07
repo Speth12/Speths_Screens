@@ -93,4 +93,31 @@
       "script \"w\": writes: mem:Count is listed twice",
       "script \"w\": writes: * names no datasource"
     ] }
+  ,{ "name": "custom widgets that do not exist or contain themselves",
+    "project": {
+      "datasources": [],
+      "pages": [{ "id": "p1", "name": "Main", "widgets": [
+        { "id": "w1", "type": "customWidget", "x": 0, "y": 0, "w": 4, "h": 2, "props": { "customWidgetId": "nope" } }
+      ] }],
+      "shell": { "chrome": "custom", "frame": [
+        { "id": "top", "customWidgetId": "a", "edge": "top", "size": 60, "phone": { "size": 52 } },
+        { "id": "top", "customWidgetId": "ghost", "edge": "left", "size": 200, "devices": ["desktop", "tablet"], "tablet": { "edge": "top" } }
+      ] },
+      "customWidgets": [
+        { "id": "a", "name": "A", "params": [], "layout": { "mode": "stack", "direction": "row", "gap": 4, "phone": { "direction": "column" } },
+          "widgets": [{ "localId": "pb", "type": "customWidget", "x": 0, "y": 0, "w": 2, "h": 1, "flex": { "grow": 1 }, "hiddenOn": ["phone"], "props": { "customWidgetId": "b" } }] },
+        { "id": "b", "name": "B", "params": [], "widgets": [{ "localId": "pa", "type": "customWidget", "x": 0, "y": 0, "w": 2, "h": 1, "props": { "customWidgetId": "a" } }] },
+        { "id": "c", "name": "C", "params": [], "widgets": [{ "localId": "me", "type": "customWidget", "x": 0, "y": 0, "w": 2, "h": 1, "props": { "customWidgetId": "c" } }] },
+        { "id": "d", "name": "D", "params": [], "widgets": [{ "localId": "x", "type": "customWidget", "x": 0, "y": 0, "w": 2, "h": 1, "props": { "customWidgetId": "gone" } }] }
+      ]
+    },
+    "want": [
+      "page \"Main\", widget w1 (customWidget): no custom widget with id \"nope\"",
+      "custom widget \"D\", widget x (customWidget): no custom widget with id \"gone\"",
+      "frame slot \"top\" is listed twice",
+      "frame slot \"top\": no custom widget with id \"ghost\"",
+      "custom widget \"A\" contains itself (A > B > A)",
+      "custom widget \"B\" contains itself (B > A > B)",
+      "custom widget \"C\" contains itself (C > C)"
+    ] }
 ]

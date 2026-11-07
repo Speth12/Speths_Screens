@@ -13,7 +13,7 @@ import (
 
 // CurrentSchemaVersion is the project format this build writes. A file
 // without schemaVersion is version 1.
-const CurrentSchemaVersion = 5
+const CurrentSchemaVersion = 6
 
 // Upgrade turns project JSON in any older format into the current one. It
 // returns the JSON unchanged when it is current, and notes describing
@@ -46,7 +46,20 @@ func Upgrade(data []byte) ([]byte, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	u := &upgrader{allowed: allowed}
+	// Until format 6 a custom widget was a "faceplate" with a faceplateId setting; the steps
+	// before v5ToV6 still see that name.
+	old := map[string]bool{}
+	for k := range allowed["customWidget"] {
+		old[k] = true
+	}
+	delete(old, "customWidgetId")
+	old["faceplateId"] = true
+	withOld := make(map[string]map[string]bool, len(allowed)+1) // allowed is shared; leave it alone
+	for k, v := range allowed {
+		withOld[k] = v
+	}
+	withOld["faceplate"] = old
+	u := &upgrader{allowed: withOld}
 	if version < 2 {
 		u.v1ToV2(doc)
 	}
@@ -57,6 +70,9 @@ func Upgrade(data []byte) ([]byte, []string, error) {
 	// changes nothing that exists: only the version moves.
 	if version < 5 {
 		u.v4ToV5(doc)
+	}
+	if version < 6 {
+		u.v5ToV6(doc)
 	}
 	doc["schemaVersion"] = CurrentSchemaVersion
 	var out bytes.Buffer
@@ -77,7 +93,7 @@ func (u *upgrader) note(format string, args ...any) {
 	u.notes = append(u.notes, fmt.Sprintf(format, args...))
 }
 
-// v1ToV2 moves every widget, on pages and in faceplates, to the v2 format.
+// v1ToV2 moves every widget, on pages and in faceplates (custom widgets from format 6), to the v2 format.
 func (u *upgrader) v1ToV2(doc map[string]any) {
 	if _, ok := doc["users"]; ok {
 		// Users moved to the runtime's security.db (Phase 1, defect 9).

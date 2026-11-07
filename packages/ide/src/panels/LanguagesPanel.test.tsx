@@ -7,7 +7,7 @@ import { LanguagesPanel } from "./LanguagesPanel";
 afterEach(cleanup);
 
 const project = (more: Partial<Project> = {}): Project => ({
-  schemaVersion: 5, version: "1", datasources: [],
+  schemaVersion: 6, version: "1", datasources: [],
   pages: [{ id: "p1", name: "Overview", widgets: [{ id: "w1", type: "numericDisplay", x: 0, y: 0, w: 2, h: 2, props: { label: "Pressure" } } as never] }],
   ...more,
 });

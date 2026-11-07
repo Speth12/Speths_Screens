@@ -7,12 +7,12 @@ export interface Project {
     assets?:           AssetNode[];
     canvasResolution?: CanvasResolution;
     canvasSnap?:       CanvasSnap;
+    customWidgets?:    CustomWidget[];
     datasources:       Datasource[];
     /**
      * Symbol pack ids shown in the IDE symbol library. Missing means all packs
      */
     enabledSymbolPacks?: string[];
-    faceplates?:         Faceplate[];
     /**
      * What the historian stores and for how long. Missing means every change, plus one sample
      * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
@@ -137,150 +137,105 @@ export type CanvasResolutionType = "dynamic" | "fixed";
 
 export type CanvasSnap = "grid" | "pixel";
 
-export interface Datasource {
-    config: DatasourceConfig;
-    /**
-     * Unique driver instance ID, e.g. 'opcua', 'mbtcp1'
-     */
-    id:    string;
-    label: string;
-    type:  DatasourceType;
-}
-
-/**
- * Driver-specific connection config. Fields used depend on 'type'.
- */
-export interface DatasourceConfig {
-    /**
-     * REST base path, e.g. /_pxc_api/v1.14
-     */
-    basePath?: string;
-    /**
-     * REST bearer token
-     */
-    bearerToken?: string;
-    /**
-     * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
-     * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
-     */
-    certCheck?: CERTCheck;
-    /**
-     * SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
-     * optional)
-     */
-    certFingerprint?: string;
-    /**
-     * MQTT client ID
-     */
-    clientId?: string;
-    /**
-     * OPC UA: opc.tcp://host:port
-     */
-    endpoint?: string;
-    /**
-     * Modbus/MQTT/REST host
-     */
-    host?: string;
-    /**
-     * Memory datasource: the typed tags it holds
-     */
-    memoryTags?: MemoryTag[];
-    password?:   string;
-    /**
-     * TCP port
-     */
-    port?:           number;
-    securityMode?:   SecurityMode;
-    securityPolicy?: SecurityPolicy;
-    /**
-     * Modbus slave/unit ID
-     */
-    slaveId?: number;
-    /**
-     * Virtual driver: the calculated tags
-     */
-    tags?:     CalculatedTag[];
-    username?: string;
-}
-
-/**
- * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
- * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
- *
- * off: accept any certificate; pinned: only the one with certFingerprint; trusted:
- * certificates the system trusts
- */
-export type CERTCheck = "off" | "pinned" | "trusted";
-
-/**
- * A typed value the runtime holds; other expressions read it as {datasource:path}
- */
-export interface MemoryTag {
-    /**
-     * The value before anything is written (and after a restart, unless retained); missing
-     * means false, 0 or empty text
-     */
-    initial?: boolean | number | string;
-    /**
-     * The tag's name in this datasource
-     */
-    path: string;
-    /**
-     * Keep the last value across a runtime restart
-     */
-    retain?: boolean;
-    type:    Type;
-}
-
-export type Type = "bool" | "int" | "real" | "string";
-
-export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
-
-export type SecurityPolicy = "None" | "Basic128Rsa15" | "Basic256" | "Basic256Sha256";
-
-/**
- * A tag the virtual driver computes. Other expressions read it as {datasource:path}
- */
-export interface CalculatedTag {
-    /**
-     * Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
-     * input makes the tag Bad
-     */
-    expr: string;
-    /**
-     * The tag's name in this datasource
-     */
-    path: string;
-}
-
-export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual" | "memory";
-
-export interface Faceplate {
+export interface CustomWidget {
     description?: string;
     id:           string;
-    name:         string;
-    params:       FaceplateParam[];
-    widgets:      FaceplateWidget[];
+    /**
+     * How the parts are placed; missing means free (each at its own x, y, w, h)
+     */
+    layout?: CustomWidgetLayout;
+    name:    string;
+    params:  CustomWidgetParam[];
+    widgets: CustomWidgetPart[];
 }
 
-export interface FaceplateParam {
+/**
+ * How the parts are placed; missing means free (each at its own x, y, w, h)
+ *
+ * How a custom widget places its parts. In a stack the parts follow each other in a row or
+ * a column and share the room by their flex settings; tablet and phone replace any field
+ * for that screen size
+ */
+export interface CustomWidgetLayout {
+    /**
+     * Across the direction
+     */
+    align?:     Align;
+    direction?: Direction;
+    /**
+     * Pixels between parts
+     */
+    gap?: number;
+    /**
+     * Along the direction
+     */
+    justify?: Justify;
+    /**
+     * free: each part at its own place; stack: parts follow each other
+     */
+    mode?: Mode;
+    /**
+     * Pixels around the parts
+     */
+    padding?: number;
+    phone?:   CustomWidgetLayoutOverride;
+    tablet?:  CustomWidgetLayoutOverride;
+    /**
+     * Parts that do not fit start a new line
+     */
+    wrap?: boolean;
+}
+
+/**
+ * Across the direction
+ */
+export type Align = "start" | "center" | "end" | "stretch";
+
+export type Direction = "row" | "column";
+
+/**
+ * Along the direction
+ */
+export type Justify = "start" | "center" | "end" | "between";
+
+/**
+ * free: each part at its own place; stack: parts follow each other
+ */
+export type Mode = "free" | "stack";
+
+/**
+ * The stack settings that differ on a smaller screen; a phone inherits from the tablet and
+ * the tablet from the desktop
+ */
+export interface CustomWidgetLayoutOverride {
+    align?:     Align;
+    direction?: Direction;
+    gap?:       number;
+    justify?:   Justify;
+    padding?:   number;
+    wrap?:      boolean;
+}
+
+export interface CustomWidgetParam {
     description?: string;
     /**
-     * Used as {name} in bindings inside the faceplate
+     * Used as {name} in bindings inside the custom widget
      */
     name: string;
 }
 
 /**
- * A widget inside a faceplate. Same as Widget, but identified by localId
+ * A widget inside a custom widget. Same as Widget, but identified by localId, and it may
+ * say how it is laid out in a stack (flex, hiddenOn)
  */
-export interface FaceplateWidget {
+export interface CustomWidgetPart {
     bindings?: WidgetBindings;
     /**
      * Driven properties, by property name; which names a widget type has is listed in TypedProps
      */
     dynamics?: { [key: string]: Drive };
     events?:   WidgetEvents;
+    flex?:     PartFlex;
     /**
      * IDE-only: widgets with the same groupId move together
      */
@@ -288,8 +243,12 @@ export interface FaceplateWidget {
     /**
      * Height in grid units
      */
-    h:       number;
-    localId: string;
+    h: number;
+    /**
+     * Screen sizes this part is left out of
+     */
+    hiddenOn?: HiddenOn[];
+    localId:   string;
     /**
      * IDE-only: widget cannot be moved or resized
      */
@@ -297,7 +256,7 @@ export interface FaceplateWidget {
     /**
      * This widget type's settings (see TypedProps)
      */
-    props?: FaceplateWidgetProps;
+    props?: CustomWidgetPartProps;
     type:   WidgetType;
     /**
      * Width in grid units
@@ -314,8 +273,8 @@ export interface FaceplateWidget {
 }
 
 /**
- * The tags a widget reads, by slot. Values are ds:path or ns:path (faceplate widgets may
- * use {param})
+ * The tags a widget reads, by slot. Values are ds:path or ns:path (widgets inside a custom
+ * widget may use {param})
  */
 export interface WidgetBindings {
     /**
@@ -441,6 +400,34 @@ export interface Action {
 export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUrl";
 
 /**
+ * How a part takes room in a stack; a part with no flex keeps the size it has in the layout
+ * (w and h as grid units)
+ */
+export interface PartFlex {
+    /**
+     * Size along the direction in pixels; 0 or missing fits the content
+     */
+    basis?: number;
+    /**
+     * Share of the free room; 0 keeps the part at its basis
+     */
+    grow?:   number;
+    phone?:  PartFlexOverride;
+    tablet?: PartFlexOverride;
+}
+
+/**
+ * What differs on a smaller screen; a phone inherits from the tablet and the tablet from
+ * the desktop
+ */
+export interface PartFlexOverride {
+    basis?: number;
+    grow?:  number;
+}
+
+export type HiddenOn = "tablet" | "phone";
+
+/**
  * This widget type's settings (see TypedProps)
  *
  * Settings of a gauge widget
@@ -478,11 +465,23 @@ export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUr
  *
  * Settings of a pipe widget: a line through points with an animated flow
  *
- * Settings of a faceplate widget
+ * Settings of a custom widget placement
+ *
+ * Settings of a page list widget: the project's pages as navigation, the open one
+ * highlighted
+ *
+ * Settings of a clock widget: the time in the operator's browser
+ *
+ * Settings of a driver status widget: whether each datasource is connected
+ *
+ * Settings of a user menu widget: who is signed in, and signing in or out
+ *
+ * Settings of a recipes widget: the project's recipes, each with a button that writes its
+ * values
  *
  * Settings of a table widget
  */
-export interface FaceplateWidgetProps {
+export interface CustomWidgetPartProps {
     max?:        number;
     min?:        number;
     thresholds?: Threshold[];
@@ -643,13 +642,50 @@ export interface FaceplateWidgetProps {
      */
     weight?: number;
     /**
-     * Faceplate widget: id of the faceplate to show
+     * Custom widget: id of the custom widget to show
      */
-    faceplateId?: string;
+    customWidgetId?: string;
     /**
-     * Faceplate widget: parameter name → binding
+     * Custom widget: parameter name → binding
      */
     params?: { [key: string]: string };
+    /**
+     * list: show each page group's heading (default true)
+     */
+    showGroups?: boolean;
+    /**
+     * list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+     * buttons in a row; bar: icon over name, sharing the width
+     */
+    style?: Style;
+    /**
+     * What to show; missing means timeSeconds
+     */
+    format?: Format;
+    /**
+     * 12-hour clock instead of 24-hour
+     */
+    hour12?: boolean;
+    /**
+     * Put the weekday first (default true)
+     */
+    showWeekday?: boolean;
+    /**
+     * One summary (2/3) instead of a chip for each datasource
+     */
+    compact?: boolean;
+    /**
+     * Show the signed-in name beside the icon
+     */
+    showName?: boolean;
+    /**
+     * Show only this recipe; missing shows every recipe
+     */
+    recipeId?: string;
+    /**
+     * List each recipe's tags and values (default true)
+     */
+    showEntries?: boolean;
     /**
      * Table widget rows
      */
@@ -682,6 +718,11 @@ export interface Threshold {
 export type ImageFit = "contain" | "cover" | "fill";
 
 /**
+ * What to show; missing means timeSeconds
+ */
+export type Format = "time" | "timeSeconds" | "dateTime" | "date";
+
+/**
  * Symbol: what it does while animate is true
  *
  * still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
@@ -708,6 +749,12 @@ export interface StateEntry {
     value:      any;
 }
 
+/**
+ * list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+ * buttons in a row; bar: icon over name, sharing the width
+ */
+export type Style = "list" | "tabs" | "icons" | "bar";
+
 export interface TrendSeries {
     binding: string;
     color:   string;
@@ -724,7 +771,125 @@ export type TextAlign = "left" | "center" | "right";
  */
 export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
 
-export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "faceplate" | "table" | "pipe";
+export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "customWidget" | "table" | "pipe" | "pageList" | "clock" | "driverStatus" | "userMenu" | "recipes";
+
+export interface Datasource {
+    config: DatasourceConfig;
+    /**
+     * Unique driver instance ID, e.g. 'opcua', 'mbtcp1'
+     */
+    id:    string;
+    label: string;
+    type:  DatasourceType;
+}
+
+/**
+ * Driver-specific connection config. Fields used depend on 'type'.
+ */
+export interface DatasourceConfig {
+    /**
+     * REST base path, e.g. /_pxc_api/v1.14
+     */
+    basePath?: string;
+    /**
+     * REST bearer token
+     */
+    bearerToken?: string;
+    /**
+     * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+     * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+     */
+    certCheck?: CERTCheck;
+    /**
+     * SHA-256 fingerprint of the server certificate, for certCheck 'pinned' (hex, colons
+     * optional)
+     */
+    certFingerprint?: string;
+    /**
+     * MQTT client ID
+     */
+    clientId?: string;
+    /**
+     * OPC UA: opc.tcp://host:port
+     */
+    endpoint?: string;
+    /**
+     * Modbus/MQTT/REST host
+     */
+    host?: string;
+    /**
+     * Memory datasource: the typed tags it holds
+     */
+    memoryTags?: MemoryTag[];
+    password?:   string;
+    /**
+     * TCP port
+     */
+    port?:           number;
+    securityMode?:   SecurityMode;
+    securityPolicy?: SecurityPolicy;
+    /**
+     * Modbus slave/unit ID
+     */
+    slaveId?: number;
+    /**
+     * Virtual driver: the calculated tags
+     */
+    tags?:     CalculatedTag[];
+    username?: string;
+}
+
+/**
+ * How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
+ * Missing keeps the driver's old behavior: REST off, MQTT trusted, OPC UA off
+ *
+ * off: accept any certificate; pinned: only the one with certFingerprint; trusted:
+ * certificates the system trusts
+ */
+export type CERTCheck = "off" | "pinned" | "trusted";
+
+/**
+ * A typed value the runtime holds; other expressions read it as {datasource:path}
+ */
+export interface MemoryTag {
+    /**
+     * The value before anything is written (and after a restart, unless retained); missing
+     * means false, 0 or empty text
+     */
+    initial?: boolean | number | string;
+    /**
+     * The tag's name in this datasource
+     */
+    path: string;
+    /**
+     * Keep the last value across a runtime restart
+     */
+    retain?: boolean;
+    type:    Type;
+}
+
+export type Type = "bool" | "int" | "real" | "string";
+
+export type SecurityMode = "None" | "Sign" | "SignAndEncrypt";
+
+export type SecurityPolicy = "None" | "Basic128Rsa15" | "Basic256" | "Basic256Sha256";
+
+/**
+ * A tag the virtual driver computes. Other expressions read it as {datasource:path}
+ */
+export interface CalculatedTag {
+    /**
+     * Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing
+     * input makes the tag Bad
+     */
+    expr: string;
+    /**
+     * The tag's name in this datasource
+     */
+    path: string;
+}
+
+export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual" | "memory";
 
 /**
  * What the historian stores and for how long. Missing means every change, plus one sample
@@ -948,7 +1113,19 @@ export interface WidgetPlacement {
  *
  * Settings of a pipe widget: a line through points with an animated flow
  *
- * Settings of a faceplate widget
+ * Settings of a custom widget placement
+ *
+ * Settings of a page list widget: the project's pages as navigation, the open one
+ * highlighted
+ *
+ * Settings of a clock widget: the time in the operator's browser
+ *
+ * Settings of a driver status widget: whether each datasource is connected
+ *
+ * Settings of a user menu widget: who is signed in, and signing in or out
+ *
+ * Settings of a recipes widget: the project's recipes, each with a button that writes its
+ * values
  *
  * Settings of a table widget
  */
@@ -1113,13 +1290,50 @@ export interface WidgetProps {
      */
     weight?: number;
     /**
-     * Faceplate widget: id of the faceplate to show
+     * Custom widget: id of the custom widget to show
      */
-    faceplateId?: string;
+    customWidgetId?: string;
     /**
-     * Faceplate widget: parameter name → binding
+     * Custom widget: parameter name → binding
      */
     params?: { [key: string]: string };
+    /**
+     * list: show each page group's heading (default true)
+     */
+    showGroups?: boolean;
+    /**
+     * list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
+     * buttons in a row; bar: icon over name, sharing the width
+     */
+    style?: Style;
+    /**
+     * What to show; missing means timeSeconds
+     */
+    format?: Format;
+    /**
+     * 12-hour clock instead of 24-hour
+     */
+    hour12?: boolean;
+    /**
+     * Put the weekday first (default true)
+     */
+    showWeekday?: boolean;
+    /**
+     * One summary (2/3) instead of a chip for each datasource
+     */
+    compact?: boolean;
+    /**
+     * Show the signed-in name beside the icon
+     */
+    showName?: boolean;
+    /**
+     * Show only this recipe; missing shows every recipe
+     */
+    recipeId?: string;
+    /**
+     * List each recipe's tags and values (default true)
+     */
+    showEntries?: boolean;
     /**
      * Table widget rows
      */
@@ -1233,7 +1447,60 @@ export interface SessionVar {
  * The frame around the pages in the operator screen
  */
 export interface Shell {
-    nav?: ShellNav;
+    /**
+     * builtin (the default) draws the operator's own top bar and navigation; custom draws the
+     * frame slots instead
+     */
+    chrome?: Chrome;
+    /**
+     * With chrome custom: custom widgets pinned to the edges of every page, drawn around the
+     * page
+     */
+    frame?: FrameSlot[];
+    nav?:   ShellNav;
+}
+
+/**
+ * builtin (the default) draws the operator's own top bar and navigation; custom draws the
+ * frame slots instead
+ */
+export type Chrome = "builtin" | "custom";
+
+/**
+ * A custom widget pinned to an edge of the screen, with the page drawn in the room that is
+ * left. A smaller screen can move it to another edge or give it another size
+ */
+export interface FrameSlot {
+    customWidgetId: string;
+    /**
+     * Screen sizes it is drawn on; missing means all
+     */
+    devices?: Device[];
+    edge:     FrameEdge;
+    id:       string;
+    /**
+     * Parameter name to binding, as on a custom widget placed on a page
+     */
+    params?: { [key: string]: string };
+    phone?:  FrameSlotOverride;
+    /**
+     * Pixels high for a top or bottom edge, wide for a left or right edge
+     */
+    size:    number;
+    tablet?: FrameSlotOverride;
+}
+
+export type Device = "desktop" | "tablet" | "phone";
+
+export type FrameEdge = "top" | "right" | "bottom" | "left";
+
+/**
+ * What differs on a smaller screen; a phone inherits from the tablet and the tablet from
+ * the desktop
+ */
+export interface FrameSlotOverride {
+    edge?: FrameEdge;
+    size?: number;
 }
 
 /**

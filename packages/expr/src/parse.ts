@@ -17,7 +17,7 @@ const isDigit = (c: string) => c >= "0" && c <= "9";
 const isHex = (c: string) => isDigit(c) || (c >= "a" && c <= "f") || (c >= "A" && c <= "F");
 const isNameStart = (c: string) => c === "_" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
 const isNamePart = (c: string) => isNameStart(c) || isDigit(c);
-// isParamName reports whether s is a faceplate parameter name: letters, digits and _.
+// isParamName reports whether s is a custom widget parameter name: letters, digits and _.
 const isParamName = (s: string) => s !== "" && Array.from(s).every(isNamePart);
 const TWO = new Set(["&&", "||", "==", "!=", "<=", ">="]);
 
@@ -313,7 +313,7 @@ function checkCall(name: string, fn: Func, args: Node[]): string | undefined {
   return `${name} takes ${fn.min} or ${fn.max} arguments, got ${n}`;
 }
 
-/** Parses src, throwing CompileError. With params, {name} is a faceplate parameter. */
+/** Parses src, throwing CompileError. With params, {name} is a custom widget parameter. */
 export function parse(src: string, params = false): Parsed {
   const chars = Array.from(src);
   if (chars.length > MAX_LENGTH) throw new CompileError(`expression longer than ${MAX_LENGTH} characters`);

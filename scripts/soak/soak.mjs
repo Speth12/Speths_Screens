@@ -119,7 +119,7 @@ const scripts = [
     state.runs = (state.runs ?? 0) + 1;` },
 ];
 const project = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   version: "0.1.0",
   name: "Soak",
   datasources: [

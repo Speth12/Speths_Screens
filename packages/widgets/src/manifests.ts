@@ -55,10 +55,15 @@ const SAMPLES: Record<WidgetType, GallerySample> = {
   historyLog:     { props: { label: "History" } },
   alarmBanner:    { props: { label: "Alarms" } },
   image:          { props: { label: "Image" } },
-  faceplate:      { props: { label: "Faceplate" } },
+  customWidget:   { props: { label: "Custom widget" } },
   table:          { props: { label: "Table" } },
   symbol:         { value: true, on: true, off: false, props: { symbolId: "gate-valve", label: "Valve" } },
   pipe:           { value: true, on: true, off: false, props: { points: "0,50 100,50", weight: 8, label: "Pipe" } },
+  pageList:       { props: { style: "list" } },
+  clock:          { props: {} },
+  driverStatus:   { props: {} },
+  userMenu:       { props: {} },
+  recipes:        { props: { label: "Recipes" } },
 };
 
 function widget(type: WidgetType, label: string, w: number, h: number, settings: Field[], opts: Partial<WidgetManifest> = {}): WidgetManifest {
@@ -151,9 +156,9 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "fit", label: "Fit", kind: "choice", display: "select", default: "contain", alias: "objectFit",
       options: [{ value: "contain", label: "Contain" }, { value: "cover", label: "Cover" }, { value: "fill", label: "Fill" }] },
   ], { bindings: [] }),
-  widget("faceplate", "Faceplate", 4, 4, [
-    { key: "faceplateId", label: "Faceplate", kind: "faceplate" },
-    { key: "params", label: "Parameters", kind: "faceplateParams" },
+  widget("customWidget", "Custom widget", 4, 4, [
+    { key: "customWidgetId", label: "Custom widget", kind: "customWidget" },
+    { key: "params", label: "Parameters", kind: "customWidgetParams" },
   ], { bindings: [] }),
   widget("table", "Table", 4, 4, [
     { key: "rows", label: "Rows", kind: "list", empty: "No rows configured",
@@ -182,6 +187,31 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "flow", label: "Flowing now", kind: "boolean", default: false, note: "Drive this from a tag (Drives) so it flows while the line runs." },
     { key: "reverse", label: "Flows from the last corner to the first", kind: "boolean", default: false },
   ], { bindings: [], palette: true }),
+  widget("pageList", "Page list", 3, 6, [
+    { key: "style", label: "Style", kind: "choice", default: "list", display: "select", options: [
+      { value: "list", label: "List (icon and name, grouped)" }, { value: "tabs", label: "Tabs (names in a row)" },
+      { value: "icons", label: "Large icons in a row" }, { value: "bar", label: "Bar (icon over name)" },
+    ] },
+    { key: "showGroups", label: "Show group headings", kind: "boolean", default: true, showIf: (c) => (c.style ?? "list") === "list" },
+  ], { bindings: [], events: [] }),
+  widget("clock", "Clock", 3, 1, [
+    { key: "format", label: "Show", kind: "choice", default: "timeSeconds", display: "select", options: [
+      { value: "time", label: "Time" }, { value: "timeSeconds", label: "Time with seconds" },
+      { value: "dateTime", label: "Date and time" }, { value: "date", label: "Date" },
+    ] },
+    { key: "hour12", label: "12-hour clock", kind: "boolean", default: false },
+    { key: "showWeekday", label: "Show the weekday", kind: "boolean", default: true },
+  ], { bindings: [], events: [] }),
+  widget("driverStatus", "Driver status", 4, 1, [
+    { key: "compact", label: "One summary instead of a chip each", kind: "boolean", default: false },
+  ], { bindings: [], events: [] }),
+  widget("recipes", "Recipes", 4, 5, [
+    { key: "recipeId", label: "Recipe", kind: "recipe", note: "Blank shows every recipe of the project." },
+    { key: "showEntries", label: "List the tags and values", kind: "boolean", default: true },
+  ], { bindings: [], events: [] }),
+  widget("userMenu", "User menu", 1, 1, [
+    { key: "showName", label: "Show the name beside the icon", kind: "boolean", default: false },
+  ], { bindings: [], events: [] }),
 ];
 
 const BY_TYPE = new Map(MANIFESTS.map((m) => [m.type, m]));

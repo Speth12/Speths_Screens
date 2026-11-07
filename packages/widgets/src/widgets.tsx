@@ -1,12 +1,12 @@
 // Widget renderers shared by the IDE canvas, the IDE preview and the
 // operator screen. Everything outside the widget (tag values, writes,
-// navigation, the runtime API, alarms, images, faceplates) comes from the
+// navigation, the runtime API, alarms, images, custom widgets) comes from the
 // WidgetHost the app provides (host.tsx). Widgets use format v2: settings in
 // props (typed per widget type), tags in bindings, actions in events.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  Action, ButtonColor, FaceplateWidget, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
+  Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
@@ -14,6 +14,9 @@ import { translateWidget } from "./translate";
 import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
+import { partStyle, stackFor, stackStyle } from "./layout";
+import { RecipesWidget } from "./recipes";
+import { ClockWidget, DriverStatusWidget, PageListWidget, UserMenuWidget } from "./shell";
 import { DEFAULT_STATES } from "./manifests";
 
 /** A renderer's props: its widget, typed for its type. */
@@ -145,6 +148,9 @@ export function resolveColor(value: unknown, thresholds: Threshold[]): string | 
 
 const NO_THRESHOLDS: Threshold[] = [];
 
+/** The header and navigation widgets sit on the page without a card of their own, unless given a color. */
+const SHELL_TYPES = new Set<string>(["pageList", "clock", "driverStatus", "userMenu"]);
+
 function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   // Driven properties are already in w.props (DriveApplicator).
   const p: FrameProps = w.props ?? {};
@@ -171,8 +177,12 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   }
   // A pipe, and a symbol with no background or border of its own, is a drawing on the page, not a card:
   // no frame, and no frame label (a symbol draws its own).
-  const bare = w.type === "pipe" || (w.type === "symbol" && !bgColor && !borderColor);
-  if (bare) {
+  // A widget given no background and no border draws on whatever is behind it (the parts of a header):
+  // no shadow or corners either, but it keeps its label.
+  const noBorder = borderColor === "none" || borderColor === "transparent";
+  const cardless = isTransparent && noBorder;
+  const bare = w.type === "pipe" || ((w.type === "symbol" || SHELL_TYPES.has(w.type)) && !bgColor && !borderColor);
+  if (bare || cardless) {
     style.background = "transparent";
     style.border = "none";
     style.boxShadow = "none";
@@ -967,7 +977,7 @@ function MultiStateWidget({ w }: WP<"multiState">) {
   );
 }
 
-// ── Faceplate ──────────────────────────────────────────────────────────────
+// ── Custom widget ──────────────────────────────────────────────────────────────
 
 /** Replaces {param} placeholders in a binding with the instance's values. */
 export function rewriteBinding(binding: string | undefined, params: Record<string, string>): string | undefined {
@@ -975,9 +985,9 @@ export function rewriteBinding(binding: string | undefined, params: Record<strin
   return binding.replace(/\{(\w+)\}/g, (_, key: string) => params[key] ?? `{${key}}`);
 }
 
-/** A faceplate's inner widget with the instance's parameters filled into its
+/** A custom widget part with the instance's parameters filled into its
  *  tags (bindings, action tags and dynamics). */
-function resolveInner(fw: FaceplateWidget, params: Record<string, string>): Widget {
+function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Widget {
   const rb = (b: string | undefined) => rewriteBinding(b, params);
   const bindings: WidgetBindings | undefined = fw.bindings && {
     value: rb(fw.bindings.value), visible: rb(fw.bindings.visible), color: rb(fw.bindings.color),
@@ -992,27 +1002,41 @@ function resolveInner(fw: FaceplateWidget, params: Record<string, string>): Widg
   return { ...rest, id: localId, bindings, events, dynamics } as Widget;
 }
 
-function FaceplateWidget({ w }: WP<"faceplate">) {
-  const fpId = w.props?.faceplateId;
-  const params = w.props?.params ?? {};
-  const fp = useHost().useFaceplate(fpId);
+/** How deep custom widgets sit inside each other; a loop in the project stops here. */
+const NESTING_LIMIT = 6;
+const NestingContext = createContext(0);
 
-  if (!fp) {
+function CustomWidgetView({ w }: WP<"customWidget">) {
+  const cwId = w.props?.customWidgetId;
+  const params = w.props?.params ?? {};
+  const host = useHost();
+  const cw = host.useCustomWidget(cwId);
+  const device = host.useDevice();
+  const depth = useContext(NestingContext);
+
+  if (!cw || depth >= NESTING_LIMIT) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-1 text-purple-400/60 border border-purple-800/40 rounded-lg">
-        <span className="text-xs tabular-nums">faceplate</span>
-        <span className="text-xs text-zinc-600">{fpId ?? "no id"}</span>
+        <span className="text-xs tabular-nums">custom widget</span>
+        <span className="text-xs text-zinc-600">{cw ? "nested too deep" : (cwId ?? "no id")}</span>
       </div>
     );
   }
 
+  const stack = stackFor(cw.layout, device);
   return (
-    <div className="h-full relative border border-purple-700/50 rounded-lg overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 z-10 px-2 py-0.5 bg-purple-900/40 text-xs text-purple-300 font-medium tracking-wider truncate">
-        FP: {fp.name}
-      </div>
-      <div className="absolute inset-0 pt-5">
-        {fp.widgets.map((fw) => {
+    <NestingContext.Provider value={depth + 1}>
+      <div className="h-full relative overflow-hidden" style={stack ? stackStyle(stack) : undefined}>
+        {cw.widgets.map((fw) => {
+          if (stack) {
+            const style = partStyle(fw, stack, device);
+            if (!style) return null;
+            return (
+              <div key={fw.localId} style={style}>
+                <WidgetRenderer w={resolveInner(fw, params)} />
+              </div>
+            );
+          }
           const left   = `${((fw.x / (w.w || 1)) * 100).toFixed(1)}%`;
           const top    = `${((fw.y / (w.h || 1)) * 100).toFixed(1)}%`;
           const width  = `${((fw.w / (w.w || 1)) * 100).toFixed(1)}%`;
@@ -1024,7 +1048,7 @@ function FaceplateWidget({ w }: WP<"faceplate">) {
           );
         })}
       </div>
-    </div>
+    </NestingContext.Provider>
   );
 }
 
@@ -1246,7 +1270,12 @@ const renderers: { [K in WidgetType]: React.ComponentType<WP<K>> } = {
   symbol:         SymbolWidget,
   alarmBanner:    AlarmBannerWidget,
   pipe:           PipeWidget,
-  faceplate:      FaceplateWidget,
+  customWidget:   CustomWidgetView,
+  pageList:       PageListWidget,
+  clock:          ClockWidget,
+  driverStatus:   DriverStatusWidget,
+  userMenu:       UserMenuWidget,
+  recipes:        RecipesWidget,
   table:          TableWidget,
 };
 

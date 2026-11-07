@@ -7,7 +7,9 @@ import "./store/alarmEngine";
 import { bootAuditTrail } from "./store/auditTrail";
 import { bootExpressionEngine } from "./store/expressionEngine";
 import { bindSessionVars } from "./store/session";
+import { applyIdeTheme } from "./store/ideTheme";
 
+applyIdeTheme();
 bootAuditTrail();
 bootExpressionEngine();
 bindSessionVars();

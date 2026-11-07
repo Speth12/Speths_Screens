@@ -5,7 +5,7 @@ import { useProject, type NamespaceNode, type Project } from "./projectStore";
 afterEach(() => vi.unstubAllGlobals());
 
 const project = (namespace: NamespaceNode[]): Project => ({
-  schemaVersion: 5, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], namespace,
+  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], namespace,
 });
 const ns = project([
   { path: "plant", type: "folder" },

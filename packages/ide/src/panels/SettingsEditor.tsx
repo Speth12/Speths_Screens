@@ -168,6 +168,8 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
         </div>
       );
     }
+    case "recipe":
+      return <RecipePicker f={f} value={v as string | undefined} put={put} />;
     case "page":
       return <PagePicker f={f} value={v as string | undefined} put={put} />;
     case "binding":
@@ -196,10 +198,10 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
         </div>
       );
     }
-    case "faceplate":
-      return <FaceplatePicker f={f} value={v as string | undefined} put={put} />;
-    case "faceplateParams":
-      return <FaceplateParams f={f} faceplateId={config.faceplateId as string | undefined}
+    case "customWidget":
+      return <CustomWidgetPicker f={f} value={v as string | undefined} put={put} />;
+    case "customWidgetParams":
+      return <CustomWidgetParams f={f} customWidgetId={config.customWidgetId as string | undefined}
         value={(v as Record<string, string> | undefined) ?? {}} put={put} />;
     case "list": {
       const items = (v as Config[] | undefined) ?? f.seed?.(w) ?? [];
@@ -239,6 +241,20 @@ function withKey(obj: Config, key: string, value: unknown): Config {
   return next;
 }
 
+function RecipePicker({ f, value, put }: { f: Field; value?: string; put: (v: unknown) => void }) {
+  const recipes = useProject((s) => s.project.recipes) ?? [];
+  return (
+    <div>
+      <Label text={f.label} />
+      <select aria-label={f.label} value={value ?? ""} onChange={(e) => put(e.target.value || undefined)} className={inp}>
+        <option value="">— every recipe —</option>
+        {recipes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+      </select>
+      {f.note && <div className="text-[10px] text-zinc-600 mt-1">{f.note}</div>}
+    </div>
+  );
+}
+
 function PagePicker({ f, value, put }: { f: Field; value?: string; put: (v: unknown) => void }) {
   const pages = useProject((s) => s.project.pages);
   return (
@@ -252,25 +268,25 @@ function PagePicker({ f, value, put }: { f: Field; value?: string; put: (v: unkn
   );
 }
 
-function FaceplatePicker({ f, value, put }: { f: Field; value?: string; put: (v: unknown) => void }) {
-  const faceplates = useProject((s) => s.project.faceplates) ?? [];
+function CustomWidgetPicker({ f, value, put }: { f: Field; value?: string; put: (v: unknown) => void }) {
+  const customWidgets = useProject((s) => s.project.customWidgets) ?? [];
   return (
     <div>
       <Label text={f.label} />
       <select aria-label={f.label} value={value ?? ""} onChange={(e) => put(e.target.value || undefined)} className={inp}>
-        <option value="">— select faceplate —</option>
-        {faceplates.map((fp) => <option key={fp.id} value={fp.id}>{fp.name}</option>)}
+        <option value="">— select custom widget —</option>
+        {customWidgets.map((fp) => <option key={fp.id} value={fp.id}>{fp.name}</option>)}
       </select>
     </div>
   );
 }
 
-function FaceplateParams({ f, faceplateId, value, put }: {
-  f: Field; faceplateId?: string; value: Record<string, string>; put: (v: unknown) => void;
+function CustomWidgetParams({ f, customWidgetId, value, put }: {
+  f: Field; customWidgetId?: string; value: Record<string, string>; put: (v: unknown) => void;
 }) {
-  const fp = useProject((s) => s.project.faceplates?.find((x) => x.id === faceplateId));
+  const fp = useProject((s) => s.project.customWidgets?.find((x) => x.id === customWidgetId));
   if (!fp) return null;
-  if (fp.params.length === 0) return <div className="text-[10px] text-zinc-600 italic">This faceplate has no parameters.</div>;
+  if (fp.params.length === 0) return <div className="text-[10px] text-zinc-600 italic">This custom widget has no parameters.</div>;
   return (
     <div className="space-y-1.5">
       <Label text={f.label} />

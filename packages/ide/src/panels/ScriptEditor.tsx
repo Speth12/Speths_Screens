@@ -25,7 +25,7 @@ export function ScriptEditor({ value, onChange, kind, label, rows = 10 }: {
       if (disposed || !host.current) return;
       setScriptApi(monaco, kind);
       const e = monaco.editor.create(host.current, {
-        value: initial.current, language: "javascript", theme: "vs-dark", fontSize: 11,
+        value: initial.current, language: "javascript", theme: document.documentElement.dataset.themeMode === "dark" ? "vs-dark" : "vs", fontSize: 11,
         minimap: { enabled: false }, lineNumbers: "on", scrollBeyondLastLine: false,
         automaticLayout: true, tabSize: 2, wordWrap: "on",
       });

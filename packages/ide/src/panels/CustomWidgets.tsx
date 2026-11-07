@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useProject, type Faceplate, type FaceplateParam, type FaceplateWidget, type WidgetType } from "../store/projectStore";
-import { manifestFor } from "@speths-screens/widgets";
+import { useProject, type CustomWidget, type CustomWidgetParam, type CustomWidgetPart, type WidgetType } from "../store/projectStore";
+import type { CustomWidgetLayout } from "@speths-screens/shared-types";
+import { manifestFor, type Device } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { SettingsFields } from "./SettingsEditor";
+import { LayoutStrip, PartFlexFields, StackPreview } from "./CustomWidgetStack";
 
 const uid = () => `lw-${Math.random().toString(36).slice(2, 8)}`;
 const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
@@ -13,7 +15,7 @@ const CELL = 72;  // pixels per grid cell in the editor canvas
 const COLS = 12;
 const ROWS = 8;
 
-// Widget types available in the faceplate palette
+// Widget types available in the custom widget palette
 const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defaultH: number; icon: string }[] = [
   { type: "button",         label: "Button",       defaultW: 3, defaultH: 1, icon: "⬛" },
   { type: "led",            label: "LED",          defaultW: 2, defaultH: 2, icon: "🔴" },
@@ -27,16 +29,17 @@ const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defa
   { type: "trend",          label: "Trend",        defaultW: 6, defaultH: 4, icon: "📈" },
   { type: "table",          label: "Table",        defaultW: 4, defaultH: 4, icon: "⊞" },
   { type: "image",          label: "Image",        defaultW: 4, defaultH: 3, icon: "🖼" },
+  { type: "customWidget",   label: "Custom widget", defaultW: 4, defaultH: 2, icon: "▦" },
 ];
 
-// ── FaceplateWidgetProps — mini property editor ────────────────────────────
+// ── Part properties — mini property editor ────────────────────────────
 
 function FpWidgetProps({
   w, params, onChange, onRemove,
 }: {
-  w: FaceplateWidget;
-  params: FaceplateParam[];
-  onChange: (patch: Partial<FaceplateWidget>) => void;
+  w: CustomWidgetPart;
+  params: CustomWidgetParam[];
+  onChange: (patch: Partial<CustomWidgetPart>) => void;
   onRemove: () => void;
 }) {
   const props: Record<string, unknown> = w.props ?? {};
@@ -115,17 +118,19 @@ function FpWidgetProps({
   );
 }
 
-// ── Faceplate visual editor modal ─────────────────────────────────────────
+// ── CustomWidget visual editor modal ─────────────────────────────────────────
 
-function FaceplateEditorModal({
+function CustomWidgetEditorModal({
   fp, onClose, onSave,
 }: {
-  fp: Faceplate;
+  fp: CustomWidget;
   onClose: () => void;
-  onSave: (widgets: FaceplateWidget[], params: FaceplateParam[]) => void;
+  onSave: (widgets: CustomWidgetPart[], params: CustomWidgetParam[], layout: CustomWidgetLayout | undefined) => void;
 }) {
-  const [widgets, setWidgets]   = useState<FaceplateWidget[]>(() => JSON.parse(JSON.stringify(fp.widgets)));
-  const [params,  setParams]    = useState<FaceplateParam[]>(() => JSON.parse(JSON.stringify(fp.params)));
+  const [widgets, setWidgets]   = useState<CustomWidgetPart[]>(() => JSON.parse(JSON.stringify(fp.widgets)));
+  const [params,  setParams]    = useState<CustomWidgetParam[]>(() => JSON.parse(JSON.stringify(fp.params)));
+  const [layout, setLayout] = useState<CustomWidgetLayout | undefined>(fp.layout);
+  const [device, setDevice] = useState<Device>("desktop");
   const [selected, setSelected] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -190,14 +195,14 @@ function FaceplateEditorModal({
     setSelected(id);
   };
 
-  const updateWidget = (localId: string, patch: Partial<FaceplateWidget>) =>
+  const updateWidget = (localId: string, patch: Partial<CustomWidgetPart>) =>
     setWidgets((ws) => ws.map((w) => w.localId === localId ? { ...w, ...patch } : w));
 
   const selectedWidget = widgets.find((w) => w.localId === selected) ?? null;
 
   // ── Params bar helpers ──────────────────────────────────────────────────
   const addParam = () => setParams((ps) => [...ps, { name: `param${ps.length + 1}` }]);
-  const updateParam = (i: number, patch: Partial<FaceplateParam>) =>
+  const updateParam = (i: number, patch: Partial<CustomWidgetParam>) =>
     setParams((ps) => ps.map((p, j) => j === i ? { ...p, ...patch } : p));
   const removeParam = (i: number) => setParams((ps) => ps.filter((_, j) => j !== i));
 
@@ -208,10 +213,10 @@ function FaceplateEditorModal({
       <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-800 bg-zinc-900 shrink-0">
         <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0" />
         <span className="text-sm font-semibold text-zinc-100">{fp.name}</span>
-        <span className="text-[10px] uppercase tracking-widest text-zinc-600">Faceplate Editor</span>
+        <span className="text-[10px] uppercase tracking-widest text-zinc-600">Custom widget editor</span>
         <div className="flex-1" />
         <button
-          onClick={() => { onSave(widgets, params); onClose(); }}
+          onClick={() => { onSave(widgets, params, layout); onClose(); }}
           className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 rounded font-medium text-white"
         >
           Save & Close
@@ -241,6 +246,8 @@ function FaceplateEditorModal({
         <span className="text-[9px] text-zinc-600 shrink-0">Use {"{paramName}"} in bindings</span>
       </div>
 
+      <LayoutStrip layout={layout} device={device} onDevice={setDevice} onChange={setLayout} />
+
       {/* ── Main body ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex min-h-0">
 
@@ -262,7 +269,10 @@ function FaceplateEditorModal({
           </div>
         </div>
 
-        {/* Canvas */}
+        {/* Canvas (free layout) or the stack as it is laid out */}
+        {layout?.mode === "stack" ? (
+          <StackPreview layout={layout} parts={widgets} device={device} selected={selected} onSelect={setSelected} onReorder={setWidgets} />
+        ) : (
         <div className="flex-1 overflow-auto p-6 bg-zinc-950 flex items-start justify-center">
           <div>
             <div className="text-[9px] text-zinc-600 mb-2 text-center">{COLS} × {ROWS} grid — drag to place</div>
@@ -354,12 +364,14 @@ function FaceplateEditorModal({
             </div>
           </div>
         </div>
+        )}
 
         {/* Properties */}
         <div className="w-64 border-l border-zinc-800 bg-zinc-900/30 overflow-auto shrink-0">
           <div className="text-[10px] uppercase tracking-wider text-zinc-500 px-3 pt-3 pb-2">Properties</div>
           <div className="px-3 pb-4">
             {selectedWidget ? (
+              <>
               <FpWidgetProps
                 w={selectedWidget}
                 params={params}
@@ -369,6 +381,10 @@ function FaceplateEditorModal({
                   setSelected(null);
                 }}
               />
+              {layout?.mode === "stack" && (
+                <PartFlexFields part={selectedWidget} device={device} onChange={(next) => updateWidget(selectedWidget.localId, next)} />
+              )}
+              </>
             ) : (
               <div className="text-[11px] text-zinc-600 italic leading-relaxed">
                 Select a widget on the canvas to edit its binding, label, and position.
@@ -386,8 +402,8 @@ function FaceplateEditorModal({
 // ── Param Row (compact) ────────────────────────────────────────────────────
 
 function ParamRow({ param, onChange, onRemove }: {
-  param: FaceplateParam;
-  onChange: (patch: Partial<FaceplateParam>) => void;
+  param: CustomWidgetParam;
+  onChange: (patch: Partial<CustomWidgetParam>) => void;
   onRemove: () => void;
 }) {
   return (
@@ -403,16 +419,16 @@ function ParamRow({ param, onChange, onRemove }: {
   );
 }
 
-// ── Faceplate card (in left panel tree) ───────────────────────────────────
+// ── CustomWidget card (in left panel tree) ───────────────────────────────────
 
-function FaceplateCard({ fp }: { fp: Faceplate }) {
-  const { updateFaceplate, removeFaceplate } = useProject();
+function CustomWidgetCard({ fp }: { fp: CustomWidget }) {
+  const { updateCustomWidget, removeCustomWidget } = useProject();
   const [open,       setOpen]       = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
-  const setPs = (params: FaceplateParam[]) => updateFaceplate(fp.id, { params });
+  const setPs = (params: CustomWidgetParam[]) => updateCustomWidget(fp.id, { params });
   const addParam    = () => setPs([...fp.params, { name: `param${fp.params.length + 1}` }]);
-  const updateParam = (i: number, patch: Partial<FaceplateParam>) =>
+  const updateParam = (i: number, patch: Partial<CustomWidgetParam>) =>
     setPs(fp.params.map((p, j) => j === i ? { ...p, ...patch } : p));
   const removeParam = (i: number) => setPs(fp.params.filter((_, j) => j !== i));
 
@@ -428,16 +444,16 @@ function FaceplateCard({ fp }: { fp: Faceplate }) {
           <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
           <input
             value={fp.name}
-            onChange={(e) => { e.stopPropagation(); updateFaceplate(fp.id, { name: e.target.value }); }}
+            onChange={(e) => { e.stopPropagation(); updateCustomWidget(fp.id, { name: e.target.value }); }}
             onClick={(e) => e.stopPropagation()}
             className="flex-1 bg-transparent text-xs font-medium text-zinc-200 outline-none"
-            placeholder="Faceplate Name"
+            placeholder="Custom widget name"
           />
           <span className="text-[10px] text-zinc-600 shrink-0">
             {fp.params.length}p · {fp.widgets.length}w
           </span>
           <button
-            onClick={(e) => { e.stopPropagation(); removeFaceplate(fp.id); }}
+            onClick={(e) => { e.stopPropagation(); removeCustomWidget(fp.id); }}
             className="text-zinc-600 hover:text-red-400 text-xs shrink-0"
           >×</button>
         </div>
@@ -447,7 +463,7 @@ function FaceplateCard({ fp }: { fp: Faceplate }) {
           <div className="px-3 py-2 space-y-3 bg-zinc-900/30">
             <input
               value={fp.description ?? ""}
-              onChange={(e) => updateFaceplate(fp.id, { description: e.target.value || undefined })}
+              onChange={(e) => updateCustomWidget(fp.id, { description: e.target.value || undefined })}
               placeholder="Description"
               className={`${inp} text-[10px]`}
             />
@@ -500,11 +516,11 @@ function FaceplateCard({ fp }: { fp: Faceplate }) {
       </div>
 
       {showEditor && (
-        <FaceplateEditorModal
+        <CustomWidgetEditorModal
           fp={fp}
           onClose={() => setShowEditor(false)}
-          onSave={(widgets, params) => {
-            updateFaceplate(fp.id, { widgets, params });
+          onSave={(widgets, params, layout) => {
+            updateCustomWidget(fp.id, { widgets, params, layout });
           }}
         />
       )}
@@ -512,15 +528,15 @@ function FaceplateCard({ fp }: { fp: Faceplate }) {
   );
 }
 
-// ── Faceplates panel ───────────────────────────────────────────────────────
+// ── CustomWidgets panel ───────────────────────────────────────────────────────
 
-export function Faceplates() {
-  const { project, addFaceplate } = useProject();
-  const faceplates = project.faceplates ?? [];
+export function CustomWidgets() {
+  const { project, addCustomWidget } = useProject();
+  const customWidgets = project.customWidgets ?? [];
 
-  const handleAdd = () => addFaceplate({
+  const handleAdd = () => addCustomWidget({
     id: `fp-${Math.random().toString(36).slice(2, 8)}`,
-    name: `Faceplate ${faceplates.length + 1}`,
+    name: `CustomWidget ${customWidgets.length + 1}`,
     params: [{ name: "prefix", description: "Tag prefix" }],
     widgets: [],
   });
@@ -528,21 +544,21 @@ export function Faceplates() {
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Faceplate Templates</div>
+        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Custom widgets</div>
         <button onClick={handleAdd}
           className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">
           + New
         </button>
       </div>
 
-      {faceplates.length === 0 && (
+      {customWidgets.length === 0 && (
         <div className="text-[11px] text-zinc-600 italic leading-relaxed">
-          Faceplates are reusable HMI templates. Create one, build its layout in the visual editor, then drop it onto the canvas and set parameter values (e.g. tag prefix).
+          Custom widgets are reusable pieces of screen. Build one in the visual editor (free layout, or a stack that adapts to the screen size), then drop it on a page or pin it to a screen edge, and set its parameters (for example a tag prefix).
         </div>
       )}
 
       <div className="space-y-2">
-        {faceplates.map((fp) => <FaceplateCard key={fp.id} fp={fp} />)}
+        {customWidgets.map((fp) => <CustomWidgetCard key={fp.id} fp={fp} />)}
       </div>
     </div>
   );

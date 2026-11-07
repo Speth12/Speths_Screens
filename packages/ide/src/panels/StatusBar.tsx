@@ -1,4 +1,4 @@
-// Bottom status bar: WS connection indicator + datasource health summary.
+// Bottom status bar: whether a runtime answers, the live-data connection, and datasource health.
 import { useEffect, useState } from "react";
 import { tagStoreClient } from "../store/tagStoreClient";
 import { apiBase } from "../store/runtimeTarget";
@@ -10,12 +10,27 @@ type DSStatus = { connected: boolean; lastError: string; tagCount: number };
 export function StatusBar() {
   const { project } = useProject();
   const [wsOk, setWsOk] = useState(false);
+  // Whether a runtime answers at the target at all; the live-data connection only opens when a screen
+  // reads a tag from a datasource, so it can be closed while the runtime is fine.
+  const [reachable, setReachable] = useState<boolean | null>(null);
   const [dsStatus, setDsStatus] = useState<Record<string, DSStatus>>({});
 
   // Poll WS connection state via tagStoreClient
   useEffect(() => {
     const id = setInterval(() => setWsOk(tagStoreClient.isConnected()), 1500);
     setWsOk(tagStoreClient.isConnected());
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const probe = async () => {
+      try {
+        const r = await fetch(`${apiBase}/api/v1/datasources`, { headers: authHeader(apiBase) });
+        setReachable(r.ok || r.status === 401);
+      } catch { setReachable(false); }
+    };
+    void probe();
+    const id = setInterval(probe, 4000);
     return () => clearInterval(id);
   }, []);
 
@@ -44,18 +59,20 @@ export function StatusBar() {
 
   return (
     <div className="flex items-center gap-4 px-4 py-1 bg-zinc-900 border-t border-zinc-800 text-[10px] font-mono text-zinc-500 shrink-0">
-      {/* WebSocket indicator */}
-      <div className="flex items-center gap-1.5">
-        <span className={`w-1.5 h-1.5 rounded-full ${wsOk ? "bg-emerald-500" : "bg-red-500 animate-pulse"}`} />
-        <span className={wsOk ? "text-emerald-500" : "text-red-400"}>
-          {wsOk ? "WS connected" : "WS disconnected"}
+      {/* Runtime and live-data indicator */}
+      <div className="flex items-center gap-1.5" title={
+        reachable === false
+          ? "Nothing answers at this address, so Deploy, Pull and live values will not work. Start a runtime on this PC with: go run ./cmd/speths-screens --mode=dev --project=<file>"
+          : wsOk ? "Live values are streaming from the runtime" : "The runtime answers. Live values stream when a screen reads a tag from a datasource."
+      }>
+        <span className={`w-1.5 h-1.5 rounded-full ${reachable === false ? "bg-red-500 animate-pulse" : reachable ? "bg-emerald-500" : "bg-zinc-500"}`} />
+        <span className={reachable === false ? "text-red-400" : reachable ? "text-emerald-500" : ""}>
+          {reachable === false ? "No runtime" : reachable ? (wsOk ? "Runtime connected" : "Runtime ready") : "Checking…"}
         </span>
       </div>
 
       {/* Target */}
-      {apiBase && (
-        <span className="text-zinc-600 truncate max-w-[180px]">{apiBase}</span>
-      )}
+      <span className="text-zinc-600 truncate max-w-[220px]">{apiBase || `${location.host} (dev server)`}</span>
 
       {/* Datasource health */}
       {totalDs > 0 && (

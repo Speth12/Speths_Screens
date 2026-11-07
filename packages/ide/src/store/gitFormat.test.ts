@@ -3,7 +3,7 @@ import { exportGitFormat, importGitFormat, packGitFiles, unpackGitFiles } from "
 import type { Project } from "./projectStore";
 
 const project = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   version: "1.0.0",
   name: "Line",
   datasources: [],
@@ -26,7 +26,7 @@ it("writes each runtime script as its own .js file and reads them back", () => {
 
   const back = importGitFormat(files);
   expect(back.scripts).toEqual(project.scripts);
-  expect(back.schemaVersion).toBe(5);
+  expect(back.schemaVersion).toBe(6);
   expect(back.scriptRole).toBe("engineer");
   expect(back.sessionVars).toEqual(project.sessionVars);
 });
@@ -45,7 +45,7 @@ it("keeps the whole project through the downloaded file", () => {
     historian: { retentionDays: 30 },
     namespace: [{ path: "Line1", type: "folder" }],
     presets: [{ id: "ps", name: "Pump", widgets: [] }],
-    alarmRules: [], recipes: [], assets: [], faceplates: [],
+    alarmRules: [], recipes: [], customWidgets: [],
   } as unknown as Project;
   const downloaded = JSON.parse(JSON.stringify({ _gitFormat: true, _files: packGitFiles(exportGitFormat(full)) })) as { _files: Record<string, unknown> };
   expect(downloaded._files["scripts/count.js"]).toBe("state.n = (state.n ?? 0) + 1;\n");

@@ -8,8 +8,8 @@
   "properties": {
 "schemaVersion": {
       "type": "integer",
-      "minimum": 5,
-      "maximum": 5,
+      "minimum": 6,
+      "maximum": 6,
       "description": "Project file format. A file without it is format 1 and is upgraded when opened"
     },
     "version": {
@@ -97,9 +97,9 @@
       "items": { "$ref": "#/$defs/NamespaceNode" },
       "description": "Unified Namespace — flat list of folders, assets and tags. Tags with driverId+driverAddr are bound to a live datasource"
     },
-    "faceplates": {
+    "customWidgets": {
       "type": "array",
-      "items": { "$ref": "#/$defs/Faceplate" }
+      "items": { "$ref": "#/$defs/CustomWidget" }
     },
     "presets": {
       "type": "array",
@@ -489,8 +489,42 @@
       "additionalProperties": false,
       "description": "The frame around the pages in the operator screen",
       "properties": {
-        "nav": { "$ref": "#/$defs/ShellNav" }
+        "nav": { "$ref": "#/$defs/ShellNav" },
+        "chrome": { "type": "string", "enum": ["builtin", "custom"], "description": "builtin (the default) draws the operator's own top bar and navigation; custom draws the frame slots instead" },
+        "frame": { "type": "array", "items": { "$ref": "#/$defs/FrameSlot" }, "description": "With chrome custom: custom widgets pinned to the edges of every page, drawn around the page" }
       }
+    },
+    "FrameSlot": {
+      "title": "FrameSlot",
+      "type": "object",
+      "description": "A custom widget pinned to an edge of the screen, with the page drawn in the room that is left. A smaller screen can move it to another edge or give it another size",
+      "required": ["id", "customWidgetId", "edge", "size"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "customWidgetId": { "type": "string" },
+        "params": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Parameter name to binding, as on a custom widget placed on a page" },
+        "edge": { "$ref": "#/$defs/FrameEdge" },
+        "size": { "type": "integer", "minimum": 1, "description": "Pixels high for a top or bottom edge, wide for a left or right edge" },
+        "devices": { "type": "array", "items": { "type": "string", "enum": ["desktop", "tablet", "phone"] }, "description": "Screen sizes it is drawn on; missing means all" },
+        "tablet": { "$ref": "#/$defs/FrameSlotOverride" },
+        "phone": { "$ref": "#/$defs/FrameSlotOverride" }
+      }
+    },
+    "FrameSlotOverride": {
+      "title": "FrameSlotOverride",
+      "type": "object",
+      "description": "What differs on a smaller screen; a phone inherits from the tablet and the tablet from the desktop",
+      "additionalProperties": false,
+      "properties": {
+        "edge": { "$ref": "#/$defs/FrameEdge" },
+        "size": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "FrameEdge": {
+      "title": "FrameEdge",
+      "type": "string",
+      "enum": ["top", "right", "bottom", "left"]
     },
     "ShellNav": {
       "title": "ShellNav",
@@ -517,9 +551,14 @@
         "alarmBanner",
         "image",
         "symbol",
-        "faceplate",
+        "customWidget",
         "table",
-        "pipe"
+        "pipe",
+        "pageList",
+        "clock",
+        "driverStatus",
+        "userMenu",
+        "recipes"
       ]
     },
     "TrendXFormat": {
@@ -729,8 +768,8 @@
         }
       }
     },
-    "Faceplate": {
-      "title": "Faceplate",
+    "CustomWidget": {
+      "title": "CustomWidget",
       "type": "object",
       "required": ["id", "name", "params", "widgets"],
       "additionalProperties": false,
@@ -738,18 +777,72 @@
         "id":          { "type": "string" },
         "name":        { "type": "string" },
         "description": { "type": "string" },
-        "params":      { "type": "array", "items": { "$ref": "#/$defs/FaceplateParam" } },
-        "widgets":     { "type": "array", "items": { "$ref": "#/$defs/FaceplateWidget" } }
+        "params":      { "type": "array", "items": { "$ref": "#/$defs/CustomWidgetParam" } },
+        "widgets":     { "type": "array", "items": { "$ref": "#/$defs/CustomWidgetPart" } },
+        "layout":      { "$ref": "#/$defs/CustomWidgetLayout", "description": "How the parts are placed; missing means free (each at its own x, y, w, h)" }
       }
     },
-    "FaceplateParam": {
-      "title": "FaceplateParam",
+    "CustomWidgetParam": {
+      "title": "CustomWidgetParam",
       "type": "object",
       "required": ["name"],
       "additionalProperties": false,
       "properties": {
-        "name":        { "type": "string", "description": "Used as {name} in bindings inside the faceplate" },
+        "name":        { "type": "string", "description": "Used as {name} in bindings inside the custom widget" },
         "description": { "type": "string" }
+      }
+    },
+    "CustomWidgetLayout": {
+      "title": "CustomWidgetLayout",
+      "type": "object",
+      "description": "How a custom widget places its parts. In a stack the parts follow each other in a row or a column and share the room by their flex settings; tablet and phone replace any field for that screen size",
+      "additionalProperties": false,
+      "properties": {
+        "mode":      { "type": "string", "enum": ["free", "stack"], "description": "free: each part at its own place; stack: parts follow each other" },
+        "direction": { "type": "string", "enum": ["row", "column"] },
+        "gap":       { "type": "integer", "minimum": 0, "description": "Pixels between parts" },
+        "padding":   { "type": "integer", "minimum": 0, "description": "Pixels around the parts" },
+        "justify":   { "type": "string", "enum": ["start", "center", "end", "between"], "description": "Along the direction" },
+        "align":     { "type": "string", "enum": ["start", "center", "end", "stretch"], "description": "Across the direction" },
+        "wrap":      { "type": "boolean", "description": "Parts that do not fit start a new line" },
+        "tablet":    { "$ref": "#/$defs/CustomWidgetLayoutOverride" },
+        "phone":     { "$ref": "#/$defs/CustomWidgetLayoutOverride" }
+      }
+    },
+    "CustomWidgetLayoutOverride": {
+      "title": "CustomWidgetLayoutOverride",
+      "type": "object",
+      "description": "The stack settings that differ on a smaller screen; a phone inherits from the tablet and the tablet from the desktop",
+      "additionalProperties": false,
+      "properties": {
+        "direction": { "type": "string", "enum": ["row", "column"] },
+        "gap":       { "type": "integer", "minimum": 0 },
+        "padding":   { "type": "integer", "minimum": 0 },
+        "justify":   { "type": "string", "enum": ["start", "center", "end", "between"] },
+        "align":     { "type": "string", "enum": ["start", "center", "end", "stretch"] },
+        "wrap":      { "type": "boolean" }
+      }
+    },
+    "PartFlex": {
+      "title": "PartFlex",
+      "type": "object",
+      "description": "How a part takes room in a stack; a part with no flex keeps the size it has in the layout (w and h as grid units)",
+      "additionalProperties": false,
+      "properties": {
+        "grow":  { "type": "number", "minimum": 0, "description": "Share of the free room; 0 keeps the part at its basis" },
+        "basis": { "type": "integer", "minimum": 0, "description": "Size along the direction in pixels; 0 or missing fits the content" },
+        "tablet": { "$ref": "#/$defs/PartFlexOverride" },
+        "phone":  { "$ref": "#/$defs/PartFlexOverride" }
+      }
+    },
+    "PartFlexOverride": {
+      "title": "PartFlexOverride",
+      "type": "object",
+      "description": "What differs on a smaller screen; a phone inherits from the tablet and the tablet from the desktop",
+      "additionalProperties": false,
+      "properties": {
+        "grow":  { "type": "number", "minimum": 0 },
+        "basis": { "type": "integer", "minimum": 0 }
       }
     },
     "ImageAsset": {
@@ -1276,6 +1369,60 @@
       "enum": ["still", "spin", "pulse"],
       "description": "still: never moves. spin: turns round. pulse: fades in and out. A person who asks the browser for less motion sees it still"
     },
+    "PageListProps": {
+      "title": "PageListProps",
+      "type": "object",
+      "description": "Settings of a page list widget: the project's pages as navigation, the open one highlighted",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "style": { "type": "string", "enum": ["list", "tabs", "icons", "bar"], "description": "list: icon and name down the side, grouped; tabs: names in a row; icons: large icon buttons in a row; bar: icon over name, sharing the width" },
+        "showGroups": { "type": "boolean", "description": "list: show each page group's heading (default true)" }
+      },
+      "unevaluatedProperties": false
+    },
+    "ClockProps": {
+      "title": "ClockProps",
+      "type": "object",
+      "description": "Settings of a clock widget: the time in the operator's browser",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "format": { "type": "string", "enum": ["time", "timeSeconds", "dateTime", "date"], "description": "What to show; missing means timeSeconds" },
+        "hour12": { "type": "boolean", "description": "12-hour clock instead of 24-hour" },
+        "showWeekday": { "type": "boolean", "description": "Put the weekday first (default true)" }
+      },
+      "unevaluatedProperties": false
+    },
+    "DriverStatusProps": {
+      "title": "DriverStatusProps",
+      "type": "object",
+      "description": "Settings of a driver status widget: whether each datasource is connected",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "compact": { "type": "boolean", "description": "One summary (2/3) instead of a chip for each datasource" }
+      },
+      "unevaluatedProperties": false
+    },
+    "UserMenuProps": {
+      "title": "UserMenuProps",
+      "type": "object",
+      "description": "Settings of a user menu widget: who is signed in, and signing in or out",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "showName": { "type": "boolean", "description": "Show the signed-in name beside the icon" }
+      },
+      "unevaluatedProperties": false
+    },
+    "RecipesProps": {
+      "title": "RecipesProps",
+      "type": "object",
+      "description": "Settings of a recipes widget: the project's recipes, each with a button that writes its values",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "recipeId": { "type": "string", "description": "Show only this recipe; missing shows every recipe" },
+        "showEntries": { "type": "boolean", "description": "List each recipe's tags and values (default true)" }
+      },
+      "unevaluatedProperties": false
+    },
     "PipeProps": {
       "title": "PipeProps",
       "type": "object",
@@ -1317,26 +1464,26 @@
       },
       "unevaluatedProperties": false
     },
-    "FaceplateProps": {
-      "title": "FaceplateProps",
+    "CustomWidgetProps": {
+      "title": "CustomWidgetProps",
       "type": "object",
-      "description": "Settings of a faceplate widget",
+      "description": "Settings of a custom widget placement",
       "allOf": [
         {
           "$ref": "#/$defs/FrameProps"
         }
       ],
       "properties": {
-        "faceplateId": {
+        "customWidgetId": {
           "type": "string",
-          "description": "Faceplate widget: id of the faceplate to show"
+          "description": "Custom widget: id of the custom widget to show"
         },
         "params": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Faceplate widget: parameter name → binding"
+          "description": "Custom widget: parameter name → binding"
         }
       },
       "unevaluatedProperties": false
@@ -1839,10 +1986,150 @@
         {
           "properties": {
             "type": {
-              "const": "faceplate"
+              "const": "customWidget"
             },
             "props": {
-              "$ref": "#/$defs/FaceplateProps"
+              "$ref": "#/$defs/CustomWidgetProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "pageList"
+            },
+            "props": {
+              "$ref": "#/$defs/PageListProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "clock"
+            },
+            "props": {
+              "$ref": "#/$defs/ClockProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "driverStatus"
+            },
+            "props": {
+              "$ref": "#/$defs/DriverStatusProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "userMenu"
+            },
+            "props": {
+              "$ref": "#/$defs/UserMenuProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "recipes"
+            },
+            "props": {
+              "$ref": "#/$defs/RecipesProps"
             },
             "dynamics": {
               "propertyNames": {
@@ -1898,7 +2185,7 @@
       "title": "WidgetBindings",
       "type": "object",
       "additionalProperties": false,
-      "description": "The tags a widget reads, by slot. Values are ds:path or ns:path (faceplate widgets may use {param})",
+      "description": "The tags a widget reads, by slot. Values are ds:path or ns:path (widgets inside a custom widget may use {param})",
       "properties": {
         "value": {
           "type": "string",
@@ -2260,10 +2547,10 @@
         "hidden": { "type": "boolean", "description": "Not shown on this screen size" }
       }
     },
-    "FaceplateWidget": {
-      "title": "FaceplateWidget",
+    "CustomWidgetPart": {
+      "title": "CustomWidgetPart",
       "type": "object",
-      "description": "A widget inside a faceplate. Same as Widget, but identified by localId",
+      "description": "A widget inside a custom widget. Same as Widget, but identified by localId, and it may say how it is laid out in a stack (flex, hiddenOn)",
       "required": [
         "localId",
         "type",
@@ -2307,6 +2594,12 @@
         "groupId": {
           "type": "string",
           "description": "IDE-only: widgets with the same groupId move together"
+        },
+        "flex": { "$ref": "#/$defs/PartFlex" },
+        "hiddenOn": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["tablet", "phone"] },
+          "description": "Screen sizes this part is left out of"
         },
         "props": {
           "type": "object",

@@ -9,21 +9,20 @@ import { Scripts, SessionVars } from "./Scripts";
 import { typedInitial } from "./typedInitial";
 import { ScriptEditor } from "./ScriptEditor";
 import { Users } from "./Users";
+import { ChromeSettings } from "./ChromeSettings";
 import { TagBrowser, TagScannerModal } from "./TagBrowser";
 import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
 import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertCheckField, CertPinModal, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
-import { AssetModel } from "./AssetModel";
-import { Faceplates } from "./Faceplates";
+import { CustomWidgets } from "./CustomWidgets";
 import { Namespace } from "./Namespace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat, unpackGitFiles } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
 import { StatusMessage } from "./StatusMessage";
 import { convertWidget } from "../store/presets";
-import { validateProject } from "../store/validateProject";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
 
@@ -92,7 +91,7 @@ export function LeftPanel({ width }: { width?: number }) {
     project, activePageId, setActivePage,
     addPage, renamePage, removePage,
     addDatasource, removeDatasource, updateDatasource,
-    exportJSON, loadProject, newProject,
+    exportJSON, loadProject,
   } = useProject();
 
   const [showMCP,    setShowMCP]    = useState(false);
@@ -101,7 +100,6 @@ export function LeftPanel({ width }: { width?: number }) {
   const [scannerDS,  setScannerDS]  = useState<{ id: string; label: string; type: string } | null>(null);
   const [renaming,   setRenaming]   = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  const [deploying,  setDeploying]  = useState(false);
   const [deployMsg,  setDeployMsg]  = useState("");
   const [autosaved,  setAutosaved]  = useState(false);
 
@@ -122,22 +120,6 @@ export function LeftPanel({ width }: { width?: number }) {
   const setProp = (patch: Partial<typeof project>) => {
     const p = JSON.parse(exportJSON());
     loadProject({ ...p, ...patch });
-  };
-
-  const doDeploy = async () => {
-    const problems = validateProject(useProject.getState().project);
-    if (problems.length) { setDeployMsg(`Not deployed: ${problems.join("; ")}`); return; }
-    setDeploying(true); setDeployMsg("");
-    try {
-      const r = await fetch(`${apiBase}/api/v1/project`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader(apiBase) },
-        body: exportJSON(),
-      });
-      const data = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number };
-      setDeployMsg(r.ok ? `✓ Deployed (${data.datasources ?? 0} ds, ${data.pages ?? 0} pg)` : `✗ ${data.error}`);
-    } catch (e) { setDeployMsg(`✗ ${(e as Error).message}`); }
-    finally { setDeploying(false); setTimeout(() => setDeployMsg(""), 4000); }
   };
 
   // A static snapshot of every page, with the values the IDE has now.
@@ -194,11 +176,6 @@ export function LeftPanel({ width }: { width?: number }) {
             placeholder="Untitled Project"
             className={`flex-1 min-w-0 ${inp}`}
           />
-          <button
-            onClick={() => { if (window.confirm("Start a new blank project? Unsaved changes will be lost.")) newProject(); }}
-            title="New project"
-            className="shrink-0 text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200"
-          >New</button>
         </div>
         <div className="flex items-center justify-between min-h-[14px]">
           {autosaved
@@ -334,14 +311,13 @@ export function LeftPanel({ width }: { width?: number }) {
           <Alarms />
         </TreeSection>
 
-        {/* Runtime scripts */}
-        <TreeSection label="Scripts" count={project.scripts?.length}>
+        {/* Runtime scripts, and the session variables (kept per browser tab) that screens and scripts share */}
+        <TreeSection label="Scripts" count={(project.scripts?.length ?? 0) + (project.sessionVars?.length ?? 0)}>
           <Scripts />
-        </TreeSection>
-
-        {/* Session variables, kept per browser tab */}
-        <TreeSection label="Session" count={project.sessionVars?.length}>
-          <SessionVars />
+          <div className="mt-3 pt-2 border-t border-zinc-800/60">
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5">Session variables</div>
+            <SessionVars />
+          </div>
         </TreeSection>
 
         {/* Recipes */}
@@ -349,22 +325,22 @@ export function LeftPanel({ width }: { width?: number }) {
           <Recipes />
         </TreeSection>
 
-        {/* Users */}
-        <TreeSection label="Users">
-          <Users />
+        {/* Custom widgets */}
+        <TreeSection label="Custom widgets" count={project.customWidgets?.length}>
+          <CustomWidgets />
         </TreeSection>
 
-        {/* Assets & Faceplates */}
-        <TreeSection label="Assets">
-          <AssetModel />
-        </TreeSection>
-
-        <TreeSection label="Faceplates" count={project.faceplates?.length}>
-          <Faceplates />
-        </TreeSection>
-
-        {/* Settings */}
-        <TreeSection label="Settings">
+        {/* Project properties: the project's settings, its users and audit trail, and getting it in and out */}
+        <TreeSection label="Project properties">
+          <div className="flex flex-wrap gap-1 px-3 py-2 border-b border-zinc-800/60">
+            <button onClick={exportHtml} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export a snapshot of every page as one HTML file (no live values)">Export HTML</button>
+            <button onClick={() => downloadGitFormat(project)} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export the project as the files a Git repository holds">Export Git</button>
+            <button onClick={importGit} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Import a project file or a Git export">Import JSON</button>
+            <button onClick={() => setShowMCP(true)} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Connect an AI assistant to this runtime">MCP setup</button>
+            {deployMsg && <StatusMessage text={deployMsg} className="w-full text-[10px] text-zinc-400 px-1" />}
+          </div>
+          <div className="ml-3 border-l border-zinc-800">
+          <TreeSection label="Settings">
           <div className="p-3 space-y-4">
             {/* Security */}
             <div>
@@ -392,32 +368,19 @@ export function LeftPanel({ width }: { width?: number }) {
             <CanvasSettings />
             <SymbolPacksSettings />
           </div>
+          </TreeSection>
+          <TreeSection label="Header and navigation">
+            <ChromeSettings />
+          </TreeSection>
+          <TreeSection label="Users">
+            <Users />
+          </TreeSection>
+          <TreeSection label="Audit">
+            <AuditTrail />
+          </TreeSection>
+          </div>
         </TreeSection>
 
-        {/* Audit */}
-        <TreeSection label="Audit">
-          <AuditTrail />
-        </TreeSection>
-
-      </div>
-
-      {/* ── Bottom action bar ────────────────────────────────────────── */}
-      <div className="border-t border-zinc-800 p-2 space-y-1 shrink-0">
-        {deployMsg && <StatusMessage text={deployMsg} className="text-[10px] text-zinc-400 px-1" />}
-        <button
-          onClick={doDeploy}
-          disabled={deploying}
-          className="w-full text-xs py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
-        >
-          <span>{deploying ? "⏳" : "↑"}</span>
-          {deploying ? "Deploying…" : "Deploy to Runtime"}
-        </button>
-        <div className="grid grid-cols-3 gap-1">
-          <button onClick={exportHtml} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export a snapshot of every page as one HTML file (no live values; use the operator screen for those)">⬇ HTML</button>
-          <button onClick={() => downloadGitFormat(project)} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export Git format">⬇ Git</button>
-          <button onClick={importGit} className="text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Import project">⬆ Import</button>
-        </div>
-        <button onClick={() => setShowMCP(true)} className="w-full text-[10px] py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-500">⚙ MCP Setup</button>
       </div>
 
       {/* Modals */}

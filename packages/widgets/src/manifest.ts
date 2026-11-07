@@ -45,10 +45,12 @@ export type Field = FieldBase & (
   | { kind: "image" }
   /** A symbol from the symbol packs. */
   | { kind: "symbol" }
-  /** A faceplate of the project. */
-  | { kind: "faceplate" }
-  /** Values for the chosen faceplate's parameters. */
-  | { kind: "faceplateParams" }
+  /** A recipe of the project. */
+  | { kind: "recipe" }
+  /** A custom widget of the project. */
+  | { kind: "customWidget" }
+  /** Values for the chosen custom widget's parameters. */
+  | { kind: "customWidgetParams" }
   | { kind: "list"; item: Field[];
       /** A new item, given the list so far. */
       newItem: (items: Config[]) => Config;

@@ -62,7 +62,7 @@ export function collectTexts(project: Project): string[] {
     add(pg.name); add(pg.group);
     pg.widgets.forEach(widget);
   }
-  for (const fp of project.faceplates ?? []) fp.widgets.forEach((w) => widget(w as unknown as Widget));
+  for (const fp of project.customWidgets ?? []) fp.widgets.forEach((w) => widget(w as unknown as Widget));
   for (const r of project.alarmRules ?? []) { add(r.name); add(r.message); }
   return [...seen];
 }

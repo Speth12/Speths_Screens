@@ -8,10 +8,14 @@
 #   sh run-test.sh loadtest.screens.json   # a heavy screen: 250 widgets, 500 driven properties
 #
 # Stop it with Ctrl+C. Then point the panel's Web application URL at  http://localhost:8090
+#
+# To let the IDE on your PC connect to it (no login unless the project turns security on, so only on a
+# network you trust):   SPETHS_LISTEN=:8090 sh run-test.sh
 cd "$(dirname "$0")" || exit 1
 PROJECT="${1:-design-directions.screens.json}"
+LISTEN="${SPETHS_LISTEN:-127.0.0.1:8090}"
 [ -f "$PROJECT" ] || { echo "no such project file here: $PROJECT"; exit 1; }
 chmod +x ./speths-screens
 echo "Speth's Screens on this panel, project $PROJECT"
 echo "Open  http://localhost:8090  in the panel's Web application URL. Ctrl+C stops it."
-exec ./speths-screens --mode=runtime --addr=127.0.0.1:8090 --project="$PROJECT" --history=:memory:
+exec ./speths-screens --mode=runtime --addr="$LISTEN" --project="$PROJECT" --history=:memory:

@@ -3,9 +3,9 @@ package project
 import "github.com/Speth12/Speths_Screens/internal/expr"
 
 // WidgetView is what the runtime reads of a widget, the same for a page
-// widget and a widget inside a faceplate (whose tags may hold {param}).
+// widget and a widget inside a custom widget (whose tags may hold {param}).
 type WidgetView struct {
-	ID       string // a faceplate widget's localId
+	ID       string // a custom widget part's localId
 	Type     WidgetType
 	Props    *WidgetProps
 	Bindings *WidgetBindings
@@ -19,7 +19,7 @@ func (w Widget) View() WidgetView {
 }
 
 // View returns what the runtime reads of w.
-func (w FaceplateWidget) View() WidgetView {
+func (w CustomWidgetPart) View() WidgetView {
 	v := WidgetView{ID: w.LocalID, Type: w.Type, Bindings: w.Bindings, Events: w.Events, Dynamics: w.Dynamics}
 	if w.Props != nil {
 		p := WidgetProps(*w.Props) // same settings, generated twice by quicktype
@@ -44,7 +44,7 @@ func (v WidgetView) ValueTag() string {
 
 // Tags lists every tag the widget reads or writes, in no set order and
 // possibly repeated: its bindings, the tags in its settings (trend series,
-// table rows, faceplate parameters), its dynamics and its actions.
+// table rows, custom widget parameters), its dynamics and its actions.
 func (v WidgetView) Tags() []string {
 	var out []string
 	add := func(s *string) {
@@ -64,7 +64,7 @@ func (v WidgetView) Tags() []string {
 		for _, r := range p.Rows {
 			out = append(out, r.Binding)
 		}
-		for _, b := range p.Params { // faceplate instance: param → binding
+		for _, b := range p.Params { // custom widget instance: param → binding
 			out = append(out, b)
 		}
 	}
@@ -107,7 +107,7 @@ func (v WidgetView) Limits() (min, max *float64) {
 }
 
 // ExprTags lists the tags an expression reads, as bindings: "ds:path", or
-// "{name}" for a faceplate parameter, which the faceplate fills in. An
+// "{name}" for a custom widget parameter, which the custom widget fills in. An
 // expression that does not compile reads nothing.
 func ExprTags(src string) []string {
 	e, err := expr.CompileTemplate(src)

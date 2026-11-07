@@ -22,6 +22,18 @@ Put `speths-screens`, a project (for example `samples/design-directions.screens.
 folder on the panel (`/home/admin/panel-test` was used), then run `install-service.sh`. Point the panel's
 Web application URL at `http://localhost:8090/?perf` to show the screen and the perf readout.
 
+## Deploying from the IDE on your PC (lab use, no login)
+
+By default the runtime listens on the panel only, so the IDE cannot reach it. To let your PC's IDE connect:
+
+1. On the panel: `SPETHS_LISTEN=:8090 sh install-service.sh` (or `SPETHS_LISTEN=:8090 sh run-test.sh` for a test run).
+2. On your PC, check it answers (200 means it does; use the panel's address). In PowerShell, where `curl` means something else: `(Invoke-WebRequest http://10.0.0.118:8090/ -UseBasicParsing).StatusCode`. In a shell with real curl: `curl -s -o /dev/null -w "%{http_code}
+" http://10.0.0.118:8090/`.
+3. In the IDE, open the target gear, add a target `http://10.0.0.118:8090`, select it, then Deploy or Pull. The IDE run with `npm run dev` is already an allowed origin; another address needs `--cors-origins`.
+4. To close it again: `sh install-service.sh` with no `SPETHS_LISTEN`.
+
+**This has no login** unless the project turns security on: anyone who can reach the panel can deploy a project to it, write to its tags and read everything. Use it only on a network you trust. The panel's own firewall rules (`iptables`) have not been looked at; if step 2 fails, that is the first place to look.
+
 ## Things to know
 
 - **Never commit `panel-probe.txt`.** It holds the panel's network addresses and hardware address. It is git-ignored.

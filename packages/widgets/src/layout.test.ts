@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COL_W, GAP, PREVIEW_MINIMUM, ROW_H, deviceFor, effectivePlacement, fitScale, forDevice, pageExtent, placeFor, placement, stageSize } from "./layout";
+import { COL_W, GAP, PREVIEW_MINIMUM, ROW_H, deviceFor, effectivePlacement, fitScale, forDevice, pageExtent, placeFor, stackFor, stackStyle, partStyle, slotFor, slotsByEdge, placement, stageSize } from "./layout";
 
 const w = (x: number, y: number, ww: number, h: number) => ({ x, y, w: ww, h });
 
@@ -121,5 +121,96 @@ describe("screen sizes", () => {
     it("other layouts are left alone", () => {
       expect(placeFor(withLayout, "phone", { y: 6 })).toEqual({ layout: { tablet: { x: 0, w: 8 }, phone: { x: 0, y: 6, w: 4, h: 2 } } });
     });
+  });
+});
+
+describe("custom widget stacks", () => {
+  const nav = { mode: "stack" as const, direction: "column" as const, gap: 4, phone: { direction: "row" as const } };
+
+  it("a free layout is not a stack", () => {
+    expect(stackFor(undefined, "desktop")).toBeNull();
+    expect(stackFor({ mode: "free", direction: "row" }, "desktop")).toBeNull();
+  });
+
+  it("fills what the layout leaves out with defaults", () => {
+    expect(stackFor({ mode: "stack" }, "desktop")).toEqual({ direction: "row", gap: 8, padding: 0, justify: "start", align: "stretch", wrap: false });
+  });
+
+  it("a smaller screen replaces a field and inherits the rest", () => {
+    expect(stackFor(nav, "desktop")).toMatchObject({ direction: "column", gap: 4 });
+    expect(stackFor(nav, "tablet")).toMatchObject({ direction: "column", gap: 4 });
+    expect(stackFor(nav, "phone")).toMatchObject({ direction: "row", gap: 4 });
+  });
+
+  it("a phone inherits from the tablet before the desktop", () => {
+    const l = { mode: "stack" as const, direction: "column" as const, tablet: { gap: 2, direction: "row" as const }, phone: { gap: 1 } };
+    expect(stackFor(l, "phone")).toMatchObject({ direction: "row", gap: 1 });
+  });
+
+  it("the container's CSS", () => {
+    const css = stackStyle(stackFor({ mode: "stack", direction: "column", justify: "between", align: "center", wrap: true, padding: 6 }, "desktop")!);
+    expect(css).toMatchObject({ display: "flex", flexDirection: "column", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", padding: 6 });
+  });
+
+  describe("a part's CSS", () => {
+    const row = stackFor({ mode: "stack", direction: "row" }, "desktop")!;
+    const col = stackFor({ mode: "stack", direction: "column", align: "center" }, "desktop")!;
+    it("keeps its grid size along the direction", () => {
+      expect(partStyle({ w: 2, h: 1 }, row, "desktop")).toMatchObject({ flex: "0 1 168px" });
+      expect(partStyle({ w: 2, h: 1 }, col, "desktop")).toMatchObject({ flex: "0 1 64px", width: 168 });
+    });
+    it("a basis in pixels wins, and grow shares the free room", () => {
+      expect(partStyle({ w: 2, h: 1, flex: { basis: 240 } }, row, "desktop")).toMatchObject({ flex: "0 1 240px" });
+      expect(partStyle({ w: 2, h: 1, flex: { grow: 1 } }, row, "desktop")).toMatchObject({ flex: "1 1 0px" });
+      expect(partStyle({ w: 2, h: 1, flex: { grow: 2, basis: 100 } }, row, "desktop")).toMatchObject({ flex: "2 1 100px" });
+    });
+    it("grow and basis can differ on a smaller screen and inherit the rest", () => {
+      const p = { w: 2, h: 1, flex: { basis: 220, phone: { grow: 1 } } };
+      expect(partStyle(p, row, "desktop")).toMatchObject({ flex: "0 1 220px" });
+      expect(partStyle(p, row, "tablet")).toMatchObject({ flex: "0 1 220px" });
+      expect(partStyle(p, row, "phone")).toMatchObject({ flex: "1 1 220px" });
+      expect(partStyle({ w: 2, h: 1, flex: { grow: 1, tablet: { grow: 0, basis: 90 } } }, row, "phone")).toMatchObject({ flex: "0 1 90px" });
+    });
+    it("is left out on the screen sizes it names", () => {
+      const clock = { w: 2, h: 1, hiddenOn: ["phone" as const] };
+      expect(partStyle(clock, row, "phone")).toBeNull();
+      expect(partStyle(clock, row, "tablet")).not.toBeNull();
+      expect(partStyle(clock, row, "desktop")).not.toBeNull();
+    });
+  });
+});
+
+describe("frame slots", () => {
+  const header = { edge: "top" as const, size: 60, phone: { size: 52 } };
+  const nav = { edge: "left" as const, size: 208, devices: ["desktop" as const, "tablet" as const] };
+  const bottom = { edge: "bottom" as const, size: 64, devices: ["phone" as const] };
+
+  it("a slot has its own edge and size on the desktop", () => {
+    expect(slotFor(header, "desktop")).toEqual({ edge: "top", size: 60 });
+  });
+
+  it("a smaller screen replaces a field and inherits the rest", () => {
+    expect(slotFor(header, "tablet")).toEqual({ edge: "top", size: 60 });
+    expect(slotFor(header, "phone")).toEqual({ edge: "top", size: 52 });
+    expect(slotFor({ ...nav, tablet: { edge: "top", size: 72 } }, "phone")).toBeNull();
+    expect(slotFor({ edge: "left", size: 200, tablet: { edge: "top", size: 72 } }, "phone")).toEqual({ edge: "top", size: 72 });
+  });
+
+  it("a slot is left out of the screen sizes it does not list", () => {
+    expect(slotFor(nav, "phone")).toBeNull();
+    expect(slotFor(bottom, "desktop")).toBeNull();
+    expect(slotFor(bottom, "phone")).toEqual({ edge: "bottom", size: 64 });
+  });
+
+  it("slotsByEdge groups what a device draws, in the project's order", () => {
+    const slots = [{ id: "h", ...header }, { id: "n", ...nav }, { id: "b", ...bottom }, { id: "h2", edge: "top" as const, size: 20 }];
+    const desktop = slotsByEdge(slots, "desktop");
+    expect(desktop.top.map((x) => x.slot.id)).toEqual(["h", "h2"]);
+    expect(desktop.left.map((x) => [x.slot.id, x.size])).toEqual([["n", 208]]);
+    expect(desktop.bottom).toEqual([]);
+    const phone = slotsByEdge(slots, "phone");
+    expect(phone.left).toEqual([]);
+    expect(phone.bottom.map((x) => x.slot.id)).toEqual(["b"]);
+    expect(phone.top.map((x) => x.size)).toEqual([52, 20]);
   });
 });

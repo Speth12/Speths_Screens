@@ -88,7 +88,7 @@ func drivenNameProblems(inst any) []string {
 	}
 	root, _ := inst.(map[string]any)
 	var out []string
-	for _, owner := range []string{"pages", "faceplates", "presets"} {
+	for _, owner := range []string{"pages", "customWidgets", "presets"} {
 		for i, o := range objects(root[owner]) {
 			for j, w := range objects(o["widgets"]) {
 				dyn, _ := w["dynamics"].(map[string]any)
@@ -252,16 +252,16 @@ func describe(inst any, ve *jsonschema.ValidationError) string {
 	return where + ": " + what
 }
 
-// locate names the page, faceplate or preset and the widget a location is in,
+// locate names the page, custom widget or preset and the widget a location is in,
 // and returns the rest of the location within it.
 func locate(inst any, loc []string) (string, []string) {
 	root, _ := inst.(map[string]any)
-	owners := map[string]string{"pages": "page", "faceplates": "faceplate", "presets": "preset"}
+	owners := map[string]string{"pages": "page", "customWidgets": "custom widget", "presets": "preset"}
 	if kindName, ok := owners[loc0(loc)]; ok && len(loc) >= 4 && loc[2] == "widgets" {
 		owner := item(root[loc[0]], loc[1])
 		w := item(owner["widgets"], loc[3])
 		id := w["id"]
-		if loc[0] == "faceplates" {
+		if loc[0] == "customWidgets" {
 			id = w["localId"]
 		}
 		return fmt.Sprintf("%s %q, widget %v (%v)", kindName, str(owner["name"]), id, w["type"]), loc[4:]

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { WidgetHostProvider } from "@speths-screens/widgets";
-import { useOperatorHost } from "./widgetHost";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChromeFrame, WidgetHostProvider, effectiveFrame } from "@speths-screens/widgets";
+import { SETTINGS_PAGE_ID, useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
 import { PageStage } from "./PageStage";
@@ -25,88 +25,13 @@ const storedMode = (): Mode | null => {
   return v === "light" || v === "dark" ? v : null;
 };
 
-import type { Project, Recipe } from "@speths-screens/shared-types";
+import type { Project } from "@speths-screens/shared-types";
 import { readStored } from "./storage";
-import { PageNav, navMode, useWindowWidth, type NavMode } from "./Nav";
-import { TopBar } from "./TopBar";
+import { useWindowWidth } from "./useWindowWidth";
 import { SettingsScreen } from "./SettingsScreen";
 import { PerfReadout, perfEnabled } from "./PerfReadout";
 
 
-
-// ── Recipes panel ─────────────────────────────────────────────────────────
-function RecipesPanel({ onClose }: { onClose: () => void }) {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [applying, setApplying] = useState<string | null>(null);
-  const [result, setResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
-
-  useEffect(() => {
-    apiFetch("/api/v1/recipes")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: Recipe[]) => setRecipes(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  const apply = async (r: Recipe) => {
-    setApplying(r.id);
-    setResult(null);
-    try {
-      const res = await apiFetch(`/api/v1/recipes/${encodeURIComponent(r.id)}/apply`, { method: "POST" });
-      const data = (await res.json()) as { ok: boolean; applied?: number; errors?: string[] };
-      setResult({ id: r.id, ok: data.ok, msg: data.ok ? `Applied ${data.applied ?? "?"} tag${(data.applied ?? 1) !== 1 ? "s" : ""}` : (data.errors?.join(", ") ?? "Error") });
-    } catch {
-      setResult({ id: r.id, ok: false, msg: "Network error" });
-    } finally {
-      setApplying(null);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 flex" onClick={onClose}>
-      <div className="flex-1" />
-      <div
-        className="w-80 bg-zinc-900 border-l border-zinc-700 flex flex-col h-full shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-          <span className="text-sm font-semibold">Recipes</span>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {recipes.length === 0 && (
-            <div className="text-zinc-600 text-xs italic text-center pt-6">No recipes configured</div>
-          )}
-          {recipes.map((rec) => {
-            const res = result?.id === rec.id ? result : null;
-            return (
-              <div key={rec.id} className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 space-y-2">
-                <div className="font-medium text-sm">{rec.name}</div>
-                {rec.description && <div className="text-[11px] text-zinc-500">{rec.description}</div>}
-                <div className="text-[10px] text-zinc-600 font-mono space-y-0.5">
-                  {rec.entries.map((e, i) => (
-                    <div key={i}>{e.binding.split(":").pop()} = {String(e.value)}</div>
-                  ))}
-                </div>
-                {res && (
-                  <div className={`text-[11px] font-medium ${res.ok ? "text-emerald-400" : "text-red-400"}`}>
-                    {res.ok ? "✓ " : "✗ "}{res.msg}
-                  </div>
-                )}
-                <button
-                  onClick={() => apply(rec)}
-                  disabled={applying === rec.id}
-                  className="w-full py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-xs font-semibold transition-colors"
-                >
-                  {applying === rec.id ? "Applying…" : "Apply Recipe"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function App() {
   const [project, setProject] = useState<Project | null>(null);
@@ -114,7 +39,6 @@ export function App() {
   const windowWidth = useWindowWidth();
   const [error, setError] = useState("");
   const [alarms, setAlarms] = useState<AlarmEvent[]>([]);
-  const [showRecipes, setShowRecipes] = useState(false);
   const [dsStatus, setDsStatus] = useState<Array<{ id: string; connected: boolean; tagCount: number; lastError?: string }>>([]);
   const wsAlarmRef = useRef<WebSocket | null>(null);
 
@@ -252,18 +176,27 @@ export function App() {
 
   const navigateToPage = useCallback((pageId: string) => {
     if (!project) return;
+    if (pageId === SETTINGS_PAGE_ID) { setActivePage(project.pages.length); return; }
     const idx = project.pages.findIndex((p) => p.id === pageId);
     if (idx >= 0) setActivePage(idx);
   }, [project]);
 
-  const widgetHost = useOperatorHost(project, navigateToPage, language);
+  const openPage = project?.pages[activePage] ?? project?.pages[0];
+  const token = getToken();
+  const shell = useMemo(() => ({
+    drivers: dsStatus.map((d) => ({ ...d, label: project?.datasources.find((x) => x.id === d.id)?.label || d.id })),
+    token, loginRequired: project?.security?.mode === "login", onLogout: () => setToken(null), settings: !isKiosk,
+  }), [dsStatus, project, token, isKiosk]);
+  const onSettings = !isKiosk && !!project && activePage === project.pages.length;
+  const widgetHost = useOperatorHost(project, navigateToPage, language, {
+    pageName: onSettings ? "Settings" : openPage?.name, pageId: onSettings ? SETTINGS_PAGE_ID : openPage?.id, projectName: project?.name,
+  }, shell);
 
   // The open page's script, in a worker; navigate takes a page name or id.
   const navigateByName = useCallback((nameOrId: string) => {
     const p = project?.pages.find((pg) => pg.id === nameOrId || pg.name === nameOrId);
     if (p) navigateToPage(p.id);
   }, [project, navigateToPage]);
-  const openPage = project?.pages[activePage] ?? project?.pages[0];
   usePageScript(openPage?.id, openPage?.script, navigateByName);
 
   // Tell the operator when a write did not go through.
@@ -327,13 +260,10 @@ export function App() {
   const tr = translator(project, language);
   const settingsIndex = project.pages.length;
   const settingsOpen = !isKiosk && activePage === settingsIndex;
-  const navPages = [
-    ...project.pages.map((p) => ({ ...p, name: tr(p.name), group: p.group ? tr(p.group) : p.group })),
-    { id: "__settings", name: tr("Settings"), icon: "settings" as const, widgets: [] },
-  ];
-  const nav: NavMode = isKiosk ? "tabs" : navMode(project.shell?.nav, windowWidth);
-  const phone = nav === "bottom";
-  const securityOff = project.security?.mode !== "login";
+  const device = deviceFor(windowWidth);
+  const phone = device === "phone";
+  // The header and navigation: the project's own frame, or the built-in one (kiosk draws neither).
+  const frame = isKiosk ? [] : effectiveFrame(project);
 
   return (
     <AlarmContext.Provider value={{ alarms, ack }}>
@@ -355,24 +285,6 @@ export function App() {
         className={`${isKiosk ? "h-screen overflow-hidden" : "h-screen"} flex flex-col`}
         style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        {/* Top bar — hidden in kiosk mode */}
-        {!isKiosk && (
-          <TopBar
-            projectName={project.name || "Speth's Screens"}
-            pageName={settingsOpen ? tr("Settings") : page ? tr(page.name) : undefined}
-            drivers={dsStatus.map((d) => ({ ...d, label: project.datasources.find((x) => x.id === d.id)?.label || d.id }))}
-            phone={phone}
-            menu={{ token: getToken(), loginRequired: !securityOff, onLogout: () => setToken(null) }}
-          />
-        )}
-        {!isKiosk && nav === "tabs" && project.pages.length > 1 && (
-          <div className="px-5 py-2 shrink-0" style={{ background: "var(--card)", borderBottom: "var(--line-width, 1px) solid var(--border)" }}>
-            <PageNav mode="tabs" pages={navPages} active={activePage} onSelect={setActivePage} />
-          </div>
-        )}
-
-        {!isKiosk && nav === "toolbar" && <PageNav mode="toolbar" pages={navPages} active={activePage} onSelect={setActivePage} />}
-
         {/* Kiosk page switcher — touch-friendly tab bar at the top */}
         {isKiosk && project.pages.length > 1 && (
           <div className="flex shrink-0 border-b border-zinc-800">
@@ -392,8 +304,8 @@ export function App() {
           </div>
         )}
 
-        <div className="flex flex-1 min-h-0">
-        {!isKiosk && nav === "sidebar" && <PageNav mode="sidebar" pages={navPages} active={activePage} onSelect={setActivePage} />}
+        <div className="flex-1 min-h-0">
+        <ChromeFrame frame={frame} device={device}>
         {/* Canvas — responsive, swipe-enabled in kiosk */}
         <div
           ref={canvasRef}
@@ -411,7 +323,6 @@ export function App() {
               language={language}
               onLanguage={chooseLanguage}
               fit={project.canvasResolution?.type !== "fixed" && !phone ? { on: scaleToFit, toggle: toggleScale } : undefined}
-              onRecipes={() => setShowRecipes(true)}
               onLock={project.pin ? () => { setAuthed(false); sessionStorage.removeItem(AUTHED_KEY); } : undefined}
             />
           ) : page.widgets.length === 0 ? (
@@ -422,14 +333,14 @@ export function App() {
               resolution={project.canvasResolution}
               pixel={project.canvasSnap === "pixel"}
               fit={scaleToFit || phone}
-              device={deviceFor(windowWidth)}
+              device={device}
               viewport={viewport}
             />
           )}
         </div>
 
+        </ChromeFrame>
         </div>
-        {!isKiosk && nav === "bottom" && <PageNav mode="bottom" pages={navPages} active={activePage} onSelect={setActivePage} />}
 
         {/* Kiosk status bar — clock + alarm count */}
         {isKiosk && (
@@ -438,8 +349,6 @@ export function App() {
       </div>
 
 
-      {/* Recipes slide-out panel */}
-      {showRecipes && <RecipesPanel onClose={() => setShowRecipes(false)} />}
 
     </WidgetHostProvider>
     </AlarmContext.Provider>

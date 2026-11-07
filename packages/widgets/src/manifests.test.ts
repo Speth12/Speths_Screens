@@ -25,8 +25,8 @@ function settingNode(type: string, key: string): SchemaNode | undefined {
 /** Which schema types a field kind may edit. */
 const KIND_TYPES: Record<Field["kind"], string[] | "any"> = {
   number: ["number", "integer"], text: ["string"], color: ["string"], choice: ["string"],
-  page: ["string"], binding: ["string"], image: ["string"], symbol: ["string"], faceplate: ["string"],
-  boolean: ["boolean"], list: ["array"], faceplateParams: ["object"], value: "any",
+  page: ["string"], binding: ["string"], recipe: ["string"], image: ["string"], symbol: ["string"], customWidget: ["string"],
+  boolean: ["boolean"], list: ["array"], customWidgetParams: ["object"], value: "any",
 };
 
 function checkField(where: string, f: Field, node: SchemaNode | undefined) {
