@@ -50,7 +50,13 @@ export type ScriptEvent =
   | { kind: "alarm"; rule: string; active: boolean };
 
 /** The names only runtime scripts have. The source is the body of an async
- *  function run on each trigger, so top-level await and return work. */
+ *  function run on each trigger, so top-level await and return work.
+
+ *  A run that awaits a write lets the next trigger start, so runs of one script
+ *  can overlap: a script triggered faster than its writes answer (an `every`
+ *  of 250 ms against a PLC write of about 300 ms) should guard itself, for
+ *  example by returning at the top while `state.busy` is set, and set counters
+ *  in `state` before its first await. */
 export interface RuntimeScriptApi {
   /** Kept between runs of this script (lost when the project is deployed
    *  again or the runtime restarts; use a retained memory tag to keep more). */
