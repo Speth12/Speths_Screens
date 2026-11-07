@@ -2,8 +2,8 @@
 // (250 widgets, each driving bgColor and staticText) whose tags change once a
 // second. Run from the repository root:
 //
-//   node scripts/loadtest/make-project.mjs [out.json]      # default soak-runs/loadtest.xhmi.json
-//   go run ./cmd/speths-screens --mode=dev --project=soak-runs/loadtest.xhmi.json
+//   node scripts/loadtest/make-project.mjs [out.json]      # default soak-runs/loadtest.screens.json
+//   go run ./cmd/speths-screens --mode=dev --project=soak-runs/loadtest.screens.json
 //
 // Open the operator screen (http://127.0.0.1:3001), then in Chrome DevTools
 // open Rendering and turn on "Frame rendering stats", or record 30 s in the
@@ -15,7 +15,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-const out = process.argv[2] ?? "soak-runs/loadtest.xhmi.json";
+const out = process.argv[2] ?? "soak-runs/loadtest.screens.json";
 const WIDGETS = 250, TAGS = 50, COLS = 25, W = 76, H = 108;
 
 const tags = [

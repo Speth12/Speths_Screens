@@ -256,7 +256,7 @@ func TestConcurrentDemandEndsWithFinalUnion(t *testing.T) {
 }
 
 func TestDemoProjectDemand(t *testing.T) {
-	p, err := project.Load("../../demo.xhmi.json")
+	p, err := project.Load("../../demo.screens.json")
 	if err != nil {
 		t.Fatal(err)
 	}

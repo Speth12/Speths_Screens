@@ -196,7 +196,6 @@ function RuntimeLoginModal({
 
 type HeaderProps = {
   onHelp: () => void;
-  onDemo: () => void;
   onGallery: () => void;
   onTheme: () => void;
   onLanguages: () => void;
@@ -205,7 +204,7 @@ type HeaderProps = {
   onPreview: () => void;
 };
 
-export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJSON, onToggleJSON, onPreview }: HeaderProps) {
+export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onToggleJSON, onPreview }: HeaderProps) {
   const { exportJSON, loadProject } = useProject();
   const { canUndo, canRedo, undo, redo } = useProject(
     useShallow((s) => ({ canUndo: s.canUndo, canRedo: s.canRedo, undo: s.undo, redo: s.redo }))
@@ -256,7 +255,7 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.xhmi.json`;
+    a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.screens.json`;
     a.click();
     URL.revokeObjectURL(url);
     setMsg("saved");
@@ -355,7 +354,7 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↓ Save</button>
       <button onClick={() => fileInputRef.current?.click()} title="Load from file"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↑ Load</button>
-      <input ref={fileInputRef} type="file" accept=".json,.xhmi.json" className="hidden" onChange={loadFromFile} />
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={loadFromFile} />
       <button onClick={pullFromRuntime} disabled={busy !== "none"}
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 shrink-0">
         {busy === "pull" ? "…" : "Pull"}
@@ -365,7 +364,7 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
         {busy === "deploy" ? "deploying…" : "Deploy"}
       </button>
 
-      {/* Demo */}
+      {/* What the editor shows: screen size and where the values come from */}
       <DeviceSwitch />
       <DataSwitch />
       <button onClick={onTheme} title="The look of the screens: a theme, or its elements mixed"
@@ -374,8 +373,6 @@ export function Header({ onHelp, onDemo, onGallery, onTheme, onLanguages, showJS
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Languages</button>
       <button onClick={onGallery} title="Every widget type in every state, under the theme"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 shrink-0">Gallery</button>
-      <button onClick={onDemo} title="Platform feature demo"
-        className="text-xs px-2 py-1 rounded bg-violet-700 hover:bg-violet-600 text-white font-medium shrink-0">Demo</button>
 
       {/* Help */}
       <button onClick={onHelp} title="Keyboard shortcuts (?)"

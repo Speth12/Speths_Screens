@@ -1,5 +1,4 @@
 # Build artifacts
-/x-hmi*
 /speths-screens*
 
 # Frontend dev artifacts (built inside Docker, not needed from host)
@@ -14,7 +13,7 @@ cmd/speths-screens/ui
 
 # Data files that should come from volume mounts, not the image
 *.db
-*.xhmi.json
+*.screens.json
 project/
 
 # Git / editor

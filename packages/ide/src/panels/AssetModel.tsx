@@ -30,13 +30,11 @@ function NodeIcon({ iconType }: { iconType?: AssetNode["iconType"] }) {
 }
 
 function EditForm({ node, onClose }: { node: AssetNode; onClose: () => void }) {
-  const { updateAsset, addAsset, project } = useProject();
+  const { updateAsset, addAsset } = useProject();
   const [name, setName] = useState(node.name);
   const [prefix, setPrefix] = useState(node.tagPrefix ?? "");
   const [desc, setDesc] = useState(node.description ?? "");
   const [iconType, setIconType] = useState<AssetNode["iconType"]>(node.iconType ?? "device");
-  const [udtId, setUdtId] = useState(node.udtId ?? "");
-  const udts = project.udts ?? [];
 
   const save = () => {
     updateAsset(node.id, {
@@ -44,7 +42,6 @@ function EditForm({ node, onClose }: { node: AssetNode; onClose: () => void }) {
       tagPrefix: prefix || undefined,
       description: desc || undefined,
       iconType,
-      udtId: udtId || undefined,
     });
     onClose();
   };
@@ -72,13 +69,6 @@ function EditForm({ node, onClose }: { node: AssetNode; onClose: () => void }) {
           </button>
         ))}
       </div>
-      {udts.length > 0 && (
-        <select value={udtId} onChange={(e) => setUdtId(e.target.value)}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs">
-          <option value="">No UDT</option>
-          {udts.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
-      )}
       <div className="flex gap-1.5 pt-0.5">
         <button onClick={save} className="flex-1 text-[10px] py-1 rounded bg-blue-600 hover:bg-blue-500 text-white">Save</button>
         <button onClick={addChild} className="text-[10px] px-2 py-1 rounded bg-zinc-700 hover:bg-zinc-600">+ Child</button>

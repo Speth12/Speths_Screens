@@ -7,12 +7,6 @@ cmd/speths-screens/speths-screens
 speths-screens.exe
 speths-screens.exe~
 speths-screens-*
-# binaries from before the rename
-/x-hmi
-x-hmi.exe
-x-hmi.exe~
-x-hmi.exe.bak
-x-hmi-*
 
 # generated TLS certs
 *.pem
@@ -23,7 +17,7 @@ x-hmi-*
 *.db-wal
 
 # Project files (user data — mount via volume, don't commit)
-project/*.xhmi.json
+project/*.screens.json
 project/project.json
 
 # Operator UI embed dir (built by Dockerfile / make build-operator)

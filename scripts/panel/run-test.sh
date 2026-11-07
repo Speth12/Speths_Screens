@@ -5,11 +5,11 @@
 #
 #   cd /home/admin/panel-test
 #   sh run-test.sh                      # the design directions sample (no PLC needed)
-#   sh run-test.sh loadtest.xhmi.json   # a heavy screen: 250 widgets, 500 driven properties
+#   sh run-test.sh loadtest.screens.json   # a heavy screen: 250 widgets, 500 driven properties
 #
 # Stop it with Ctrl+C. Then point the panel's Web application URL at  http://localhost:8090
 cd "$(dirname "$0")" || exit 1
-PROJECT="${1:-design-directions.xhmi.json}"
+PROJECT="${1:-design-directions.screens.json}"
 [ -f "$PROJECT" ] || { echo "no such project file here: $PROJECT"; exit 1; }
 chmod +x ./speths-screens
 echo "Speth's Screens on this panel, project $PROJECT"

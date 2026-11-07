@@ -49,11 +49,11 @@ help:
 
 # Run runtime in dev mode (no embedded UI — IDE has its own dev server).
 dev:
-	go run $(CMD_DIR) --mode=dev --project=demo.xhmi.json
+	go run $(CMD_DIR) --mode=dev --project=demo.screens.json
 
 # Build embedded operator UI, then run locally as a full runtime.
 runtime: build-operator
-	go run $(CMD_DIR) --mode=runtime --project=demo.xhmi.json --addr=:8080
+	go run $(CMD_DIR) --mode=runtime --project=demo.screens.json --addr=:8080
 
 # ── Frontend builds ────────────────────────────────────────────────────────
 

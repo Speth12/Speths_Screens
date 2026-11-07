@@ -7,19 +7,18 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam,
   FaceplateWidget, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Udt, UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { placeFor } from "@speths-screens/widgets";
-import { readMigrated } from "./storageKeys";
+import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
 
 export type {
   Action, ActionType, AlarmRule, AlarmSeverity, AssetNode, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, Faceplate, FaceplateParam, FaceplateWidget,
   ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe, RecipeEntry,
-  UDTField, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  Widget, WidgetBindings, WidgetEvents, WidgetType,
 };
-export type UDT = Udt;
 
 const MAX_HISTORY = 50;
 
@@ -91,9 +90,6 @@ type State = {
   deleteImage: (id: string) => void;
   renameImage: (id: string, name: string) => void;
 
-  addUDT: (udt: UDT) => void;
-  updateUDT: (id: string, patch: Partial<UDT>) => void;
-  removeUDT: (id: string) => void;
 
   addAsset: (node: AssetNode) => void;
   updateAsset: (id: string, patch: Partial<AssetNode>) => void;
@@ -580,19 +576,6 @@ export const useProject = create<State>((set, get) => {
       }));
     },
 
-    addUDT: (udt) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: [...(s.project.udts ?? []), udt] } }));
-    },
-    updateUDT: (id, patch) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: (s.project.udts ?? []).map((u) => u.id === id ? { ...u, ...patch } : u) } }));
-    },
-    removeUDT: (id) => {
-      pushHistory();
-      set((s) => ({ project: { ...s.project, udts: (s.project.udts ?? []).filter((u) => u.id !== id) } }));
-    },
-
     addAsset: (node) => {
       pushHistory();
       set((s) => ({ project: { ...s.project, assets: [...(s.project.assets ?? []), node] } }));
@@ -710,7 +693,7 @@ const LS_KEY = "speths-screens-project-v1";
 /** Restore any previously saved project from localStorage on startup. */
 (function restoreFromStorage() {
   try {
-    const raw = readMigrated(LS_KEY, "xhmi-project-v1");
+    const raw = readStored(LS_KEY);
     if (!raw) return;
     const o = openProject(JSON.parse(raw));
     if (o.ok) useProject.getState().loadProject(o.project);

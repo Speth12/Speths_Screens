@@ -1,4 +1,4 @@
-// Builds samples/design-directions.xhmi.json: the pump station overview from the "Screen Design
+// Builds samples/design-directions.screens.json: the pump station overview from the "Screen Design
 // Directions" board, as a real project. It uses pixel positions so the layout can follow the board,
 // the project's `layout` for the tablet and phone arrangements, and the `clean` preset; switch the
 // theme to `calm` or `modern` in the IDE (Theme panel) for the other two directions.
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const preset = process.argv[2] ?? "clean";
-const out = process.argv[3] ?? resolve(root, "samples/design-directions.xhmi.json");
+const out = process.argv[3] ?? resolve(root, "samples/design-directions.screens.json");
 
 const GAP = 16;
 // What the operator leaves for the page beside the 208 px sidebar, and the width of a phone.

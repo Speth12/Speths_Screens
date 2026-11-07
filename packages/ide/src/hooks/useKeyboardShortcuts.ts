@@ -6,7 +6,6 @@ import { newWidgetId } from "../store/projectStore";
 
 // Module-level clipboard — survives page switches and effect re-runs.
 let _clipboard: Widget | Widget[] | null = null;
-export const getClipboard = () => _clipboard;
 export const setClipboard = (w: Widget | Widget[] | null) => { _clipboard = w; };
 
 export function useKeyboardShortcuts() {
@@ -51,7 +50,7 @@ export function useKeyboardShortcuts() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.xhmi.json`;
+        a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.screens.json`;
         a.click();
         URL.revokeObjectURL(url);
         return;

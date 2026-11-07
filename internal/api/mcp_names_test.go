@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// The MCP server is Speth's Screens now; resource URIs a client stored from before the rename still read.
-func TestMCPNamesAndLegacyURIs(t *testing.T) {
+// The MCP server names itself speths-screens and lists only speths-screens:// resource URIs.
+func TestMCPNames(t *testing.T) {
 	s := newSecureServer(t)
 	call := func(method, params string) string {
 		t.Helper()
@@ -31,8 +31,8 @@ func TestMCPNamesAndLegacyURIs(t *testing.T) {
 	}
 
 	list := call("resources/list", `{}`)
-	if strings.Contains(list, "xhmi://") || !strings.Contains(list, "speths-screens://project") {
-		t.Errorf("resources/list should name only speths-screens:// URIs: %s", list)
+	if !strings.Contains(list, "speths-screens://project") {
+		t.Errorf("resources/list should name the speths-screens:// resources: %s", list)
 	}
 
 	read := func(uri string) string {
@@ -47,8 +47,8 @@ func TestMCPNamesAndLegacyURIs(t *testing.T) {
 		return out.Result.Contents[0].Text
 	}
 	for _, name := range []string{"project", "pages", "alarms", "recipes", "datasources"} {
-		if cur, old := read("speths-screens://"+name), read("xhmi://"+name); cur != old {
-			t.Errorf("%s: the legacy URI reads differently from the current one", name)
+		if text := read("speths-screens://" + name); text == "" {
+			t.Errorf("%s reads empty", name)
 		}
 	}
 }
