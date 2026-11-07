@@ -1,0 +1,1132 @@
+{
+  "schemaVersion": 6,
+  "version": "1.0.0",
+  "name": "PLC Demo (rehearsal)",
+  "theme": {
+    "preset": "clean"
+  },
+  "shell": {
+    "nav": "sidebar"
+  },
+  "canvasSnap": "pixel",
+  "canvasResolution": {
+    "type": "dynamic"
+  },
+  "datasources": [
+    {
+      "id": "opcua",
+      "type": "memory",
+      "label": "PLC OPC UA (rehearsal)",
+      "config": {
+        "memoryTags": [
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/iOPC_Read",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/rOPC_Read",
+            "type": "real",
+            "initial": 0
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/sOPC_Read",
+            "type": "string",
+            "initial": ""
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp",
+            "type": "real",
+            "initial": 75
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/HMI_SIM_Volt",
+            "type": "real",
+            "initial": 5
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/rRTD_Fahrenheit",
+            "type": "real",
+            "initial": 70
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/rVoltage_0_100_Scaled",
+            "type": "real",
+            "initial": 50
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/iOPC_Write",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/rOPC_Write",
+            "type": "real",
+            "initial": 0
+          },
+          {
+            "path": "ns=6;s=Arp.Plc.Eclr/sOPC_Write",
+            "type": "string",
+            "initial": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "rest",
+      "type": "memory",
+      "label": "PLC REST (rehearsal)",
+      "config": {
+        "memoryTags": [
+          {
+            "path": "Arp.Plc.Eclr/iREST_Read",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Arp.Plc.Eclr/rREST_Read",
+            "type": "real",
+            "initial": 0
+          },
+          {
+            "path": "Arp.Plc.Eclr/sREST_Read",
+            "type": "string",
+            "initial": ""
+          },
+          {
+            "path": "Arp.Plc.Eclr/iREST_Write",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Arp.Plc.Eclr/rREST_Write",
+            "type": "real",
+            "initial": 0
+          },
+          {
+            "path": "Arp.Plc.Eclr/sREST_Write",
+            "type": "string",
+            "initial": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "mem",
+      "type": "memory",
+      "label": "Script state",
+      "config": {
+        "memoryTags": [
+          {
+            "path": "RuleEnable",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Threshold",
+            "type": "real",
+            "initial": 100
+          },
+          {
+            "path": "WaitSeconds",
+            "type": "int",
+            "initial": 5
+          },
+          {
+            "path": "Step",
+            "type": "int",
+            "initial": 100
+          },
+          {
+            "path": "RuleState",
+            "type": "string",
+            "initial": "Switched off"
+          },
+          {
+            "path": "Countdown",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Fired",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "LastFired",
+            "type": "string",
+            "initial": "never"
+          },
+          {
+            "path": "MirrorEnable",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Mirrored",
+            "type": "int",
+            "initial": 0
+          }
+        ]
+      }
+    }
+  ],
+  "alarmRules": [
+    {
+      "id": "a-input",
+      "name": "Input above the limit",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read} > {mem:Threshold}",
+      "severity": "warning",
+      "message": "iOPC_Read is above the limit"
+    },
+    {
+      "id": "a-temp",
+      "name": "High temperature",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp} > 100",
+      "severity": "warning",
+      "message": "HMI_SIM_Temp above 100"
+    },
+    {
+      "id": "a-acted",
+      "name": "The script acted",
+      "expr": "{mem:Fired} > 0",
+      "severity": "info",
+      "message": "The increment script has written to iOPC_Write"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "increment-rule",
+      "name": "Increment when the input stays high",
+      "trigger": {
+        "every": 250
+      },
+      "writes": [
+        "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write",
+        "mem:RuleState",
+        "mem:Countdown",
+        "mem:Fired",
+        "mem:LastFired"
+      ],
+      "source": "const IN = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read\", OUT = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write\";\nconst set = async (text, left) => {\n  if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }\n  if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }\n};\nif (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }\nconst value = readTag(IN);\nif (quality(IN) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }\nconst limit = readTag('mem:Threshold') ?? 100;\nconst wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;\nif (value <= limit) { state.since = undefined; state.done = false; await set('Input at or below the limit', 0); return; }\nstate.since ??= Date.now();\nconst left = wait - (Date.now() - state.since);\nif (left > 0) { await set('Input above the limit, waiting', Math.ceil(left / 1000)); return; }\nif (state.done) { await set('Done: waiting for the input to drop', 0); return; }\nconst current = readTag(OUT);\nconst next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);\nconst r = await writeTag(OUT, next);\nif (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }\nstate.done = true;\nconst n = (readTag('mem:Fired') ?? 0) + 1;\nawait writeTag('mem:Fired', n);\nawait writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + OUT.split('/').pop() + ' = ' + next);\nemit('plc.increment', { value, limit, wrote: next, n });\nlog('input', value, 'was above', limit, 'for', wait / 1000, 's: wrote', next);\nawait set('Done: waiting for the input to drop', 0);"
+    },
+    {
+      "id": "mirror",
+      "name": "Mirror the OPC read-in to REST",
+      "trigger": {
+        "onChange": [
+          "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+        ]
+      },
+      "writes": [
+        "rest:Arp.Plc.Eclr/iREST_Write",
+        "mem:Mirrored"
+      ],
+      "source": "const IN = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read\", OUT = \"rest:Arp.Plc.Eclr/iREST_Write\";\nif (!readTag('mem:MirrorEnable') || event.quality !== 'Good' || typeof event.value !== 'number') return;\nif (event.value === state.last) return;\nstate.last = event.value;\nconst r = await writeTag(OUT, Math.round(event.value));\nif (r.status !== 'confirmed') { log('mirror not confirmed:', r.status, r.reason ?? ''); return; }\nawait writeTag('mem:Mirrored', (readTag('mem:Mirrored') ?? 0) + 1);"
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-plc",
+      "name": "PLC",
+      "icon": "dial",
+      "widgets": [
+        {
+          "id": "pl-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "What the PLC reports",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "r-i",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 46,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA: iOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "r-r",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 46,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA: rOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "r-s",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 46,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA: sOPC_Read"
+          }
+        },
+        {
+          "id": "r-ri",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 162,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Read"
+          },
+          "props": {
+            "label": "REST: iREST_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "r-rr",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 162,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Read"
+          },
+          "props": {
+            "label": "REST: rREST_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "r-rs",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 162,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Read"
+          },
+          "props": {
+            "label": "REST: sREST_Read"
+          }
+        },
+        {
+          "id": "g-temp",
+          "type": "gauge",
+          "x": 0,
+          "y": 278,
+          "w": 250,
+          "h": 190,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp"
+          },
+          "props": {
+            "label": "HMI_SIM_Temp",
+            "unit": "°C",
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "id": "g-volt",
+          "type": "gauge",
+          "x": 266,
+          "y": 278,
+          "w": 250,
+          "h": 190,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Volt"
+          },
+          "props": {
+            "label": "HMI_SIM_Volt",
+            "unit": "V",
+            "min": 0,
+            "max": 10
+          }
+        },
+        {
+          "id": "r-f",
+          "type": "numericDisplay",
+          "x": 532,
+          "y": 278,
+          "w": 250,
+          "h": 190,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rRTD_Fahrenheit"
+          },
+          "props": {
+            "label": "rRTD_Fahrenheit",
+            "unit": "°F",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "r-sc",
+          "type": "numericDisplay",
+          "x": 798,
+          "y": 278,
+          "w": 250,
+          "h": 190,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rVoltage_0_100_Scaled"
+          },
+          "props": {
+            "label": "rVoltage_0_100_Scaled",
+            "unit": "%",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "pl-ds",
+          "type": "driverStatus",
+          "x": 0,
+          "y": 484,
+          "w": 520,
+          "h": 80,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "Connections"
+          }
+        },
+        {
+          "id": "pl-trend",
+          "type": "trend",
+          "x": 0,
+          "y": 580,
+          "w": 1048,
+          "h": 280,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp"
+          },
+          "props": {
+            "label": "Temperature, voltage and the OPC UA read-in",
+            "duration": 300,
+            "tags": [
+              {
+                "binding": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp",
+                "label": "HMI_SIM_Temp (°C)",
+                "color": "#dc2626"
+              },
+              {
+                "binding": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Volt",
+                "label": "HMI_SIM_Volt (V)",
+                "color": "#2563eb"
+              },
+              {
+                "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read",
+                "label": "iOPC_Read",
+                "color": "#16a34a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-write",
+      "name": "Write",
+      "icon": "tools",
+      "widgets": [
+        {
+          "id": "wr-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Writing to the PLC",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "wr-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 40,
+          "props": {
+            "staticText": "Each box writes the PLC's variable and shows what the PLC holds afterwards (read back). A write the PLC does not confirm is reported.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "w-oi",
+          "type": "numericInput",
+          "x": 0,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA: iOPC_Write (whole number)",
+            "min": 0,
+            "max": 100000
+          }
+        },
+        {
+          "id": "w-or",
+          "type": "setpoint",
+          "x": 355,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA: rOPC_Write (decimal)",
+            "min": 0,
+            "max": 1000,
+            "step": 0.5
+          }
+        },
+        {
+          "id": "w-os",
+          "type": "textInput",
+          "x": 709,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA: sOPC_Write (text)"
+          }
+        },
+        {
+          "id": "w-ri",
+          "type": "numericInput",
+          "x": 0,
+          "y": 224,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Write"
+          },
+          "props": {
+            "label": "REST: iREST_Write (whole number)",
+            "min": 0,
+            "max": 100000
+          }
+        },
+        {
+          "id": "w-rr",
+          "type": "setpoint",
+          "x": 355,
+          "y": 224,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Write"
+          },
+          "props": {
+            "label": "REST: rREST_Write (decimal)",
+            "min": 0,
+            "max": 1000,
+            "step": 0.5
+          }
+        },
+        {
+          "id": "w-rs",
+          "type": "textInput",
+          "x": 709,
+          "y": 224,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Write"
+          },
+          "props": {
+            "label": "REST: sREST_Write (text)"
+          }
+        },
+        {
+          "id": "wb-add",
+          "type": "button",
+          "x": 0,
+          "y": 364,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "Add 100 to iOPC_Write",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": 100
+              }
+            ]
+          }
+        },
+        {
+          "id": "wb-sub",
+          "type": "button",
+          "x": 355,
+          "y": 364,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "Subtract 100",
+            "btnColor": "amber"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": -100
+              }
+            ]
+          }
+        },
+        {
+          "id": "wb-zero",
+          "type": "button",
+          "x": 709,
+          "y": 364,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "Set to 0",
+            "btnColor": "zinc",
+            "btnVariant": "outlined"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "write",
+                "value": 0
+              }
+            ]
+          }
+        },
+        {
+          "id": "wr-log",
+          "type": "historyLog",
+          "x": 0,
+          "y": 440,
+          "w": 1048,
+          "h": 220,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "Write history for iOPC_Write",
+            "pageSize": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-script",
+      "name": "Script",
+      "icon": "bolt",
+      "widgets": [
+        {
+          "id": "sc-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "A script acting on what the PLC reports",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "sc-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 56,
+          "props": {
+            "staticText": "When iOPC_Read stays above the limit for the wait time, the script adds the step to iOPC_Write, once. It acts again only after the input has dropped to the limit or below and risen again. It starts OFF.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "s-enable",
+          "type": "button",
+          "x": 0,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleEnable"
+          },
+          "props": {
+            "label": "Rule on / off",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "s-led",
+          "type": "led",
+          "x": 355,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleEnable"
+          },
+          "props": {
+            "label": "Rule",
+            "trueLabel": "ON: it may write to the PLC",
+            "falseLabel": "OFF: nothing is written"
+          }
+        },
+        {
+          "id": "s-state",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleState"
+          },
+          "props": {
+            "label": "What the rule is doing"
+          }
+        },
+        {
+          "id": "s-limit",
+          "type": "numericInput",
+          "x": 0,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Threshold"
+          },
+          "props": {
+            "label": "Limit (the input must be above this)",
+            "min": 0,
+            "max": 10000
+          }
+        },
+        {
+          "id": "s-wait",
+          "type": "numericInput",
+          "x": 355,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:WaitSeconds"
+          },
+          "props": {
+            "label": "Wait (seconds)",
+            "min": 1,
+            "max": 600
+          }
+        },
+        {
+          "id": "s-step",
+          "type": "numericInput",
+          "x": 709,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Step"
+          },
+          "props": {
+            "label": "Increment by",
+            "min": 1,
+            "max": 10000
+          }
+        },
+        {
+          "id": "s-in",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Input: iOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-cd",
+          "type": "numericDisplay",
+          "x": 266,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "mem:Countdown"
+          },
+          "props": {
+            "label": "Seconds until it acts",
+            "unit": "s",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-out",
+          "type": "numericDisplay",
+          "x": 532,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "Output: iOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-fired",
+          "type": "numericDisplay",
+          "x": 798,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "mem:Fired"
+          },
+          "props": {
+            "label": "Times it has acted",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "sc-last",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 488,
+          "w": 1048,
+          "h": 56,
+          "bindings": {
+            "value": "mem:LastFired"
+          },
+          "props": {
+            "label": "Last time it acted"
+          }
+        },
+        {
+          "id": "sc-mn",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 560,
+          "w": 1048,
+          "h": 32,
+          "props": {
+            "staticText": "A second script: when switched on, each new iOPC_Read value over OPC UA is written to iREST_Write over REST.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "s-menable",
+          "type": "button",
+          "x": 0,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:MirrorEnable"
+          },
+          "props": {
+            "label": "Mirror to REST on / off",
+            "btnColor": "purple"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "s-mirrored",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:Mirrored"
+          },
+          "props": {
+            "label": "Values mirrored to iREST_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-rest",
+          "type": "numericDisplay",
+          "x": 709,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Write"
+          },
+          "props": {
+            "label": "iREST_Write (what REST holds)",
+            "showQuality": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-alarms",
+      "name": "Alarms",
+      "icon": "alarm",
+      "widgets": [
+        {
+          "id": "al-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Alarms from the PLC's values",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "al-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 36,
+          "props": {
+            "staticText": "Raised from the live values (and cleared when they drop); a PLC that goes offline keeps the alarm's state and says why.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "al-b",
+          "type": "alarmBanner",
+          "x": 0,
+          "y": 84,
+          "w": 1048,
+          "h": 380,
+          "props": {
+            "label": "Active alarms",
+            "maxRows": 12,
+            "showAcked": true
+          }
+        },
+        {
+          "id": "al-h",
+          "type": "historyLog",
+          "x": 0,
+          "y": 480,
+          "w": 1048,
+          "h": 220,
+          "bindings": {
+            "value": "mem:Fired"
+          },
+          "props": {
+            "label": "Each time the script acted",
+            "pageSize": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-sim",
+      "name": "Simulator",
+      "icon": "flask",
+      "widgets": [
+        {
+          "id": "sm-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Rehearsal: you are the PLC",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "sm-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 40,
+          "props": {
+            "staticText": "These sliders write the values the PLC would report, so the demo and its scripts can be tried with no PLC connected.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "sm-i",
+          "type": "setpoint",
+          "x": 0,
+          "y": 90,
+          "w": 520,
+          "h": 120,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "iOPC_Read (the input the rule watches)",
+            "min": 0,
+            "max": 300,
+            "step": 10
+          }
+        },
+        {
+          "id": "sm-t2",
+          "type": "setpoint",
+          "x": 536,
+          "y": 90,
+          "w": 512,
+          "h": 120,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp"
+          },
+          "props": {
+            "label": "HMI_SIM_Temp",
+            "unit": "°C",
+            "min": 0,
+            "max": 150,
+            "step": 1
+          }
+        },
+        {
+          "id": "sm-v",
+          "type": "setpoint",
+          "x": 0,
+          "y": 226,
+          "w": 520,
+          "h": 120,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Volt"
+          },
+          "props": {
+            "label": "HMI_SIM_Volt",
+            "unit": "V",
+            "min": 0,
+            "max": 10,
+            "step": 0.1
+          }
+        },
+        {
+          "id": "sm-r",
+          "type": "setpoint",
+          "x": 536,
+          "y": 226,
+          "w": 512,
+          "h": 120,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read"
+          },
+          "props": {
+            "label": "rOPC_Read",
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ]
+    }
+  ]
+}
