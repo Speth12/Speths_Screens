@@ -1,0 +1,3836 @@
+{
+  "schemaVersion": 6,
+  "version": "1.0.0",
+  "name": "Feature Tour",
+  "theme": {
+    "preset": "clean"
+  },
+  "shell": {
+    "nav": "sidebar"
+  },
+  "canvasSnap": "pixel",
+  "canvasResolution": {
+    "type": "dynamic"
+  },
+  "languages": [
+    "en",
+    "de"
+  ],
+  "translations": {
+    "de": {
+      "Overview": "Übersicht",
+      "Process": "Prozess",
+      "Trends": "Trends",
+      "Alarms": "Alarme",
+      "Controls": "Steuerung",
+      "Recipes": "Rezepte",
+      "Custom widgets": "Eigene Widgets",
+      "Widgets": "Widgets",
+      "Dynamics": "Dynamik",
+      "Inlet pressure": "Eingangsdruck",
+      "Flow": "Durchfluss",
+      "Tank level": "Füllstand",
+      "Efficiency": "Wirkungsgrad",
+      "Active alarms": "Aktive Alarme",
+      "Start": "Start",
+      "Stop": "Stopp",
+      "Setpoint": "Sollwert",
+      "Settings": "Einstellungen",
+      "Pressure": "Druck",
+      "Temperature": "Temperatur",
+      "Pump P-101": "Pumpe P-101",
+      "Pressure and flow": "Druck und Durchfluss"
+    }
+  },
+  "datasources": [
+    {
+      "id": "sim",
+      "type": "virtual",
+      "label": "Simulation",
+      "config": {
+        "tags": [
+          {
+            "path": "phase",
+            "expr": "((good({sim:phase}) ? {sim:phase} : 0) + 0.04) % 6.283"
+          },
+          {
+            "path": "pressure",
+            "expr": "60 + sin({sim:phase}) * 8"
+          },
+          {
+            "path": "flow",
+            "expr": "50 + sin({sim:phase} * 1.3) * 20"
+          },
+          {
+            "path": "level",
+            "expr": "50 + sin({sim:phase} * 0.7) * 40"
+          },
+          {
+            "path": "temp",
+            "expr": "70 + sin({sim:phase} * 0.5) * 25"
+          },
+          {
+            "path": "efficiency",
+            "expr": "75 + sin({sim:phase} * 0.9) * 10"
+          },
+          {
+            "path": "running",
+            "expr": "{sim:phase} < 4.7 ? 1 : 0"
+          },
+          {
+            "path": "mode",
+            "expr": "floor({sim:phase} / 1.571)"
+          },
+          {
+            "path": "ramp",
+            "expr": "({sim:phase} / 6.283) * 100"
+          },
+          {
+            "path": "square",
+            "expr": "sin({sim:phase} * 2) > 0 ? 1 : 0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mem",
+      "type": "memory",
+      "label": "Controls",
+      "config": {
+        "memoryTags": [
+          {
+            "path": "Run",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Auto",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Enable",
+            "type": "bool",
+            "initial": true
+          },
+          {
+            "path": "Setpoint",
+            "type": "real",
+            "initial": 50
+          },
+          {
+            "path": "Speed",
+            "type": "real",
+            "initial": 40
+          },
+          {
+            "path": "Mode",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Batch",
+            "type": "string",
+            "initial": "B-001"
+          },
+          {
+            "path": "Clicks",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Counter",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "RecipeTemp",
+            "type": "real",
+            "initial": 60
+          },
+          {
+            "path": "RecipeSpeed",
+            "type": "real",
+            "initial": 30
+          },
+          {
+            "path": "RecipeTime",
+            "type": "int",
+            "initial": 120
+          }
+        ]
+      }
+    }
+  ],
+  "alarmRules": [
+    {
+      "id": "a-press-hi",
+      "name": "High pressure",
+      "expr": "{sim:pressure} > 64",
+      "severity": "warning",
+      "message": "Inlet pressure above 64 bar"
+    },
+    {
+      "id": "a-press-hihi",
+      "name": "Very high pressure",
+      "expr": "{sim:pressure} > 67",
+      "severity": "critical",
+      "message": "Inlet pressure above 67 bar: trip limit close"
+    },
+    {
+      "id": "a-level-lo",
+      "name": "Low level",
+      "expr": "{sim:level} < 20",
+      "severity": "warning",
+      "message": "Tank level below 20 %"
+    },
+    {
+      "id": "a-level-hi",
+      "name": "Tank nearly full",
+      "expr": "{sim:level} > 85",
+      "severity": "critical",
+      "message": "Tank level above 85 %"
+    },
+    {
+      "id": "a-temp",
+      "name": "High temperature",
+      "expr": "{sim:temp} > 85",
+      "severity": "warning",
+      "message": "Process temperature above 85 degC"
+    },
+    {
+      "id": "a-stopped",
+      "name": "Pump stopped",
+      "expr": "{sim:running} == 0",
+      "severity": "info",
+      "message": "Pump P-101 is stopped"
+    },
+    {
+      "id": "a-manual",
+      "name": "Manual mode",
+      "expr": "{mem:Auto} == 0",
+      "severity": "info",
+      "message": "Control is in manual mode"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "r-mild",
+      "name": "Mild batch",
+      "description": "Low temperature, slow stir",
+      "entries": [
+        {
+          "binding": "mem:RecipeTemp",
+          "value": 55
+        },
+        {
+          "binding": "mem:RecipeSpeed",
+          "value": 25
+        },
+        {
+          "binding": "mem:RecipeTime",
+          "value": 90
+        }
+      ]
+    },
+    {
+      "id": "r-std",
+      "name": "Standard batch",
+      "description": "The usual settings",
+      "entries": [
+        {
+          "binding": "mem:RecipeTemp",
+          "value": 70
+        },
+        {
+          "binding": "mem:RecipeSpeed",
+          "value": 40
+        },
+        {
+          "binding": "mem:RecipeTime",
+          "value": 120
+        }
+      ]
+    },
+    {
+      "id": "r-hot",
+      "name": "Hot batch",
+      "description": "High temperature, fast stir",
+      "entries": [
+        {
+          "binding": "mem:RecipeTemp",
+          "value": 85
+        },
+        {
+          "binding": "mem:RecipeSpeed",
+          "value": 60
+        },
+        {
+          "binding": "mem:RecipeTime",
+          "value": 150
+        }
+      ]
+    }
+  ],
+  "customWidgets": [
+    {
+      "id": "cw-pump",
+      "name": "Pump card",
+      "description": "A pump's state, speed and start button",
+      "params": [
+        {
+          "name": "run",
+          "description": "bool tag: running"
+        },
+        {
+          "name": "speed",
+          "description": "number tag: speed"
+        }
+      ],
+      "widgets": [
+        {
+          "localId": "led",
+          "type": "led",
+          "x": 12,
+          "y": 8,
+          "w": 80,
+          "h": 72,
+          "bindings": {
+            "value": "{run}"
+          },
+          "props": {
+            "trueLabel": "RUN",
+            "falseLabel": "OFF",
+            "showQuality": false
+          }
+        },
+        {
+          "localId": "speed",
+          "type": "numericDisplay",
+          "x": 104,
+          "y": 8,
+          "w": 184,
+          "h": 72,
+          "bindings": {
+            "value": "{speed}"
+          },
+          "props": {
+            "unit": "%",
+            "label": "Speed",
+            "showQuality": false
+          }
+        },
+        {
+          "localId": "btn",
+          "type": "button",
+          "x": 12,
+          "y": 90,
+          "w": 276,
+          "h": 58,
+          "bindings": {
+            "value": "{run}"
+          },
+          "props": {
+            "label": "Start / stop",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cw-toolbar",
+      "name": "Toolbar",
+      "description": "A title and three buttons that stack on a phone",
+      "params": [],
+      "layout": {
+        "mode": "stack",
+        "direction": "row",
+        "gap": 8,
+        "padding": 8,
+        "align": "stretch",
+        "phone": {
+          "direction": "column"
+        }
+      },
+      "widgets": [
+        {
+          "localId": "t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 1,
+          "flex": {
+            "grow": 1,
+            "phone": {
+              "grow": 0
+            }
+          },
+          "props": {
+            "staticText": "Toolbar (a flex stack)",
+            "fontBold": true,
+            "bgColor": "transparent",
+            "borderColor": "none"
+          }
+        },
+        {
+          "localId": "b1",
+          "type": "button",
+          "x": 0,
+          "y": 0,
+          "w": 2,
+          "h": 1,
+          "flex": {
+            "basis": 130
+          },
+          "props": {
+            "label": "Overview",
+            "btnColor": "blue",
+            "noPadding": true,
+            "bgColor": "transparent",
+            "borderColor": "none"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "navigate",
+                "page": "p-overview"
+              }
+            ]
+          }
+        },
+        {
+          "localId": "b2",
+          "type": "button",
+          "x": 0,
+          "y": 0,
+          "w": 2,
+          "h": 1,
+          "flex": {
+            "basis": 130
+          },
+          "props": {
+            "label": "Alarms",
+            "btnColor": "amber",
+            "noPadding": true,
+            "bgColor": "transparent",
+            "borderColor": "none"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "navigate",
+                "page": "p-alarms"
+              }
+            ]
+          }
+        },
+        {
+          "localId": "b3",
+          "type": "button",
+          "x": 0,
+          "y": 0,
+          "w": 2,
+          "h": 1,
+          "flex": {
+            "basis": 130
+          },
+          "hiddenOn": [
+            "phone"
+          ],
+          "props": {
+            "label": "Recipes",
+            "btnColor": "purple",
+            "noPadding": true,
+            "bgColor": "transparent",
+            "borderColor": "none"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "navigate",
+                "page": "p-recipes"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cw-tile",
+      "name": "Pump tile",
+      "description": "A heading over a pump card",
+      "params": [
+        {
+          "name": "run"
+        },
+        {
+          "name": "speed"
+        }
+      ],
+      "layout": {
+        "mode": "stack",
+        "direction": "column",
+        "gap": 6,
+        "padding": 6,
+        "align": "stretch"
+      },
+      "widgets": [
+        {
+          "localId": "h",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 1,
+          "flex": {
+            "basis": 28
+          },
+          "props": {
+            "staticText": "A custom widget inside a custom widget",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "localId": "card",
+          "type": "customWidget",
+          "x": 0,
+          "y": 0,
+          "w": 300,
+          "h": 150,
+          "flex": {
+            "grow": 1
+          },
+          "props": {
+            "customWidgetId": "cw-pump",
+            "params": {
+              "run": "{run}",
+              "speed": "{speed}"
+            },
+            "noPadding": true
+          }
+        }
+      ]
+    }
+  ],
+  "sessionVars": [
+    {
+      "name": "pump",
+      "type": "int",
+      "initial": 1
+    }
+  ],
+  "scripts": [
+    {
+      "id": "counter",
+      "name": "Seconds counter",
+      "trigger": {
+        "every": 1000
+      },
+      "writes": [
+        "mem:Counter"
+      ],
+      "source": "await writeTag('mem:Counter', (readTag('mem:Counter') ?? 0) + 1);"
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-overview",
+      "name": "Overview",
+      "icon": "home",
+      "widgets": [
+        {
+          "id": "o-press",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 250,
+          "h": 110,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Inlet pressure",
+            "unit": "bar",
+            "showQuality": false,
+            "colorThresholds": [
+              {
+                "value": 64,
+                "color": "var(--alarm-warning)"
+              },
+              {
+                "value": 67,
+                "color": "var(--alarm-critical)"
+              }
+            ]
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 0,
+              "w": 282,
+              "h": 110
+            },
+            "phone": {
+              "x": 0,
+              "y": 0,
+              "w": 175,
+              "h": 110
+            }
+          }
+        },
+        {
+          "id": "o-flow",
+          "type": "numericDisplay",
+          "x": 266,
+          "y": 0,
+          "w": 250,
+          "h": 110,
+          "bindings": {
+            "value": "sim:flow"
+          },
+          "props": {
+            "label": "Flow",
+            "unit": "m³/h",
+            "showQuality": false
+          },
+          "layout": {
+            "tablet": {
+              "x": 298,
+              "y": 0,
+              "w": 282,
+              "h": 110
+            },
+            "phone": {
+              "x": 191,
+              "y": 0,
+              "w": 175,
+              "h": 110
+            }
+          }
+        },
+        {
+          "id": "o-level",
+          "type": "numericDisplay",
+          "x": 532,
+          "y": 0,
+          "w": 250,
+          "h": 110,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "Tank level",
+            "unit": "%",
+            "showQuality": false
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 126,
+              "w": 282,
+              "h": 110
+            },
+            "phone": {
+              "x": 0,
+              "y": 126,
+              "w": 175,
+              "h": 110
+            }
+          }
+        },
+        {
+          "id": "o-eff",
+          "type": "numericDisplay",
+          "x": 798,
+          "y": 0,
+          "w": 250,
+          "h": 110,
+          "bindings": {
+            "value": "sim:efficiency"
+          },
+          "props": {
+            "label": "Efficiency",
+            "unit": "%",
+            "showQuality": false
+          },
+          "layout": {
+            "tablet": {
+              "x": 298,
+              "y": 126,
+              "w": 282,
+              "h": 110
+            },
+            "phone": {
+              "x": 191,
+              "y": 126,
+              "w": 175,
+              "h": 110
+            }
+          }
+        },
+        {
+          "id": "o-g1",
+          "type": "gauge",
+          "x": 0,
+          "y": 126,
+          "w": 250,
+          "h": 200,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Pressure",
+            "unit": "bar",
+            "min": 40,
+            "max": 80,
+            "thresholds": [
+              {
+                "value": 40,
+                "color": "#12a150"
+              },
+              {
+                "value": 64,
+                "color": "#f59e0b"
+              },
+              {
+                "value": 67,
+                "color": "#dc2626"
+              }
+            ]
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 252,
+              "w": 282,
+              "h": 200
+            },
+            "phone": {
+              "x": 0,
+              "y": 252,
+              "w": 175,
+              "h": 200
+            }
+          }
+        },
+        {
+          "id": "o-g2",
+          "type": "gauge",
+          "x": 266,
+          "y": 126,
+          "w": 250,
+          "h": 200,
+          "bindings": {
+            "value": "sim:temp"
+          },
+          "props": {
+            "label": "Temperature",
+            "unit": "°C",
+            "min": 30,
+            "max": 110,
+            "thresholds": [
+              {
+                "value": 30,
+                "color": "#4c9aff"
+              },
+              {
+                "value": 85,
+                "color": "#dc2626"
+              }
+            ]
+          },
+          "layout": {
+            "tablet": {
+              "x": 298,
+              "y": 252,
+              "w": 282,
+              "h": 200
+            },
+            "phone": {
+              "x": 191,
+              "y": 252,
+              "w": 175,
+              "h": 200
+            }
+          }
+        },
+        {
+          "id": "o-t1",
+          "type": "tank",
+          "x": 532,
+          "y": 126,
+          "w": 250,
+          "h": 200,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "T-101",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "thresholds": [
+              {
+                "value": 0,
+                "color": "#dc2626"
+              },
+              {
+                "value": 20,
+                "color": "#4c9aff"
+              },
+              {
+                "value": 85,
+                "color": "#f59e0b"
+              }
+            ]
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 468,
+              "w": 282,
+              "h": 200
+            },
+            "phone": {
+              "x": 0,
+              "y": 468,
+              "w": 175,
+              "h": 200
+            }
+          }
+        },
+        {
+          "id": "o-led1",
+          "type": "led",
+          "x": 798,
+          "y": 126,
+          "w": 250,
+          "h": 200,
+          "bindings": {
+            "value": "sim:running"
+          },
+          "props": {
+            "label": "Pump P-101",
+            "trueLabel": "RUNNING",
+            "falseLabel": "STOPPED"
+          },
+          "layout": {
+            "tablet": {
+              "x": 298,
+              "y": 468,
+              "w": 282,
+              "h": 200
+            },
+            "phone": {
+              "x": 191,
+              "y": 468,
+              "w": 175,
+              "h": 200
+            }
+          }
+        },
+        {
+          "id": "o-alarms",
+          "type": "alarmBanner",
+          "x": 0,
+          "y": 342,
+          "w": 516,
+          "h": 240,
+          "props": {
+            "label": "Active alarms",
+            "maxRows": 6
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 684,
+              "w": 580,
+              "h": 240
+            },
+            "phone": {
+              "x": 0,
+              "y": 684,
+              "w": 366,
+              "h": 240
+            }
+          }
+        },
+        {
+          "id": "o-trend",
+          "type": "trend",
+          "x": 532,
+          "y": 342,
+          "w": 516,
+          "h": 240,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Pressure and flow",
+            "duration": 120,
+            "tags": [
+              {
+                "binding": "sim:pressure",
+                "label": "Pressure (bar)",
+                "color": "#4c9aff"
+              },
+              {
+                "binding": "sim:flow",
+                "label": "Flow (m³/h)",
+                "color": "#12a150"
+              }
+            ]
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 940,
+              "w": 580,
+              "h": 240
+            },
+            "phone": {
+              "x": 0,
+              "y": 940,
+              "w": 366,
+              "h": 240
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-process",
+      "name": "Process",
+      "icon": "valve",
+      "widgets": [
+        {
+          "id": "pr-title",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 36,
+          "props": {
+            "staticText": "Start the pump and watch the process respond",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "pr-note",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 620,
+          "h": 40,
+          "props": {
+            "staticText": "The pipes flow, the pump and mixer turn, and the colors change while the pump runs, all driven from the Run tag.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "pr-tank",
+          "type": "tank",
+          "x": 0,
+          "y": 100,
+          "w": 130,
+          "h": 260,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "T-101",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "showQuality": false
+          }
+        },
+        {
+          "id": "pr-p1",
+          "type": "pipe",
+          "x": 130,
+          "y": 214,
+          "w": 110,
+          "h": 16,
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 8
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{mem:Run} == 1"
+            },
+            "color": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-valve",
+          "type": "symbol",
+          "x": 240,
+          "y": 186,
+          "w": 60,
+          "h": 70,
+          "props": {
+            "symbolId": "gate-valve",
+            "label": "V-12"
+          },
+          "dynamics": {
+            "stroke": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-p2",
+          "type": "pipe",
+          "x": 300,
+          "y": 214,
+          "w": 80,
+          "h": 16,
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 8
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{mem:Run} == 1"
+            },
+            "color": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-pump",
+          "type": "symbol",
+          "x": 380,
+          "y": 168,
+          "w": 100,
+          "h": 110,
+          "props": {
+            "symbolId": "centrifugal-pump",
+            "label": "P-101",
+            "motion": "spin",
+            "cycleSeconds": 1.2
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{mem:Run} == 1"
+            },
+            "stroke": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-p3",
+          "type": "pipe",
+          "x": 480,
+          "y": 214,
+          "w": 230,
+          "h": 16,
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 8
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{mem:Run} == 1"
+            },
+            "color": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-up",
+          "type": "pipe",
+          "x": 702,
+          "y": 100,
+          "w": 16,
+          "h": 122,
+          "props": {
+            "points": "50,100 50,0",
+            "weight": 8
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{mem:Run} == 1"
+            },
+            "color": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-mix",
+          "type": "symbol",
+          "x": 640,
+          "y": 40,
+          "w": 140,
+          "h": 70,
+          "props": {
+            "symbolId": "fan",
+            "label": "Mixer X-201",
+            "motion": "spin",
+            "cycleSeconds": 2
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{mem:Run} == 1"
+            },
+            "stroke": {
+              "expr": "{mem:Run}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-flow",
+          "type": "numericDisplay",
+          "x": 480,
+          "y": 150,
+          "w": 150,
+          "h": 54,
+          "bindings": {
+            "value": "sim:flow"
+          },
+          "props": {
+            "unit": "m³/h",
+            "label": "Flow",
+            "showQuality": false
+          }
+        },
+        {
+          "id": "pr-btn",
+          "type": "button",
+          "x": 820,
+          "y": 90,
+          "w": 228,
+          "h": 64,
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "props": {
+            "label": "Start / stop pump",
+            "btnColor": "green",
+            "btnVariant": "filled"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "pr-led",
+          "type": "led",
+          "x": 820,
+          "y": 170,
+          "w": 228,
+          "h": 64,
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "props": {
+            "label": "Pump command",
+            "trueLabel": "RUN",
+            "falseLabel": "STOP"
+          }
+        },
+        {
+          "id": "pr-speed",
+          "type": "setpoint",
+          "x": 820,
+          "y": 250,
+          "w": 228,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Speed"
+          },
+          "props": {
+            "label": "Speed setpoint",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "step": 5
+          }
+        },
+        {
+          "id": "pr-temp",
+          "type": "gauge",
+          "x": 0,
+          "y": 380,
+          "w": 330,
+          "h": 220,
+          "bindings": {
+            "value": "sim:temp"
+          },
+          "props": {
+            "label": "Temperature",
+            "unit": "°C",
+            "min": 30,
+            "max": 110,
+            "thresholds": [
+              {
+                "value": 30,
+                "color": "#4c9aff"
+              },
+              {
+                "value": 70,
+                "color": "#f59e0b"
+              },
+              {
+                "value": 85,
+                "color": "#dc2626"
+              }
+            ]
+          }
+        },
+        {
+          "id": "pr-sym",
+          "type": "symbol",
+          "x": 360,
+          "y": 400,
+          "w": 100,
+          "h": 110,
+          "props": {
+            "symbolId": "solenoid-valve",
+            "label": "SV-3",
+            "motion": "pulse",
+            "cycleSeconds": 1
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{sim:square} == 1"
+            }
+          }
+        },
+        {
+          "id": "pr-comp",
+          "type": "symbol",
+          "x": 500,
+          "y": 400,
+          "w": 120,
+          "h": 120,
+          "props": {
+            "symbolId": "compressor",
+            "label": "K-1",
+            "motion": "spin",
+            "cycleSeconds": 2.4
+          },
+          "dynamics": {
+            "animate": {
+              "expr": "{sim:running} == 1"
+            },
+            "stroke": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-rev",
+          "type": "pipe",
+          "x": 660,
+          "y": 440,
+          "w": 388,
+          "h": 16,
+          "props": {
+            "points": "0,50 100,50",
+            "weight": 8,
+            "reverse": true,
+            "cycleSeconds": 1.4
+          },
+          "dynamics": {
+            "flow": {
+              "expr": "{sim:running} == 1"
+            },
+            "color": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            }
+          }
+        },
+        {
+          "id": "pr-rev-n",
+          "type": "textDisplay",
+          "x": 660,
+          "y": 466,
+          "w": 388,
+          "h": 40,
+          "props": {
+            "staticText": "A pipe that flows the other way (reverse), driven by the simulated pump.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-trends",
+      "name": "Trends",
+      "icon": "graph",
+      "widgets": [
+        {
+          "id": "t-main",
+          "type": "trend",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 330,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Process variables, last 5 minutes",
+            "duration": 300,
+            "xFormat": "time",
+            "tags": [
+              {
+                "binding": "sim:pressure",
+                "label": "Pressure (bar)",
+                "color": "#4c9aff",
+                "yMin": 40,
+                "yMax": 80
+              },
+              {
+                "binding": "sim:flow",
+                "label": "Flow (m³/h)",
+                "color": "#12a150",
+                "yMin": 0,
+                "yMax": 100
+              },
+              {
+                "binding": "sim:level",
+                "label": "Level (%)",
+                "color": "#d97706",
+                "fill": true,
+                "yMin": 0,
+                "yMax": 100
+              },
+              {
+                "binding": "sim:temp",
+                "label": "Temp (°C)",
+                "color": "#dc2626",
+                "yMin": 30,
+                "yMax": 110
+              }
+            ],
+            "refLines": [
+              {
+                "value": 64,
+                "color": "#f59e0b",
+                "label": "pressure warning 64"
+              }
+            ]
+          }
+        },
+        {
+          "id": "t-rel",
+          "type": "trend",
+          "x": 0,
+          "y": 346,
+          "w": 516,
+          "h": 250,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "Level, relative time, filled",
+            "duration": 120,
+            "xFormat": "relative",
+            "min": 0,
+            "max": 100,
+            "tags": [
+              {
+                "binding": "sim:level",
+                "label": "Level (%)",
+                "color": "#4c9aff",
+                "fill": true
+              }
+            ],
+            "refLines": [
+              {
+                "value": 20,
+                "color": "#dc2626",
+                "label": "low 20"
+              },
+              {
+                "value": 85,
+                "color": "#dc2626",
+                "label": "high 85"
+              }
+            ]
+          }
+        },
+        {
+          "id": "t-short",
+          "type": "trend",
+          "x": 532,
+          "y": 346,
+          "w": 516,
+          "h": 250,
+          "bindings": {
+            "value": "sim:efficiency"
+          },
+          "props": {
+            "label": "Efficiency, short time",
+            "duration": 60,
+            "xFormat": "time-short",
+            "tags": [
+              {
+                "binding": "sim:efficiency",
+                "label": "Efficiency (%)",
+                "color": "#12a150"
+              },
+              {
+                "binding": "sim:ramp",
+                "label": "Ramp (%)",
+                "color": "#9333ea"
+              }
+            ]
+          }
+        },
+        {
+          "id": "t-log",
+          "type": "historyLog",
+          "x": 0,
+          "y": 612,
+          "w": 1048,
+          "h": 240,
+          "bindings": {
+            "value": "mem:Setpoint"
+          },
+          "props": {
+            "label": "Write history (change a setpoint on the Controls page)",
+            "pageSize": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-alarms",
+      "name": "Alarms",
+      "icon": "alarm",
+      "widgets": [
+        {
+          "id": "al-note",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 40,
+          "props": {
+            "staticText": "Seven rules on the simulated tags, so alarms come and go every few seconds (one cycle is about 30 seconds). Acknowledge one with ACK.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "al-main",
+          "type": "alarmBanner",
+          "x": 0,
+          "y": 50,
+          "w": 1048,
+          "h": 360,
+          "props": {
+            "label": "Active alarms",
+            "maxRows": 12,
+            "showAcked": true
+          }
+        },
+        {
+          "id": "al-p",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 426,
+          "w": 250,
+          "h": 100,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Pressure",
+            "unit": "bar",
+            "colorThresholds": [
+              {
+                "value": 64,
+                "color": "var(--alarm-warning)"
+              },
+              {
+                "value": 67,
+                "color": "var(--alarm-critical)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "al-l",
+          "type": "numericDisplay",
+          "x": 266,
+          "y": 426,
+          "w": 250,
+          "h": 100,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "Level",
+            "unit": "%",
+            "colorThresholds": [
+              {
+                "value": 0,
+                "color": "var(--alarm-critical)"
+              },
+              {
+                "value": 20,
+                "color": "var(--border)"
+              },
+              {
+                "value": 85,
+                "color": "var(--alarm-critical)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "al-t",
+          "type": "numericDisplay",
+          "x": 532,
+          "y": 426,
+          "w": 250,
+          "h": 100,
+          "bindings": {
+            "value": "sim:temp"
+          },
+          "props": {
+            "label": "Temperature",
+            "unit": "°C",
+            "colorThresholds": [
+              {
+                "value": 85,
+                "color": "var(--alarm-warning)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "al-led",
+          "type": "led",
+          "x": 798,
+          "y": 426,
+          "w": 250,
+          "h": 100,
+          "bindings": {
+            "value": "sim:running"
+          },
+          "props": {
+            "label": "Pump",
+            "trueLabel": "RUNNING",
+            "falseLabel": "STOPPED",
+            "falseColor": "#f59e0b"
+          }
+        },
+        {
+          "id": "al-log",
+          "type": "historyLog",
+          "x": 0,
+          "y": 542,
+          "w": 1048,
+          "h": 220,
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "props": {
+            "label": "History",
+            "pageSize": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-controls",
+      "name": "Controls",
+      "icon": "tools",
+      "widgets": [
+        {
+          "id": "c-toggle",
+          "type": "button",
+          "x": 0,
+          "y": 0,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "props": {
+            "label": "Toggle Run",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-moment",
+          "type": "button",
+          "x": 355,
+          "y": 0,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "mem:Enable"
+          },
+          "props": {
+            "label": "Hold to disable",
+            "btnColor": "red",
+            "btnVariant": "outlined"
+          },
+          "events": {
+            "onPress": [
+              {
+                "type": "write",
+                "value": false
+              }
+            ],
+            "onRelease": [
+              {
+                "type": "write",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-inc",
+          "type": "button",
+          "x": 709,
+          "y": 0,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "mem:Clicks"
+          },
+          "props": {
+            "label": "Count a click",
+            "btnColor": "blue",
+            "btnVariant": "ghost"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-nav",
+          "type": "button",
+          "x": 0,
+          "y": 88,
+          "w": 339,
+          "h": 72,
+          "props": {
+            "label": "Go to Alarms",
+            "btnColor": "amber",
+            "btnVariant": "flat"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "navigate",
+                "page": "p-alarms"
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-url",
+          "type": "button",
+          "x": 355,
+          "y": 88,
+          "w": 339,
+          "h": 72,
+          "props": {
+            "label": "Open the docs",
+            "btnColor": "zinc",
+            "btnVariant": "industrial"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "openUrl",
+                "url": "https://example.com/help"
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-auto",
+          "type": "button",
+          "x": 709,
+          "y": 88,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "mem:Auto"
+          },
+          "props": {
+            "label": "Auto mode",
+            "btnColor": "purple",
+            "btnRounded": "full",
+            "toggleOnColor": "#7c3aed",
+            "toggleOffColor": "#94a3b8"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-sp",
+          "type": "setpoint",
+          "x": 0,
+          "y": 176,
+          "w": 339,
+          "h": 110,
+          "bindings": {
+            "value": "mem:Setpoint"
+          },
+          "props": {
+            "label": "Setpoint",
+            "unit": "°C",
+            "min": 0,
+            "max": 100,
+            "step": 5
+          }
+        },
+        {
+          "id": "c-num",
+          "type": "numericInput",
+          "x": 355,
+          "y": 176,
+          "w": 339,
+          "h": 110,
+          "bindings": {
+            "value": "mem:Speed"
+          },
+          "props": {
+            "label": "Speed (type a number)",
+            "unit": "%",
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "id": "c-txt",
+          "type": "textInput",
+          "x": 709,
+          "y": 176,
+          "w": 339,
+          "h": 110,
+          "bindings": {
+            "value": "mem:Batch"
+          },
+          "props": {
+            "label": "Batch (type text)"
+          }
+        },
+        {
+          "id": "c-ms",
+          "type": "multiState",
+          "x": 0,
+          "y": 302,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Mode"
+          },
+          "props": {
+            "label": "Mode",
+            "states": [
+              {
+                "value": 0,
+                "label": "Idle",
+                "color": "#64748b",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 1,
+                "label": "Starting",
+                "color": "#b45309",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 2,
+                "label": "Running",
+                "color": "#15803d",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 3,
+                "label": "Stopping",
+                "color": "#b91c1c",
+                "textColor": "#ffffff"
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-modebtn",
+          "type": "button",
+          "x": 355,
+          "y": 302,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Mode"
+          },
+          "props": {
+            "label": "Next mode (0 to 3)"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-clicks",
+          "type": "numericDisplay",
+          "x": 709,
+          "y": 302,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Clicks"
+          },
+          "props": {
+            "label": "Clicks counted"
+          }
+        },
+        {
+          "id": "c-led",
+          "type": "led",
+          "x": 0,
+          "y": 418,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Enable"
+          },
+          "props": {
+            "label": "Enable",
+            "trueLabel": "ENABLED",
+            "falseLabel": "DISABLED"
+          }
+        },
+        {
+          "id": "c-counter",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 418,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Counter"
+          },
+          "props": {
+            "label": "Seconds counted by a runtime script"
+          }
+        },
+        {
+          "id": "c-session",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 418,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "session:pump"
+          },
+          "props": {
+            "label": "Session variable: pump (this tab only)"
+          }
+        },
+        {
+          "id": "c-s1",
+          "type": "button",
+          "x": 0,
+          "y": 534,
+          "w": 339,
+          "h": 64,
+          "props": {
+            "label": "Select pump 1"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "write",
+                "tag": "session:pump",
+                "value": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-s2",
+          "type": "button",
+          "x": 355,
+          "y": 534,
+          "w": 339,
+          "h": 64,
+          "props": {
+            "label": "Select pump 2"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "write",
+                "tag": "session:pump",
+                "value": 2
+              }
+            ]
+          }
+        },
+        {
+          "id": "c-s3",
+          "type": "button",
+          "x": 709,
+          "y": 534,
+          "w": 339,
+          "h": 64,
+          "props": {
+            "label": "Select pump 3",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "write",
+                "tag": "session:pump",
+                "value": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-recipes",
+      "name": "Recipes",
+      "icon": "flask",
+      "widgets": [
+        {
+          "id": "rc-w",
+          "type": "recipes",
+          "x": 0,
+          "y": 0,
+          "w": 500,
+          "h": 470,
+          "props": {
+            "label": "Recipes"
+          }
+        },
+        {
+          "id": "rc-t",
+          "type": "numericDisplay",
+          "x": 516,
+          "y": 0,
+          "w": 252,
+          "h": 110,
+          "bindings": {
+            "value": "mem:RecipeTemp"
+          },
+          "props": {
+            "label": "Temperature",
+            "unit": "°C"
+          }
+        },
+        {
+          "id": "rc-s",
+          "type": "numericDisplay",
+          "x": 784,
+          "y": 0,
+          "w": 264,
+          "h": 110,
+          "bindings": {
+            "value": "mem:RecipeSpeed"
+          },
+          "props": {
+            "label": "Speed",
+            "unit": "%"
+          }
+        },
+        {
+          "id": "rc-time",
+          "type": "numericDisplay",
+          "x": 516,
+          "y": 126,
+          "w": 252,
+          "h": 110,
+          "bindings": {
+            "value": "mem:RecipeTime"
+          },
+          "props": {
+            "label": "Time",
+            "unit": "s"
+          }
+        },
+        {
+          "id": "rc-ms",
+          "type": "multiState",
+          "x": 784,
+          "y": 126,
+          "w": 264,
+          "h": 110,
+          "bindings": {
+            "value": "mem:RecipeTemp"
+          },
+          "props": {
+            "label": "Batch type from the temperature",
+            "states": [
+              {
+                "value": 55,
+                "label": "Mild",
+                "color": "#1d4ed8",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 70,
+                "label": "Standard",
+                "color": "#15803d",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 85,
+                "label": "Hot",
+                "color": "#b91c1c",
+                "textColor": "#ffffff"
+              }
+            ]
+          }
+        },
+        {
+          "id": "rc-note",
+          "type": "textDisplay",
+          "x": 516,
+          "y": 252,
+          "w": 532,
+          "h": 60,
+          "props": {
+            "staticText": "Press Apply on a recipe: the numbers above change. Applying needs the permission to apply recipes; the runtime says why if it refuses.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "rc-one",
+          "type": "recipes",
+          "x": 516,
+          "y": 326,
+          "w": 532,
+          "h": 150,
+          "props": {
+            "label": "One recipe, no tag list",
+            "recipeId": "r-hot",
+            "showEntries": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-custom",
+      "name": "Custom widgets",
+      "icon": "pump",
+      "widgets": [
+        {
+          "id": "cw-n1",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 36,
+          "props": {
+            "staticText": "One design (Pump card), three places, each with its own tags. Change the design once and all three follow.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 0,
+              "w": 580,
+              "h": 44
+            },
+            "phone": {
+              "x": 0,
+              "y": 0,
+              "w": 366,
+              "h": 44
+            }
+          }
+        },
+        {
+          "id": "cw-a",
+          "type": "customWidget",
+          "x": 0,
+          "y": 40,
+          "w": 300,
+          "h": 160,
+          "props": {
+            "customWidgetId": "cw-pump",
+            "params": {
+              "run": "mem:Run",
+              "speed": "mem:Speed"
+            },
+            "label": "Pump A (controls)"
+          },
+          "layout": {
+            "tablet": {
+              "x": 140,
+              "y": 52,
+              "w": 300,
+              "h": 160
+            },
+            "phone": {
+              "x": 33,
+              "y": 52,
+              "w": 300,
+              "h": 160
+            }
+          }
+        },
+        {
+          "id": "cw-b",
+          "type": "customWidget",
+          "x": 374,
+          "y": 40,
+          "w": 300,
+          "h": 160,
+          "props": {
+            "customWidgetId": "cw-pump",
+            "params": {
+              "run": "sim:running",
+              "speed": "sim:efficiency"
+            },
+            "label": "Pump B (simulated)"
+          },
+          "layout": {
+            "tablet": {
+              "x": 140,
+              "y": 224,
+              "w": 300,
+              "h": 160
+            },
+            "phone": {
+              "x": 33,
+              "y": 224,
+              "w": 300,
+              "h": 160
+            }
+          }
+        },
+        {
+          "id": "cw-c",
+          "type": "customWidget",
+          "x": 748,
+          "y": 40,
+          "w": 300,
+          "h": 160,
+          "props": {
+            "customWidgetId": "cw-pump",
+            "params": {
+              "run": "mem:Enable",
+              "speed": "sim:flow"
+            },
+            "label": "Pump C (on Enable)"
+          },
+          "layout": {
+            "tablet": {
+              "x": 140,
+              "y": 396,
+              "w": 300,
+              "h": 160
+            },
+            "phone": {
+              "x": 33,
+              "y": 396,
+              "w": 300,
+              "h": 160
+            }
+          }
+        },
+        {
+          "id": "cw-n2",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 224,
+          "w": 1048,
+          "h": 36,
+          "props": {
+            "staticText": "A flex stack: a row here, a column on a phone. Resize the window to under 640 px to see it.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 568,
+              "w": 580,
+              "h": 44
+            },
+            "phone": {
+              "x": 0,
+              "y": 568,
+              "w": 366,
+              "h": 44
+            }
+          }
+        },
+        {
+          "id": "cw-tool",
+          "type": "customWidget",
+          "x": 0,
+          "y": 264,
+          "w": 1048,
+          "h": 64,
+          "props": {
+            "customWidgetId": "cw-toolbar",
+            "label": ""
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 620,
+              "w": 580,
+              "h": 64
+            },
+            "phone": {
+              "x": 0,
+              "y": 620,
+              "w": 366,
+              "h": 210
+            }
+          }
+        },
+        {
+          "id": "cw-n3",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 352,
+          "w": 1048,
+          "h": 30,
+          "props": {
+            "staticText": "A custom widget inside a custom widget.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          },
+          "layout": {
+            "tablet": {
+              "x": 0,
+              "y": 696,
+              "w": 580,
+              "h": 30
+            },
+            "phone": {
+              "x": 0,
+              "y": 842,
+              "w": 366,
+              "h": 30
+            }
+          }
+        },
+        {
+          "id": "cw-tile",
+          "type": "customWidget",
+          "x": 0,
+          "y": 384,
+          "w": 360,
+          "h": 240,
+          "props": {
+            "customWidgetId": "cw-tile",
+            "params": {
+              "run": "mem:Run",
+              "speed": "sim:efficiency"
+            },
+            "label": "Pump tile"
+          },
+          "layout": {
+            "tablet": {
+              "x": 110,
+              "y": 734,
+              "w": 360,
+              "h": 240
+            },
+            "phone": {
+              "x": 3,
+              "y": 880,
+              "w": 360,
+              "h": 240
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-widgets",
+      "name": "Widgets",
+      "icon": "dial",
+      "widgets": [
+        {
+          "id": "wd-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 30,
+          "props": {
+            "staticText": "All 23 widget types, each live. (The page list also comes in list, icons and bar styles.)",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "w-gauge",
+          "type": "gauge",
+          "x": 0,
+          "y": 40,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "gauge",
+            "unit": "bar",
+            "min": 40,
+            "max": 80
+          }
+        },
+        {
+          "id": "w-num",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 40,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:flow"
+          },
+          "props": {
+            "label": "numericDisplay",
+            "unit": "m³/h"
+          }
+        },
+        {
+          "id": "w-text",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 40,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "textDisplay",
+            "staticText": "Pump station 2"
+          }
+        },
+        {
+          "id": "w-led",
+          "type": "led",
+          "x": 0,
+          "y": 226,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:running"
+          },
+          "props": {
+            "label": "led",
+            "trueLabel": "ON",
+            "falseLabel": "OFF"
+          }
+        },
+        {
+          "id": "w-tank",
+          "type": "tank",
+          "x": 355,
+          "y": 226,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:level"
+          },
+          "props": {
+            "label": "tank",
+            "unit": "%",
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "id": "w-btn",
+          "type": "button",
+          "x": 709,
+          "y": 226,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "props": {
+            "label": "button"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-sp",
+          "type": "setpoint",
+          "x": 0,
+          "y": 412,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Setpoint"
+          },
+          "props": {
+            "label": "setpoint",
+            "unit": "°C",
+            "min": 0,
+            "max": 100,
+            "step": 5
+          }
+        },
+        {
+          "id": "w-ms",
+          "type": "multiState",
+          "x": 355,
+          "y": 412,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:mode"
+          },
+          "props": {
+            "label": "multiState",
+            "states": [
+              {
+                "value": 0,
+                "label": "Idle",
+                "color": "#64748b",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 1,
+                "label": "Start",
+                "color": "#b45309",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 2,
+                "label": "Run",
+                "color": "#15803d",
+                "textColor": "#ffffff"
+              },
+              {
+                "value": 3,
+                "label": "Stop",
+                "color": "#b91c1c",
+                "textColor": "#ffffff"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-trend",
+          "type": "trend",
+          "x": 709,
+          "y": 412,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:temp"
+          },
+          "props": {
+            "label": "trend",
+            "duration": 60,
+            "tags": [
+              {
+                "binding": "sim:temp",
+                "label": "Temp",
+                "color": "#dc2626"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-ni",
+          "type": "numericInput",
+          "x": 0,
+          "y": 598,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Speed"
+          },
+          "props": {
+            "label": "numericInput",
+            "unit": "%",
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "id": "w-ti",
+          "type": "textInput",
+          "x": 355,
+          "y": 598,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Batch"
+          },
+          "props": {
+            "label": "textInput"
+          }
+        },
+        {
+          "id": "w-hl",
+          "type": "historyLog",
+          "x": 709,
+          "y": 598,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Setpoint"
+          },
+          "props": {
+            "label": "historyLog",
+            "pageSize": 3
+          }
+        },
+        {
+          "id": "w-ab",
+          "type": "alarmBanner",
+          "x": 0,
+          "y": 784,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "alarmBanner",
+            "maxRows": 3
+          }
+        },
+        {
+          "id": "w-img",
+          "type": "image",
+          "x": 355,
+          "y": 784,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "image",
+            "src": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2080%22%3E%3Crect%20width%3D%22120%22%20height%3D%2280%22%20rx%3D%2210%22%20fill%3D%22%232563eb%22%2F%3E%3Cpath%20d%3D%22M30%2055%20L55%2025%20L70%2045%20L90%2020%22%20stroke%3D%22%23fff%22%20stroke-width%3D%227%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E",
+            "fit": "contain"
+          }
+        },
+        {
+          "id": "w-sym",
+          "type": "symbol",
+          "x": 709,
+          "y": 784,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "symbol",
+            "symbolId": "centrifugal-pump",
+            "motion": "spin",
+            "animate": true,
+            "cycleSeconds": 1.5
+          }
+        },
+        {
+          "id": "w-pipe",
+          "type": "pipe",
+          "x": 0,
+          "y": 970,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "pipe",
+            "points": "0,50 100,50",
+            "weight": 12,
+            "flow": true,
+            "color": "#2563eb"
+          }
+        },
+        {
+          "id": "w-table",
+          "type": "table",
+          "x": 355,
+          "y": 970,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "table",
+            "rows": [
+              {
+                "label": "Pressure",
+                "binding": "sim:pressure",
+                "unit": "bar"
+              },
+              {
+                "label": "Flow",
+                "binding": "sim:flow",
+                "unit": "m³/h"
+              },
+              {
+                "label": "Level",
+                "binding": "sim:level",
+                "unit": "%"
+              },
+              {
+                "label": "Setpoint",
+                "binding": "mem:Setpoint",
+                "unit": "°C"
+              }
+            ]
+          }
+        },
+        {
+          "id": "w-cw",
+          "type": "customWidget",
+          "x": 709,
+          "y": 970,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "customWidget",
+            "customWidgetId": "cw-pump",
+            "params": {
+              "run": "mem:Run",
+              "speed": "mem:Speed"
+            }
+          }
+        },
+        {
+          "id": "w-pl",
+          "type": "pageList",
+          "x": 0,
+          "y": 1156,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "pageList (tabs)",
+            "style": "tabs"
+          }
+        },
+        {
+          "id": "w-clock",
+          "type": "clock",
+          "x": 355,
+          "y": 1156,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "clock",
+            "format": "dateTime"
+          }
+        },
+        {
+          "id": "w-ds",
+          "type": "driverStatus",
+          "x": 709,
+          "y": 1156,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "driverStatus"
+          }
+        },
+        {
+          "id": "w-um",
+          "type": "userMenu",
+          "x": 0,
+          "y": 1342,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "userMenu"
+          }
+        },
+        {
+          "id": "w-rec",
+          "type": "recipes",
+          "x": 355,
+          "y": 1342,
+          "w": 339,
+          "h": 170,
+          "props": {
+            "label": "recipes",
+            "recipeId": "r-std",
+            "showEntries": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-dynamics",
+      "name": "Dynamics",
+      "icon": "bolt",
+      "widgets": [
+        {
+          "id": "dy-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 40,
+          "props": {
+            "staticText": "Every property a tag can drive, and the three kinds of transform: linear, thresholds, map. The caption under each card says what drives what. They all move on their own.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-visible",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 46,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "visible",
+            "staticText": "I appear while the pump runs"
+          },
+          "dynamics": {
+            "visible": {
+              "expr": "{sim:running} == 1"
+            }
+          }
+        },
+        {
+          "id": "d-visible-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 180,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "appears only while the simulated pump runs (a flag)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-disabled",
+          "type": "button",
+          "x": 355,
+          "y": 46,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "disabled",
+            "btnColor": "blue"
+          },
+          "dynamics": {
+            "disabled": {
+              "expr": "{sim:mode} == 1"
+            }
+          },
+          "bindings": {
+            "value": "mem:Clicks"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "d-disabled-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 180,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "disabled while the mode is Starting (a flag)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-opacity",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 46,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "opacity",
+            "staticText": "Fading text",
+            "fontBold": true
+          },
+          "dynamics": {
+            "opacity": {
+              "expr": "{sim:level}",
+              "transform": {
+                "kind": "linear",
+                "in": [
+                  0,
+                  100
+                ],
+                "out": [
+                  0.2,
+                  1
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "d-opacity-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 180,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "fades with the level (linear 0..100 to 0.2..1)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-label",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 236,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "label",
+            "unit": "bar"
+          },
+          "dynamics": {
+            "label": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "Idle"
+                  },
+                  {
+                    "equals": 1,
+                    "value": "Starting"
+                  },
+                  {
+                    "equals": 2,
+                    "value": "Running"
+                  }
+                ],
+                "default": "Stopping"
+              }
+            }
+          },
+          "bindings": {
+            "value": "sim:pressure"
+          }
+        },
+        {
+          "id": "d-label-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 370,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the label changes with the mode (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-bg",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 236,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "bgColor",
+            "staticText": "Level color",
+            "textColor": "#ffffff"
+          },
+          "dynamics": {
+            "bgColor": {
+              "expr": "{sim:level}",
+              "transform": {
+                "kind": "thresholds",
+                "below": "#2563eb",
+                "steps": [
+                  {
+                    "above": 25,
+                    "value": "#16a34a"
+                  },
+                  {
+                    "above": 60,
+                    "value": "#f59e0b"
+                  },
+                  {
+                    "above": 85,
+                    "value": "#dc2626"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "d-bg-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 370,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "background by level (thresholds)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-border",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 236,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "borderColor",
+            "staticText": "Border follows the mode"
+          },
+          "dynamics": {
+            "borderColor": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "token:process-off"
+                  },
+                  {
+                    "equals": 1,
+                    "value": "token:alarm-warning"
+                  },
+                  {
+                    "equals": 2,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:alarm-critical"
+              }
+            }
+          }
+        },
+        {
+          "id": "d-border-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 370,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "border by state, with theme tokens (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-text",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 426,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "textColor",
+            "staticText": "Green while running",
+            "fontBold": true
+          },
+          "dynamics": {
+            "textColor": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#dc2626"
+              }
+            }
+          }
+        },
+        {
+          "id": "d-text-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 560,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "text color while running (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-blink",
+          "type": "led",
+          "x": 355,
+          "y": 426,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "blink",
+            "blinkPeriodMs": 500,
+            "blinkColor": "#dc2626",
+            "trueLabel": "HIGH",
+            "falseLabel": "OK"
+          },
+          "dynamics": {
+            "blink": {
+              "expr": "{sim:pressure} > 64"
+            }
+          },
+          "bindings": {
+            "value": "sim:pressure"
+          }
+        },
+        {
+          "id": "d-blink-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 560,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "blinks while pressure is above 64 (a flag)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-rotate",
+          "type": "symbol",
+          "x": 709,
+          "y": 426,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "rotate",
+            "symbolId": "fan"
+          },
+          "dynamics": {
+            "rotate": {
+              "expr": "{sim:phase}",
+              "transform": {
+                "kind": "linear",
+                "in": [
+                  0,
+                  6.283
+                ],
+                "out": [
+                  0,
+                  360
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "d-rotate-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 560,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "turns with the phase (linear 0..6.283 to 0..360)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-min",
+          "type": "gauge",
+          "x": 0,
+          "y": 616,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "min and max",
+            "unit": "bar"
+          },
+          "dynamics": {
+            "min": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": 0
+                  },
+                  {
+                    "equals": 1,
+                    "value": 20
+                  }
+                ],
+                "default": 40
+              }
+            },
+            "max": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": 100
+                  },
+                  {
+                    "equals": 1,
+                    "value": 90
+                  }
+                ],
+                "default": 80
+              }
+            }
+          },
+          "bindings": {
+            "value": "sim:pressure"
+          }
+        },
+        {
+          "id": "d-min-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 750,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the scale follows the mode (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-unit",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 616,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "unit"
+          },
+          "dynamics": {
+            "unit": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "bar"
+                  },
+                  {
+                    "equals": 1,
+                    "value": "kPa"
+                  },
+                  {
+                    "equals": 2,
+                    "value": "psi"
+                  }
+                ],
+                "default": "MPa"
+              }
+            }
+          },
+          "bindings": {
+            "value": "sim:pressure"
+          }
+        },
+        {
+          "id": "d-unit-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 750,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the unit follows the mode (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-step",
+          "type": "setpoint",
+          "x": 709,
+          "y": 616,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "step",
+            "min": 0,
+            "max": 100,
+            "unit": "°C"
+          },
+          "dynamics": {
+            "step": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": 1
+                  },
+                  {
+                    "equals": 1,
+                    "value": 5
+                  }
+                ],
+                "default": 10
+              }
+            }
+          },
+          "bindings": {
+            "value": "mem:Setpoint"
+          }
+        },
+        {
+          "id": "d-step-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 750,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the step size follows the mode (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-static",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 806,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "staticText",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "'Pressure ' + format({sim:pressure}, 1) + ' bar'"
+            }
+          }
+        },
+        {
+          "id": "d-static-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 940,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "text built from a tag (format)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-true",
+          "type": "led",
+          "x": 355,
+          "y": 806,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "trueColor, falseColor, trueLabel, falseLabel"
+          },
+          "dynamics": {
+            "trueColor": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "thresholds",
+                "below": "#16a34a",
+                "steps": [
+                  {
+                    "above": 2,
+                    "value": "#dc2626"
+                  }
+                ]
+              }
+            },
+            "falseColor": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "linear",
+                "in": [
+                  0,
+                  3
+                ],
+                "out": [
+                  0,
+                  1
+                ],
+                "clamp": true
+              }
+            },
+            "trueLabel": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "ZERO"
+                  }
+                ],
+                "default": "ON"
+              }
+            },
+            "falseLabel": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "OFFLINE"
+                  }
+                ],
+                "default": "OFF"
+              }
+            }
+          },
+          "bindings": {
+            "value": "sim:running"
+          }
+        },
+        {
+          "id": "d-true-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 940,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "colors and words follow the mode",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-btn",
+          "type": "button",
+          "x": 709,
+          "y": 806,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "btnColor"
+          },
+          "dynamics": {
+            "btnColor": {
+              "expr": "{sim:mode}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 0,
+                    "value": "zinc"
+                  },
+                  {
+                    "equals": 1,
+                    "value": "amber"
+                  },
+                  {
+                    "equals": 2,
+                    "value": "green"
+                  }
+                ],
+                "default": "red"
+              }
+            }
+          },
+          "bindings": {
+            "value": "mem:Run"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "d-btn-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 940,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the button color follows the mode (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-src",
+          "type": "image",
+          "x": 0,
+          "y": 996,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "src",
+            "fit": "contain"
+          },
+          "dynamics": {
+            "src": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2080%22%3E%3Crect%20width%3D%22120%22%20height%3D%2280%22%20rx%3D%2210%22%20fill%3D%22%2316a34a%22%2F%3E%3Ctext%20x%3D%2260%22%20y%3D%2248%22%20font-family%3D%22sans-serif%22%20font-size%3D%2226%22%20font-weight%3D%22700%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%3ERUNNING%3C%2Ftext%3E%3C%2Fsvg%3E"
+                  }
+                ],
+                "default": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%2080%22%3E%3Crect%20width%3D%22120%22%20height%3D%2280%22%20rx%3D%2210%22%20fill%3D%22%2364748b%22%2F%3E%3Ctext%20x%3D%2260%22%20y%3D%2248%22%20font-family%3D%22sans-serif%22%20font-size%3D%2226%22%20font-weight%3D%22700%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%3ESTOPPED%3C%2Ftext%3E%3C%2Fsvg%3E"
+              }
+            }
+          }
+        },
+        {
+          "id": "d-src-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 1130,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "the picture swaps while the pump runs (map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-stroke",
+          "type": "symbol",
+          "x": 355,
+          "y": 996,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "stroke and animate",
+            "symbolId": "centrifugal-pump",
+            "motion": "spin",
+            "cycleSeconds": 1.2
+          },
+          "dynamics": {
+            "stroke": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            },
+            "animate": {
+              "expr": "{sim:running} == 1"
+            }
+          }
+        },
+        {
+          "id": "d-stroke-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 1130,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "a spinning pump that follows the simulated run (a flag, a map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-pipe",
+          "type": "pipe",
+          "x": 709,
+          "y": 996,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "color, flow, reverse",
+            "points": "0,50 100,50",
+            "weight": 12
+          },
+          "dynamics": {
+            "color": {
+              "expr": "{sim:running}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "token:process-running"
+                  }
+                ],
+                "default": "token:process-off"
+              }
+            },
+            "flow": {
+              "expr": "{sim:running} == 1"
+            },
+            "reverse": {
+              "expr": "{sim:square} == 1"
+            }
+          }
+        },
+        {
+          "id": "d-pipe-cap",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 1130,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "flows while running, reverses with the square wave (a flag, a map)",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-all",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 1186,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "no transform",
+            "staticText": "Text from a comparison"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "{sim:pressure} > 64 ? 'above 64' : 'normal'"
+            }
+          }
+        },
+        {
+          "id": "d-all-cap",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 1320,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "an expression alone: a flag shows as 1 or 0",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "d-session",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 1186,
+          "w": 339,
+          "h": 130,
+          "props": {
+            "label": "session variable",
+            "staticText": "Details shown (session variable)"
+          },
+          "dynamics": {
+            "visible": {
+              "expr": "{session:pump} == 3"
+            }
+          }
+        },
+        {
+          "id": "d-session-cap",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 1320,
+          "w": 339,
+          "h": 48,
+          "props": {
+            "staticText": "shown only after Show details is pressed on the Controls page",
+            "fontSize": "xs",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        }
+      ]
+    }
+  ]
+}

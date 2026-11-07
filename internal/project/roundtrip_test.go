@@ -21,6 +21,7 @@ func TestProjectFilesRoundTrip(t *testing.T) {
 		{"demo project", "demo.screens.json"},
 		{"example project", "project/project.example.json"},
 		{"design directions sample", "samples/design-directions.screens.json"},
+		{"feature tour sample", "samples/feature-tour.screens.json"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
