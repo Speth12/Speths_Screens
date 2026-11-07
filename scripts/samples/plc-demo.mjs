@@ -82,32 +82,40 @@ datasources.push({
 // value goes above the limit (it re-arms when the value drops back). A runtime script cannot sleep (a run is cut
 // off after 100 ms), so it checks four times a second and keeps the time the value first went over in `state`.
 const ruleSource = `
-const IN = ${JSON.stringify(IN)}, OUT = ${JSON.stringify(OUT)};
-const set = async (text, left) => {
-  if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }
-  if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }
-};
-if (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }
-const value = readTag(IN);
-if (quality(IN) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }
-const limit = readTag('mem:Threshold') ?? 100;
-const wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;
-if (value <= limit) { state.since = undefined; state.done = false; await set('Input at or below the limit', 0); return; }
-state.since ??= Date.now();
-const left = wait - (Date.now() - state.since);
-if (left > 0) { await set('Input above the limit, waiting', Math.ceil(left / 1000)); return; }
-if (state.done) { await set('Done: waiting for the input to drop', 0); return; }
-const current = readTag(OUT);
-const next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);
-const r = await writeTag(OUT, next);
-if (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }
-state.done = true;
-const n = (readTag('mem:Fired') ?? 0) + 1;
-await writeTag('mem:Fired', n);
-await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + OUT.split('/').pop() + ' = ' + next);
-emit('plc.increment', { value, limit, wrote: next, n });
-log('input', value, 'was above', limit, 'for', wait / 1000, 's: wrote', next);
-await set('Done: waiting for the input to drop', 0);
+// A run that awaits a write lets the next trigger start (every 250 ms, while a PLC write takes about 300 ms), so
+// the runs would overlap and act twice. This one skips a trigger while the previous run is still waiting.
+if (state.busy) return;
+state.busy = true;
+try {
+  const IN = ${JSON.stringify(IN)}, OUT = ${JSON.stringify(OUT)};
+  const set = async (text, left) => {
+    if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }
+    if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }
+  };
+  if (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }
+  const value = readTag(IN);
+  if (quality(IN) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }
+  const limit = readTag('mem:Threshold') ?? 100;
+  const wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;
+  if (value <= limit) { state.since = undefined; state.done = false; await set('Input at or below the limit', 0); return; }
+  state.since ??= Date.now();
+  const left = wait - (Date.now() - state.since);
+  if (left > 0) { await set('Input above the limit, waiting', Math.ceil(left / 1000)); return; }
+  if (state.done) { await set('Done: waiting for the input to drop', 0); return; }
+  const current = readTag(OUT);
+  const next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);
+  const r = await writeTag(OUT, next);
+  if (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }
+  state.done = true;
+  state.fired = (state.fired ?? 0) + 1;
+  await writeTag('mem:Fired', state.fired);
+  await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + OUT.split('/').pop() + ' = ' + next);
+  emit('plc.increment', { value, limit, wrote: next, n: state.fired });
+  log('input', value, 'was above', limit, 'for', wait / 1000, 's: wrote', next);
+  await set('Done: waiting for the input to drop', 0);
+} finally {
+  state.busy = false;
+}
 `;
 // When switched on, the OPC read-in is copied to the REST write variable each time it changes: a value
 // read over one protocol written over the other.
@@ -118,7 +126,8 @@ if (event.value === state.last) return;
 state.last = event.value;
 const r = await writeTag(OUT, Math.round(event.value));
 if (r.status !== 'confirmed') { log('mirror not confirmed:', r.status, r.reason ?? ''); return; }
-await writeTag('mem:Mirrored', (readTag('mem:Mirrored') ?? 0) + 1);
+state.count = (state.count ?? 0) + 1; // counted before the await, so runs that overlap cannot repeat a number
+await writeTag('mem:Mirrored', state.count);
 `;
 const scripts = [
   { id: "increment-rule", name: "Increment when the input stays high", trigger: { every: 250 }, writes: [OUT, "mem:RuleState", "mem:Countdown", "mem:Fired", "mem:LastFired"], source: ruleSource.trim() },
