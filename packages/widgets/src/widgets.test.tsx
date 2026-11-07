@@ -186,6 +186,29 @@ describe("events go through the host", () => {
     });
   });
 
+  it("a text widget draws at the size it is given, and a button does not say its label twice", () => {
+    const { container } = draw({ type: "textDisplay", props: { staticText: "small", fontSize: "xs" } });
+    expect(container.querySelector(".text-lg")).toBeNull();
+    cleanup();
+    const big = draw({ type: "textDisplay", props: { staticText: "default" } });
+    expect(big.container.querySelector(".text-lg")).not.toBeNull();
+    cleanup();
+    draw({ type: "button", props: { label: "Start" } });
+    expect(screen.getAllByText("Start").length).toBe(1);
+  });
+
+  it("a custom widget inside another passes the outer one's parameters on", () => {
+    const inner: CustomWidget = { id: "in", name: "Inner", params: [{ name: "v" }], widgets: [
+      { localId: "n", type: "numericDisplay", x: 0, y: 0, w: 2, h: 2, bindings: { value: "{v}" } },
+    ] };
+    const outer: CustomWidget = { id: "out", name: "Outer", params: [{ name: "speed" }], layout: { mode: "stack", direction: "column" }, widgets: [
+      { localId: "i", type: "customWidget", x: 0, y: 0, w: 2, h: 2, props: { customWidgetId: "in", params: { v: "{speed}" } } },
+    ] };
+    const host = fakeHost({ "plc:Speed": 77 }, { useCustomWidget: (id) => (id === "out" ? outer : id === "in" ? inner : undefined) });
+    draw({ type: "customWidget", props: { customWidgetId: "out", params: { speed: "plc:Speed" } } }, host);
+    expect(screen.getByText("77")).toBeTruthy();
+  });
+
   it("a custom widget that contains itself stops instead of looping", () => {
     const loop: CustomWidget = { id: "loop", name: "Loop", params: [], widgets: [
       { localId: "again", type: "customWidget", x: 0, y: 0, w: 4, h: 4, props: { customWidgetId: "loop" } },
