@@ -614,7 +614,11 @@
         "label":   { "type": "string" },
         "fill":    { "type": "boolean" },
         "yMin":    { "type": "number" },
-        "yMax":    { "type": "number" }
+        "yMax":    { "type": "number" },
+        "style":   { "type": "string", "description": "line | step | area | dots | bars; missing means line" },
+        "width":   { "type": "number", "minimum": 0.5, "description": "Pen width in pixels; missing means 1.5" },
+        "dash":    { "type": "string", "description": "solid | dashed | dotted; missing means solid" },
+        "axis":    { "type": "string", "description": "own | shared: shared pens use one Y scale (the first shared pen's); missing means own" }
       }
     },
     "RefLine": {
@@ -957,7 +961,43 @@
         },
         "fontSize": {
           "type": "string",
-          "description": "xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base"
+          "description": "xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size"
+        },
+        "fontPx": {
+          "type": "number",
+          "minimum": 6,
+          "description": "Exact text size in pixels; overrides fontSize"
+        },
+        "padding": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Space inside the card in pixels; overrides noPadding and the theme"
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Corner radius in pixels; missing means the theme's"
+        },
+        "borderWidth": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Border width in pixels; missing means the theme's"
+        },
+        "shadow": {
+          "type": "boolean",
+          "description": "false removes the card's shadow; missing means the theme's"
+        },
+        "showLabel": {
+          "type": "boolean",
+          "description": "false hides the label above the value; missing means shown"
+        },
+        "showUnit": {
+          "type": "boolean",
+          "description": "false hides the unit beside the value; missing means shown"
+        },
+        "valign": {
+          "type": "string",
+          "description": "top | center | bottom: where the value sits in the card; missing means center"
         },
         "fontBold": {
           "type": "boolean"
@@ -1233,7 +1273,20 @@
             "$ref": "#/$defs/RefLine"
           },
           "description": "Trend horizontal reference lines"
-        }
+        },
+        "autoscale": {
+          "type": "string",
+          "description": "fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else fixed"
+        },
+        "showGrid": { "type": "boolean", "description": "Missing means shown" },
+        "showLegend": { "type": "boolean", "description": "Missing means shown" },
+        "showToolbar": { "type": "boolean", "description": "Window, pause and history buttons; missing means shown" },
+        "windows": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 5 },
+          "description": "Seconds of each window button; missing means 30, 60, 300 and 3600"
+        },
+        "live": { "type": "boolean", "description": "false starts the trend paused; missing means running" }
       },
       "unevaluatedProperties": false
     },

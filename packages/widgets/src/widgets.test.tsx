@@ -186,6 +186,26 @@ describe("events go through the host", () => {
     });
   });
 
+  describe("quality is shown only when it is not Good, unless the widget says otherwise", () => {
+    const bad = { value: null, quality: "Bad" as const, ts: 0 };
+    const show = (props: Record<string, unknown>, quality: "Good" | "Bad") =>
+      draw({ type: "numericDisplay", bindings: { value: "plc:T" }, props }, fakeHost({}, { useTag: () => (quality === "Bad" ? bad : { value: 5, quality: "Good", ts: 1 }) }));
+    it("a Good value has no label, a Bad one says so", () => {
+      show({}, "Good");
+      expect(screen.queryByText("Good")).toBeNull();
+      cleanup();
+      show({}, "Bad");
+      expect(screen.getByText("Bad")).toBeTruthy();
+    });
+    it("showQuality true always says it; false never does", () => {
+      show({ showQuality: true }, "Good");
+      expect(screen.getByText("Good")).toBeTruthy();
+      cleanup();
+      show({ showQuality: false }, "Bad");
+      expect(screen.queryByText("Bad")).toBeNull();
+    });
+  });
+
   it("a custom widget that contains itself stops instead of looping", () => {
     const loop: CustomWidget = { id: "loop", name: "Loop", params: [], widgets: [
       { localId: "again", type: "customWidget", x: 0, y: 0, w: 4, h: 4, props: { customWidgetId: "loop" } },

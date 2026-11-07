@@ -11,8 +11,24 @@ type GaugeProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -40,8 +56,24 @@ type NumericDisplayProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -68,8 +100,24 @@ type TextDisplayProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -95,8 +143,24 @@ type LedProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -128,8 +192,24 @@ type TankProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -157,8 +237,24 @@ type ButtonProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -191,8 +287,24 @@ type SetpointProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -221,8 +333,24 @@ type MultiStateProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -248,8 +376,24 @@ type TrendProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -271,6 +415,18 @@ type TrendProps struct {
 	Tags []TrendSeries `json:"tags,omitempty"`
 	// Trend horizontal reference lines
 	RefLines []RefLine `json:"refLines,omitempty"`
+	// fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else fixed
+	Autoscale *string `json:"autoscale,omitempty"`
+	// Missing means shown
+	ShowGrid *bool `json:"showGrid,omitempty"`
+	// Missing means shown
+	ShowLegend *bool `json:"showLegend,omitempty"`
+	// Window, pause and history buttons; missing means shown
+	ShowToolbar *bool `json:"showToolbar,omitempty"`
+	// Seconds of each window button; missing means 30, 60, 300 and 3600
+	Windows []int64 `json:"windows,omitempty"`
+	// false starts the trend paused; missing means running
+	Live *bool `json:"live,omitempty"`
 }
 
 // NumericInputProps holds the settings of a numericInput widget.
@@ -282,8 +438,24 @@ type NumericInputProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -310,8 +482,24 @@ type TextInputProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -335,8 +523,24 @@ type HistoryLogProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -362,8 +566,24 @@ type AlarmBannerProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -391,8 +611,24 @@ type ImageProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -420,8 +656,24 @@ type SymbolProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -455,8 +707,24 @@ type PipeProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -494,8 +762,24 @@ type CustomWidgetProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -523,8 +807,24 @@ type PageListProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -552,8 +852,24 @@ type ClockProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -583,8 +899,24 @@ type DriverStatusProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -610,8 +942,24 @@ type UserMenuProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -637,8 +985,24 @@ type RecipesProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -666,8 +1030,24 @@ type TableProps struct {
 	NoPadding   *bool   `json:"noPadding,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
-	FontSize      *string    `json:"fontSize,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
 	FontBold      *bool      `json:"fontBold,omitempty"`
 	FontItalic    *bool      `json:"fontItalic,omitempty"`
 	FontUnderline *bool      `json:"fontUnderline,omitempty"`
@@ -847,27 +1227,27 @@ func (w Widget) AsTable() (TableProps, error) {
 
 // PropsKeys lists each widget type's settings, frame settings first.
 var PropsKeys = map[WidgetType][]string{
-	Gauge:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	NumericDisplay: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextDisplay:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
-	LED:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
-	Tank:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	Button:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
-	Setpoint:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
-	MultiState:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
-	Trend:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines"},
-	NumericInput:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextInput:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
-	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
-	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
-	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
-	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
-	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
-	CustomWidget:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
-	PageList:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"},
-	Clock:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
-	DriverStatus:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
-	UserMenu:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
-	Recipes:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"},
-	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
+	Gauge:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	NumericDisplay: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextDisplay:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
+	LED:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
+	Tank:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	Button:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
+	Setpoint:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
+	MultiState:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
+	Trend:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
+	NumericInput:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextInput:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
+	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
+	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
+	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
+	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
+	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
+	CustomWidget:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
+	PageList:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"},
+	Clock:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
+	DriverStatus:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
+	UserMenu:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
+	Recipes:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"},
+	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }

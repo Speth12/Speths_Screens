@@ -6,7 +6,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TrendSeries, TypedWidget,
+  Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TypedWidget,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
@@ -16,6 +16,7 @@ import { SYMBOLS } from "./symbols";
 import { SymbolSVG } from "./SymbolSVG";
 import { partStyle, stackFor, stackStyle } from "./layout";
 import { RecipesWidget } from "./recipes";
+import { TrendWidget } from "./trend";
 import { ClockWidget, DriverStatusWidget, PageListWidget, UserMenuWidget } from "./shell";
 import { DEFAULT_STATES } from "./manifests";
 
@@ -30,6 +31,10 @@ export const fmt = (v: unknown): string => {
   if (typeof v === "boolean") return v ? "ON" : "OFF";
   return String(v);
 };
+
+/** Whether a widget shows its tag's quality: only when it is not Good, unless the widget's showQuality
+ *  setting says always (true) or never (false). A healthy value needs no label. */
+const qualityShown = (setting: boolean | undefined, quality: string): boolean => setting === true || (setting !== false && quality !== "Good");
 
 const qualityColor: Record<string, string> = {
   Good: "text-emerald-400",
@@ -105,7 +110,8 @@ export function KeypadModal({
 
 const FONT_SIZE_MAP: Record<string, string> = {
   xs: "0.75rem", sm: "0.875rem", base: "1rem", lg: "1.125rem",
-  xl: "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem", "4xl": "2.25rem",
+  xl: "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem", "4xl": "2.25rem", "5xl": "3rem", "6xl": "3.75rem",
+  fit: "clamp(0.75rem, min(55cqh, 22cqw), 40rem)",
 };
 const FONT_FAMILY_MAP: Record<string, string> = {
   mono: "ui-monospace, monospace",
@@ -116,7 +122,7 @@ const FONT_FAMILY_MAP: Record<string, string> = {
 function fontStyle(p: FrameProps): React.CSSProperties {
   return {
     fontFamily: FONT_FAMILY_MAP[p.fontFamily ?? ""] ?? undefined,
-    fontSize:   FONT_SIZE_MAP[p.fontSize ?? ""] ?? undefined,
+    fontSize:   p.fontPx ? `${p.fontPx}px` : FONT_SIZE_MAP[p.fontSize ?? ""] ?? undefined,
     fontWeight: p.fontBold    ? "bold"   : undefined,
     fontStyle:  p.fontItalic  ? "italic" : undefined,
     textDecoration: p.fontUnderline ? "underline" : undefined,
@@ -124,6 +130,19 @@ function fontStyle(p: FrameProps): React.CSSProperties {
     color:      p.textColor || undefined,
   };
 }
+
+/** A widget's main text: the frame's size setting when there is one, else the widget's own class. */
+function mainText(p: FrameProps, cls: string): { className: string; style?: React.CSSProperties } {
+  const sized = !!p.fontPx || !!FONT_SIZE_MAP[p.fontSize ?? ""];
+  return { className: sized ? "" : cls };
+}
+/** The unit beside a value: hidden by showUnit false, and in proportion to a value the frame sized. */
+function unitOf(p: FrameProps & { unit?: string }, cls = "text-base text-zinc-500 ml-1") {
+  if (!p.unit || p.showUnit === false) return null;
+  const sized = !!p.fontPx || !!FONT_SIZE_MAP[p.fontSize ?? ""];
+  return <span className={sized ? "opacity-60 ml-1" : cls} style={sized ? { fontSize: "0.45em" } : undefined}>{p.unit}</span>;
+}
+const VALIGN: Record<string, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 
 // ── Color threshold helper ─────────────────────────────────────────────────
 
@@ -167,14 +186,20 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     borderColor: dynColor ?? (borderColor === "none" ? "transparent" : borderColor ?? "var(--border)"),
     border: dynColor ? `2px solid ${dynColor}` : undefined,
     boxShadow: dynColor ? `0 0 8px ${dynColor}44` : "var(--shadow, none)",
-    borderRadius: "var(--radius, 0.5rem)",
-    padding: p.noPadding ? 0 : "var(--pad, 0.75rem)",
+    borderRadius: p.radius !== undefined ? p.radius : "var(--radius, 0.5rem)",
+    padding: p.padding !== undefined ? p.padding : p.noPadding ? 0 : "var(--pad, 0.75rem)",
     color: textColor ?? "var(--card-foreground)",
     fontFamily: "var(--font-sans, inherit)",
   };
   if (!dynColor && !bgColor) {
     style.border = "var(--line-width, 1px) solid var(--border)";
   }
+  if (p.borderWidth !== undefined) {
+    style.borderWidth = p.borderWidth;
+    style.borderStyle = p.borderWidth ? "solid" : "none";
+    if (!dynColor && !borderColor) style.borderColor = "var(--border)";
+  }
+  if (p.shadow === false) style.boxShadow = "none";
   // A pipe, and a symbol with no background or border of its own, is a drawing on the page, not a card:
   // no frame, and no frame label (a symbol draws its own).
   // A widget given no background and no border draws on whatever is behind it (the parts of a header):
@@ -195,7 +220,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
       className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
       style={style}
     >
-      {p.label && !bare && (
+      {p.label && !bare && p.showLabel !== false && (
         <div
           className="text-xs uppercase tracking-wider truncate shrink-0"
           style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
@@ -203,7 +228,10 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
           {p.label}
         </div>
       )}
-      <div className="flex-1 min-h-0 flex flex-col" style={fontStyle(p)}>{children}</div>
+      {/* "fit" sizes the text in container units, which count from the nearest container: this box, not the page. */}
+      <div className="flex-1 min-h-0 flex flex-col" style={p.fontSize === "fit" && !p.fontPx ? { containerType: "size" } : undefined}>
+        <div className="flex-1 min-h-0 flex flex-col" style={fontStyle(p)}>{children}</div>
+      </div>
     </div>
   );
 }
@@ -293,7 +321,7 @@ function GaugeWidget({ w }: WP<"gauge">) {
         {p.unit ? ` ${p.unit}` : ""}
       </div>
       </div>
-      {(p.showQuality ?? true) && (
+      {qualityShown(p.showQuality, t.quality) && (
         <div className={`text-xs text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
       )}
     </div>
@@ -304,12 +332,12 @@ function NumericDisplayWidget({ w }: WP<"numericDisplay">) {
   const p = w.props ?? {};
   const t = useTag(w.bindings?.value);
   return (
-    <div className="flex flex-col h-full justify-center">
-      <div className="text-3xl font-semibold tabular-nums">
+    <div className="flex flex-col h-full" style={{ justifyContent: VALIGN[p.valign ?? ""] ?? "center" }}>
+      <div className={`${mainText(p, "text-3xl").className} font-semibold tabular-nums leading-none`}>
         {fmt(t.value)}
-        {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
+        {unitOf(p)}
       </div>
-      {(p.showQuality ?? true) && (
+      {qualityShown(p.showQuality, t.quality) && (
         <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
       )}
     </div>
@@ -322,7 +350,7 @@ function TextDisplayWidget({ w }: WP<"textDisplay">) {
   const align = p.textAlign ?? "left";
   const justifyCls = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
   return (
-    <div className={`break-words h-full flex items-center ${justifyCls} text-lg`}>
+    <div className={`break-words h-full flex ${justifyCls} ${mainText(p, "text-lg").className}`} style={{ alignItems: VALIGN[p.valign ?? ""] ?? "center" }}>
       {p.staticText ?? fmt(t.value)}
     </div>
   );
@@ -371,9 +399,9 @@ function TankWidget({ w }: WP<"tank">) {
       </div>
       {/* Value + quality */}
       <div className="flex flex-col justify-end pb-1">
-        <div className="text-xl font-semibold tabular-nums leading-none">{fmt(t.value)}</div>
-        {p.unit && <div className="text-xs text-zinc-500">{p.unit}</div>}
-        {(p.showQuality ?? true) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+        <div className={`${mainText(p, "text-xl").className} font-semibold tabular-nums leading-none`}>{fmt(t.value)}</div>
+        {p.unit && p.showUnit !== false && <div className="text-xs text-zinc-500">{p.unit}</div>}
+        {qualityShown(p.showQuality, t.quality) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
       </div>
     </div>
   );
@@ -439,17 +467,17 @@ function NumericInputWidget({ w }: WP<"numericInput">) {
   const cur = typeof t.value === "number" ? t.value : 0;
 
   return (
-    <div className="flex flex-col h-full justify-center">
+    <div className="flex flex-col h-full" style={{ justifyContent: VALIGN[p.valign ?? ""] ?? "center" }}>
       <div
         onClick={() => setOpen(true)}
-        className="text-3xl font-semibold tabular-nums cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none"
+        className={`${mainText(p, "text-3xl").className} font-semibold tabular-nums leading-none cursor-pointer hover:bg-zinc-800 rounded px-1 transition-colors select-none`}
       >
         {fmt(t.value)}
-        {p.unit ? <span className="text-base text-zinc-500 ml-1">{p.unit}</span> : null}
+        {unitOf(p)}
       </div>
-      <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>
-        {(p.showQuality ?? true) ? t.quality : "tap to enter value"}
-      </div>
+      {qualityShown(p.showQuality, t.quality) && (
+        <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
+      )}
       {open && (
         <KeypadModal
           initial={cur}
@@ -534,7 +562,7 @@ function SetpointWidget({ w }: WP<"setpoint">) {
       />
       <div className="flex justify-between text-xs text-zinc-600">
         <span>{min}</span>
-        {(p.showQuality ?? true) && (
+        {qualityShown(p.showQuality, t.quality) && (
           <span className={qualityColor[t.quality] ?? "text-zinc-600"}>{t.quality}</span>
         )}
         <span>{max}</span>
@@ -544,362 +572,6 @@ function SetpointWidget({ w }: WP<"setpoint">) {
 }
 
 // ── Trend (multi-series) ───────────────────────────────────────────────────
-
-type Sample = { ts: number; v: number };
-const SERIES_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4"];
-
-/** Tracks one time-series: fetches history + appends live updates. */
-function useSeries(binding: string | undefined, duration: number): Sample[] {
-  const t = useTag(binding);
-  const { apiFetch } = useHost();
-  const [pts, setPts] = useState<Sample[]>([]);
-  const ptsRef = useRef<Sample[]>([]);
-
-  // Fetch history on mount / binding change.
-  useEffect(() => {
-    if (!binding) { setPts([]); ptsRef.current = []; return; }
-    const from = (Date.now() - duration) * 1e6;
-    apiFetch(`/api/v1/history?path=${encodeURIComponent(binding)}&from=${from}&limit=500`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((samples: Array<{ ts: number; value: unknown }>) => {
-        const loaded: Sample[] = (Array.isArray(samples) ? samples : [])
-          .filter((s) => typeof s.value === "number")
-          .map((s) => ({ ts: s.ts > 1e15 ? s.ts / 1e6 : s.ts, v: s.value as number }));
-        ptsRef.current = loaded;
-        setPts([...loaded]);
-      })
-      .catch(() => {});
-  }, [binding, duration, apiFetch]);
-
-  // Append live values.
-  useEffect(() => {
-    if (typeof t.value !== "number" || t.quality === "Unknown") return;
-    const now = t.ts > 1e15 ? t.ts / 1e6 : t.ts > 0 ? t.ts : Date.now();
-    const prev = ptsRef.current;
-    if (prev.length > 0 && prev[prev.length - 1]!.ts >= now) return;
-    const next = [...prev.filter((p) => p.ts >= now - duration), { ts: now, v: t.value as number }];
-    ptsRef.current = next;
-    setPts(next);
-  }, [t.value, t.ts, t.quality, duration]);
-
-  return pts;
-}
-
-const TREND_WINDOWS = [
-  { label: "30s", sec: 30 },
-  { label: "1m",  sec: 60 },
-  { label: "5m",  sec: 300 },
-  { label: "1h",  sec: 3600 },
-];
-
-function TrendWidget({ w }: WP<"trend">) {
-  const p = w.props ?? {};
-  const [windowSec, setWindowSec] = useState(p.duration ?? 300);
-  const [paused, setPaused]       = useState(false);
-  const [pausedAt, setPausedAt]   = useState(0);
-  const [panOffsetMs, setPanOffsetMs] = useState(0);
-  const [hoverFrac, setHoverFrac] = useState<number | null>(null);
-  const [isPanning, setIsPanning] = useState(false);
-  const svgRef      = useRef<SVGSVGElement>(null);
-  // The plot's width, so the time axis gets as many labels as fit (one per ~96 px).
-  const [plotW, setPlotW] = useState(400);
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setPlotW(el.getBoundingClientRect().width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const panStartX   = useRef<number | null>(null);
-  const panStartOff = useRef(0);
-
-  const duration = windowSec * 1000;
-
-  // Series: props.tags for multi-series, or the widget's value tag.
-  const series: TrendSeries[] = p.tags?.length ? p.tags
-    : w.bindings?.value ? [{ binding: w.bindings.value, color: SERIES_COLORS[0]! }] : [];
-
-  // Fixed-count hooks — up to 6 series.
-  const s0 = useSeries(series[0]?.binding, duration);
-  const s1 = useSeries(series[1]?.binding, duration);
-  const s2 = useSeries(series[2]?.binding, duration);
-  const s3 = useSeries(series[3]?.binding, duration);
-  const s4 = useSeries(series[4]?.binding, duration);
-  const s5 = useSeries(series[5]?.binding, duration);
-  const allPts = [s0, s1, s2, s3, s4, s5].slice(0, series.length);
-  const flat = allPts.flat();
-
-  const liveMax = flat.length ? Math.max(...flat.map((q) => q.ts)) : Date.now();
-  const tMax = (paused ? pausedAt : liveMax) - panOffsetMs;
-  const tMin = tMax - duration;
-
-  const refLines = p.refLines ?? [];
-  const xFormat = p.xFormat ?? "time";
-
-  // Per-series Y scales — each series can have its own yMin/yMax
-  const yScales = allPts.map((pts, i) => {
-    const s = series[i]!;
-    const lo = s.yMin ?? p.min ?? (pts.length ? Math.min(...pts.map((q) => q.v)) : 0);
-    const hi = s.yMax ?? p.max ?? (pts.length ? Math.max(...pts.map((q) => q.v)) : 100);
-    return { lo, hi, range: (hi - lo) || 1 };
-  });
-
-  // SVG coordinate helpers — per-series Y
-  const toX   = (ts: number) => ((ts - tMin) / duration * 100);
-  const toYi  = (v: number, i: number) => { const { lo, range } = yScales[i] ?? { lo: 0, range: 1 }; return 100 - (v - lo) / range * 100; };
-
-  const toPolyline = (pts: Sample[], i: number) => pts.length < 2 ? "" :
-    pts.filter((q) => q.ts >= tMin - duration * 0.05 && q.ts <= tMax + duration * 0.05)
-      .map((q) => `${toX(q.ts).toFixed(2)},${toYi(q.v, i).toFixed(2)}`).join(" ");
-
-  const toFillPoly = (pts: Sample[], i: number) => {
-    const vis = pts.filter((q) => q.ts >= tMin - duration * 0.05 && q.ts <= tMax + duration * 0.05);
-    if (vis.length < 2) return "";
-    const line = vis.map((q) => `${toX(q.ts).toFixed(2)},${toYi(q.v, i).toFixed(2)}`).join(" ");
-    return `${toX(vis[0]!.ts).toFixed(2)},100 ${line} ${toX(vis[vis.length-1]!.ts).toFixed(2)},100`;
-  };
-
-  // Crosshair
-  const hoverTime = hoverFrac != null ? tMin + hoverFrac * duration : null;
-  const nearestPt = (pts: Sample[]) => {
-    if (hoverTime == null || !pts.length) return null;
-    return pts.reduce((b, q) => Math.abs(q.ts - hoverTime!) < Math.abs(b.ts - hoverTime!) ? q : b);
-  };
-
-  // X-axis tick formatter
-  const fmtTick = (ms: number): string => {
-    const d = new Date(ms);
-    if (xFormat === "relative") {
-      const diffSec = Math.round((ms - Date.now()) / 1000);
-      if (diffSec === 0) return "now";
-      const abs = Math.abs(diffSec);
-      const sign = diffSec < 0 ? "−" : "+";
-      if (abs < 60)   return `${sign}${abs}s`;
-      if (abs < 3600) return `${sign}${Math.round(abs / 60)}m`;
-      return `${sign}${Math.round(abs / 3600)}h`;
-    }
-    if (xFormat === "time-short") return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    if (xFormat === "datetime")   return d.toLocaleDateString([], { month: "numeric", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  };
-  const fmtTime = (ms: number) =>
-    new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-  const X_TICKS = Math.max(2, Math.min(6, Math.floor(plotW / 96) + 1));
-  const xTicks = Array.from({ length: X_TICKS }, (_, k) => {
-    const frac = k / (X_TICKS - 1);
-    return { frac, ms: tMin + frac * duration };
-  });
-
-  // Scroll-wheel zoom — must be non-passive
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-      setWindowSec((s) => Math.max(10, Math.min(7200, Math.round(s * (e.deltaY > 0 ? 1.3 : 0.77)))));
-    };
-    el.addEventListener("wheel", handler, { passive: false });
-    return () => el.removeEventListener("wheel", handler);
-  }, []);
-
-  // Mouse handlers
-  const getSvgFrac = (clientX: number) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return null;
-    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-  };
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    panStartX.current   = e.clientX;
-    panStartOff.current = panOffsetMs;
-    setIsPanning(true);
-  };
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    const frac = getSvgFrac(e.clientX);
-    if (frac == null) return;
-    setHoverFrac(frac);
-    if (panStartX.current != null) {
-      const dx = (e.clientX - panStartX.current) / (svgRef.current?.getBoundingClientRect().width ?? 1);
-      setPanOffsetMs(Math.max(0, panStartOff.current + dx * duration));
-    }
-  };
-
-  const onMouseUp = () => { panStartX.current = null; setIsPanning(false); };
-
-  const onMouseLeave = () => { setHoverFrac(null); onMouseUp(); };
-
-  const togglePause = () => {
-    if (paused) { setPaused(false); setPanOffsetMs(0); }
-    else        { setPausedAt(liveMax); setPaused(true); }
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex gap-1 items-center shrink-0 mb-0.5 flex-wrap">
-        {TREND_WINDOWS.map((tw) => (
-          <button key={tw.sec}
-            onClick={() => { setWindowSec(tw.sec); setPanOffsetMs(0); }}
-            className={`text-xs px-1.5 py-0.5 rounded transition-colors ${windowSec === tw.sec && panOffsetMs === 0 && !paused ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
-            {tw.label}
-          </button>
-        ))}
-        <button onClick={togglePause}
-          className={`text-xs px-1.5 py-0.5 rounded ml-0.5 ${paused ? "bg-amber-700/80 text-amber-200" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"}`}>
-          {paused ? "▶ Live" : "⏸"}
-        </button>
-        {panOffsetMs > 1000 && !paused && (
-          <button onClick={() => setPanOffsetMs(0)} className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 hover:bg-zinc-700">
-            ↩ now
-          </button>
-        )}
-      </div>
-
-      {/* Chart + Y-axis */}
-      <div className="flex flex-1 min-h-0 gap-1 min-w-0">
-        {/* Per-series Y-axis columns */}
-        {yScales.map((sc, i) => {
-          const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-          return (
-            <div key={i} className="flex flex-col justify-between text-xs tabular-nums shrink-0 w-9 text-right py-0.5 leading-none" style={{ color }}>
-              <span>{sc.hi.toFixed(sc.hi % 1 === 0 ? 0 : 1)}</span>
-              <span>{((sc.lo + sc.hi) / 2).toFixed((sc.lo + sc.hi) / 2 % 1 === 0 ? 0 : 1)}</span>
-              <span>{sc.lo.toFixed(sc.lo % 1 === 0 ? 0 : 1)}</span>
-            </div>
-          );
-        })}
-
-        {/* SVG wrapper */}
-        {/* min-h-0: a flex item may not be taller than its card; without it a wide trend sized itself by the SVG's square
-            aspect ratio and the lines were clipped out of view */}
-        <div className="flex-1 relative min-w-0 min-h-0 flex flex-col">
-          <svg
-            ref={svgRef}
-            className="w-full flex-1 min-h-0 overflow-visible"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={{ cursor: isPanning ? "grabbing" : "crosshair", display: "block" }}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseLeave}
-          >
-            {/* Grid */}
-            {[0,25,50,75,100].map((y) => (
-              <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#27272a" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-            ))}
-
-            {/* Fills */}
-            {allPts.map((pts, i) => {
-              if (!series[i]?.fill) return null;
-              const color = series[i]!.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-              const poly  = toFillPoly(pts, i);
-              return poly ? <polygon key={`f${i}`} points={poly} fill={color} fillOpacity="0.15" /> : null;
-            })}
-
-            {/* Lines + live dot */}
-            {allPts.map((pts, i) => {
-              const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-              const vis   = pts.filter((q) => q.ts >= tMin && q.ts <= tMax);
-              const last  = vis.at(-1);
-              return (
-                <g key={i}>
-                  <polyline points={toPolyline(pts, i)} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-                  {last && <circle cx={toX(last.ts)} cy={toYi(last.v, i)} r="2" fill={color} vectorEffect="non-scaling-stroke" />}
-                </g>
-              );
-            })}
-
-            {/* Reference lines — drawn against series 0 scale */}
-            {refLines.map((rl, i) => {
-              const y = toYi(rl.value, 0);
-              if (y < -5 || y > 105) return null;
-              return (
-                <g key={`r${i}`}>
-                  <line x1="0" y1={y} x2="100" y2={y} stroke={rl.color} strokeWidth="1" strokeDasharray="3,2" vectorEffect="non-scaling-stroke" />
-                  {rl.label && <text x="1" y={Math.max(4, y - 1)} fontSize="4" fill={rl.color} style={{ userSelect: "none" }}>{rl.label}</text>}
-                </g>
-              );
-            })}
-
-            {/* Crosshair */}
-            {hoverFrac != null && (
-              <>
-                <line x1={hoverFrac * 100} y1="0" x2={hoverFrac * 100} y2="100"
-                  stroke="#ffffff38" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-                {allPts.map((pts, i) => {
-                  const near = nearestPt(pts);
-                  if (!near) return null;
-                  const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-                  return <circle key={`c${i}`} cx={toX(near.ts)} cy={toYi(near.v, i)} r="2.5" fill="none" stroke={color} strokeWidth="1" vectorEffect="non-scaling-stroke" />;
-                })}
-              </>
-            )}
-          </svg>
-
-          {/* X-axis tick labels */}
-          <div className="relative shrink-0 h-4">
-            {xTicks.map(({ frac, ms }) => (
-              <span
-                key={frac}
-                className="absolute text-xs tabular-nums text-zinc-500 whitespace-nowrap"
-                style={{
-                  left: `${frac * 100}%`,
-                  transform: frac === 0 ? "none" : frac === 1 ? "translateX(-100%)" : "translateX(-50%)",
-                }}
-              >
-                {fmtTick(ms)}
-              </span>
-            ))}
-          </div>
-
-          {/* Tooltip */}
-          {hoverFrac != null && hoverTime != null && (
-            <div
-              className="absolute top-0 pointer-events-none z-10 bg-zinc-950/95 border border-zinc-700 rounded px-2 py-1.5 text-xs tabular-nums space-y-0.5 shadow-xl"
-              style={{
-                left: hoverFrac > 0.65 ? undefined : `calc(${hoverFrac * 100}% + 6px)`,
-                right: hoverFrac > 0.65 ? `calc(${(1 - hoverFrac) * 100}% + 6px)` : undefined,
-                maxWidth: "160px",
-              }}
-            >
-              <div className="text-zinc-500 mb-0.5">{fmtTime(hoverTime)}</div>
-              {allPts.map((pts, i) => {
-                const near  = nearestPt(pts);
-                const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-                const lbl   = series[i]?.label || `s${i}`;
-                return (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="w-2 h-px inline-block" style={{ backgroundColor: color }} />
-                    <span style={{ color }} className="font-semibold">{lbl}:</span>
-                    <span className="text-zinc-300">{near ? fmt(near.v) : "—"}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-2 text-xs tabular-nums mt-0.5 shrink-0 flex-wrap">
-        {allPts.map((pts, i) => {
-          const color = series[i]?.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!;
-          const last  = pts.at(-1);
-          return (
-            <span key={i} className="flex items-center gap-1">
-              <span className="w-2 h-px inline-block rounded" style={{ backgroundColor: color }} />
-              <span style={{ color }} className="font-semibold">{series[i]?.label ?? `s${i}`}</span>
-              <span className="text-zinc-500">{last ? fmt(last.v) : "—"}</span>
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ── History log ────────────────────────────────────────────────────────────
 
