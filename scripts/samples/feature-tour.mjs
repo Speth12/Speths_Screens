@@ -207,13 +207,15 @@ const page = (id, name, icon, widgets) => pages.push({ id: `p-${id}`, name, icon
 page("trends", "Trends", "graph", [
   at("t-main", "trend", 0, 0, W, 330, { bindings: { value: "sim:pressure" }, props: { label: "Process variables, last 5 minutes", duration: 300, xFormat: "time", tags: [
     { binding: "sim:pressure", label: "Pressure (bar)", color: "#4c9aff", yMin: 40, yMax: 80 },
-    { binding: "sim:flow", label: "Flow (m³/h)", color: "#12a150", yMin: 0, yMax: 100 },
-    { binding: "sim:level", label: "Level (%)", color: "#d97706", fill: true, yMin: 0, yMax: 100 },
-    { binding: "sim:temp", label: "Temp (°C)", color: "#dc2626", yMin: 30, yMax: 110 },
+    { binding: "sim:flow", label: "Flow (m³/h)", color: "#12a150", yMin: 0, yMax: 100, style: "step" },
+    { binding: "sim:level", label: "Level (%)", color: "#d97706", style: "area", yMin: 0, yMax: 100 },
+    { binding: "sim:temp", label: "Temp (°C)", color: "#dc2626", yMin: 30, yMax: 110, dash: "dashed" },
   ], refLines: [{ value: 64, color: "#f59e0b", label: "pressure warning 64" }] } }),
   at("t-rel", "trend", 0, 346, col(2, 0).w, 250, { bindings: { value: "sim:level" }, props: { label: "Level, relative time, filled", duration: 120, xFormat: "relative", min: 0, max: 100, tags: [{ binding: "sim:level", label: "Level (%)", color: "#4c9aff", fill: true }], refLines: [{ value: 20, color: "#dc2626", label: "low 20" }, { value: 85, color: "#dc2626", label: "high 85" }] } }),
-  at("t-short", "trend", col(2, 1).x, 346, col(2, 1).w, 250, { bindings: { value: "sim:efficiency" }, props: { label: "Efficiency, short time", duration: 60, xFormat: "time-short", tags: [{ binding: "sim:efficiency", label: "Efficiency (%)", color: "#12a150" }, { binding: "sim:ramp", label: "Ramp (%)", color: "#9333ea" }] } }),
-  at("t-log", "historyLog", 0, 612, W, 240, { bindings: { value: "mem:Setpoint" }, props: { label: "Write history (change a setpoint on the Controls page)", pageSize: 8 } }),
+  at("t-short", "trend", col(2, 1).x, 346, col(2, 1).w, 250, { bindings: { value: "sim:efficiency" }, props: { label: "Efficiency, short time", duration: 60, xFormat: "time-short", tags: [{ binding: "sim:efficiency", label: "Efficiency (%)", color: "#12a150", style: "area", axis: "shared" }, { binding: "sim:ramp", label: "Ramp (%)", color: "#9333ea", style: "dots", axis: "shared" }], autoscale: "nice" } }),
+  at("t-fit", "trend", 0, 612, col(2, 0).w, 250, { bindings: { value: "sim:pressure" }, props: { label: "Follows the data (try ◀ to step back, ⏸ to pause)", duration: 120, autoscale: "fit", windows: [30, 120, 600, 3600, 86400], tags: [{ binding: "sim:pressure", label: "Pressure (bar)", color: "#4c9aff", style: "bars", width: 1.5 }] } }),
+  at("t-bare", "trend", col(2, 1).x, 612, col(2, 1).w, 250, { bindings: { value: "sim:temp" }, props: { label: "No buttons, grid or legend", duration: 90, showToolbar: false, showGrid: false, showLegend: false, autoscale: "fit", tags: [{ binding: "sim:temp", label: "Temp", color: "#dc2626", style: "area", width: 2 }] } }),
+  at("t-log", "historyLog", 0, 878, W, 240, { bindings: { value: "mem:Setpoint" }, props: { label: "Write history (change a setpoint on the Controls page)", pageSize: 8 } }),
 ]);
 
 // Alarms: the active alarms and the history, with a count by severity.
@@ -306,6 +308,9 @@ page("recipes", "Recipes", "flask", [
   const items = [
     ["w-gauge", "gauge", { bindings: { value: "sim:pressure" }, props: { label: "gauge", unit: "bar", min: 40, max: 80 } }],
     ["w-num", "numericDisplay", { bindings: { value: "sim:flow" }, props: { label: "numericDisplay", unit: "m³/h" } }],
+    ["w-num-fit", "numericDisplay", { bindings: { value: "sim:flow" }, props: { label: "number only, fit", unit: "m³/h", showLabel: false, showUnit: false, fontSize: "fit", fontBold: true, textAlign: "center", textColor: "#ffffff", bgColor: "#0f766e", borderColor: "none", radius: 16, shadow: false } }],
+    ["w-num-mono", "numericDisplay", { bindings: { value: "sim:pressure" }, props: { label: "mono, 36 px", unit: "bar", fontFamily: "mono", fontPx: 36, valign: "top", bgColor: "none", borderColor: "none", padding: 0 } }],
+    ["w-ni-bare", "numericInput", { bindings: { value: "mem:Speed" }, props: { label: "input, number only", unit: "%", min: 0, max: 100, showLabel: false, showUnit: false, fontSize: "4xl", textAlign: "center", borderWidth: 2, radius: 4 } }],
     ["w-text", "textDisplay", { props: { label: "textDisplay", staticText: "Pump station 2" } }],
     ["w-led", "led", { bindings: { value: "sim:running" }, props: { label: "led", trueLabel: "ON", falseLabel: "OFF" } }],
     ["w-tank", "tank", { bindings: { value: "sim:level" }, props: { label: "tank", unit: "%", min: 0, max: 100 } }],

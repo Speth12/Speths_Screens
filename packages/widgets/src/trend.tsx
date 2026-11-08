@@ -211,11 +211,11 @@ export function TrendWidget({ w }: { w: TypedWidget<"trend"> }) {
     const day = d.toLocaleDateString([], { month: "numeric", day: "numeric" });
     const short = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     if (xFormat === "datetime" || duration > 86_400_000) return `${day} ${short}`;
-    if (xFormat === "time-short" || duration > 3_600_000) return short;
+    if ((xFormat === "time-short" && duration > 300_000) || duration > 3_600_000) return short;
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   };
   const fmtTime = (ms: number) => `${new Date(ms).toLocaleDateString([], { month: "numeric", day: "numeric" })} ${new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
-  const X_TICKS = Math.max(2, Math.min(6, Math.floor(plotW / 96) + 1));
+  const X_TICKS = Math.max(2, Math.min(6, Math.floor(plotW / 130) + 1));
   const xTicks = Array.from({ length: X_TICKS }, (_, k) => ({ frac: k / (X_TICKS - 1), ms: tMin + (k / (X_TICKS - 1)) * duration }));
 
   useEffect(() => {
@@ -266,7 +266,7 @@ export function TrendWidget({ w }: { w: TypedWidget<"trend"> }) {
       return <g key={i}>{xy.map(([x, y], k) => <line key={k} x1={f(x)} y1={f(y)} x2={f(x + 0.01)} y2={f(y)} stroke={color} strokeWidth={width * 3} strokeLinecap="round" vectorEffect="non-scaling-stroke" />)}</g>;
     }
     if (style === "bars") {
-      return <path key={i} d={xy.map(([x, y]) => `M${f(x)},100 L${f(x)},${f(y)}`).join(" ")} stroke={color} strokeWidth={Math.max(2, width * 2)} fill="none" vectorEffect="non-scaling-stroke" />;
+      return <path key={i} d={xy.map(([x, y]) => `M${f(x)},100 L${f(x)},${f(y)}`).join(" ")} stroke={color} strokeWidth={Math.max(1, width)} fill="none" vectorEffect="non-scaling-stroke" />;
     }
     let d = `M${f(xy[0]![0])},${f(xy[0]![1])}`;
     for (let k = 1; k < xy.length; k++) d += style === "step" ? ` L${f(xy[k]![0])},${f(xy[k - 1]![1])} L${f(xy[k]![0])},${f(xy[k]![1])}` : ` L${f(xy[k]![0])},${f(xy[k]![1])}`;
@@ -317,7 +317,8 @@ export function TrendWidget({ w }: { w: TypedWidget<"trend"> }) {
         })}
 
         <div className="flex-1 relative min-w-0 min-h-0 flex flex-col">
-          <svg ref={svgRef} className="w-full flex-1 min-h-0 overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none"
+          <div className="relative flex-1 min-h-0">
+          <svg ref={svgRef} className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none"
             style={{ cursor: panning ? "grabbing" : "crosshair", display: "block" }}
             onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={() => { setHoverFrac(null); onMouseUp(); }}>
             {(p.showGrid ?? true) && gridTicks.map((y, n) => (
@@ -334,7 +335,6 @@ export function TrendWidget({ w }: { w: TypedWidget<"trend"> }) {
               return (
                 <g key={`r${i}`}>
                   <line x1="0" y1={y} x2="100" y2={y} stroke={rl.color} strokeWidth="1" strokeDasharray="3,2" vectorEffect="non-scaling-stroke" />
-                  {rl.label && <text x="1" y={Math.max(4, y - 1)} fontSize="4" fill={rl.color} style={{ userSelect: "none" }}>{rl.label}</text>}
                 </g>
               );
             })}
@@ -348,6 +348,13 @@ export function TrendWidget({ w }: { w: TypedWidget<"trend"> }) {
               </>
             )}
           </svg>
+          {(p.refLines ?? []).map((rl, i) => {
+            const y = toY(rl.value, 0);
+            return rl.label && y >= 0 && y <= 100
+              ? <span key={`rl${i}`} className="absolute left-1 text-xs pointer-events-none whitespace-nowrap" style={{ top: `${y}%`, color: rl.color, transform: "translateY(-100%)" }}>{rl.label}</span>
+              : null;
+          })}
+          </div>
 
           <div className="relative shrink-0 h-4">
             {xTicks.map(({ frac, ms }) => (

@@ -43,19 +43,14 @@
       "config": {
         "memoryTags": [
           {
-            "path": "RuleEnable",
-            "type": "bool",
-            "initial": false
-          },
-          {
-            "path": "Threshold",
-            "type": "real",
-            "initial": 100
-          },
-          {
-            "path": "WaitSeconds",
+            "path": "Counter",
             "type": "int",
-            "initial": 5
+            "initial": 0
+          },
+          {
+            "path": "Target",
+            "type": "int",
+            "initial": 10
           },
           {
             "path": "Step",
@@ -65,12 +60,7 @@
           {
             "path": "RuleState",
             "type": "string",
-            "initial": "Switched off"
-          },
-          {
-            "path": "Countdown",
-            "type": "int",
-            "initial": 0
+            "initial": "Click the button to count"
           },
           {
             "path": "Fired",
@@ -99,10 +89,10 @@
   "alarmRules": [
     {
       "id": "a-input",
-      "name": "The PLC's reply is above the limit",
-      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write} > {mem:Threshold}",
+      "name": "The PLC's reply is above 200",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write} > 200",
       "severity": "warning",
-      "message": "iOPC_Write is above the limit"
+      "message": "iOPC_Write is above 200"
     },
     {
       "id": "a-temp",
@@ -121,19 +111,21 @@
   ],
   "scripts": [
     {
-      "id": "increment-rule",
-      "name": "Add to the PLC's input while its reply stays high",
+      "id": "counter-rule",
+      "name": "Add to the PLC's input when the counter reaches the target",
       "trigger": {
-        "every": 250
+        "onChange": [
+          "mem:Counter"
+        ]
       },
       "writes": [
         "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read",
+        "mem:Counter",
         "mem:RuleState",
-        "mem:Countdown",
         "mem:Fired",
         "mem:LastFired"
       ],
-      "source": "if (state.busy) return;\nstate.busy = true;\ntry {\n  const ECHO = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write\", INPUT = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read\";\n  const set = async (text, left) => {\n    if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }\n    if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }\n  };\n  if (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }\n  const value = readTag(ECHO);\n  if (quality(ECHO) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }\n  const limit = readTag('mem:Threshold') ?? 100;\n  const wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;\n  if (value <= limit) { state.since = undefined; state.done = false; await set('The PLC reports a value at or below the limit', 0); return; }\n  state.since ??= Date.now();\n  const left = wait - (Date.now() - state.since);\n  if (left > 0) { await set('Above the limit, waiting', Math.ceil(left / 1000)); return; }\n  if (state.done) { await set('Done: waiting for the value to drop', 0); return; }\n  const current = readTag(INPUT);\n  const next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);\n  const r = await writeTag(INPUT, next);\n  if (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }\n  state.done = true;\n  state.fired = (state.fired ?? 0) + 1;\n  await writeTag('mem:Fired', state.fired);\n  await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + INPUT.split('/').pop() + ' = ' + next);\n  emit('plc.increment', { value, limit, wrote: next, n: state.fired });\n  log('the PLC reported', value, 'above', limit, 'for', wait / 1000, 's: wrote', next, 'to its input');\n  await set('Done: waiting for the value to drop', 0);\n} finally {\n  state.busy = false;\n}"
+      "source": "const COUNT = 'mem:Counter', INPUT = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read\";\nconst n = readTag(COUNT);\nif (typeof n !== 'number') return;\nconst target = readTag('mem:Target') ?? 10, step = readTag('mem:Step') ?? 100;\nconst say = async (text) => { if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); } };\nif (n < target) { const left = target - n; await say(left + (left === 1 ? ' more click' : ' more clicks') + ' to go'); return; }\nif (state.busy) return;\nstate.busy = true;\ntry {\n  const current = readTag(INPUT);\n  const next = (typeof current === 'number' ? current : 0) + step;\n  const r = await writeTag(INPUT, next);\n  if (r.status !== 'confirmed') { log('write not confirmed:', r.status, r.reason ?? ''); await say('Write failed: ' + (r.reason ?? r.status)); return; }\n  state.fired = (state.fired ?? 0) + 1;\n  await writeTag(COUNT, Math.max(0, readTag(COUNT) - target));\n  await writeTag('mem:Fired', state.fired);\n  await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + INPUT.split('/').pop() + ' = ' + next);\n  emit('plc.increment', { counted: n, wrote: next, n: state.fired });\n  log('the counter reached', target, ': wrote', next, 'to the PLC input');\n  state.text = undefined;\n} finally {\n  state.busy = false;\n}"
     },
     {
       "id": "carry",
@@ -921,7 +913,7 @@
           "w": 1048,
           "h": 34,
           "props": {
-            "staticText": "Scripts acting on what the PLC reports",
+            "staticText": "A script that acts on a counter",
             "fontBold": true,
             "fontSize": "xl",
             "bgColor": "transparent",
@@ -937,7 +929,7 @@
           "w": 1048,
           "h": 56,
           "props": {
-            "staticText": "When the PLC's reply iOPC_Write stays above the limit for the wait time, the script adds the step to the PLC's input iOPC_Read, once; the PLC echoes it. It acts again only after the reply has dropped to the limit or below. It starts OFF.",
+            "staticText": "Each click adds 1 to the counter (a memory tag). When it reaches the target, the script adds the step to the PLC's input iOPC_Read; the PLC echoes it on iOPC_Write. Nothing is written to the PLC before then.",
             "fontSize": "sm",
             "textColor": "var(--muted-foreground)",
             "bgColor": "transparent",
@@ -946,43 +938,50 @@
           }
         },
         {
-          "id": "s-enable",
+          "id": "s-click",
           "type": "button",
           "x": 0,
           "y": 100,
           "w": 339,
-          "h": 90,
+          "h": 110,
           "bindings": {
-            "value": "mem:RuleEnable"
+            "value": "mem:Counter"
           },
           "props": {
-            "label": "Rule on / off",
+            "label": "Click: add 1 to the counter",
             "btnColor": "green"
           },
           "events": {
             "onClick": [
               {
-                "type": "toggle",
-                "on": true,
-                "off": false
+                "type": "increment",
+                "step": 1
               }
             ]
           }
         },
         {
-          "id": "s-led",
-          "type": "led",
+          "id": "s-count",
+          "type": "numericDisplay",
           "x": 355,
           "y": 100,
           "w": 339,
-          "h": 90,
+          "h": 110,
           "bindings": {
-            "value": "mem:RuleEnable"
+            "value": "mem:Counter"
           },
           "props": {
-            "label": "Rule",
-            "trueLabel": "ON: it may write to the PLC",
-            "falseLabel": "OFF: nothing is written"
+            "showLabel": false,
+            "showUnit": false,
+            "showQuality": false,
+            "fontSize": "fit",
+            "fontBold": true,
+            "textAlign": "center",
+            "textColor": "#ffffff",
+            "bgColor": "#0f766e",
+            "borderColor": "none",
+            "radius": 16,
+            "shadow": false
           }
         },
         {
@@ -991,99 +990,52 @@
           "x": 709,
           "y": 100,
           "w": 339,
-          "h": 90,
+          "h": 110,
           "bindings": {
             "value": "mem:RuleState"
           },
           "props": {
-            "label": "What the rule is doing"
+            "label": "What the script says"
           }
         },
         {
-          "id": "s-limit",
+          "id": "s-target",
           "type": "numericInput",
           "x": 0,
-          "y": 206,
-          "w": 339,
+          "y": 226,
+          "w": 516,
           "h": 100,
           "bindings": {
-            "value": "mem:Threshold"
+            "value": "mem:Target"
           },
           "props": {
-            "label": "Limit (the PLC's reply must be above this)",
-            "min": 0,
-            "max": 100000
-          }
-        },
-        {
-          "id": "s-wait",
-          "type": "numericInput",
-          "x": 355,
-          "y": 206,
-          "w": 339,
-          "h": 100,
-          "bindings": {
-            "value": "mem:WaitSeconds"
-          },
-          "props": {
-            "label": "Wait (seconds)",
+            "label": "Act when the counter reaches",
             "min": 1,
-            "max": 600
+            "max": 1000
           }
         },
         {
           "id": "s-step",
           "type": "numericInput",
-          "x": 709,
-          "y": 206,
-          "w": 339,
+          "x": 532,
+          "y": 226,
+          "w": 516,
           "h": 100,
           "bindings": {
             "value": "mem:Step"
           },
           "props": {
-            "label": "Add to the input",
+            "label": "Then add this to iOPC_Read",
             "min": 1,
             "max": 10000
           }
         },
         {
-          "id": "s-echo",
-          "type": "numericDisplay",
-          "x": 0,
-          "y": 322,
-          "w": 250,
-          "h": 150,
-          "bindings": {
-            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
-          },
-          "props": {
-            "label": "The PLC's reply: iOPC_Write",
-            "showQuality": true
-          }
-        },
-        {
-          "id": "s-cd",
-          "type": "numericDisplay",
-          "x": 266,
-          "y": 322,
-          "w": 250,
-          "h": 150,
-          "bindings": {
-            "value": "mem:Countdown"
-          },
-          "props": {
-            "label": "Seconds until it acts",
-            "unit": "s",
-            "showQuality": true
-          }
-        },
-        {
           "id": "s-in",
           "type": "numericDisplay",
-          "x": 532,
-          "y": 322,
-          "w": 250,
+          "x": 0,
+          "y": 342,
+          "w": 339,
           "h": 150,
           "bindings": {
             "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
@@ -1094,17 +1046,32 @@
           }
         },
         {
+          "id": "s-echo",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 342,
+          "w": 339,
+          "h": 150,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "The PLC's reply: iOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
           "id": "s-fired",
           "type": "numericDisplay",
-          "x": 798,
-          "y": 322,
-          "w": 250,
+          "x": 709,
+          "y": 342,
+          "w": 339,
           "h": 150,
           "bindings": {
             "value": "mem:Fired"
           },
           "props": {
-            "label": "Times it has acted",
+            "label": "Times the script acted",
             "showQuality": true
           }
         },
@@ -1112,7 +1079,7 @@
           "id": "sc-last",
           "type": "textDisplay",
           "x": 0,
-          "y": 488,
+          "y": 508,
           "w": 1048,
           "h": 56,
           "bindings": {
@@ -1126,7 +1093,7 @@
           "id": "sc-mn",
           "type": "textDisplay",
           "x": 0,
-          "y": 560,
+          "y": 580,
           "w": 1048,
           "h": 32,
           "props": {
@@ -1142,7 +1109,7 @@
           "id": "s-cenable",
           "type": "button",
           "x": 0,
-          "y": 600,
+          "y": 620,
           "w": 339,
           "h": 90,
           "bindings": {
@@ -1166,7 +1133,7 @@
           "id": "s-carried",
           "type": "numericDisplay",
           "x": 355,
-          "y": 600,
+          "y": 620,
           "w": 339,
           "h": 90,
           "bindings": {
@@ -1181,7 +1148,7 @@
           "id": "s-rest",
           "type": "numericDisplay",
           "x": 709,
-          "y": 600,
+          "y": 620,
           "w": 339,
           "h": 90,
           "bindings": {
