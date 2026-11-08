@@ -220,7 +220,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
       className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
       style={style}
     >
-      {p.label && !bare && p.showLabel !== false && (
+      {p.label && !bare && p.showLabel !== false && w.type !== "button" && ( // a button says its own label
         <div
           className="text-xs uppercase tracking-wider truncate shrink-0"
           style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
@@ -670,8 +670,12 @@ function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Wid
   const dynamics = fw.dynamics && Object.fromEntries(
     Object.entries(fw.dynamics).map(([k, d]) => [k, { ...d, expr: rewriteExpr(d.expr, params) }]),
   );
+  // A custom widget placed inside this one passes its own parameters on: their values may name this one's.
+  const props = fw.type === "customWidget" && fw.props?.params
+    ? { ...fw.props, params: Object.fromEntries(Object.entries(fw.props.params).map(([k, v]) => [k, rewriteBinding(v, params) ?? v])) }
+    : fw.props;
   const { localId, ...rest } = fw;
-  return { ...rest, id: localId, bindings, events, dynamics } as Widget;
+  return { ...rest, id: localId, props, bindings, events, dynamics } as Widget;
 }
 
 /** How deep custom widgets sit inside each other; a loop in the project stops here. */
