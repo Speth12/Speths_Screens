@@ -11,8 +11,24 @@ export interface FrameProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -36,8 +52,24 @@ export interface GaugeProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -65,8 +97,24 @@ export interface NumericDisplayProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -93,8 +141,24 @@ export interface TextDisplayProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -120,8 +184,24 @@ export interface LedProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -153,8 +233,24 @@ export interface TankProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -182,8 +278,24 @@ export interface ButtonProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -216,8 +328,24 @@ export interface SetpointProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -246,8 +374,24 @@ export interface MultiStateProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -273,8 +417,24 @@ export interface TrendProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -296,6 +456,18 @@ export interface TrendProps {
   tags?: TrendSeries[];
   /** Trend horizontal reference lines */
   refLines?: RefLine[];
+  /** fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else fixed */
+  autoscale?: string;
+  /** Missing means shown */
+  showGrid?: boolean;
+  /** Missing means shown */
+  showLegend?: boolean;
+  /** Window, pause and history buttons; missing means shown */
+  showToolbar?: boolean;
+  /** Seconds of each window button; missing means 30, 60, 300 and 3600 */
+  windows?: number[];
+  /** false starts the trend paused; missing means running */
+  live?: boolean;
 }
 
 /** Settings of a numericInput widget. */
@@ -307,8 +479,24 @@ export interface NumericInputProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -335,8 +523,24 @@ export interface TextInputProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -360,8 +564,24 @@ export interface HistoryLogProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -387,8 +607,24 @@ export interface AlarmBannerProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -416,8 +652,24 @@ export interface ImageProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -445,8 +697,24 @@ export interface SymbolProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -480,8 +748,24 @@ export interface PipeProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -519,8 +803,24 @@ export interface CustomWidgetProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -548,8 +848,24 @@ export interface PageListProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -577,8 +893,24 @@ export interface ClockProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -608,8 +940,24 @@ export interface DriverStatusProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -635,8 +983,24 @@ export interface UserMenuProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -662,8 +1026,24 @@ export interface RecipesProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -691,8 +1071,24 @@ export interface TableProps {
   noPadding?: boolean;
   /** mono | sans | serif; empty means the theme font */
   fontFamily?: string;
-  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base */
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
   fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
   fontBold?: boolean;
   fontItalic?: boolean;
   fontUnderline?: boolean;
@@ -744,29 +1140,29 @@ export type TypedWidget<T extends WidgetType = WidgetType> = {
 
 /** Each widget type's settings, frame settings first. */
 export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByType[K] & string)[] } = {
-  gauge: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
-  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
-  textDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"],
-  led: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"],
-  tank: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
-  button: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"],
-  setpoint: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"],
-  multiState: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"],
-  trend: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines"],
-  numericInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
-  textInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"],
-  historyLog: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"],
-  alarmBanner: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"],
-  image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"],
-  symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"],
-  pipe: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"],
-  customWidget: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"],
-  pageList: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"],
-  clock: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"],
-  driverStatus: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"],
-  userMenu: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"],
-  recipes: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"],
-  table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"],
+  gauge: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
+  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
+  textDisplay: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"],
+  led: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"],
+  tank: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"],
+  button: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"],
+  setpoint: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"],
+  multiState: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"],
+  trend: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"],
+  numericInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"],
+  textInput: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"],
+  historyLog: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"],
+  alarmBanner: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"],
+  image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"],
+  symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"],
+  pipe: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"],
+  customWidget: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"],
+  pageList: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"],
+  clock: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"],
+  driverStatus: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"],
+  userMenu: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"],
+  recipes: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"],
+  table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"],
 };
 
 /** Each widget type's properties that dynamics can drive. */

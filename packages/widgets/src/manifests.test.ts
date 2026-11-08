@@ -26,7 +26,7 @@ function settingNode(type: string, key: string): SchemaNode | undefined {
 const KIND_TYPES: Record<Field["kind"], string[] | "any"> = {
   number: ["number", "integer"], text: ["string"], color: ["string"], choice: ["string"],
   page: ["string"], binding: ["string"], recipe: ["string"], image: ["string"], symbol: ["string"], customWidget: ["string"],
-  boolean: ["boolean"], list: ["array"], customWidgetParams: ["object"], value: "any",
+  boolean: ["boolean"], list: ["array"], numbers: ["array"], customWidgetParams: ["object"], value: "any",
 };
 
 function checkField(where: string, f: Field, node: SchemaNode | undefined) {

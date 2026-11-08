@@ -29,6 +29,8 @@ export type Field = FieldBase & (
   /** A number when the text is numeric, otherwise the text (state values, button values). */
   | { kind: "value"; default?: number | string; placeholder?: string }
   | { kind: "boolean"; default?: boolean }
+  /** A list of numbers typed as text separated by commas (the trend's window buttons, in seconds). */
+  | { kind: "numbers"; min?: number; placeholder?: string }
   | { kind: "color"; default?: string;
       /** Unset means the theme's colour: offers "default" and "custom". */
       optional?: boolean;

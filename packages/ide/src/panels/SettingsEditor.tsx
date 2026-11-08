@@ -92,6 +92,20 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
           {note}
         </div>
       );
+    case "numbers":
+      return (
+        <div>
+          <Label text={f.label} />
+          <input aria-label={f.label} defaultValue={Array.isArray(v) ? (v as number[]).join(", ") : ""} placeholder={f.placeholder}
+            key={JSON.stringify(v ?? null)}
+            onBlur={(e) => {
+              const nums = e.target.value.split(/[,\s]+/).map(Number).filter((n) => Number.isFinite(n) && n >= (f.min ?? -Infinity));
+              put(nums.length ? nums : undefined);
+            }}
+            className={numInp} />
+          {note}
+        </div>
+      );
     case "boolean":
       return (
         <label className="flex items-center gap-2 cursor-pointer">

@@ -497,6 +497,10 @@ export interface CustomWidgetPartProps {
     blinkPeriodMs?: number;
     borderColor?:   string;
     /**
+     * Border width in pixels; missing means the theme's
+     */
+    borderWidth?: number;
+    /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
     colorThresholds?: Threshold[];
@@ -507,18 +511,47 @@ export interface CustomWidgetPartProps {
     fontFamily?: string;
     fontItalic?: boolean;
     /**
-     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+     * Exact text size in pixels; overrides fontSize
+     */
+    fontPx?: number;
+    /**
+     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill
+     * the card); empty means the widget's own size
      */
     fontSize?:      string;
     fontUnderline?: boolean;
     label?:         string;
     noPadding?:     boolean;
     /**
+     * Space inside the card in pixels; overrides noPadding and the theme
+     */
+    padding?: number;
+    /**
+     * Corner radius in pixels; missing means the theme's
+     */
+    radius?: number;
+    /**
+     * false removes the card's shadow; missing means the theme's
+     */
+    shadow?: boolean;
+    /**
+     * false hides the label above the value; missing means shown
+     */
+    showLabel?: boolean;
+    /**
      * Show the tag quality indicator
      */
     showQuality?: boolean;
-    textAlign?:   TextAlign;
-    textColor?:   string;
+    /**
+     * false hides the unit beside the value; missing means shown
+     */
+    showUnit?:  boolean;
+    textAlign?: TextAlign;
+    textColor?: string;
+    /**
+     * top | center | bottom: where the value sits in the card; missing means center
+     */
+    valign?: string;
     /**
      * TextDisplay: fixed text shown instead of a tag value
      */
@@ -563,17 +596,43 @@ export interface CustomWidgetPartProps {
      */
     states?: StateEntry[];
     /**
+     * fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use
+     * min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else
+     * fixed
+     */
+    autoscale?: string;
+    /**
      * Trend history window in seconds
      */
     duration?: number;
+    /**
+     * false starts the trend paused; missing means running
+     */
+    live?: boolean;
     /**
      * Trend horizontal reference lines
      */
     refLines?: RefLine[];
     /**
+     * Missing means shown
+     */
+    showGrid?: boolean;
+    /**
+     * Missing means shown
+     */
+    showLegend?: boolean;
+    /**
+     * Window, pause and history buttons; missing means shown
+     */
+    showToolbar?: boolean;
+    /**
      * Trend multi-series config
      */
-    tags?:    TrendSeries[];
+    tags?: TrendSeries[];
+    /**
+     * Seconds of each window button; missing means 30, 60, 300 and 3600
+     */
+    windows?: number[];
     xFormat?: TrendXFormat;
     /**
      * HistoryLog rows per page
@@ -756,12 +815,28 @@ export interface StateEntry {
 export type Style = "list" | "tabs" | "icons" | "bar";
 
 export interface TrendSeries {
+    /**
+     * own | shared: shared pens use one Y scale (the first shared pen's); missing means own
+     */
+    axis?:   string;
     binding: string;
     color:   string;
-    fill?:   boolean;
-    label?:  string;
-    yMax?:   number;
-    yMin?:   number;
+    /**
+     * solid | dashed | dotted; missing means solid
+     */
+    dash?:  string;
+    fill?:  boolean;
+    label?: string;
+    /**
+     * line | step | area | dots | bars; missing means line
+     */
+    style?: string;
+    /**
+     * Pen width in pixels; missing means 1.5
+     */
+    width?: number;
+    yMax?:  number;
+    yMin?:  number;
 }
 
 export type TextAlign = "left" | "center" | "right";
@@ -1145,6 +1220,10 @@ export interface WidgetProps {
     blinkPeriodMs?: number;
     borderColor?:   string;
     /**
+     * Border width in pixels; missing means the theme's
+     */
+    borderWidth?: number;
+    /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
     colorThresholds?: Threshold[];
@@ -1155,18 +1234,47 @@ export interface WidgetProps {
     fontFamily?: string;
     fontItalic?: boolean;
     /**
-     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+     * Exact text size in pixels; overrides fontSize
+     */
+    fontPx?: number;
+    /**
+     * xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill
+     * the card); empty means the widget's own size
      */
     fontSize?:      string;
     fontUnderline?: boolean;
     label?:         string;
     noPadding?:     boolean;
     /**
+     * Space inside the card in pixels; overrides noPadding and the theme
+     */
+    padding?: number;
+    /**
+     * Corner radius in pixels; missing means the theme's
+     */
+    radius?: number;
+    /**
+     * false removes the card's shadow; missing means the theme's
+     */
+    shadow?: boolean;
+    /**
+     * false hides the label above the value; missing means shown
+     */
+    showLabel?: boolean;
+    /**
      * Show the tag quality indicator
      */
     showQuality?: boolean;
-    textAlign?:   TextAlign;
-    textColor?:   string;
+    /**
+     * false hides the unit beside the value; missing means shown
+     */
+    showUnit?:  boolean;
+    textAlign?: TextAlign;
+    textColor?: string;
+    /**
+     * top | center | bottom: where the value sits in the card; missing means center
+     */
+    valign?: string;
     /**
      * TextDisplay: fixed text shown instead of a tag value
      */
@@ -1211,17 +1319,43 @@ export interface WidgetProps {
      */
     states?: StateEntry[];
     /**
+     * fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use
+     * min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else
+     * fixed
+     */
+    autoscale?: string;
+    /**
      * Trend history window in seconds
      */
     duration?: number;
+    /**
+     * false starts the trend paused; missing means running
+     */
+    live?: boolean;
     /**
      * Trend horizontal reference lines
      */
     refLines?: RefLine[];
     /**
+     * Missing means shown
+     */
+    showGrid?: boolean;
+    /**
+     * Missing means shown
+     */
+    showLegend?: boolean;
+    /**
+     * Window, pause and history buttons; missing means shown
+     */
+    showToolbar?: boolean;
+    /**
      * Trend multi-series config
      */
-    tags?:    TrendSeries[];
+    tags?: TrendSeries[];
+    /**
+     * Seconds of each window button; missing means 30, 60, 300 and 3600
+     */
+    windows?: number[];
     xFormat?: TrendXFormat;
     /**
      * HistoryLog rows per page

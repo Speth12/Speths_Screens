@@ -325,21 +325,38 @@ type CustomWidgetPartProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill
+	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
 	Label         *string `json:"label,omitempty"`
 	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
 	// Show the tag quality indicator
-	ShowQuality *bool      `json:"showQuality,omitempty"`
-	TextAlign   *TextAlign `json:"textAlign,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	TextAlign *TextAlign `json:"textAlign,omitempty"`
+	TextColor *string    `json:"textColor,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign *string `json:"valign,omitempty"`
 	// TextDisplay: fixed text shown instead of a tag value
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
@@ -363,12 +380,26 @@ type CustomWidgetPartProps struct {
 	Step *float64 `json:"step,omitempty"`
 	// MultiState value→label→color map
 	States []StateEntry `json:"states,omitempty"`
+	// fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use
+	// min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else
+	// fixed
+	Autoscale *string `json:"autoscale,omitempty"`
 	// Trend history window in seconds
 	Duration *int64 `json:"duration,omitempty"`
+	// false starts the trend paused; missing means running
+	Live *bool `json:"live,omitempty"`
 	// Trend horizontal reference lines
 	RefLines []RefLine `json:"refLines,omitempty"`
+	// Missing means shown
+	ShowGrid *bool `json:"showGrid,omitempty"`
+	// Missing means shown
+	ShowLegend *bool `json:"showLegend,omitempty"`
+	// Window, pause and history buttons; missing means shown
+	ShowToolbar *bool `json:"showToolbar,omitempty"`
 	// Trend multi-series config
-	Tags    []TrendSeries `json:"tags,omitempty"`
+	Tags []TrendSeries `json:"tags,omitempty"`
+	// Seconds of each window button; missing means 30, 60, 300 and 3600
+	Windows []int64       `json:"windows,omitempty"`
 	XFormat *TrendXFormat `json:"xFormat,omitempty"`
 	// HistoryLog rows per page
 	PageSize *int64 `json:"pageSize,omitempty"`
@@ -460,12 +491,20 @@ type StateEntry struct {
 }
 
 type TrendSeries struct {
-	Binding string   `json:"binding"`
-	Color   string   `json:"color"`
-	Fill    *bool    `json:"fill,omitempty"`
-	Label   *string  `json:"label,omitempty"`
-	YMax    *float64 `json:"yMax,omitempty"`
-	YMin    *float64 `json:"yMin,omitempty"`
+	// own | shared: shared pens use one Y scale (the first shared pen's); missing means own
+	Axis    *string `json:"axis,omitempty"`
+	Binding string  `json:"binding"`
+	Color   string  `json:"color"`
+	// solid | dashed | dotted; missing means solid
+	Dash  *string `json:"dash,omitempty"`
+	Fill  *bool   `json:"fill,omitempty"`
+	Label *string `json:"label,omitempty"`
+	// line | step | area | dots | bars; missing means line
+	Style *string `json:"style,omitempty"`
+	// Pen width in pixels; missing means 1.5
+	Width *float64 `json:"width,omitempty"`
+	YMax  *float64 `json:"yMax,omitempty"`
+	YMin  *float64 `json:"yMin,omitempty"`
 }
 
 type Datasource struct {
@@ -703,21 +742,38 @@ type WidgetProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
 	// mono | sans | serif; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl; empty means base
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill
+	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
 	Label         *string `json:"label,omitempty"`
 	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
 	// Show the tag quality indicator
-	ShowQuality *bool      `json:"showQuality,omitempty"`
-	TextAlign   *TextAlign `json:"textAlign,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	TextAlign *TextAlign `json:"textAlign,omitempty"`
+	TextColor *string    `json:"textColor,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign *string `json:"valign,omitempty"`
 	// TextDisplay: fixed text shown instead of a tag value
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
@@ -741,12 +797,26 @@ type WidgetProps struct {
 	Step *float64 `json:"step,omitempty"`
 	// MultiState value→label→color map
 	States []StateEntry `json:"states,omitempty"`
+	// fit (follow the visible data) | nice (follow it, rounded to tidy numbers) | fixed (use
+	// min and max, or each pen's yMin and yMax); missing means fit when no limits are set, else
+	// fixed
+	Autoscale *string `json:"autoscale,omitempty"`
 	// Trend history window in seconds
 	Duration *int64 `json:"duration,omitempty"`
+	// false starts the trend paused; missing means running
+	Live *bool `json:"live,omitempty"`
 	// Trend horizontal reference lines
 	RefLines []RefLine `json:"refLines,omitempty"`
+	// Missing means shown
+	ShowGrid *bool `json:"showGrid,omitempty"`
+	// Missing means shown
+	ShowLegend *bool `json:"showLegend,omitempty"`
+	// Window, pause and history buttons; missing means shown
+	ShowToolbar *bool `json:"showToolbar,omitempty"`
 	// Trend multi-series config
-	Tags    []TrendSeries `json:"tags,omitempty"`
+	Tags []TrendSeries `json:"tags,omitempty"`
+	// Seconds of each window button; missing means 30, 60, 300 and 3600
+	Windows []int64       `json:"windows,omitempty"`
 	XFormat *TrendXFormat `json:"xFormat,omitempty"`
 	// HistoryLog rows per page
 	PageSize *int64 `json:"pageSize,omitempty"`

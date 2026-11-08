@@ -186,6 +186,26 @@ describe("events go through the host", () => {
     });
   });
 
+  describe("quality is shown only when it is not Good, unless the widget says otherwise", () => {
+    const bad = { value: null, quality: "Bad" as const, ts: 0 };
+    const show = (props: Record<string, unknown>, quality: "Good" | "Bad") =>
+      draw({ type: "numericDisplay", bindings: { value: "plc:T" }, props }, fakeHost({}, { useTag: () => (quality === "Bad" ? bad : { value: 5, quality: "Good", ts: 1 }) }));
+    it("a Good value has no label, a Bad one says so", () => {
+      show({}, "Good");
+      expect(screen.queryByText("Good")).toBeNull();
+      cleanup();
+      show({}, "Bad");
+      expect(screen.getByText("Bad")).toBeTruthy();
+    });
+    it("showQuality true always says it; false never does", () => {
+      show({ showQuality: true }, "Good");
+      expect(screen.getByText("Good")).toBeTruthy();
+      cleanup();
+      show({ showQuality: false }, "Bad");
+      expect(screen.queryByText("Bad")).toBeNull();
+    });
+  });
+
   it("a text widget draws at the size it is given, and a button does not say its label twice", () => {
     const { container } = draw({ type: "textDisplay", props: { staticText: "small", fontSize: "xs" } });
     expect(container.querySelector(".text-lg")).toBeNull();
