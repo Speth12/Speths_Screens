@@ -1,0 +1,1478 @@
+{
+  "schemaVersion": 6,
+  "version": "1.1.0",
+  "name": "PLC Demo",
+  "theme": {
+    "preset": "clean"
+  },
+  "shell": {
+    "nav": "sidebar"
+  },
+  "canvasSnap": "pixel",
+  "canvasResolution": {
+    "type": "dynamic"
+  },
+  "datasources": [
+    {
+      "id": "opcua",
+      "type": "opcua",
+      "label": "PLC OPC UA",
+      "config": {
+        "endpoint": "opc.tcp://10.0.0.210:4840",
+        "securityMode": "SignAndEncrypt",
+        "securityPolicy": "Basic256Sha256",
+        "certCheck": "pinned",
+        "certFingerprint": ""
+      }
+    },
+    {
+      "id": "rest",
+      "type": "rest",
+      "label": "PLC REST",
+      "config": {
+        "endpoint": "https://10.0.0.210",
+        "basePath": "/_pxc_api/v1.14",
+        "certCheck": "pinned",
+        "certFingerprint": ""
+      }
+    },
+    {
+      "id": "mem",
+      "type": "memory",
+      "label": "Script state",
+      "config": {
+        "memoryTags": [
+          {
+            "path": "RuleEnable",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Threshold",
+            "type": "real",
+            "initial": 100
+          },
+          {
+            "path": "WaitSeconds",
+            "type": "int",
+            "initial": 5
+          },
+          {
+            "path": "Step",
+            "type": "int",
+            "initial": 100
+          },
+          {
+            "path": "RuleState",
+            "type": "string",
+            "initial": "Switched off"
+          },
+          {
+            "path": "Countdown",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "Fired",
+            "type": "int",
+            "initial": 0
+          },
+          {
+            "path": "LastFired",
+            "type": "string",
+            "initial": "never"
+          },
+          {
+            "path": "CarryEnable",
+            "type": "bool",
+            "initial": false
+          },
+          {
+            "path": "Carried",
+            "type": "int",
+            "initial": 0
+          }
+        ]
+      }
+    }
+  ],
+  "alarmRules": [
+    {
+      "id": "a-input",
+      "name": "The PLC's reply is above the limit",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write} > {mem:Threshold}",
+      "severity": "warning",
+      "message": "iOPC_Write is above the limit"
+    },
+    {
+      "id": "a-temp",
+      "name": "High temperature",
+      "expr": "{opcua:ns=6;s=Arp.Plc.Eclr/HMI_SIM_Temp} > 100",
+      "severity": "warning",
+      "message": "HMI_SIM_Temp above 100"
+    },
+    {
+      "id": "a-acted",
+      "name": "The script acted",
+      "expr": "{mem:Fired} > 0",
+      "severity": "info",
+      "message": "The increment script has written to the PLC's input"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "increment-rule",
+      "name": "Add to the PLC's input while its reply stays high",
+      "trigger": {
+        "every": 250
+      },
+      "writes": [
+        "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read",
+        "mem:RuleState",
+        "mem:Countdown",
+        "mem:Fired",
+        "mem:LastFired"
+      ],
+      "source": "if (state.busy) return;\nstate.busy = true;\ntry {\n  const ECHO = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write\", INPUT = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read\";\n  const set = async (text, left) => {\n    if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }\n    if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }\n  };\n  if (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }\n  const value = readTag(ECHO);\n  if (quality(ECHO) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }\n  const limit = readTag('mem:Threshold') ?? 100;\n  const wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;\n  if (value <= limit) { state.since = undefined; state.done = false; await set('The PLC reports a value at or below the limit', 0); return; }\n  state.since ??= Date.now();\n  const left = wait - (Date.now() - state.since);\n  if (left > 0) { await set('Above the limit, waiting', Math.ceil(left / 1000)); return; }\n  if (state.done) { await set('Done: waiting for the value to drop', 0); return; }\n  const current = readTag(INPUT);\n  const next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);\n  const r = await writeTag(INPUT, next);\n  if (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }\n  state.done = true;\n  state.fired = (state.fired ?? 0) + 1;\n  await writeTag('mem:Fired', state.fired);\n  await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + INPUT.split('/').pop() + ' = ' + next);\n  emit('plc.increment', { value, limit, wrote: next, n: state.fired });\n  log('the PLC reported', value, 'above', limit, 'for', wait / 1000, 's: wrote', next, 'to its input');\n  await set('Done: waiting for the value to drop', 0);\n} finally {\n  state.busy = false;\n}"
+    },
+    {
+      "id": "carry",
+      "name": "Carry the OPC UA reply into the REST input",
+      "trigger": {
+        "onChange": [
+          "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+        ]
+      },
+      "writes": [
+        "rest:Arp.Plc.Eclr/iREST_Read",
+        "mem:Carried"
+      ],
+      "source": "const ECHO = \"opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write\", TARGET = \"rest:Arp.Plc.Eclr/iREST_Read\";\nif (!readTag('mem:CarryEnable') || event.quality !== 'Good' || typeof event.value !== 'number') return;\nif (event.value === state.last) return;\nstate.last = event.value;\nconst r = await writeTag(TARGET, Math.round(event.value));\nif (r.status !== 'confirmed') { log('carry not confirmed:', r.status, r.reason ?? ''); return; }\nstate.count = (state.count ?? 0) + 1; // counted before the await, so runs that overlap cannot repeat a number\nawait writeTag('mem:Carried', state.count);"
+    }
+  ],
+  "pages": [
+    {
+      "id": "p-plc",
+      "name": "PLC",
+      "icon": "dial",
+      "widgets": [
+        {
+          "id": "pl-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "A round trip through the PLC",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "pl-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 40,
+          "props": {
+            "staticText": "The PLC reads each \"Read\" variable in and writes it back out to its \"Write\" twin on every scan. You send to the first; the PLC answers on the second.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "s-oi",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 84,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA in: iOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-or",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 84,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA in: rOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-os",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 84,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Read"
+          },
+          "props": {
+            "label": "OPC UA in: sOPC_Read"
+          }
+        },
+        {
+          "id": "s-ri",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 192,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Read"
+          },
+          "props": {
+            "label": "REST in: iREST_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-rr",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 192,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Read"
+          },
+          "props": {
+            "label": "REST in: rREST_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-rs",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 192,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Read"
+          },
+          "props": {
+            "label": "REST in: sREST_Read"
+          }
+        },
+        {
+          "id": "pl-n2",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 308,
+          "w": 1048,
+          "h": 26,
+          "props": {
+            "staticText": "The PLC's reply:",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "p-oi",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 340,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA out: iOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "p-or",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 340,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA out: rOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "p-os",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 340,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write"
+          },
+          "props": {
+            "label": "OPC UA out: sOPC_Write"
+          }
+        },
+        {
+          "id": "p-ri",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 448,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Write"
+          },
+          "props": {
+            "label": "REST out: iREST_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "p-rr",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 448,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Write"
+          },
+          "props": {
+            "label": "REST out: rREST_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "p-rs",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 448,
+          "w": 339,
+          "h": 92,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Write"
+          },
+          "props": {
+            "label": "REST out: sREST_Write"
+          }
+        },
+        {
+          "id": "pl-trend",
+          "type": "trend",
+          "x": 0,
+          "y": 556,
+          "w": 1048,
+          "h": 260,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Sent (iOPC_Read) and the PLC's reply (iOPC_Write)",
+            "duration": 300,
+            "tags": [
+              {
+                "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read",
+                "label": "iOPC_Read (sent)",
+                "color": "#2563eb"
+              },
+              {
+                "binding": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write",
+                "label": "iOPC_Write (reply)",
+                "color": "#16a34a"
+              }
+            ]
+          }
+        },
+        {
+          "id": "pl-ds",
+          "type": "driverStatus",
+          "x": 0,
+          "y": 832,
+          "w": 520,
+          "h": 80,
+          "props": {
+            "bgColor": "var(--card)",
+            "borderColor": "var(--border)",
+            "label": "Connections"
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-send",
+      "name": "Send",
+      "icon": "tools",
+      "widgets": [
+        {
+          "id": "sn-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Send to the PLC, read its answer",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "sn-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 44,
+          "props": {
+            "staticText": "Each left box writes one of the PLC's inputs. The PLC copies it to its output within a scan, and the middle box shows what the PLC now holds. A write the PLC does not confirm is reported.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "w-oi",
+          "type": "numericInput",
+          "x": 0,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "You send: iOPC_Read",
+            "min": 0,
+            "max": 100000
+          }
+        },
+        {
+          "id": "e-oi",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "The PLC answers: iOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "m-oi",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 84,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write}) ? ({opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write}) && {opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "w-or",
+          "type": "setpoint",
+          "x": 0,
+          "y": 218,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read"
+          },
+          "props": {
+            "label": "You send: rOPC_Read",
+            "min": 0,
+            "max": 1000,
+            "step": 0.5
+          }
+        },
+        {
+          "id": "e-or",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 218,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write"
+          },
+          "props": {
+            "label": "The PLC answers: rOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "m-or",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 218,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write}) ? ({opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write}) && {opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/rOPC_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "w-os",
+          "type": "textInput",
+          "x": 0,
+          "y": 352,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Read"
+          },
+          "props": {
+            "label": "You send: sOPC_Read"
+          }
+        },
+        {
+          "id": "e-os",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 352,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write"
+          },
+          "props": {
+            "label": "The PLC answers: sOPC_Write"
+          }
+        },
+        {
+          "id": "m-os",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 352,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write}) ? ({opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write}) && {opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Write} == {opcua:ns=6;s=Arp.Plc.Eclr/sOPC_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "w-ri",
+          "type": "numericInput",
+          "x": 0,
+          "y": 486,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Read"
+          },
+          "props": {
+            "label": "You send: iREST_Read",
+            "min": 0,
+            "max": 100000
+          }
+        },
+        {
+          "id": "e-ri",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 486,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Write"
+          },
+          "props": {
+            "label": "The PLC answers: iREST_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "m-ri",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 486,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({rest:Arp.Plc.Eclr/iREST_Write}) ? ({rest:Arp.Plc.Eclr/iREST_Write} == {rest:Arp.Plc.Eclr/iREST_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({rest:Arp.Plc.Eclr/iREST_Write}) && {rest:Arp.Plc.Eclr/iREST_Write} == {rest:Arp.Plc.Eclr/iREST_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "w-rr",
+          "type": "setpoint",
+          "x": 0,
+          "y": 620,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Read"
+          },
+          "props": {
+            "label": "You send: rREST_Read",
+            "min": 0,
+            "max": 1000,
+            "step": 0.5
+          }
+        },
+        {
+          "id": "e-rr",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 620,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rREST_Write"
+          },
+          "props": {
+            "label": "The PLC answers: rREST_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "m-rr",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 620,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({rest:Arp.Plc.Eclr/rREST_Write}) ? ({rest:Arp.Plc.Eclr/rREST_Write} == {rest:Arp.Plc.Eclr/rREST_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({rest:Arp.Plc.Eclr/rREST_Write}) && {rest:Arp.Plc.Eclr/rREST_Write} == {rest:Arp.Plc.Eclr/rREST_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "w-rs",
+          "type": "textInput",
+          "x": 0,
+          "y": 754,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Read"
+          },
+          "props": {
+            "label": "You send: sREST_Read"
+          }
+        },
+        {
+          "id": "e-rs",
+          "type": "textDisplay",
+          "x": 355,
+          "y": 754,
+          "w": 339,
+          "h": 124,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/sREST_Write"
+          },
+          "props": {
+            "label": "The PLC answers: sREST_Write"
+          }
+        },
+        {
+          "id": "m-rs",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 754,
+          "w": 339,
+          "h": 124,
+          "props": {
+            "label": "Round trip",
+            "staticText": "…"
+          },
+          "dynamics": {
+            "staticText": {
+              "expr": "good({rest:Arp.Plc.Eclr/sREST_Write}) ? ({rest:Arp.Plc.Eclr/sREST_Write} == {rest:Arp.Plc.Eclr/sREST_Read} ? 'the PLC echoes it' : 'waiting for the PLC') : 'no reply'"
+            },
+            "textColor": {
+              "expr": "good({rest:Arp.Plc.Eclr/sREST_Write}) && {rest:Arp.Plc.Eclr/sREST_Write} == {rest:Arp.Plc.Eclr/sREST_Read}",
+              "transform": {
+                "kind": "map",
+                "cases": [
+                  {
+                    "equals": 1,
+                    "value": "#16a34a"
+                  }
+                ],
+                "default": "#b45309"
+              }
+            }
+          }
+        },
+        {
+          "id": "wb-add",
+          "type": "button",
+          "x": 0,
+          "y": 888,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Add 100 to iOPC_Read",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": 100
+              }
+            ]
+          }
+        },
+        {
+          "id": "wb-sub",
+          "type": "button",
+          "x": 355,
+          "y": 888,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Subtract 100",
+            "btnColor": "amber"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "increment",
+                "step": -100
+              }
+            ]
+          }
+        },
+        {
+          "id": "wb-reset",
+          "type": "button",
+          "x": 709,
+          "y": 888,
+          "w": 339,
+          "h": 60,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Back to 123",
+            "btnColor": "zinc",
+            "btnVariant": "outlined"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "write",
+                "value": 123
+              }
+            ]
+          }
+        },
+        {
+          "id": "sn-log",
+          "type": "historyLog",
+          "x": 0,
+          "y": 964,
+          "w": 1048,
+          "h": 200,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "Write history for iOPC_Read",
+            "pageSize": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-script",
+      "name": "Script",
+      "icon": "bolt",
+      "widgets": [
+        {
+          "id": "sc-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Scripts acting on what the PLC reports",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "sc-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 56,
+          "props": {
+            "staticText": "When the PLC's reply iOPC_Write stays above the limit for the wait time, the script adds the step to the PLC's input iOPC_Read, once; the PLC echoes it. It acts again only after the reply has dropped to the limit or below. It starts OFF.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "s-enable",
+          "type": "button",
+          "x": 0,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleEnable"
+          },
+          "props": {
+            "label": "Rule on / off",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "s-led",
+          "type": "led",
+          "x": 355,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleEnable"
+          },
+          "props": {
+            "label": "Rule",
+            "trueLabel": "ON: it may write to the PLC",
+            "falseLabel": "OFF: nothing is written"
+          }
+        },
+        {
+          "id": "s-state",
+          "type": "textDisplay",
+          "x": 709,
+          "y": 100,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:RuleState"
+          },
+          "props": {
+            "label": "What the rule is doing"
+          }
+        },
+        {
+          "id": "s-limit",
+          "type": "numericInput",
+          "x": 0,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Threshold"
+          },
+          "props": {
+            "label": "Limit (the PLC's reply must be above this)",
+            "min": 0,
+            "max": 100000
+          }
+        },
+        {
+          "id": "s-wait",
+          "type": "numericInput",
+          "x": 355,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:WaitSeconds"
+          },
+          "props": {
+            "label": "Wait (seconds)",
+            "min": 1,
+            "max": 600
+          }
+        },
+        {
+          "id": "s-step",
+          "type": "numericInput",
+          "x": 709,
+          "y": 206,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "mem:Step"
+          },
+          "props": {
+            "label": "Add to the input",
+            "min": 1,
+            "max": 10000
+          }
+        },
+        {
+          "id": "s-echo",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Write"
+          },
+          "props": {
+            "label": "The PLC's reply: iOPC_Write",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-cd",
+          "type": "numericDisplay",
+          "x": 266,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "mem:Countdown"
+          },
+          "props": {
+            "label": "Seconds until it acts",
+            "unit": "s",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-in",
+          "type": "numericDisplay",
+          "x": 532,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "opcua:ns=6;s=Arp.Plc.Eclr/iOPC_Read"
+          },
+          "props": {
+            "label": "The PLC's input: iOPC_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-fired",
+          "type": "numericDisplay",
+          "x": 798,
+          "y": 322,
+          "w": 250,
+          "h": 150,
+          "bindings": {
+            "value": "mem:Fired"
+          },
+          "props": {
+            "label": "Times it has acted",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "sc-last",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 488,
+          "w": 1048,
+          "h": 56,
+          "bindings": {
+            "value": "mem:LastFired"
+          },
+          "props": {
+            "label": "Last time it acted"
+          }
+        },
+        {
+          "id": "sc-mn",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 560,
+          "w": 1048,
+          "h": 32,
+          "props": {
+            "staticText": "A second script: when switched on, each new iOPC_Write over OPC UA is written to iREST_Read over REST, and the PLC copies it to iREST_Write.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "s-cenable",
+          "type": "button",
+          "x": 0,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:CarryEnable"
+          },
+          "props": {
+            "label": "Carry to REST on / off",
+            "btnColor": "purple"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "s-carried",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "mem:Carried"
+          },
+          "props": {
+            "label": "Values carried to iREST_Read",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "s-rest",
+          "type": "numericDisplay",
+          "x": 709,
+          "y": 600,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/iREST_Write"
+          },
+          "props": {
+            "label": "REST's reply: iREST_Write",
+            "showQuality": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-logic",
+      "name": "Logic",
+      "icon": "motor",
+      "widgets": [
+        {
+          "id": "lg-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "The PLC's logic: xActivate, xAnomaly, rSine_Out",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "lg-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 56,
+          "props": {
+            "staticText": "The PLC exposes these over REST (its HMI attribute), so they are read and written through the REST datasource; OPC UA lists a different set. What xActivate and xAnomaly do depends on the PLC's program.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "lg-act",
+          "type": "button",
+          "x": 0,
+          "y": 106,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/xActivate"
+          },
+          "props": {
+            "label": "xActivate on / off",
+            "btnColor": "green"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "lg-actled",
+          "type": "led",
+          "x": 355,
+          "y": 106,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/xActivate"
+          },
+          "props": {
+            "label": "xActivate",
+            "trueLabel": "TRUE",
+            "falseLabel": "FALSE"
+          }
+        },
+        {
+          "id": "lg-sine",
+          "type": "numericDisplay",
+          "x": 709,
+          "y": 106,
+          "w": 339,
+          "h": 90,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rSine_Out"
+          },
+          "props": {
+            "label": "rSine_Out",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "lg-ano",
+          "type": "button",
+          "x": 0,
+          "y": 194,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/xAnomaly"
+          },
+          "props": {
+            "label": "xAnomaly on / off",
+            "btnColor": "red"
+          },
+          "events": {
+            "onClick": [
+              {
+                "type": "toggle",
+                "on": true,
+                "off": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "lg-anoled",
+          "type": "led",
+          "x": 355,
+          "y": 194,
+          "w": 339,
+          "h": 72,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/xAnomaly"
+          },
+          "props": {
+            "label": "xAnomaly",
+            "trueLabel": "TRUE",
+            "falseLabel": "FALSE",
+            "trueColor": "#dc2626"
+          }
+        },
+        {
+          "id": "lg-gauge",
+          "type": "gauge",
+          "x": 709,
+          "y": 212,
+          "w": 339,
+          "h": 180,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rSine_Out"
+          },
+          "props": {
+            "label": "rSine_Out",
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "id": "lg-st",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 282,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/SIM_Temp"
+          },
+          "props": {
+            "label": "SIM_Temp",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "lg-sv",
+          "type": "numericDisplay",
+          "x": 355,
+          "y": 282,
+          "w": 339,
+          "h": 100,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/SIM_Volt"
+          },
+          "props": {
+            "label": "SIM_Volt",
+            "showQuality": true
+          }
+        },
+        {
+          "id": "lg-trend",
+          "type": "trend",
+          "x": 0,
+          "y": 408,
+          "w": 1048,
+          "h": 280,
+          "bindings": {
+            "value": "rest:Arp.Plc.Eclr/rSine_Out"
+          },
+          "props": {
+            "label": "rSine_Out, SIM_Temp and SIM_Volt",
+            "duration": 60,
+            "tags": [
+              {
+                "binding": "rest:Arp.Plc.Eclr/rSine_Out",
+                "label": "rSine_Out",
+                "color": "#2563eb"
+              },
+              {
+                "binding": "rest:Arp.Plc.Eclr/SIM_Temp",
+                "label": "SIM_Temp",
+                "color": "#dc2626"
+              },
+              {
+                "binding": "rest:Arp.Plc.Eclr/SIM_Volt",
+                "label": "SIM_Volt",
+                "color": "#16a34a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "p-alarms",
+      "name": "Alarms",
+      "icon": "alarm",
+      "widgets": [
+        {
+          "id": "al-t",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 0,
+          "w": 1048,
+          "h": 34,
+          "props": {
+            "staticText": "Alarms from the PLC's values",
+            "fontBold": true,
+            "fontSize": "xl",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "al-n",
+          "type": "textDisplay",
+          "x": 0,
+          "y": 36,
+          "w": 1048,
+          "h": 36,
+          "props": {
+            "staticText": "Raised from the live values (and cleared when they drop); a PLC that goes offline keeps the alarm's state and says why.",
+            "fontSize": "sm",
+            "textColor": "var(--muted-foreground)",
+            "bgColor": "transparent",
+            "borderColor": "none",
+            "noPadding": true
+          }
+        },
+        {
+          "id": "al-b",
+          "type": "alarmBanner",
+          "x": 0,
+          "y": 84,
+          "w": 1048,
+          "h": 380,
+          "props": {
+            "label": "Active alarms",
+            "maxRows": 12,
+            "showAcked": true
+          }
+        },
+        {
+          "id": "al-h",
+          "type": "historyLog",
+          "x": 0,
+          "y": 480,
+          "w": 1048,
+          "h": 220,
+          "bindings": {
+            "value": "mem:Fired"
+          },
+          "props": {
+            "label": "Each time the script acted",
+            "pageSize": 6
+          }
+        }
+      ]
+    }
+  ]
+}
