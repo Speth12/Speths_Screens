@@ -7,6 +7,7 @@ import { useProject } from "../store/projectStore";
 import { tagStoreClient, type TagState } from "../store/tagStoreClient";
 import { addrSegments, countNsRefs, nsJoin, nsLeaf, nsName, nsParent, nsTree, uniquePath, type NsTreeNode } from "../store/namespaceOps";
 import { publishToRuntime, useNamespaceIndex, useVariables, varKey, type Variable } from "../store/variables";
+import { useWorkspace } from "../store/workspace";
 import { NamespaceNodeEditor } from "./NamespaceNodeEditor";
 import { ImportNamespaceDialog } from "./ImportNamespaceDialog";
 
@@ -156,7 +157,10 @@ export function VariablesTab() {
   const index = useNamespaceIndex();
 
   const [filter, setFilter] = useState("");
-  const [dsFilter, setDsFilter] = useState("");
+  // Opened from a datasource's own tab: show that datasource's variables.
+  const variablesDs = useWorkspace((s) => s.variablesDs);
+  const [dsFilter, setDsFilter] = useState(variablesDs);
+  useEffect(() => { setDsFilter(variablesDs); }, [variablesDs]);
   const [unnamedOnly, setUnnamedOnly] = useState(false);
   const [writableOnly, setWritableOnly] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
