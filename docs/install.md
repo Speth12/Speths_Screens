@@ -193,7 +193,7 @@ calculated tags). Each is a **datasource** in the project.
    holds real credentials.
 4. **Bind widgets to tags.** A tag path is `<datasource id>:<variable>`, for example `rest:Arp.Plc.Eclr/Setpoint` or
    `opcua:ns=6;s=Arp.Plc.Eclr/Setpoint`. The IDE's tag picker lists what the controller offers. You can also put variables in
-   the **namespace** (`ns:Line1/Temp`) so a screen does not depend on one protocol.
+   the **namespace** (`ns:Line1.Temp`; the Variables tab in the IDE gives variables their names) so a screen does not depend on one protocol.
 5. **Deploy** to the runtime. Only tags a screen, alarm or script uses are polled.
 
 A write from the operator screen is checked before it reaches the PLC: the tag must be used by a writable widget (or a
