@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Canvas } from "./panels/Canvas";
+import { Workspace } from "./panels/Workspace";
 import { GalleryPanel } from "./panels/GalleryPanel";
 import { ThemePanel } from "./panels/ThemePanel";
 import { LanguagesPanel } from "./panels/LanguagesPanel";
@@ -149,9 +150,9 @@ export function App() {
           className="w-1 shrink-0 cursor-col-resize hover:bg-blue-500/40 active:bg-blue-500/60 transition-colors"
         />
 
-        {/* Center: canvas (or JSON view) */}
+        {/* Center: the screen (canvas or JSON view) and the sections opened from the project tree, as tabs */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-          {showJSON ? <JSONPanel /> : <Canvas />}
+          <Workspace screen={showJSON ? <JSONPanel /> : <Canvas />} />
         </div>
 
         {/* Right drag handle */}

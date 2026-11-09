@@ -10,14 +10,14 @@ import { typedInitial } from "./typedInitial";
 import { ScriptEditor } from "./ScriptEditor";
 import { Users } from "./Users";
 import { ChromeSettings } from "./ChromeSettings";
-import { TagBrowser, TagScannerModal } from "./TagBrowser";
+import { TagScannerModal } from "./TagScannerModal";
 import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
 import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertCheckField, CertPinModal, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
 import { CustomWidgets } from "./CustomWidgets";
-import { Namespace } from "./Namespace";
+import { useWorkspace, VARIABLES_TAB } from "../store/workspace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat, unpackGitFiles } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
@@ -84,6 +84,22 @@ function TreeSection({
   );
 }
 
+/** A section that opens as a tab in the middle of the editor instead of unfolding in the tree. */
+function TreeLink({ label, count, onOpen }: { label: string; count?: number; onOpen: () => void }) {
+  const active = useWorkspace((s) => s.activeId) === label.toLowerCase();
+  return (
+    <button
+      onClick={onOpen}
+      className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left border-b border-zinc-800/60 hover:bg-zinc-800/30 ${active ? "bg-blue-600/15" : ""}`}
+    >
+      <span className="text-zinc-600 text-[9px] w-3 shrink-0">▪</span>
+      <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium flex-1">{label}</span>
+      {count !== undefined && count > 0 && <span className="text-[9px] text-zinc-600 bg-zinc-800 rounded px-1.5 py-0.5">{count}</span>}
+      <span className="text-zinc-600 text-[10px]" aria-hidden>↗</span>
+    </button>
+  );
+}
+
 // ── Main LeftPanel — project tree ─────────────────────────────────────────────
 
 export function LeftPanel({ width }: { width?: number }) {
@@ -93,6 +109,7 @@ export function LeftPanel({ width }: { width?: number }) {
     addDatasource, removeDatasource, updateDatasource,
     exportJSON, loadProject,
   } = useProject();
+  const openTab = useWorkspace((s) => s.open);
 
   const [showMCP,    setShowMCP]    = useState(false);
   const [pinDS,      setPinDS]      = useState<Datasource | null>(null);
@@ -292,15 +309,9 @@ export function LeftPanel({ width }: { width?: number }) {
           </div>
         </TreeSection>
 
-        {/* Namespace first: widgets bind to ns: paths (Phase 2 step 5) */}
-        <TreeSection label="Namespace" count={project.namespace?.length}>
-          <Namespace />
-        </TreeSection>
-
-        {/* Raw PLC variables, by datasource */}
-        <TreeSection label="Tags">
-          <TagBrowser />
-        </TreeSection>
+        {/* The namespace (what screens bind to) and the controllers' own variables, in one tab */}
+        <TreeLink label="Variables" count={project.namespace?.filter((n) => n.type === "tag" || n.type === "virtual").length}
+          onOpen={() => openTab(VARIABLES_TAB)} />
 
         {/* Alarms */}
         <TreeSection

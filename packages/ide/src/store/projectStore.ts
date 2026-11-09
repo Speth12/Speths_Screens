@@ -12,6 +12,7 @@ import type {
 import { placeFor } from "@speths-screens/widgets";
 import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
+import { moveNsNode } from "./namespaceOps";
 import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
 
 export type {
@@ -101,7 +102,11 @@ type State = {
   removePreset: (id: string) => void;
 
   upsertNamespaceNode: (node: NamespaceNode) => void;
+  /** Adds or replaces several nodes as one change (one undo step). */
+  upsertNamespaceNodes: (nodes: NamespaceNode[]) => void;
   removeNamespaceNode: (path: string) => void;
+  /** Moves or renames a node (and what is under it) and points every `ns:` use of it at the new path. Says why when it cannot. */
+  moveNamespaceNode: (from: string, to: string) => { error?: string };
 
   loadProject: (p: Project) => void;
   /** A blank project. With chrome "custom" it starts with the default header and navigation as custom widgets. */
@@ -615,6 +620,23 @@ export const useProject = create<State>((set, get) => {
           : [...existing, node];
         return { project: { ...s.project, namespace: next } };
       });
+    },
+    upsertNamespaceNodes: (nodes) => {
+      if (!nodes.length) return;
+      pushHistory();
+      set((s) => {
+        const byPath = new Map((s.project.namespace ?? []).map((n) => [n.path, n] as const));
+        for (const n of nodes) byPath.set(n.path, n);
+        return { project: { ...s.project, namespace: [...byPath.values()] } };
+      });
+    },
+    moveNamespaceNode: (from, to) => {
+      const moved = moveNsNode(get().project, from, to);
+      if (moved.error) return { error: moved.error };
+      if (from === to) return {};
+      pushHistory();
+      set({ project: moved.project });
+      return {};
     },
     removeNamespaceNode: (path) => {
       pushHistory();
