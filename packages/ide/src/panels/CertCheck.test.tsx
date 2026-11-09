@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CertPinModal, needsCertPin } from "./CertCheck";
-import { AddDatasourceModal } from "./LeftPanel";
+import { AddDatasourceModal } from "./AddDatasourceModal";
 import type { Datasource } from "@speths-screens/shared-types";
 
 afterEach(() => {

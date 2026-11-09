@@ -1,8 +1,11 @@
 // The middle of the editor: a tab strip, the screen being designed as the first tab, and the sections opened from
 // the project tree as the others. The screen stays mounted while another tab is in front, so its zoom and selection
 // are where they were when the user comes back.
-import type { ReactNode } from "react";
-import { SCREEN_TAB, useWorkspace } from "../store/workspace";
+import { useEffect, type ReactNode } from "react";
+import { useProject } from "../store/projectStore";
+import { SCREEN_TAB, datasourceOf, useWorkspace } from "../store/workspace";
+import { DatasourceTab } from "./DatasourceTab";
+import { PagesTab } from "./PagesTab";
 import { VariablesTab } from "./VariablesTab";
 
 export function Workspace({ screen }: { screen: ReactNode }) {
@@ -10,7 +13,18 @@ export function Workspace({ screen }: { screen: ReactNode }) {
   const activeId = useWorkspace((s) => s.activeId);
   const activate = useWorkspace((s) => s.activate);
   const close = useWorkspace((s) => s.close);
+  const retitle = useWorkspace((s) => s.retitle);
+  const datasources = useProject((s) => s.project.datasources);
   const active = tabs.find((t) => t.id === activeId) ?? SCREEN_TAB;
+
+  // A datasource tab follows its datasource's name, and goes when the datasource does (or another project opens).
+  useEffect(() => {
+    for (const t of tabs) {
+      if (t.kind !== "datasource") continue;
+      const ds = datasources.find((d) => d.id === datasourceOf(t));
+      if (!ds) close(t.id); else retitle(t.id, ds.label || ds.id);
+    }
+  }, [tabs, datasources, close, retitle]);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -37,6 +51,8 @@ export function Workspace({ screen }: { screen: ReactNode }) {
       </div>
       <div className={active.kind === "screen" ? "flex-1 flex flex-col min-h-0 min-w-0" : "hidden"}>{screen}</div>
       {active.kind === "variables" && <VariablesTab />}
+      {active.kind === "pages" && <PagesTab />}
+      {active.kind === "datasource" && <DatasourceTab key={active.id} dsId={datasourceOf(active)} />}
     </div>
   );
 }

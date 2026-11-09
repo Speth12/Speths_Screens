@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { AddDatasourceModal, memoryTag } from "./LeftPanel";
+import { AddDatasourceModal, memoryTag } from "./AddDatasourceModal";
 
 afterEach(() => {
   cleanup();

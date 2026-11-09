@@ -43,6 +43,10 @@ type State = {
   addPage: (name?: string) => void;
   renamePage: (id: string, name: string) => void;
   removePage: (id: string) => void;
+  /** A copy of a page (new widget ids, new groups) placed after it; returns the copy's id. */
+  duplicatePage: (id: string) => string | undefined;
+  /** Moves a page up (-1) or down (+1) in the list, which is the order of the navigation. */
+  movePage: (id: string, delta: -1 | 1) => void;
 
   addDatasource: (ds: Datasource) => void;
   removeDatasource: (id: string) => void;
@@ -196,6 +200,38 @@ export const useProject = create<State>((set, get) => {
         const id = uid("page");
         const page: Page = { id, name: name || `Page ${s.project.pages.length + 1}`, widgets: [] };
         return { project: { ...s.project, pages: [...s.project.pages, page] }, activePageId: id };
+      });
+    },
+
+    duplicatePage: (id) => {
+      const src = get().project.pages.find((p) => p.id === id);
+      if (!src) return undefined;
+      pushHistory();
+      const copyId = uid("page");
+      const groups = new Map<string, string>();
+      const widgets = src.widgets.map((w) => {
+        const groupId = w.groupId ? (groups.get(w.groupId) ?? groups.set(w.groupId, `grp-${Math.random().toString(36).slice(2, 8)}`).get(w.groupId)) : undefined;
+        return { ...JSON.parse(JSON.stringify(w)) as Widget, id: newWidgetId(), ...(groupId ? { groupId } : {}) };
+      });
+      set((s) => {
+        const i = s.project.pages.findIndex((p) => p.id === id);
+        const copy: Page = { ...JSON.parse(JSON.stringify(src)) as Page, id: copyId, name: `${src.name} copy`, widgets };
+        const pages = [...s.project.pages.slice(0, i + 1), copy, ...s.project.pages.slice(i + 1)];
+        return { project: { ...s.project, pages } };
+      });
+      return copyId;
+    },
+
+    movePage: (id, delta) => {
+      const pages = get().project.pages;
+      const i = pages.findIndex((p) => p.id === id);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= pages.length) return;
+      pushHistory();
+      set((s) => {
+        const next = [...s.project.pages];
+        [next[i], next[j]] = [next[j]!, next[i]!];
+        return { project: { ...s.project, pages: next } };
       });
     },
 
