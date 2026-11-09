@@ -16,11 +16,13 @@
 // certificates: without --opcua-fingerprint and --rest-fingerprint the pin is empty and a datasource will not
 // connect until the IDE's Test button shows the fingerprint to pin.
 //
-// Two runtime scripts, both off until switched on (the Script page), each writing only the one PLC variable it names:
-//   increment-rule  when the PLC's iOPC_Write stays above a limit for a wait time, add a step to the input
-//                   iOPC_Read, once; the PLC copies it to iOPC_Write.
-//   carry           when iOPC_Write changes, write it to iREST_Read: an OPC UA output carried into a REST input,
-//                   which the PLC copies to iREST_Write.
+// Two runtime scripts, each writing only the PLC variable it names:
+//   counter-rule    a button on the Script page adds 1 to a counter (a memory tag); when the counter reaches the
+//                   target (10), the script adds the step (100) to the input iOPC_Read and takes the target off the
+//                   counter. The PLC copies the new value to iOPC_Write, which the page shows. It writes to the PLC
+//                   only on the click that reaches the target.
+//   carry           off until switched on: when iOPC_Write changes, write it to iREST_Read: an OPC UA output carried
+//                   into a REST input, which the PLC copies to iREST_Write.
 //
 // The Logic page has xActivate, xAnomaly, rSine_Out, SIM_Temp and SIM_Volt. The PLC exposes those over REST (its HMI
 // attribute) and not over OPC UA, which lists a different set (the *_Read/_Write pairs and HMI_SIM_Temp/Volt), so the
@@ -56,7 +58,7 @@ function grid(items, { cols: n, y = 0, h = 110 }) {
 }
 const title = (id, text, y) => at(id, "textDisplay", 0, y, W, 34, { props: { staticText: text, fontBold: true, fontSize: "xl", bgColor: "transparent", borderColor: "none", noPadding: true } });
 const note = (id, text, y, h = 36, x = 0, w = W) => at(id, "textDisplay", x, y, w, h, { props: { staticText: text, fontSize: "sm", textColor: "var(--muted-foreground)", bgColor: "transparent", borderColor: "none", noPadding: true } });
-const num = (id, label, tag, unit) => [id, "numericDisplay", { bindings: { value: tag }, props: { label, ...(unit ? { unit } : {}), showQuality: true } }];
+const num = (id, label, tag, unit) => [id, "numericDisplay", { bindings: { value: tag }, props: { label, ...(unit ? { unit } : {}) } }];
 const txt = (id, label, tag) => [id, "textDisplay", { bindings: { value: tag }, props: { label } }];
 /** Says whether the PLC's reply equals what was sent, from the two tags. */
 const matches = (label, sent, reply) => ({
@@ -95,12 +97,10 @@ datasources.push({
   id: "mem", type: "memory", label: "Script state",
   config: {
     memoryTags: [
-      { path: "RuleEnable", type: "bool", initial: false },
-      { path: "Threshold", type: "real", initial: 100 },
-      { path: "WaitSeconds", type: "int", initial: 5 },
+      { path: "Counter", type: "int", initial: 0 },
+      { path: "Target", type: "int", initial: 10 },
       { path: "Step", type: "int", initial: 100 },
-      { path: "RuleState", type: "string", initial: "Switched off" },
-      { path: "Countdown", type: "int", initial: 0 },
+      { path: "RuleState", type: "string", initial: "Click the button to count" },
       { path: "Fired", type: "int", initial: 0 },
       { path: "LastFired", type: "string", initial: "never" },
       { path: "CarryEnable", type: "bool", initial: false },
@@ -110,41 +110,31 @@ datasources.push({
 });
 
 // ── scripts ────────────────────────────────────────────────────────────────
-// "If the value stays above the limit for the wait time, add the step", once each time it goes above the limit
-// (it re-arms when the value drops back). A runtime script cannot sleep (a run is cut off after 100 ms), so it checks
-// four times a second and keeps the time the value first went over in `state`. A run that awaits a write lets the next
-// trigger start, and a PLC write takes about 300 ms, so the runs would overlap and act twice: a run returns at the top
-// while the previous one is still waiting, and counts in `state` before its first await.
+// The button adds 1 to mem:Counter; each change of the counter runs this script. At the target it adds the step to the
+// PLC's input and takes the target off the counter (so clicks that arrive during the write are kept). A run that awaits
+// a write lets the next trigger start, and a PLC write takes about 300 ms, so a run at the target returns at the top while
+// the previous one is still waiting.
 const ruleSource = `
+const COUNT = 'mem:Counter', INPUT = ${JSON.stringify(INPUT)};
+const n = readTag(COUNT);
+if (typeof n !== 'number') return;
+const target = readTag('mem:Target') ?? 10, step = readTag('mem:Step') ?? 100;
+const say = async (text) => { if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); } };
+if (n < target) { const left = target - n; await say(left + (left === 1 ? ' more click' : ' more clicks') + ' to go'); return; }
 if (state.busy) return;
 state.busy = true;
 try {
-  const ECHO = ${JSON.stringify(ECHO)}, INPUT = ${JSON.stringify(INPUT)};
-  const set = async (text, left) => {
-    if (state.text !== text) { state.text = text; await writeTag('mem:RuleState', text); }
-    if (state.left !== left) { state.left = left; await writeTag('mem:Countdown', left); }
-  };
-  if (!readTag('mem:RuleEnable')) { state.since = undefined; state.done = false; await set('Switched off', 0); return; }
-  const value = readTag(ECHO);
-  if (quality(ECHO) !== 'Good' || typeof value !== 'number') { state.since = undefined; await set('Waiting for the PLC', 0); return; }
-  const limit = readTag('mem:Threshold') ?? 100;
-  const wait = (readTag('mem:WaitSeconds') ?? 5) * 1000;
-  if (value <= limit) { state.since = undefined; state.done = false; await set('The PLC reports a value at or below the limit', 0); return; }
-  state.since ??= Date.now();
-  const left = wait - (Date.now() - state.since);
-  if (left > 0) { await set('Above the limit, waiting', Math.ceil(left / 1000)); return; }
-  if (state.done) { await set('Done: waiting for the value to drop', 0); return; }
   const current = readTag(INPUT);
-  const next = (typeof current === 'number' ? current : 0) + (readTag('mem:Step') ?? 100);
+  const next = (typeof current === 'number' ? current : 0) + step;
   const r = await writeTag(INPUT, next);
-  if (r.status !== 'confirmed') { log('increment not confirmed:', r.status, r.reason ?? ''); await set('Write failed: ' + (r.reason ?? r.status), 0); return; }
-  state.done = true;
+  if (r.status !== 'confirmed') { log('write not confirmed:', r.status, r.reason ?? ''); await say('Write failed: ' + (r.reason ?? r.status)); return; }
   state.fired = (state.fired ?? 0) + 1;
+  await writeTag(COUNT, Math.max(0, readTag(COUNT) - target));
   await writeTag('mem:Fired', state.fired);
   await writeTag('mem:LastFired', new Date().toLocaleTimeString() + ': ' + INPUT.split('/').pop() + ' = ' + next);
-  emit('plc.increment', { value, limit, wrote: next, n: state.fired });
-  log('the PLC reported', value, 'above', limit, 'for', wait / 1000, 's: wrote', next, 'to its input');
-  await set('Done: waiting for the value to drop', 0);
+  emit('plc.increment', { counted: n, wrote: next, n: state.fired });
+  log('the counter reached', target, ': wrote', next, 'to the PLC input');
+  state.text = undefined;
 } finally {
   state.busy = false;
 }
@@ -162,7 +152,7 @@ state.count = (state.count ?? 0) + 1; // counted before the await, so runs that 
 await writeTag('mem:Carried', state.count);
 `;
 const scripts = [
-  { id: "increment-rule", name: "Add to the PLC's input while its reply stays high", trigger: { every: 250 }, writes: [INPUT, "mem:RuleState", "mem:Countdown", "mem:Fired", "mem:LastFired"], source: ruleSource.trim() },
+  { id: "counter-rule", name: "Add to the PLC's input when the counter reaches the target", trigger: { onChange: ["mem:Counter"] }, writes: [INPUT, "mem:Counter", "mem:RuleState", "mem:Fired", "mem:LastFired"], source: ruleSource.trim() },
   { id: "carry", name: "Carry the OPC UA reply into the REST input", trigger: { onChange: [ECHO] }, writes: [REST_INPUT, "mem:Carried"], source: carrySource.trim() },
 ];
 if (rehearse) {
@@ -209,8 +199,9 @@ const page = (id, name, icon, widgets) => pages.push({ id: `p-${id}`, name, icon
     ...sent.widgets,
     note("pl-n2", "The PLC's reply:", sent.next + 8, 26),
     ...reply.widgets,
-    at("pl-trend", "trend", 0, reply.next, W, 260, { bindings: { value: op("iOPC_Read") }, props: { label: "Sent (iOPC_Read) and the PLC's reply (iOPC_Write)", duration: 300, tags: [
-      { binding: op("iOPC_Read"), label: "iOPC_Read (sent)", color: "#2563eb" }, { binding: op("iOPC_Write"), label: "iOPC_Write (reply)", color: "#16a34a" },
+    at("pl-trend", "trend", 0, reply.next, W, 260, { bindings: { value: op("iOPC_Read") }, props: { label: "Sent (iOPC_Read) and the PLC's reply (iOPC_Write)", duration: 300, autoscale: "nice", tags: [
+      { binding: op("iOPC_Read"), label: "iOPC_Read (sent)", color: "#2563eb", style: "step", dash: "dashed", axis: "shared" },
+      { binding: op("iOPC_Write"), label: "iOPC_Write (reply)", color: "#16a34a", style: "line", width: 2.5, axis: "shared" },
     ] } }),
     at("pl-ds", "driverStatus", 0, reply.next + 276, 520, 80, { props: { bgColor: "var(--card)", borderColor: "var(--border)", label: "Connections" } }),
   ]);
@@ -253,30 +244,29 @@ const page = (id, name, icon, widgets) => pages.push({ id: `p-${id}`, name, icon
   ]);
 }
 
-// 3. Script: the rule, its settings and what it is doing.
+// 3. Script: the button, the counter and what the script does at the target.
 {
   const s = grid([
-    ["s-enable", "button", { bindings: { value: "mem:RuleEnable" }, props: { label: "Rule on / off", btnColor: "green" }, events: { onClick: [{ type: "toggle", on: true, off: false }] } }],
-    ["s-led", "led", { bindings: { value: "mem:RuleEnable" }, props: { label: "Rule", trueLabel: "ON: it may write to the PLC", falseLabel: "OFF: nothing is written" } }],
-    txt("s-state", "What the rule is doing", "mem:RuleState"),
-  ], { cols: 3, y: 100, h: 90 });
+    ["s-click", "button", { bindings: { value: "mem:Counter" }, props: { label: "Click: add 1 to the counter", btnColor: "green" }, events: { onClick: [{ type: "increment", step: 1 }] } }],
+    ["s-count", "numericDisplay", { bindings: { value: "mem:Counter" }, props: { showLabel: false, showUnit: false, showQuality: false, fontSize: "fit", fontBold: true, textAlign: "center", textColor: "#ffffff", bgColor: "#0f766e", borderColor: "none", radius: 16, shadow: false } }],
+    txt("s-state", "What the script says", "mem:RuleState"),
+  ], { cols: 3, y: 100, h: 110 });
   const set = grid([
-    ["s-limit", "numericInput", { bindings: { value: "mem:Threshold" }, props: { label: "Limit (the PLC's reply must be above this)", min: 0, max: 100000 } }],
-    ["s-wait", "numericInput", { bindings: { value: "mem:WaitSeconds" }, props: { label: "Wait (seconds)", min: 1, max: 600 } }],
-    ["s-step", "numericInput", { bindings: { value: "mem:Step" }, props: { label: "Add to the input", min: 1, max: 10000 } }],
-  ], { cols: 3, y: s.next, h: 100 });
+    ["s-target", "numericInput", { bindings: { value: "mem:Target" }, props: { label: "Act when the counter reaches", min: 1, max: 1000 } }],
+    ["s-step", "numericInput", { bindings: { value: "mem:Step" }, props: { label: "Then add this to iOPC_Read", min: 1, max: 10000 } }],
+  ], { cols: 2, y: s.next, h: 100 });
   const live = grid([
-    num("s-echo", "The PLC's reply: iOPC_Write", op("iOPC_Write")), num("s-cd", "Seconds until it acts", "mem:Countdown", "s"),
-    num("s-in", "The PLC's input: iOPC_Read", op("iOPC_Read")), num("s-fired", "Times it has acted", "mem:Fired"),
-  ], { cols: 4, y: set.next, h: 150 });
+    num("s-in", "The PLC's input: iOPC_Read", op("iOPC_Read")), num("s-echo", "The PLC's reply: iOPC_Write", op("iOPC_Write")),
+    num("s-fired", "Times the script acted", "mem:Fired"),
+  ], { cols: 3, y: set.next, h: 150 });
   const carry = grid([
     ["s-cenable", "button", { bindings: { value: "mem:CarryEnable" }, props: { label: "Carry to REST on / off", btnColor: "purple" }, events: { onClick: [{ type: "toggle", on: true, off: false }] } }],
     num("s-carried", "Values carried to iREST_Read", "mem:Carried"),
     num("s-rest", "REST's reply: iREST_Write", rs("iREST_Write")),
   ], { cols: 3, y: live.next + 112, h: 90 });
   page("script", "Script", "bolt", [
-    title("sc-t", "Scripts acting on what the PLC reports", 0),
-    note("sc-n", "When the PLC's reply iOPC_Write stays above the limit for the wait time, the script adds the step to the PLC's input iOPC_Read, once; the PLC echoes it. It acts again only after the reply has dropped to the limit or below. It starts OFF.", 36, 56),
+    title("sc-t", "A script that acts on a counter", 0),
+    note("sc-n", "Each click adds 1 to the counter (a memory tag). When it reaches the target, the script adds the step to the PLC's input iOPC_Read; the PLC echoes it on iOPC_Write. Nothing is written to the PLC before then.", 36, 56),
     ...s.widgets, ...set.widgets, ...live.widgets,
     at("sc-last", "textDisplay", 0, live.next, W, 56, { bindings: { value: "mem:LastFired" }, props: { label: "Last time it acted" } }),
     note("sc-mn", "A second script: when switched on, each new iOPC_Write over OPC UA is written to iREST_Read over REST, and the PLC copies it to iREST_Write.", live.next + 72, 32),
@@ -292,14 +282,14 @@ const page = (id, name, icon, widgets) => pages.push({ id: `p-${id}`, name, icon
     note("lg-n", "The PLC exposes these over REST (its HMI attribute), so they are read and written through the REST datasource; OPC UA lists a different set. What xActivate and xAnomaly do depends on the PLC's program.", 36, 56),
     at("lg-act", "button", 0, 106, col(3, 0).w, 72, { bindings: { value: X }, props: { label: "xActivate on / off", btnColor: "green" }, events: { onClick: [{ type: "toggle", on: true, off: false }] } }),
     at("lg-actled", "led", col(3, 1).x, 106, col(3, 1).w, 72, { bindings: { value: X }, props: { label: "xActivate", trueLabel: "TRUE", falseLabel: "FALSE" } }),
-    at("lg-sine", "numericDisplay", col(3, 2).x, 106, col(3, 2).w, 90, { bindings: { value: S }, props: { label: "rSine_Out", showQuality: true } }),
+    at("lg-sine", "numericDisplay", col(3, 2).x, 106, col(3, 2).w, 90, { bindings: { value: S }, props: { label: "rSine_Out" } }),
     at("lg-ano", "button", 0, 194, col(3, 0).w, 72, { bindings: { value: A }, props: { label: "xAnomaly on / off", btnColor: "red" }, events: { onClick: [{ type: "toggle", on: true, off: false }] } }),
     at("lg-anoled", "led", col(3, 1).x, 194, col(3, 1).w, 72, { bindings: { value: A }, props: { label: "xAnomaly", trueLabel: "TRUE", falseLabel: "FALSE", trueColor: "#dc2626" } }),
     at("lg-gauge", "gauge", col(3, 2).x, 212, col(3, 2).w, 180, { bindings: { value: S }, props: { label: "rSine_Out", min: 0, max: 100 } }),
-    at("lg-st", "numericDisplay", 0, 282, col(3, 0).w, 100, { bindings: { value: rs("SIM_Temp") }, props: { label: "SIM_Temp", showQuality: true } }),
-    at("lg-sv", "numericDisplay", col(3, 1).x, 282, col(3, 1).w, 100, { bindings: { value: rs("SIM_Volt") }, props: { label: "SIM_Volt", showQuality: true } }),
+    at("lg-st", "numericDisplay", 0, 282, col(3, 0).w, 100, { bindings: { value: rs("SIM_Temp") }, props: { label: "SIM_Temp" } }),
+    at("lg-sv", "numericDisplay", col(3, 1).x, 282, col(3, 1).w, 100, { bindings: { value: rs("SIM_Volt") }, props: { label: "SIM_Volt" } }),
     at("lg-trend", "trend", 0, 408, W, 280, { bindings: { value: S }, props: { label: "rSine_Out, SIM_Temp and SIM_Volt", duration: 60, tags: [
-      { binding: S, label: "rSine_Out", color: "#2563eb" }, { binding: rs("SIM_Temp"), label: "SIM_Temp", color: "#dc2626" }, { binding: rs("SIM_Volt"), label: "SIM_Volt", color: "#16a34a" },
+      { binding: S, label: "rSine_Out", color: "#2563eb", style: "area", width: 2 }, { binding: rs("SIM_Temp"), label: "SIM_Temp", color: "#dc2626", style: "step", dash: "dashed" }, { binding: rs("SIM_Volt"), label: "SIM_Volt", color: "#16a34a", style: "dots" },
     ] } }),
   ]);
 }
@@ -322,7 +312,7 @@ const project = {
   canvasResolution: { type: "dynamic" },
   datasources,
   alarmRules: [
-    { id: "a-input", name: "The PLC's reply is above the limit", expr: `{${ECHO}} > {mem:Threshold}`, severity: "warning", message: "iOPC_Write is above the limit" },
+    { id: "a-input", name: "The PLC's reply is above 200", expr: `{${ECHO}} > 200`, severity: "warning", message: "iOPC_Write is above 200" },
     { id: "a-temp", name: "High temperature", expr: `{${op("HMI_SIM_Temp")}} > 100`, severity: "warning", message: "HMI_SIM_Temp above 100" },
     { id: "a-acted", name: "The script acted", expr: "{mem:Fired} > 0", severity: "info", message: "The increment script has written to the PLC's input" },
   ],

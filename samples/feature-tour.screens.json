@@ -1417,13 +1417,14 @@
                 "label": "Flow (m³/h)",
                 "color": "#12a150",
                 "yMin": 0,
-                "yMax": 100
+                "yMax": 100,
+                "style": "step"
               },
               {
                 "binding": "sim:level",
                 "label": "Level (%)",
                 "color": "#d97706",
-                "fill": true,
+                "style": "area",
                 "yMin": 0,
                 "yMax": 100
               },
@@ -1432,7 +1433,8 @@
                 "label": "Temp (°C)",
                 "color": "#dc2626",
                 "yMin": 30,
-                "yMax": 110
+                "yMax": 110,
+                "dash": "dashed"
               }
             ],
             "refLines": [
@@ -1500,12 +1502,77 @@
               {
                 "binding": "sim:efficiency",
                 "label": "Efficiency (%)",
-                "color": "#12a150"
+                "color": "#12a150",
+                "style": "area",
+                "axis": "shared"
               },
               {
                 "binding": "sim:ramp",
                 "label": "Ramp (%)",
-                "color": "#9333ea"
+                "color": "#9333ea",
+                "style": "dots",
+                "axis": "shared"
+              }
+            ],
+            "autoscale": "nice"
+          }
+        },
+        {
+          "id": "t-fit",
+          "type": "trend",
+          "x": 0,
+          "y": 612,
+          "w": 516,
+          "h": 250,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "Follows the data (try ◀ to step back, ⏸ to pause)",
+            "duration": 120,
+            "autoscale": "fit",
+            "windows": [
+              30,
+              120,
+              600,
+              3600,
+              86400
+            ],
+            "tags": [
+              {
+                "binding": "sim:pressure",
+                "label": "Pressure (bar)",
+                "color": "#4c9aff",
+                "style": "bars",
+                "width": 1.5
+              }
+            ]
+          }
+        },
+        {
+          "id": "t-bare",
+          "type": "trend",
+          "x": 532,
+          "y": 612,
+          "w": 516,
+          "h": 250,
+          "bindings": {
+            "value": "sim:temp"
+          },
+          "props": {
+            "label": "No buttons, grid or legend",
+            "duration": 90,
+            "showToolbar": false,
+            "showGrid": false,
+            "showLegend": false,
+            "autoscale": "fit",
+            "tags": [
+              {
+                "binding": "sim:temp",
+                "label": "Temp",
+                "color": "#dc2626",
+                "style": "area",
+                "width": 2
               }
             ]
           }
@@ -1514,7 +1581,7 @@
           "id": "t-log",
           "type": "historyLog",
           "x": 0,
-          "y": 612,
+          "y": 878,
           "w": 1048,
           "h": 240,
           "bindings": {
@@ -2477,10 +2544,79 @@
           }
         },
         {
+          "id": "w-num-fit",
+          "type": "numericDisplay",
+          "x": 709,
+          "y": 40,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:flow"
+          },
+          "props": {
+            "label": "number only, fit",
+            "unit": "m³/h",
+            "showLabel": false,
+            "showUnit": false,
+            "fontSize": "fit",
+            "fontBold": true,
+            "textAlign": "center",
+            "textColor": "#ffffff",
+            "bgColor": "#0f766e",
+            "borderColor": "none",
+            "radius": 16,
+            "shadow": false
+          }
+        },
+        {
+          "id": "w-num-mono",
+          "type": "numericDisplay",
+          "x": 0,
+          "y": 226,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "sim:pressure"
+          },
+          "props": {
+            "label": "mono, 36 px",
+            "unit": "bar",
+            "fontFamily": "mono",
+            "fontPx": 36,
+            "valign": "top",
+            "bgColor": "none",
+            "borderColor": "none",
+            "padding": 0
+          }
+        },
+        {
+          "id": "w-ni-bare",
+          "type": "numericInput",
+          "x": 355,
+          "y": 226,
+          "w": 339,
+          "h": 170,
+          "bindings": {
+            "value": "mem:Speed"
+          },
+          "props": {
+            "label": "input, number only",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "showLabel": false,
+            "showUnit": false,
+            "fontSize": "4xl",
+            "textAlign": "center",
+            "borderWidth": 2,
+            "radius": 4
+          }
+        },
+        {
           "id": "w-text",
           "type": "textDisplay",
           "x": 709,
-          "y": 40,
+          "y": 226,
           "w": 339,
           "h": 170,
           "props": {
@@ -2492,7 +2628,7 @@
           "id": "w-led",
           "type": "led",
           "x": 0,
-          "y": 226,
+          "y": 412,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2508,7 +2644,7 @@
           "id": "w-tank",
           "type": "tank",
           "x": 355,
-          "y": 226,
+          "y": 412,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2525,7 +2661,7 @@
           "id": "w-btn",
           "type": "button",
           "x": 709,
-          "y": 226,
+          "y": 412,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2548,7 +2684,7 @@
           "id": "w-sp",
           "type": "setpoint",
           "x": 0,
-          "y": 412,
+          "y": 598,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2566,7 +2702,7 @@
           "id": "w-ms",
           "type": "multiState",
           "x": 355,
-          "y": 412,
+          "y": 598,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2606,7 +2742,7 @@
           "id": "w-trend",
           "type": "trend",
           "x": 709,
-          "y": 412,
+          "y": 598,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2628,7 +2764,7 @@
           "id": "w-ni",
           "type": "numericInput",
           "x": 0,
-          "y": 598,
+          "y": 784,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2645,7 +2781,7 @@
           "id": "w-ti",
           "type": "textInput",
           "x": 355,
-          "y": 598,
+          "y": 784,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2659,7 +2795,7 @@
           "id": "w-hl",
           "type": "historyLog",
           "x": 709,
-          "y": 598,
+          "y": 784,
           "w": 339,
           "h": 170,
           "bindings": {
@@ -2674,7 +2810,7 @@
           "id": "w-ab",
           "type": "alarmBanner",
           "x": 0,
-          "y": 784,
+          "y": 970,
           "w": 339,
           "h": 170,
           "props": {
@@ -2686,7 +2822,7 @@
           "id": "w-img",
           "type": "image",
           "x": 355,
-          "y": 784,
+          "y": 970,
           "w": 339,
           "h": 170,
           "props": {
@@ -2699,7 +2835,7 @@
           "id": "w-sym",
           "type": "symbol",
           "x": 709,
-          "y": 784,
+          "y": 970,
           "w": 339,
           "h": 170,
           "props": {
@@ -2714,7 +2850,7 @@
           "id": "w-pipe",
           "type": "pipe",
           "x": 0,
-          "y": 970,
+          "y": 1156,
           "w": 339,
           "h": 170,
           "props": {
@@ -2729,7 +2865,7 @@
           "id": "w-table",
           "type": "table",
           "x": 355,
-          "y": 970,
+          "y": 1156,
           "w": 339,
           "h": 170,
           "props": {
@@ -2762,7 +2898,7 @@
           "id": "w-cw",
           "type": "customWidget",
           "x": 709,
-          "y": 970,
+          "y": 1156,
           "w": 339,
           "h": 170,
           "props": {
@@ -2778,7 +2914,7 @@
           "id": "w-pl",
           "type": "pageList",
           "x": 0,
-          "y": 1156,
+          "y": 1342,
           "w": 339,
           "h": 170,
           "props": {
@@ -2792,7 +2928,7 @@
           "id": "w-clock",
           "type": "clock",
           "x": 355,
-          "y": 1156,
+          "y": 1342,
           "w": 339,
           "h": 170,
           "props": {
@@ -2806,7 +2942,7 @@
           "id": "w-ds",
           "type": "driverStatus",
           "x": 709,
-          "y": 1156,
+          "y": 1342,
           "w": 339,
           "h": 170,
           "props": {
@@ -2819,7 +2955,7 @@
           "id": "w-um",
           "type": "userMenu",
           "x": 0,
-          "y": 1342,
+          "y": 1528,
           "w": 339,
           "h": 170,
           "props": {
@@ -2832,7 +2968,7 @@
           "id": "w-rec",
           "type": "recipes",
           "x": 355,
-          "y": 1342,
+          "y": 1528,
           "w": 339,
           "h": 170,
           "props": {
