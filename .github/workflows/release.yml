@@ -1,0 +1,31 @@
+name: Release
+
+# Pushing a tag such as v0.8.0 builds the runtime for Windows, Linux and the WP 6000 panel and attaches the files to
+# a DRAFT release, so nothing is public until the draft is published by hand.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # creating the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/release/build.mjs --version=${{ github.ref_name }}
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" dist/${{ github.ref_name }}/* --draft --generate-notes --title "${{ github.ref_name }}"

@@ -70,6 +70,7 @@ func main() {
 		os.Exit(runUpgrade(os.Args[2:], os.Stdout, os.Stderr))
 	}
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
+	showVersion := flag.Bool("version", false, "print the version and exit")
 	mode := flag.String("mode", "dev", "dev | runtime")
 	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
@@ -84,6 +85,11 @@ func main() {
 	corsOrigins := flag.String("cors-origins", "", "comma-separated extra web origins (scheme://host:port) allowed to call the API")
 	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (random 32+ bytes); auto-generated if empty")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(versionString())
+		return
+	}
 
 	if *healthcheck {
 		listenAddr := *addr
@@ -111,6 +117,7 @@ func main() {
 	}
 
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	log.Printf("[Speth's Screens] %s", versionString())
 
 	if *addr == "" {
 		switch *mode {

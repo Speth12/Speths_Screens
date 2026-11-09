@@ -1,7 +1,9 @@
 package main
 
 import (
+	"runtime"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -39,5 +41,23 @@ func TestSplitList(t *testing.T) {
 		if got := splitList(tc.in); !slices.Equal(got, tc.want) {
 			t.Errorf("splitList(%q) = %v, want %v", tc.in, got, tc.want)
 		}
+	}
+}
+
+func TestVersionString(t *testing.T) {
+	defer func(v, c string) { version, commit = v, c }(version, commit)
+	tests := []struct{ version, commit, want string }{
+		{"v0.8.0", "abc1234", "speths-screens v0.8.0 (abc1234) " + runtime.GOOS + "/" + runtime.GOARCH},
+		{"dev", "abc1234", "speths-screens dev (abc1234) " + runtime.GOOS + "/" + runtime.GOARCH},
+	}
+	for _, tc := range tests {
+		version, commit = tc.version, tc.commit
+		if got := versionString(); got != tc.want {
+			t.Errorf("versionString() = %q, want %q", got, tc.want)
+		}
+	}
+	version, commit = "v1.0.0", ""
+	if got := versionString(); !strings.HasPrefix(got, "speths-screens v1.0.0") || !strings.HasSuffix(got, runtime.GOOS+"/"+runtime.GOARCH) {
+		t.Errorf("versionString() without a commit = %q", got)
 	}
 }

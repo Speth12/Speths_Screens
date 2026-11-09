@@ -1,5 +1,7 @@
 # Trying Speth's Screens on a Phoenix Contact WP 6000 panel
 
+> The step-by-step install, update and troubleshooting are in the [install guide](../../docs/install.md#4-install-on-a-wp-6000-panel). This page holds the panel scripts and what was measured on a WP 6101.
+
 Tools used on 2026-11-05 and 2026-11-06 to find out whether the runtime can run on a WP 6101 and show
 its own screen. The findings are in `CLAUDE.md` ("WP 6000 panel test").
 
