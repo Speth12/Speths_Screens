@@ -215,3 +215,98 @@ it("the workspace opens the tab beside the screen, keeps the screen mounted, and
   expect(screen.queryByText(/from 1 datasource/)).toBeNull();
   expect(screen.getByTestId("screen").parentElement!.className).not.toContain("hidden");
 });
+
+// ── Memory variables ────────────────────────────────────────────────────────
+
+/** A project with a memory datasource that has two variables the runtime has not been given yet. */
+const withMemory = (): Project => ({
+  ...base([]),
+  datasources: [
+    { id: "mem", label: "Script state", type: "memory", config: { memoryTags: [{ path: "Virtual_INT", type: "int" }, { path: "Virtual_Real", type: "real" }] } },
+    { id: "plc", label: "PLC", type: "rest", config: {} },
+  ] as unknown as Project["datasources"],
+});
+const memTags = () => ((useProject.getState().project.datasources[0]!.config as { memoryTags: unknown[] }).memoryTags);
+
+it("lists the memory variables the project defines, before the runtime has them", async () => {
+  // The runtime knows the datasource but has no variables for it yet.
+  vi.stubGlobal("fetch", runtime([]));
+  useProject.getState().loadProject(withMemory());
+  render(<VariablesTab />);
+  expect(await screen.findByLabelText("Select Virtual_INT")).toBeTruthy();
+  expect(screen.getByLabelText("Select Virtual_Real")).toBeTruthy();
+  expect(screen.getByText(/4 from 2 datasources/)).toBeTruthy();
+});
+
+it("lists them when the runtime does not answer at all", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+  useProject.getState().loadProject(withMemory());
+  render(<VariablesTab />);
+  expect(await screen.findByLabelText("Select Virtual_INT")).toBeTruthy();
+  expect(screen.getByLabelText("Select Virtual_Real")).toBeTruthy();
+  expect(screen.getByText(/not on the runtime yet/)).toBeTruthy();
+});
+
+it("a memory variable can be given a name like any other, and the node points at it", async () => {
+  vi.stubGlobal("fetch", runtime([]));
+  useProject.getState().loadProject(withMemory());
+  render(<VariablesTab />);
+  await screen.findByLabelText("Select Virtual_INT");
+  fireEvent.click(screen.getByLabelText("Select Virtual_INT"));
+  fireEvent.click(screen.getByText("Add to namespace"));
+  await waitFor(() => expect(nsPaths()).toEqual(["Virtual_INT"]));
+  expect(useProject.getState().project.namespace![0]).toMatchObject({ driverId: "mem", driverAddr: "Virtual_INT" });
+});
+
+it("a node made from a memory datasource also makes the memory variable, with its type, in one step", async () => {
+  vi.stubGlobal("fetch", runtime([]));
+  useProject.getState().loadProject(withMemory());
+  render(<VariablesTab />);
+  await screen.findByLabelText("Select Virtual_INT");
+  fireEvent.click(screen.getByText("+ Node"));
+  fireEvent.change(screen.getByLabelText("Path (dot-separated)"), { target: { value: "Virtual_Var" } });
+  fireEvent.change(screen.getByLabelText("Driver"), { target: { value: "mem" } });
+  fireEvent.change(screen.getByLabelText("Variable type"), { target: { value: "int" } });
+  fireEvent.change(screen.getByLabelText("Starting value"), { target: { value: "5" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  expect(memTags()).toEqual([{ path: "Virtual_INT", type: "int" }, { path: "Virtual_Real", type: "real" }, { path: "Virtual_Var", type: "int", initial: 5 }]);
+  expect(useProject.getState().project.namespace).toEqual([{ path: "Virtual_Var", type: "tag", driverId: "mem", driverAddr: "Virtual_Var", dataType: "int", description: undefined, unit: undefined }]);
+  expect(screen.getByText("Added Virtual_Var: an int memory variable in Script state. Deploy the project to make it live.")).toBeTruthy();
+  expect(screen.queryByText("New node")).toBeNull();
+  // The new variable is in the list at once, without a deploy.
+  expect(await screen.findByLabelText("Select Virtual_Var")).toBeTruthy();
+
+  // One undo takes the node and the variable away together.
+  useProject.getState().undo();
+  expect(memTags()).toHaveLength(2);
+  expect(nsPaths()).toEqual([]);
+});
+
+it("says why when the node's path is taken, and keeps the form open", async () => {
+  vi.stubGlobal("fetch", runtime([]));
+  useProject.getState().loadProject({ ...withMemory(), namespace: [{ path: "Virtual_Var", type: "folder" }] });
+  render(<VariablesTab />);
+  await screen.findByLabelText("Select Virtual_INT");
+  fireEvent.click(screen.getByText("+ Node"));
+  fireEvent.change(screen.getByLabelText("Path (dot-separated)"), { target: { value: "Virtual_Var" } });
+  fireEvent.change(screen.getByLabelText("Driver"), { target: { value: "mem" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(screen.getByRole("status").textContent).toBe("ns:Virtual_Var already exists");
+  expect(screen.getByText("New node")).toBeTruthy();
+  expect(memTags()).toHaveLength(2);
+});
+
+it("a node from another kind of datasource is saved as before, with no memory variable", async () => {
+  vi.stubGlobal("fetch", runtime([]));
+  useProject.getState().loadProject(withMemory());
+  render(<VariablesTab />);
+  await screen.findByLabelText("Select Virtual_INT");
+  fireEvent.click(screen.getByText("+ Node"));
+  fireEvent.change(screen.getByLabelText("Path (dot-separated)"), { target: { value: "Plant.Temp" } });
+  fireEvent.change(screen.getByLabelText("Driver"), { target: { value: "plc" } });
+  fireEvent.change(screen.getByLabelText("Driver address (tag path in datasource)"), { target: { value: "Arp.Plc.Eclr/rTemp" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(nsPaths()).toEqual(["Plant.Temp"]);
+  expect(memTags()).toHaveLength(2);
+});

@@ -13,6 +13,7 @@ import { placeFor } from "@speths-screens/widgets";
 import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
 import { moveNsNode } from "./namespaceOps";
+import { addMemoryVariable as addMemoryVariableTo, type MemoryVariable } from "./memoryVars";
 import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
 
 export type {
@@ -109,6 +110,8 @@ type State = {
   /** Adds or replaces several nodes as one change (one undo step). */
   upsertNamespaceNodes: (nodes: NamespaceNode[]) => void;
   removeNamespaceNode: (path: string) => void;
+  /** Adds a namespace node and, with it, the memory tag it names to a memory datasource, as one change (one undo step). Says why not. */
+  addMemoryVariable: (node: NamespaceNode, variable: MemoryVariable) => { error?: string };
   /** Moves or renames a node (and what is under it) and points every `ns:` use of it at the new path. Says why when it cannot. */
   moveNamespaceNode: (from: string, to: string) => { error?: string };
 
@@ -656,6 +659,13 @@ export const useProject = create<State>((set, get) => {
           : [...existing, node];
         return { project: { ...s.project, namespace: next } };
       });
+    },
+    addMemoryVariable: (node, variable) => {
+      const added = addMemoryVariableTo(get().project, node, variable);
+      if (added.error !== undefined) return { error: added.error };
+      pushHistory();
+      set({ project: added.project });
+      return {};
     },
     upsertNamespaceNodes: (nodes) => {
       if (!nodes.length) return;
