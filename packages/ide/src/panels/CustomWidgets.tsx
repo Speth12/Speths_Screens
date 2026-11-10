@@ -6,15 +6,11 @@ import { manifestFor, type Device } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { SettingsFields } from "./SettingsEditor";
 import { LayoutStrip, PartFlexFields, StackPreview } from "./CustomWidgetStack";
+import { canvasCaption, clampPart, editorCanvas, guideLines, movePartBy, newPartSize, resizePartBy, type EditorCanvas } from "../store/customWidgetCanvas";
 import { CloseIcon, ChevronDownIcon, ChevronRightIcon, EditIcon, WidgetIcon } from "../ui/icons";
 
 const uid = () => `lw-${Math.random().toString(36).slice(2, 8)}`;
 const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
-
-// ── Grid constants ─────────────────────────────────────────────────────────
-const CELL = 72;  // pixels per grid cell in the editor canvas
-const COLS = 12;
-const ROWS = 8;
 
 // Widget types available in the custom widget palette
 const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defaultH: number }[] = [
@@ -36,10 +32,12 @@ const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defa
 // ── Part properties — mini property editor ────────────────────────────
 
 function FpWidgetProps({
-  w, params, onChange, onRemove,
+  w, params, canvas, onChange, onRemove,
 }: {
   w: CustomWidgetPart;
   params: CustomWidgetParam[];
+  /** The box the part is placed in; its position fields are in the box's units. */
+  canvas: EditorCanvas;
   onChange: (patch: Partial<CustomWidgetPart>) => void;
   onRemove: () => void;
 }) {
@@ -53,6 +51,11 @@ function FpWidgetProps({
   const tag = w.bindings?.value ?? "";
   const setTag = (value: string) => onChange({ bindings: { ...w.bindings, value: value || undefined } });
   const manifest = manifestFor(w.type);
+  const unit = canvas.pixel ? "px" : null;
+  const place = (patch: Partial<Pick<CustomWidgetPart, "x" | "y" | "w" | "h">>) => {
+    const { x, y, w: width, h } = clampPart({ ...w, ...patch }, canvas);
+    onChange({ x, y, w: width, h });
+  };
 
   return (
     <div className="space-y-3">
@@ -86,27 +89,27 @@ function FpWidgetProps({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <div className="text-[10px] text-zinc-500 mb-0.5">X (col)</div>
-          <input type="number" min={0} max={COLS - 1} value={w.x}
-            onChange={(e) => onChange({ x: Math.max(0, Math.min(COLS - w.w, Number(e.target.value))) })}
+          <div className="text-[10px] text-zinc-500 mb-0.5">X ({unit ?? "col"})</div>
+          <input type="number" min={0} max={canvas.cols - 1} value={w.x} aria-label="X"
+            onChange={(e) => place({ x: Number(e.target.value) })}
             className={inp} />
         </div>
         <div>
-          <div className="text-[10px] text-zinc-500 mb-0.5">Y (row)</div>
-          <input type="number" min={0} max={ROWS - 1} value={w.y}
-            onChange={(e) => onChange({ y: Math.max(0, Math.min(ROWS - w.h, Number(e.target.value))) })}
+          <div className="text-[10px] text-zinc-500 mb-0.5">Y ({unit ?? "row"})</div>
+          <input type="number" min={0} max={canvas.rows - 1} value={w.y} aria-label="Y"
+            onChange={(e) => place({ y: Number(e.target.value) })}
             className={inp} />
         </div>
         <div>
-          <div className="text-[10px] text-zinc-500 mb-0.5">Width (cols)</div>
-          <input type="number" min={1} max={COLS} value={w.w}
-            onChange={(e) => onChange({ w: Math.max(1, Math.min(COLS - w.x, Number(e.target.value))) })}
+          <div className="text-[10px] text-zinc-500 mb-0.5">Width ({unit ?? "cols"})</div>
+          <input type="number" min={1} max={canvas.cols} value={w.w} aria-label="Width"
+            onChange={(e) => place({ w: Number(e.target.value) })}
             className={inp} />
         </div>
         <div>
-          <div className="text-[10px] text-zinc-500 mb-0.5">Height (rows)</div>
-          <input type="number" min={1} max={ROWS} value={w.h}
-            onChange={(e) => onChange({ h: Math.max(1, Math.min(ROWS - w.y, Number(e.target.value))) })}
+          <div className="text-[10px] text-zinc-500 mb-0.5">Height ({unit ?? "rows"})</div>
+          <input type="number" min={1} max={canvas.rows} value={w.h} aria-label="Height"
+            onChange={(e) => place({ h: Number(e.target.value) })}
             className={inp} />
         </div>
       </div>
@@ -134,31 +137,24 @@ function CustomWidgetEditorModal({
   const [device, setDevice] = useState<Device>("desktop");
   const [selected, setSelected] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  // The box is worked out once, when the editor opens, so it does not change size under a drag.
+  const [canvas] = useState(() => editorCanvas(useProject.getState().project, fp.id, fp.widgets));
 
   // ── Drag to reposition ──────────────────────────────────────────────────
-  const dragState = useRef<{
-    localId: string; startMouseX: number; startMouseY: number;
-    origX: number; origY: number;
-  } | null>(null);
+  const dragState = useRef<{ startMouseX: number; startMouseY: number; start: CustomWidgetPart } | null>(null);
 
   const onWidgetMouseDown = useCallback((e: React.MouseEvent, localId: string) => {
     e.stopPropagation();
     setSelected(localId);
     const w = widgets.find((x) => x.localId === localId);
     if (!w || !canvasRef.current) return;
-    dragState.current = { localId, startMouseX: e.clientX, startMouseY: e.clientY, origX: w.x, origY: w.y };
+    dragState.current = { startMouseX: e.clientX, startMouseY: e.clientY, start: w };
 
     const onMove = (ev: MouseEvent) => {
       if (!dragState.current) return;
-      const dx = Math.round((ev.clientX - dragState.current.startMouseX) / CELL);
-      const dy = Math.round((ev.clientY - dragState.current.startMouseY) / CELL);
-      const { origX, origY } = dragState.current;
-      setWidgets((ws) => ws.map((w) => {
-        if (w.localId !== localId) return w;
-        const nx = Math.max(0, Math.min(COLS - w.w, origX + dx));
-        const ny = Math.max(0, Math.min(ROWS - w.h, origY + dy));
-        return { ...w, x: nx, y: ny };
-      }));
+      const { start, startMouseX, startMouseY } = dragState.current;
+      const { x, y } = movePartBy(start, ev.clientX - startMouseX, ev.clientY - startMouseY, canvas);
+      setWidgets((ws) => ws.map((w) => (w.localId === localId ? { ...w, x, y } : w)));
     };
     const onUp = () => {
       dragState.current = null;
@@ -167,7 +163,7 @@ function CustomWidgetEditorModal({
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-  }, [widgets]);
+  }, [widgets, canvas]);
 
   // ── Resize handle ───────────────────────────────────────────────────────
   const onResizeMouseDown = useCallback((e: React.MouseEvent, localId: string) => {
@@ -175,24 +171,20 @@ function CustomWidgetEditorModal({
     const w = widgets.find((x) => x.localId === localId);
     if (!w) return;
     const startX = e.clientX, startY = e.clientY;
-    const origW = w.w, origH = w.h;
 
     const onMove = (ev: MouseEvent) => {
-      const dw = Math.round((ev.clientX - startX) / CELL);
-      const dh = Math.round((ev.clientY - startY) / CELL);
-      setWidgets((ws) => ws.map((x) => {
-        if (x.localId !== localId) return x;
-        return { ...x, w: Math.max(1, Math.min(COLS - x.x, origW + dw)), h: Math.max(1, Math.min(ROWS - x.y, origH + dh)) };
-      }));
+      const size = resizePartBy(w, ev.clientX - startX, ev.clientY - startY, canvas);
+      setWidgets((ws) => ws.map((x) => (x.localId === localId ? { ...x, w: size.w, h: size.h } : x)));
     };
     const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-  }, [widgets]);
+  }, [widgets, canvas]);
 
   const addWidget = (type: WidgetType, defW: number, defH: number) => {
     const id = uid();
-    setWidgets((ws) => [...ws, { localId: id, type, x: 0, y: 0, w: defW, h: defH, ...(params[0] ? { bindings: { value: `{${params[0].name}}` } } : {}), ...manifestFor(type)?.defaults }]);
+    const size = newPartSize(defW, defH, canvas);
+    setWidgets((ws) => [...ws, { localId: id, type, x: 0, y: 0, w: size.w, h: size.h, ...(params[0] ? { bindings: { value: `{${params[0].name}}` } } : {}), ...manifestFor(type)?.defaults }]);
     setSelected(id);
   };
 
@@ -200,6 +192,7 @@ function CustomWidgetEditorModal({
     setWidgets((ws) => ws.map((w) => w.localId === localId ? { ...w, ...patch } : w));
 
   const selectedWidget = widgets.find((w) => w.localId === selected) ?? null;
+  const guides = guideLines(canvas);
 
   // ── Params bar helpers ──────────────────────────────────────────────────
   const addParam = () => setParams((ps) => [...ps, { name: `param${ps.length + 1}` }]);
@@ -208,7 +201,7 @@ function CustomWidgetEditorModal({
   const removeParam = (i: number) => setParams((ps) => ps.filter((_, j) => j !== i));
 
   return createPortal(
-    <div className="fixed inset-0 bg-zinc-950/98 z-50 flex flex-col" style={{ fontFamily: "ui-monospace, monospace" }}>
+    <div className="fixed inset-0 bg-zinc-950 z-50 flex flex-col" style={{ fontFamily: "ui-monospace, monospace" }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-800 bg-zinc-900 shrink-0">
@@ -276,21 +269,22 @@ function CustomWidgetEditorModal({
         ) : (
         <div className="flex-1 overflow-auto p-6 bg-zinc-950 flex items-start justify-center">
           <div>
-            <div className="text-[9px] text-zinc-600 mb-2 text-center">{COLS} × {ROWS} grid — drag to place</div>
+            <div className="text-[9px] text-zinc-600 mb-2 text-center">{canvasCaption(canvas)}</div>
             <div
               ref={canvasRef}
               className="relative bg-zinc-900/40 border border-zinc-700 rounded-lg overflow-hidden select-none"
-              style={{ width: COLS * CELL, height: ROWS * CELL }}
+              style={{ width: canvas.cols * canvas.unit, height: canvas.rows * canvas.unit }}
               onClick={() => setSelected(null)}
+              data-testid="custom-widget-canvas"
             >
               {/* Grid lines */}
               <svg className="absolute inset-0 pointer-events-none opacity-20"
-                   width={COLS * CELL} height={ROWS * CELL}>
-                {Array.from({ length: COLS + 1 }, (_, i) => (
-                  <line key={`v${i}`} x1={i * CELL} y1={0} x2={i * CELL} y2={ROWS * CELL} stroke="#52525b" strokeWidth={i === 0 || i === COLS ? 1.5 : 0.5} />
+                   width={canvas.cols * canvas.unit} height={canvas.rows * canvas.unit}>
+                {guides.xs.map((x) => (
+                  <line key={`v${x}`} x1={x * canvas.unit} y1={0} x2={x * canvas.unit} y2={canvas.rows * canvas.unit} stroke="#52525b" strokeWidth={x === 0 || x === canvas.cols ? 1.5 : 0.5} />
                 ))}
-                {Array.from({ length: ROWS + 1 }, (_, i) => (
-                  <line key={`h${i}`} x1={0} y1={i * CELL} x2={COLS * CELL} y2={i * CELL} stroke="#52525b" strokeWidth={i === 0 || i === ROWS ? 1.5 : 0.5} />
+                {guides.ys.map((y) => (
+                  <line key={`h${y}`} x1={0} y1={y * canvas.unit} x2={canvas.cols * canvas.unit} y2={y * canvas.unit} stroke="#52525b" strokeWidth={y === 0 || y === canvas.rows ? 1.5 : 0.5} />
                 ))}
               </svg>
 
@@ -306,12 +300,15 @@ function CustomWidgetEditorModal({
                         : "border-zinc-600 bg-zinc-800/50 hover:border-zinc-500"
                     }`}
                     style={{
-                      left:   w.x * CELL + 2,
-                      top:    w.y * CELL + 2,
-                      width:  w.w * CELL - 4,
-                      height: w.h * CELL - 4,
+                      left:   w.x * canvas.unit + 2,
+                      top:    w.y * canvas.unit + 2,
+                      width:  w.w * canvas.unit - 4,
+                      height: w.h * canvas.unit - 4,
                     }}
                     onMouseDown={(e) => onWidgetMouseDown(e, w.localId)}
+                    // The click that ends a press on a part must not reach the canvas, whose click deselects.
+                    onClick={(e) => e.stopPropagation()}
+                    data-part={w.localId}
                   >
                     {/* Type badge */}
                     <div className={`absolute top-1 left-1.5 text-[9px] font-semibold uppercase tracking-wider px-1 rounded ${
@@ -376,6 +373,7 @@ function CustomWidgetEditorModal({
               <FpWidgetProps
                 w={selectedWidget}
                 params={params}
+                canvas={canvas}
                 onChange={(patch) => updateWidget(selectedWidget.localId, patch)}
                 onRemove={() => {
                   setWidgets((ws) => ws.filter((x) => x.localId !== selectedWidget.localId));
