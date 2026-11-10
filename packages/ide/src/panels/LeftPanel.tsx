@@ -5,16 +5,10 @@ import { AlarmBadge } from "./AlarmBadge";
 import { AddDatasourceModal } from "./AddDatasourceModal";
 import { Users } from "./Users";
 import { ChromeSettings } from "./ChromeSettings";
-import { generateStandaloneHtml, ideLook } from "../store/exportHtml";
-import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertPinModal, needsCertPin } from "./CertCheck";
 import { ALARMS_TAB, CUSTOM_WIDGETS_TAB, RECIPES_TAB, SCRIPTS_TAB, datasourceTab, PAGES_TAB, useWorkspace } from "../store/workspace";
-import { MCPModal } from "./MCPModal";
-import { downloadGitFormat, importGitFormat, unpackGitFiles } from "../store/gitFormat";
-import { openProject, openSummary } from "../store/openProject";
-import { StatusMessage } from "./StatusMessage";
 import { convertWidget } from "../store/presets";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
@@ -113,12 +107,10 @@ export function LeftPanel({ width }: { width?: number }) {
   const openTab = useWorkspace((s) => s.open);
   const openVariables = useWorkspace((s) => s.openVariables);
 
-  const [showMCP,    setShowMCP]    = useState(false);
   const [pinDS,      setPinDS]      = useState<Datasource | null>(null);
   const [showAddDS,  setShowAddDS]  = useState(false);
   const [renaming,   setRenaming]   = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  const [deployMsg,  setDeployMsg]  = useState("");
   const [autosaved,  setAutosaved]  = useState(false);
 
   const dsStatuses = useDSStatus(project.datasources.map((d) => d.id));
@@ -140,39 +132,6 @@ export function LeftPanel({ width }: { width?: number }) {
     loadProject({ ...p, ...patch });
   };
 
-  // A static snapshot of every page, with the values the IDE has now.
-  const exportHtml = async () => {
-    const html = await generateStandaloneHtml(project, { ...ideLook(project.theme), tag: (p) => tagStoreClient.get(p), exportedAt: new Date() });
-    const blob = new Blob([html], { type: "text/html" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url; a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.html`;
-    a.click(); URL.revokeObjectURL(url);
-  };
-
-  const importGit = () => {
-    const input = document.createElement("input");
-    input.type = "file"; input.accept = ".json";
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const raw = JSON.parse(reader.result as string) as Record<string, unknown>;
-          let incoming: unknown = raw;
-          if (raw._gitFormat) {
-            incoming = importGitFormat(unpackGitFiles(raw._files as Record<string, unknown>));
-          }
-          const o = openProject(incoming);
-          if (o.ok) loadProject(o.project);
-          setDeployMsg(openSummary(file.name, o));
-        } catch (e) { alert(`Import failed: ${(e as Error).message}`); }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
 
   const startRename = (id: string, name: string) => { setRenaming(id); setRenameDraft(name); };
   const commitRename = () => {
@@ -329,13 +288,6 @@ export function LeftPanel({ width }: { width?: number }) {
 
         {/* Project properties: the project's settings, its users and audit trail, and getting it in and out */}
         <TreeSection label="Project properties">
-          <div className="flex flex-wrap gap-1 px-3 py-2 border-b border-zinc-800/60">
-            <button onClick={exportHtml} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export a snapshot of every page as one HTML file (no live values)">Export HTML</button>
-            <button onClick={() => downloadGitFormat(project)} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Export the project as the files a Git repository holds">Export Git</button>
-            <button onClick={importGit} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Import a project file or a Git export">Import JSON</button>
-            <button onClick={() => setShowMCP(true)} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400" title="Connect an AI assistant to this runtime">MCP setup</button>
-            {deployMsg && <StatusMessage text={deployMsg} className="w-full text-[10px] text-zinc-400 px-1" />}
-          </div>
           <div className="ml-3 border-l border-zinc-800">
           <TreeSection label="Settings">
           <div className="p-3 space-y-4">
@@ -387,7 +339,6 @@ export function LeftPanel({ width }: { width?: number }) {
           onAdd={(ds) => { addDatasource(ds); setShowAddDS(false); openTab(datasourceTab(ds.id, ds.label)); }}
         />
       )}
-      {showMCP && <MCPModal onClose={() => setShowMCP(false)} />}
       {pinDS && (
         <CertPinModal
           ds={pinDS}

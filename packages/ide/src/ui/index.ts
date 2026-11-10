@@ -4,6 +4,8 @@ export { Button, IconButton, FOCUS_RING, type ButtonVariant, type ButtonSize } f
 export { Field, Input, Select, Checkbox } from "./Field";
 export { Dialog } from "./Dialog";
 export { Menu, type MenuItem } from "./Menu";
+export { MenuBar, type MenuSpec } from "./MenuBar";
+export { Segmented, type SegmentOption } from "./Segmented";
 export { Tabs, type TabItem } from "./Tabs";
 export { Tooltip } from "./Tooltip";
 export { Badge, SectionHeader, type BadgeTone } from "./Badge";

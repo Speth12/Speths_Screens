@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { Badge, Button, Checkbox, Dialog, Field, IconButton, Input, Menu, SectionHeader, Select, Tabs, type MenuItem } from "./index";
+import { Badge, Button, Checkbox, Dialog, Field, IconButton, Input, Menu, MenuBar, SectionHeader, Segmented, Select, Tabs, type MenuItem } from "./index";
 import { EmptyState, SelectList, TabHeader } from "./Layout";
 
 afterEach(cleanup);
@@ -401,5 +401,98 @@ describe("Layout", () => {
     unmount();
     render(<Chooser start={null} />);
     expect(options().map((o) => o.tabIndex)).toEqual([0, -1, -1]);
+  });
+});
+
+describe("MenuBar", () => {
+  const ran: string[] = [];
+  const bar = () => render(
+    <MenuBar label="Main menu" menus={[
+      { label: "File", items: [{ label: "New", onSelect: () => ran.push("new") }] },
+      { label: "Edit", items: [{ label: "Undo", onSelect: () => ran.push("undo") }, { label: "Redo", disabled: true, onSelect: () => ran.push("redo") }] },
+      { label: "View", items: [{ label: "Zoom", onSelect: () => ran.push("zoom") }] },
+    ]} />,
+  );
+  const heading = (name: string) => screen.getByRole("button", { name });
+  const openMenu = () => screen.queryByRole("menu")?.getAttribute("aria-label") ?? null;
+
+  beforeEach(() => { ran.length = 0; });
+
+  it("is a named menubar with a heading for each menu", () => {
+    bar();
+    expect(within(screen.getByRole("menubar", { name: "Main menu" })).getAllByRole("button").map((b) => b.textContent)).toEqual(["File", "Edit", "View"]);
+    expect(openMenu()).toBeNull();
+  });
+
+  it("opens one menu at a time", () => {
+    bar();
+    fireEvent.click(heading("File"));
+    expect(openMenu()).toBe("File");
+    fireEvent.click(heading("Edit"));
+    expect(openMenu()).toBe("Edit");
+    expect(screen.getAllByRole("menu")).toHaveLength(1);
+  });
+
+  it("moving the pointer to another heading opens it while a menu is open, and does nothing when none is", () => {
+    bar();
+    fireEvent.mouseEnter(heading("Edit").parentElement!.parentElement!);
+    expect(openMenu()).toBeNull();
+    fireEvent.click(heading("File"));
+    fireEvent.mouseEnter(heading("View").parentElement!.parentElement!);
+    expect(openMenu()).toBe("View");
+  });
+
+  it("Right and Left move to the next and previous menu, round the ends", () => {
+    bar();
+    fireEvent.click(heading("File"));
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowRight" });
+    expect(openMenu()).toBe("Edit");
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowLeft" });
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowLeft" });
+    expect(openMenu()).toBe("View");
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "ArrowRight" });
+    expect(openMenu()).toBe("File");
+  });
+
+  it("a command runs and closes the menu; Esc closes it with nothing run", () => {
+    bar();
+    fireEvent.click(heading("Edit"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Undo" }));
+    expect(ran).toEqual(["undo"]);
+    expect(openMenu()).toBeNull();
+    fireEvent.click(heading("Edit"));
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    expect(openMenu()).toBeNull();
+    expect(ran).toEqual(["undo"]);
+  });
+
+  it("a click elsewhere closes it", () => {
+    bar();
+    fireEvent.click(heading("File"));
+    fireEvent.mouseDown(document.body);
+    expect(openMenu()).toBeNull();
+  });
+});
+
+describe("Segmented", () => {
+  function Pick({ onPick }: { onPick?: (v: string) => void }) {
+    const [v, setV] = useState("b");
+    return <Segmented label="Size" value={v} onChange={(x) => { setV(x); onPick?.(x); }} options={[{ id: "a", label: "Small" }, { id: "b", label: "Medium", title: "The middle one" }, { id: "c", label: "Large" }]} />;
+  }
+  const pressed = () => screen.getAllByRole("button").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.textContent);
+
+  it("is a named group with the current choice pressed", () => {
+    render(<Pick />);
+    expect(screen.getByRole("group", { name: "Size" })).toBeTruthy();
+    expect(pressed()).toEqual(["Medium"]);
+    expect(screen.getByRole("button", { name: "Medium" }).getAttribute("title")).toBe("The middle one");
+  });
+
+  it("a click chooses one", () => {
+    const onPick = vi.fn();
+    render(<Pick onPick={onPick} />);
+    fireEvent.click(screen.getByRole("button", { name: "Large" }));
+    expect(pressed()).toEqual(["Large"]);
+    expect(onPick).toHaveBeenCalledWith("c");
   });
 });
