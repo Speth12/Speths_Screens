@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
 import { wsEventsUrl } from "../store/runtimeTarget";
 import type { CanvasResolution } from "@speths-screens/shared-types";
+import { CloseIcon, BackspaceIcon } from "../ui/icons";
 
 const DYNAMIC: CanvasResolution = { type: "dynamic" };
 
@@ -138,14 +139,15 @@ export function PreviewMode({ onExit }: Props) {
             {dots.map((d, i) => <span key={i}>{d}</span>)}
           </div>
           <div className="grid grid-cols-3 gap-2 w-full">
-            {["1","2","3","4","5","6","7","8","9","","0","⌫"].map((k, i) => (
+            {["1","2","3","4","5","6","7","8","9","","0","back"].map((k, i) => (
               k === "" ? <div key={i} /> :
               <button
                 key={i}
-                onClick={() => k === "⌫" ? pinBackspace() : pinAppend(k)}
+                aria-label={k === "back" ? "Backspace" : undefined}
+                onClick={() => k === "back" ? pinBackspace() : pinAppend(k)}
                 className="py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-lg font-medium transition-all"
               >
-                {k}
+                {k === "back" ? <BackspaceIcon size={20} /> : k}
               </button>
             ))}
           </div>
@@ -219,7 +221,7 @@ export function PreviewMode({ onExit }: Props) {
             onClick={onExit}
             className="text-[11px] px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium"
           >
-            ✕ Exit Preview
+            <CloseIcon size={12} /> Exit Preview
           </button>
         </div>
       </div>

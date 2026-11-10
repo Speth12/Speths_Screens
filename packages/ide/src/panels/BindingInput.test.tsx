@@ -28,7 +28,7 @@ describe("BindingInput", () => {
     load();
     const onChange = vi.fn();
     render(<BindingInput value="plc:rTemp" onChange={onChange} />);
-    fireEvent.click(screen.getByText("◆ use ns:plant.temp"));
+    fireEvent.click(screen.getByText("use ns:plant.temp"));
     expect(onChange).toHaveBeenLastCalledWith("ns:plant.temp");
   });
 
@@ -37,7 +37,7 @@ describe("BindingInput", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
     const onChange = vi.fn();
     render(<BindingInput value="plc:Arp.Plc.Eclr/xRun" onChange={onChange} />);
-    fireEvent.click(screen.getByText("⊕ add to namespace as plc.xRun"));
+    fireEvent.click(screen.getByText("add to namespace as plc.xRun"));
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith("ns:plc.xRun"));
     expect(useProject.getState().project.namespace).toContainEqual({ path: "plc.xRun", type: "tag", driverId: "plc", driverAddr: "Arp.Plc.Eclr/xRun" });
   });

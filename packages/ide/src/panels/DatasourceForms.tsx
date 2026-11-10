@@ -3,6 +3,7 @@
 import type { CalculatedTag, MemoryTag } from "@speths-screens/shared-types";
 import { compile } from "@speths-screens/expr";
 import { typedInitial } from "./typedInitial";
+import { CloseIcon } from "../ui/icons";
 
 /** A memory tag as the form edits it: the initial value is text until saved. */
 export type MemoryRow = { path: string; type: MemoryTag["type"]; initial: string; retain: boolean };
@@ -40,7 +41,7 @@ export function MemoryRowsEditor({ rows, onChange, maxHeight = "11rem", wide = f
               <label className="flex items-center gap-1 text-[10px] text-zinc-400 shrink-0" title="Keep the value across a runtime restart">
                 <input type="checkbox" checked={row.retain} onChange={(e) => set({ retain: e.target.checked })} />keep
               </label>
-              <button onClick={() => onChange(rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1" aria-label={`remove memory tag ${i + 1}`}>×</button>
+              <button onClick={() => onChange(rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1" aria-label={`remove memory tag ${i + 1}`}><CloseIcon size={14} /></button>
             </div>
           );
         })}
@@ -65,7 +66,7 @@ export function CalculatedRowsEditor({ rows, onChange, maxHeight = "11rem", wide
                 <input aria-label={`computed tag ${i + 1} name`} value={row.path} onChange={(e) => onChange(rows.map((r, j) => (j === i ? { ...r, path: e.target.value } : r)))} placeholder="tagName" className={`${wide ? "w-56" : "w-24"} shrink-0 ${cell}`} />
                 <span className="text-zinc-600 text-[10px] shrink-0">=</span>
                 <input aria-label={`computed tag ${i + 1} expression`} value={row.expr} onChange={(e) => onChange(rows.map((r, j) => (j === i ? { ...r, expr: e.target.value } : r)))} placeholder="{ds:path} * 9/5 + 32" className={`flex-1 min-w-0 ${cell}`} />
-                <button onClick={() => onChange(rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1" aria-label={`remove computed tag ${i + 1}`}>×</button>
+                <button onClick={() => onChange(rows.filter((_, j) => j !== i))} className="text-zinc-600 hover:text-red-400 text-xs px-1" aria-label={`remove computed tag ${i + 1}`}><CloseIcon size={14} /></button>
               </div>
               {check && !check.ok && <div className="text-[10px] text-red-600 pl-[6.5rem] mt-0.5">{check.error}</div>}
             </div>

@@ -3,6 +3,7 @@ import { useProject } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
 import { addToNamespace } from "../store/tagPaths";
+import { CloseIcon, CheckIcon, FailIcon, ChevronDownIcon, ChevronRightIcon } from "../ui/icons";
 
 // ── Shared types ───────────────────────────────────────────────────────────
 
@@ -145,7 +146,7 @@ export function TagScannerModal({
               {!isModbus && !loading && !error && ` · ${tags.length} tag${tags.length !== 1 ? "s" : ""} in ${groupKeys.length} group${groupKeys.length !== 1 ? "s" : ""}`}
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-xl leading-none"><CloseIcon size={14} /></button>
         </div>
 
         {/* Body */}
@@ -156,7 +157,7 @@ export function TagScannerModal({
             </div>
             {results.map(r => (
               <div key={r.path} className="flex items-center gap-2 text-[11px]">
-                <span className={r.ok ? "text-emerald-400" : "text-red-400"}>{r.ok ? "✓" : "✗"}</span>
+                <span className={r.ok ? "text-emerald-400" : "text-red-400"}>{r.ok ? <CheckIcon size={12} /> : <FailIcon size={12} />}</span>
                 <span className="font-mono text-zinc-300 flex-1 truncate">{r.path}</span>
                 {!r.ok && <span className="text-red-400 text-[10px] truncate max-w-[180px]">{r.msg}</span>}
               </div>
@@ -182,8 +183,8 @@ export function TagScannerModal({
                     placeholder="name"
                     className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-600"
                   />
-                  <button onClick={() => setMbEntries(rows => rows.filter((_, j) => j !== i))}
-                    className="text-zinc-600 hover:text-red-400 text-xs shrink-0">×</button>
+                  <button aria-label="Remove register" onClick={() => setMbEntries(rows => rows.filter((_, j) => j !== i))}
+                    className="text-zinc-600 hover:text-red-400 text-xs shrink-0"><CloseIcon size={14} /></button>
                 </div>
               ))}
             </div>
@@ -231,7 +232,7 @@ export function TagScannerModal({
                     {/* Group header */}
                     <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 cursor-pointer select-none"
                       onClick={() => toggleCollapse(gKey)}>
-                      <span className="text-[10px] text-zinc-500 w-3 shrink-0">{isCollapsed ? "▸" : "▾"}</span>
+                      <span className="text-[10px] text-zinc-500 w-3 shrink-0">{isCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />}</span>
                       {/* Group checkbox */}
                       <div
                         className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-colors ${
@@ -239,7 +240,7 @@ export function TagScannerModal({
                         }`}
                         onClick={e => { e.stopPropagation(); toggleGroup(gKey); }}
                       >
-                        {allGroupSelected && <span className="text-[8px] text-white font-bold">✓</span>}
+                        {allGroupSelected && <CheckIcon size={10} strokeWidth={3} className="text-white" />}
                         {someGroupSelected && <span className="text-[8px] text-blue-400 font-bold">–</span>}
                       </div>
                       <span className="text-[11px] font-medium text-zinc-300 flex-1 truncate">{shortLabel(gKey)}</span>
@@ -267,7 +268,7 @@ export function TagScannerModal({
                                 <div className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-colors ${
                                   isSelected ? "bg-blue-600 border-blue-500" : "border-zinc-600"
                                 }`}>
-                                  {isSelected && <span className="text-[8px] text-white font-bold">✓</span>}
+                                  {isSelected && <CheckIcon size={10} strokeWidth={3} className="text-white" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-[11px] text-zinc-200 truncate font-medium">{shortName}</div>

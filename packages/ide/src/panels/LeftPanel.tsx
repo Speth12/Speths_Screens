@@ -21,6 +21,7 @@ import { StatusMessage } from "./StatusMessage";
 import { convertWidget } from "../store/presets";
 import { apiBase } from "../store/runtimeTarget";
 import { authHeader } from "../store/runtimeAuth";
+import { CloseIcon, CheckIcon, WarningIcon, ChevronDownIcon, ChevronRightIcon, OpenTabIcon } from "../ui/icons";
 
 type DSStatus = "connected" | "disconnected" | "unknown";
 
@@ -67,7 +68,7 @@ function TreeSection({
         className="flex items-center gap-1.5 px-3 py-1.5 cursor-pointer select-none hover:bg-zinc-800/30 group"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="text-zinc-600 text-[9px] w-3 shrink-0">{open ? "▾" : "▸"}</span>
+        <span className="text-zinc-600 text-[9px] w-3 shrink-0">{open ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}</span>
         <span
           className={`text-[10px] uppercase tracking-wider font-medium flex-1 ${onOpen ? "text-zinc-300 hover:text-blue-500 hover:underline" : "text-zinc-400"}`}
           onClick={onOpen ? (e) => { e.stopPropagation(); onOpen(); } : undefined}
@@ -97,7 +98,7 @@ function TreeLink({ label, count, onOpen }: { label: string; count?: number; onO
       <span className="text-zinc-600 text-[9px] w-3 shrink-0">▪</span>
       <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium flex-1">{label}</span>
       {count !== undefined && count > 0 && <span className="text-[9px] text-zinc-600 bg-zinc-800 rounded px-1.5 py-0.5">{count}</span>}
-      <span className="text-zinc-600 text-[10px]" aria-hidden>↗</span>
+      <OpenTabIcon size={12} className="text-zinc-600" />
     </button>
   );
 }
@@ -198,7 +199,7 @@ export function LeftPanel({ width }: { width?: number }) {
         </div>
         <div className="flex items-center justify-between min-h-[14px]">
           {autosaved
-            ? <span className="text-[9px] text-emerald-500">✓ Autosaved</span>
+            ? <span className="text-[9px] text-emerald-500"><CheckIcon size={10} /> Autosaved</span>
             : <span className="text-[9px] text-zinc-600">autosave on</span>
           }
         </div>
@@ -252,7 +253,7 @@ export function LeftPanel({ width }: { width?: number }) {
                   onClick={(e) => { e.stopPropagation(); if (project.pages.length > 1) removePage(pg.id); }}
                   className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 text-[11px] shrink-0 transition-opacity"
                   title="Remove page"
-                >×</button>
+                ><CloseIcon size={14} /></button>
               </div>
             ))}
           </div>
@@ -294,18 +295,18 @@ export function LeftPanel({ width }: { width?: number }) {
                       className="text-amber-400 hover:text-amber-300 text-[10px] shrink-0"
                       title="The server's certificate is not checked. Click to pin it."
                       aria-label={`Pin the certificate of ${d.label}`}
-                    >⚠</button>
+                    ><WarningIcon size={14} /></button>
                   )}
                   <button
                     onClick={() => openVariables(d.id)}
                     className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-blue-400 text-[10px] shrink-0 transition-opacity"
-                    title="Browse this datasource's variables"
-                  >⊕</button>
+                    title="Browse this datasource's variables" aria-label={`Browse the variables of ${d.label}`}
+                  ><OpenTabIcon size={14} /></button>
                   <button
                     onClick={() => removeDatasource(d.id)}
                     className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 text-[11px] shrink-0 transition-opacity"
-                    title="Remove datasource"
-                  >×</button>
+                    title="Remove datasource" aria-label={`Remove ${d.label}`}
+                  ><CloseIcon size={14} /></button>
                 </div>
               );
             })}

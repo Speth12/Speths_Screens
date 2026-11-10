@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useProject } from "../store/projectStore";
 import { useTag } from "../hooks/useTag";
 import { addToNamespace, nsNodeFor, nsSuggestions, suggestNsPath } from "../store/tagPaths";
+import { TagIcon, AddIcon } from "../ui/icons";
 
 const qualityColor: Record<string, string> = {
   Good: "text-emerald-400", Bad: "text-red-400", Uncertain: "text-amber-400",
@@ -72,7 +73,7 @@ export function BindingInput({
           onClick={() => onChange(`ns:${twin.path}`)}
           className="mt-0.5 text-[10px] text-emerald-400 hover:text-emerald-300"
           title="This variable is in the namespace; bind it by its namespace path"
-        >◆ use ns:{twin.path}</button>
+        ><TagIcon size={12} /> use ns:{twin.path}</button>
       )}
       {addAs && ds && (
         <button
@@ -82,7 +83,7 @@ export function BindingInput({
           }}
           className="mt-0.5 text-[10px] text-zinc-400 hover:text-blue-300"
           title="Add this variable to the namespace and bind it by its namespace path"
-        >⊕ add to namespace as {addAs}</button>
+        ><AddIcon size={12} /> add to namespace as {addAs}</button>
       )}
       {showDrop && (
         <div className="absolute left-0 right-0 top-full mt-0.5 z-50 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl max-h-48 overflow-y-auto">
@@ -96,7 +97,7 @@ export function BindingInput({
               }}
               className="w-full text-left px-3 py-1.5 hover:bg-zinc-700 flex items-center gap-2 min-w-0"
             >
-              <span className="text-emerald-400 text-[10px] shrink-0">◆</span>
+              <TagIcon size={12} className="text-emerald-400" />
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] text-zinc-100 font-mono truncate">{n.path}</div>
                 {(n.driverId || n.description) && (

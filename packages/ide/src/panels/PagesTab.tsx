@@ -7,6 +7,7 @@ import { newWidgetId, useProject } from "../store/projectStore";
 import { TemplateModal, type Template } from "./PageTemplates";
 import { pageSummary, type PageSummary } from "../store/usage";
 import { SCREEN_TAB, useWorkspace } from "../store/workspace";
+import { ChevronDownIcon, ChevronRightIcon, ChevronLeftIcon, DeleteIcon } from "../ui/icons";
 
 // The colour of a widget in a thumbnail, by type.
 const TYPE_COLOR: Record<string, string> = {
@@ -96,7 +97,7 @@ function PageCard({ page, index, count, active, groups, summary, pixel }: {
           </label>
         </div>
 
-        <button onClick={() => setMore((m) => !m)} className="text-left text-[10px] text-zinc-500 hover:text-zinc-300">{more ? "▾" : "▸"} What is on it</button>
+        <button onClick={() => setMore((m) => !m)} className="text-left text-[10px] text-zinc-500 hover:text-zinc-300">{more ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />} What is on it</button>
         {more && (
           <div className="text-[11px] space-y-1.5">
             <div className="flex flex-wrap gap-1">{summary.byType.map(([t, n]) => <Badge key={t}>{n} {t}</Badge>)}</div>
@@ -114,15 +115,15 @@ function PageCard({ page, index, count, active, groups, summary, pixel }: {
           <button className={btn} onClick={() => setRenaming(true)}>Rename</button>
           <button className={btn} onClick={() => duplicatePage(page.id)} title="Make a copy after this page">Copy</button>
           <div className="flex-1" />
-          <button className={btn} disabled={index === 0} onClick={() => movePage(page.id, -1)} aria-label={`Move ${page.name} earlier`} title="Earlier in the navigation">◀</button>
-          <button className={btn} disabled={index === count - 1} onClick={() => movePage(page.id, 1)} aria-label={`Move ${page.name} later`} title="Later in the navigation">▶</button>
+          <button className={btn} disabled={index === 0} onClick={() => movePage(page.id, -1)} aria-label={`Move ${page.name} earlier`} title="Earlier in the navigation"><ChevronLeftIcon size={14} /></button>
+          <button className={btn} disabled={index === count - 1} onClick={() => movePage(page.id, 1)} aria-label={`Move ${page.name} later`} title="Later in the navigation"><ChevronRightIcon size={14} /></button>
           {confirm ? (
             <>
               <button className={`${btn} !bg-red-700 !text-white`} onClick={() => removePage(page.id)}>Delete</button>
               <button className={btn} onClick={() => setConfirm(false)}>Keep</button>
             </>
           ) : (
-            <button className={btn} disabled={count <= 1} onClick={() => setConfirm(true)} aria-label={`Delete ${page.name}`} title={count <= 1 ? "A project needs a page" : "Delete this page"}>×</button>
+            <button className={btn} disabled={count <= 1} onClick={() => setConfirm(true)} aria-label={`Delete ${page.name}`} title={count <= 1 ? "A project needs a page" : "Delete this page"}><DeleteIcon size={14} /></button>
           )}
         </div>
       </div>

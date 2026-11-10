@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useProject, type Recipe, type RecipeEntry } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
 import { BindingInput } from "./BindingInput";
+import { CloseIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon } from "../ui/icons";
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
@@ -108,10 +109,10 @@ export function Recipes() {
               {/* Recipe header row */}
               <div className="flex items-center gap-2 px-2 py-1.5 bg-zinc-900/60">
                 <button
-                  onClick={() => setExpandedId(expanded ? null : rec.id)}
+                  onClick={() => setExpandedId(expanded ? null : rec.id)} aria-expanded={expanded} aria-label={expanded ? "Hide the writes" : "Show the writes"}
                   className="text-zinc-400 hover:text-zinc-200 text-[10px] w-3 shrink-0"
                 >
-                  {expanded ? "▾" : "▸"}
+                  {expanded ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
                 </button>
                 <input
                   value={rec.name}
@@ -129,13 +130,13 @@ export function Recipes() {
                     : "bg-blue-600 hover:bg-blue-500 text-white"
                   }`}
                 >
-                  {state === "busy" ? "…" : state === "ok" ? "✓" : state === "err" ? "!" : "Apply"}
+                  {state === "busy" ? "…" : state === "ok" ? <CheckIcon size={12} /> : state === "err" ? "!" : "Apply"}
                 </button>
                 <button
-                  onClick={() => removeRecipe(rec.id)}
+                  onClick={() => removeRecipe(rec.id)} aria-label={`Delete ${rec.name}`}
                   className="text-zinc-600 hover:text-red-400 text-xs shrink-0"
                 >
-                  ×
+                  <CloseIcon size={14} />
                 </button>
               </div>
 
@@ -179,10 +180,10 @@ export function Recipes() {
                           className={`${inp} w-20 font-mono`}
                         />
                         <button
-                          onClick={() => removeEntry(rec.id, i)}
+                          onClick={() => removeEntry(rec.id, i)} aria-label="Remove write"
                           className="text-zinc-600 hover:text-red-400 text-xs shrink-0"
                         >
-                          ×
+                          <CloseIcon size={14} />
                         </button>
                       </div>
                     ))}

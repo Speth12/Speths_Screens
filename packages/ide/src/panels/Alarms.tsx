@@ -7,6 +7,7 @@ import { apiFetch, authHeader, getToken } from "../store/runtimeAuth";
 import { applyAlarmMessage } from "../store/alarmMessages";
 import { useClientAlarms } from "../store/alarmEngine";
 import { BindingInput } from "./BindingInput";
+import { CloseIcon, WarningIcon, RefreshIcon } from "../ui/icons";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -167,9 +168,9 @@ function AlarmHistory() {
             </button>
           ))}
         </div>
-        <button onClick={load} disabled={loading}
+        <button onClick={load} disabled={loading} aria-label="Refresh" title="Refresh"
           className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">
-          {loading ? "…" : "↺"}
+          {loading ? "…" : <RefreshIcon size={12} />}
         </button>
       </div>
 
@@ -305,7 +306,7 @@ export function Alarms() {
                       <div className="text-[10px] text-zinc-500 font-mono truncate">{r.expr}</div>
                     </div>
                     <button onClick={() => setEditId(r.id)} className="text-[10px] text-zinc-600 hover:text-zinc-300 opacity-0 group-hover:opacity-100">edit</button>
-                    <button onClick={() => removeAlarmRule(r.id)} className="text-[10px] text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100">×</button>
+                    <button onClick={() => removeAlarmRule(r.id)} aria-label={`Remove ${r.name}`} className="text-[10px] text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100"><CloseIcon size={14} /></button>
                   </div>
                 )
               )}
@@ -415,7 +416,7 @@ export function AlarmBadge() {
       : worstSeverity === "warning" ? "bg-amber-700 text-white"
       : "bg-blue-700 text-white"
     }`}>
-      ⚠ {activeCount} alarm{activeCount !== 1 ? "s" : ""}
+      <WarningIcon size={12} /> {activeCount} alarm{activeCount !== 1 ? "s" : ""}
     </div>
   );
 }

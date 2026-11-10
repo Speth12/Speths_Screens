@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Gallery, MANIFESTS, THEMES, galleryInsert, type WidgetManifest } from "@speths-screens/widgets";
 import { useProject, newWidgetId, type Widget } from "../store/projectStore";
 import { instantiatePreset } from "../store/presets";
+import { CloseIcon } from "../ui/icons";
 
 /** Drag data of a gallery cell: the widget type. */
 export const GALLERY_DRAG = "text/x-gallery-type";
@@ -46,7 +47,7 @@ export function GalleryPanel({ onClose }: { onClose: () => void }) {
           <span className="font-mono w-8 text-zinc-200">{slider}</span>
         </label>
         <span className="text-[10px] text-zinc-500">click a cell to add it to the page, or drag it onto the canvas</span>
-        <button aria-label="Close gallery" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1">×</button>
+        <button aria-label="Close gallery" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1"><CloseIcon size={14} /></button>
       </div>
       <div className="flex-1 overflow-auto" onClick={(e) => {
         const cell = (e.target as HTMLElement).closest<HTMLElement>("[data-testid^='gallery-']");

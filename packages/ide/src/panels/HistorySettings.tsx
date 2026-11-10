@@ -1,6 +1,7 @@
 // History settings: what the runtime's historian stores and for how long
 // (the project's "historian" section).
 import type { HistorianSettings, HistorianTagRule } from "@speths-screens/shared-types";
+import { CloseIcon } from "../ui/icons";
 
 const inp = "bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
 
@@ -59,7 +60,7 @@ export function HistorySettings({ value, onChange }: {
               store
             </label>
             <button aria-label={`Remove rule ${i + 1}`} onClick={() => set({ tags: tags.filter((_, j) => j !== i) })}
-              className="text-zinc-500 hover:text-red-400 text-xs px-1">×</button>
+              className="text-zinc-500 hover:text-red-400 text-xs px-1"><CloseIcon size={14} /></button>
           </div>
         ))}
         <button onClick={() => set({ tags: [...tags, { path: "" }] })}

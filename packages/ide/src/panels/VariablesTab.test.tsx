@@ -6,6 +6,9 @@ import { Workspace } from "./Workspace";
 import { useProject } from "../store/projectStore";
 import { SCREEN_TAB, VARIABLES_TAB, useWorkspace } from "../store/workspace";
 
+/** A node of the namespace tree, by its name (the variable list shows names too). */
+const treeNode = (name: string) => screen.getByText(name, { selector: "[title='Double-click to rename']" });
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -144,12 +147,12 @@ it("renaming a node by double-click follows its uses, and says why when it canno
   useProject.getState().updateWidget("p1", "g1", { bindings: { value: "ns:temp" } });
   render(<VariablesTab />);
   await screen.findByText("Arp.Plc.Eclr/xRun");
-  fireEvent.doubleClick(screen.getByText("temp"));
+  fireEvent.doubleClick(treeNode("temp"));
   fireEvent.change(screen.getByLabelText("New name"), { target: { value: "taken" } });
   fireEvent.keyDown(screen.getByLabelText("New name"), { key: "Enter" });
   expect(screen.getByRole("status").textContent).toMatch(/already exists/);
   expect(gaugeValue()).toBe("ns:temp");
-  fireEvent.doubleClick(screen.getByText("temp"));
+  fireEvent.doubleClick(treeNode("temp"));
   fireEvent.change(screen.getByLabelText("New name"), { target: { value: "Temperature" } });
   fireEvent.keyDown(screen.getByLabelText("New name"), { key: "Enter" });
   expect(gaugeValue()).toBe("ns:Temperature");
@@ -161,7 +164,7 @@ it("deleting a node says how many uses it has first", async () => {
   useProject.getState().updateWidget("p1", "g1", { bindings: { value: "ns:temp" } });
   render(<VariablesTab />);
   await screen.findByText("Arp.Plc.Eclr/xRun");
-  fireEvent.click(screen.getAllByText("temp")[0]!);
+  fireEvent.click(treeNode("temp"));
   fireEvent.click(screen.getByText("Delete"));
   expect(screen.getByText("Delete (1 uses)?")).toBeTruthy();
   fireEvent.click(screen.getAllByText("Delete")[0]!);

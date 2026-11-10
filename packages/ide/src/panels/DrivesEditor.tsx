@@ -8,6 +8,7 @@ import { DRIVEN_KIND, applyTransform, suit } from "@speths-screens/widgets";
 import { useTags } from "../hooks/useTags";
 import type { TagState } from "../store/tagStoreClient";
 import { BindingInput } from "./BindingInput";
+import { CloseIcon } from "../ui/icons";
 
 /** A transform value: a color, text, number or flag (schema TransformValue). */
 type TransformValue = string | number | boolean;
@@ -85,7 +86,7 @@ function DriveCard({ prop, d, valueTag, onChange }: { prop: string; d: Drive; va
     <div className="rounded border border-zinc-800 bg-zinc-900/50 p-2 space-y-1.5" data-testid={`drive-${prop}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono text-zinc-200">{prop}</span>
-        <button aria-label={`Stop driving ${prop}`} onClick={() => onChange(undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
+        <button aria-label={`Stop driving ${prop}`} onClick={() => onChange(undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1"><CloseIcon size={14} /></button>
       </div>
       <input aria-label={`${prop} expression`} value={d.expr} placeholder="{ns:Tank1/Level} > 80"
         onChange={(e) => onChange({ ...d, expr: e.target.value })} className={mono} />
@@ -212,7 +213,7 @@ function ThresholdFields({ t, color, onChange }: { t: Transform; color: boolean;
           <span className="text-[10px] text-zinc-500 shrink-0">from</span>
           <NumberBox label={`step ${i + 1} from`} value={s.above} onChange={(n) => put(i, { ...s, above: n })} />
           <ValueBox label={`step ${i + 1} value`} value={s.value} color={color} onChange={(v) => put(i, { ...s, value: v ?? "" })} />
-          <button onClick={() => put(i, undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
+          <button aria-label="Remove" onClick={() => put(i, undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1"><CloseIcon size={14} /></button>
         </>)} />
     </div>
   );
@@ -229,7 +230,7 @@ function MapFields({ t, color, onChange }: { t: Transform; color: boolean; onCha
           <input aria-label={`case ${i + 1} equals`} value={show(c.equals)} className={mono} onChange={(e) => put(i, { ...c, equals: parseValue(e.target.value) })} />
           <span className="text-[10px] text-zinc-500 shrink-0">→</span>
           <ValueBox label={`case ${i + 1} value`} value={c.value} color={color} onChange={(v) => put(i, { ...c, value: v ?? "" })} />
-          <button onClick={() => put(i, undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1">×</button>
+          <button aria-label="Remove" onClick={() => put(i, undefined)} className="text-zinc-600 hover:text-red-400 text-xs px-1"><CloseIcon size={14} /></button>
         </>)} />
       <ValueBox label="otherwise" blank="otherwise (blank: own setting)" value={t.default} color={color}
         onChange={(v) => onChange({ ...t, default: v })} />

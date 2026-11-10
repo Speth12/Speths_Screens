@@ -5,6 +5,7 @@ import { SYMBOLS, SymbolSVG, type Field } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { useProject } from "../store/projectStore";
 import { BindingInput } from "./BindingInput";
+import { CloseIcon } from "../ui/icons";
 
 type Config = Record<string, unknown>;
 
@@ -235,7 +236,7 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
             {items.map((it, i) => (
               <div key={i} className="border border-zinc-700/50 rounded p-1.5 relative">
                 <button aria-label={`Remove ${f.label} ${i + 1}`} onClick={() => put(items.filter((_, j) => j !== i))}
-                  className="absolute top-0.5 right-1 text-zinc-600 hover:text-red-400 text-xs">×</button>
+                  className="absolute top-0.5 right-1 text-zinc-600 hover:text-red-400 text-xs"><CloseIcon size={14} /></button>
                 <SettingsFields fields={f.item} config={it} set={(key, value) => update(i, key, value)} w={w} />
               </div>
             ))}

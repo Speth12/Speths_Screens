@@ -3,6 +3,7 @@
 import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, FONTS, resolveTheme } from "@speths-screens/widgets";
 import type { PageIcon, ShellNav, Theme, ThemePreset } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
+import { CloseIcon } from "../ui/icons";
 
 type Element = Exclude<keyof Theme, "preset" | "accent">;
 
@@ -45,7 +46,7 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-3 px-3 py-2 border-b border-zinc-800">
         <div className="text-xs font-semibold text-zinc-200">Theme and navigation</div>
         <span className="text-[10px] text-zinc-500">{changed ? `${PRESETS[preset].name} with ${changed} change${changed > 1 ? "s" : ""}` : `${PRESETS[preset].name}, as designed`}</span>
-        <button aria-label="Close theme" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1">×</button>
+        <button aria-label="Close theme" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1"><CloseIcon size={14} /></button>
       </div>
       <div className="flex-1 overflow-auto p-3 flex flex-col gap-4">
         <section>

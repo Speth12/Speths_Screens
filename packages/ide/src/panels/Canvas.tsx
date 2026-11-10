@@ -9,6 +9,7 @@ import { ScreenFrame } from "./ScreenFrame";
 import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
+import { CloseIcon, ResetIcon, LockIcon, UnlockIcon, AlignLeftIcon, AlignCenterXIcon, AlignRightIcon, AlignTopIcon, AlignCenterYIcon, AlignBottomIcon, DistributeXIcon, DistributeYIcon, type Icon } from "../ui/icons";
 
 const COLS  = 12;
 const ROW_H = 64;
@@ -47,15 +48,15 @@ type AlignAction =
   | "align-cx" | "align-cy"
   | "dist-h" | "dist-v";
 
-const ALIGN_BUTTONS: { action: AlignAction; title: string; icon: string }[] = [
-  { action: "align-left",  title: "Align left edges",         icon: "⬤⠀⠀" },
-  { action: "align-cx",    title: "Center horizontally",       icon: "⠀⬤⠀" },
-  { action: "align-right", title: "Align right edges",         icon: "⠀⠀⬤" },
-  { action: "align-top",   title: "Align top edges",           icon: "▲" },
-  { action: "align-cy",    title: "Center vertically",         icon: "◆" },
-  { action: "align-bottom",title: "Align bottom edges",        icon: "▼" },
-  { action: "dist-h",      title: "Distribute horizontally",   icon: "↔" },
-  { action: "dist-v",      title: "Distribute vertically",     icon: "↕" },
+const ALIGN_BUTTONS: { action: AlignAction; title: string; icon: Icon }[] = [
+  { action: "align-left",  title: "Align left edges",         icon: AlignLeftIcon },
+  { action: "align-cx",    title: "Center horizontally",       icon: AlignCenterXIcon },
+  { action: "align-right", title: "Align right edges",         icon: AlignRightIcon },
+  { action: "align-top",   title: "Align top edges",           icon: AlignTopIcon },
+  { action: "align-cy",    title: "Center vertically",         icon: AlignCenterYIcon },
+  { action: "align-bottom",title: "Align bottom edges",        icon: AlignBottomIcon },
+  { action: "dist-h",      title: "Distribute horizontally",   icon: DistributeXIcon },
+  { action: "dist-v",      title: "Distribute vertically",     icon: DistributeYIcon },
 ];
 
 // Not rendered anywhere yet: wire it in or delete it.
@@ -68,14 +69,14 @@ function AlignToolbar({ widgets, onAlign }: {
   return (
     <div className="flex items-center gap-0.5 px-2 py-1 bg-zinc-800/90 border-b border-zinc-700 shrink-0">
       <span className="text-[10px] text-zinc-500 mr-1">{widgets.length} selected</span>
-      {ALIGN_BUTTONS.map(({ action, title, icon }) => (
+      {ALIGN_BUTTONS.map(({ action, title, icon: Icon }) => (
         <button
           key={action}
-          title={title}
+          title={title} aria-label={title}
           onClick={() => onAlign(action)}
           className="px-2 py-1 text-[11px] rounded hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
         >
-          {icon}
+          <Icon size={14} />
         </button>
       ))}
       <div className="w-px h-4 bg-zinc-700 mx-1" />
@@ -103,7 +104,7 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
     return () => window.removeEventListener("mousedown", close);
   }, [onClose]);
 
-  const item = (label: string, action: string, danger = false) => (
+  const item = (label: React.ReactNode, action: string, danger = false) => (
     <button
       key={action}
       onMouseDown={(e) => { e.preventDefault(); onAction(action, menu.widgetId); onClose(); }}
@@ -125,7 +126,7 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
       className="fixed z-50 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl py-1 min-w-[170px]"
       style={{ left: menu.x, top: menu.y }}
     >
-      {!multi && item(isLocked ? "🔓 Unlock" : "🔒 Lock", "lock")}
+      {!multi && item(isLocked ? <><UnlockIcon size={14} /> Unlock</> : <><LockIcon size={14} /> Lock</>, "lock")}
       {!multi && <div className="border-t border-zinc-700 my-1" />}
       {!multi && item("Bring to Front", "z-front", false)}
       {!multi && item("Bring Forward", "z-forward", false)}
@@ -564,14 +565,14 @@ export function Canvas() {
       {selectedIds.length >= 2 && (
         <div className="flex items-center gap-0.5 px-3 py-1 bg-zinc-900 border-b border-zinc-800 shrink-0">
           <span className="text-[10px] text-zinc-500 mr-2">{selectedIds.length} selected</span>
-          {ALIGN_BUTTONS.map(({ action, title, icon }) => (
+          {ALIGN_BUTTONS.map(({ action, title, icon: Icon }) => (
             <button
               key={action}
-              title={title}
+              title={title} aria-label={title}
               onClick={() => handleAlign(action as AlignAction)}
               className="px-2 py-0.5 text-xs rounded hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors font-mono"
             >
-              {icon}
+              <Icon size={14} />
             </button>
           ))}
           <div className="w-px h-4 bg-zinc-700 mx-1" />
@@ -598,7 +599,7 @@ export function Canvas() {
         {zoom !== 1 && (
           <div className="fixed bottom-8 right-8 z-40 bg-zinc-800 border border-zinc-600 rounded-full px-3 py-1 text-[11px] text-zinc-400 font-mono flex items-center gap-2 shadow-lg">
             {Math.round(zoom * 100)}%
-            <button onClick={() => setZoom(1)} className="text-zinc-500 hover:text-zinc-200">↺</button>
+            <button onClick={() => setZoom(1)} aria-label="Reset zoom" title="Reset zoom" className="text-zinc-500 hover:text-zinc-200"><ResetIcon size={12} /></button>
           </div>
         )}
 
@@ -731,16 +732,17 @@ export function Canvas() {
                 <WidgetRenderer w={w} />
 
                 {locked && (
-                  <div className="absolute top-1 right-1 text-[9px] text-amber-500 pointer-events-none z-10">🔒</div>
+                  <div className="absolute top-1 right-1 text-[9px] text-amber-500 pointer-events-none z-10"><LockIcon size={10} /></div>
                 )}
 
                 {selected && selectedIds.length === 1 && !locked && (
                   <>
                     <button
                       onClick={(e) => { e.stopPropagation(); removeWidget(page.id, w.id); setSelectedIds([]); }}
+                      aria-label="Delete widget" title="Delete widget"
                       className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 rounded bg-red-600 hover:bg-red-500 z-10"
                       style={{ cursor: "default" }}
-                    >×</button>
+                    ><CloseIcon size={14} /></button>
                     {(["br","bl","tr","tl"] as const).map((corner) => (
                       <div
                         key={corner}

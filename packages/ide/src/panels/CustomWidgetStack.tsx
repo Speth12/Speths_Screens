@@ -4,6 +4,7 @@ import type { Device } from "@speths-screens/widgets";
 import { DEVICE_WIDTH, partStyle, stackFor, stackStyle } from "@speths-screens/widgets";
 import type { CustomWidgetLayout, CustomWidgetPart } from "@speths-screens/shared-types";
 import { movePart, setLayoutField, setLayoutMode, setPartFlex, setPartHiddenOn, shownFlex, type StackField } from "../store/customWidgetLayout";
+import { ArrowUpIcon, ArrowDownIcon } from "../ui/icons";
 
 const DEVICES: Device[] = ["desktop", "tablet", "phone"];
 const field = "bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500";
@@ -105,9 +106,9 @@ export function StackPreview({ layout, parts, device, selected, onSelect, onReor
             onClick={(e) => { e.stopPropagation(); onSelect(p.localId); }}>
             <span className="flex-1 truncate">{i + 1}. {p.type}{p.props?.label ? ` · ${String(p.props.label)}` : ""}</span>
             <button aria-label={`Move ${p.localId} earlier`} disabled={i === 0} className="px-1 disabled:opacity-30 hover:text-zinc-100"
-              onClick={(e) => { e.stopPropagation(); onReorder(movePart(parts, i, -1)); }}>↑</button>
+              onClick={(e) => { e.stopPropagation(); onReorder(movePart(parts, i, -1)); }}><ArrowUpIcon size={12} /></button>
             <button aria-label={`Move ${p.localId} later`} disabled={i === parts.length - 1} className="px-1 disabled:opacity-30 hover:text-zinc-100"
-              onClick={(e) => { e.stopPropagation(); onReorder(movePart(parts, i, 1)); }}>↓</button>
+              onClick={(e) => { e.stopPropagation(); onReorder(movePart(parts, i, 1)); }}><ArrowDownIcon size={12} /></button>
           </li>
         ))}
       </ol>

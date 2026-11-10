@@ -8,6 +8,7 @@ import { useProject } from "../store/projectStore";
 import { apiFetch } from "../store/runtimeAuth";
 import { ScriptEditor } from "./ScriptEditor";
 import { typedInitial } from "./typedInitial";
+import { CloseIcon } from "../ui/icons";
 
 /** One script's state on the runtime, from GET /api/v1/scripts. */
 export interface ScriptStatus {
@@ -149,7 +150,7 @@ function ScriptRow({ script, rules, datasources, status, open, onToggle, onChang
         <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} title={status ? `${status.state}, ${status.runs} runs` : "not on the runtime"} />
         <span className="flex-1 truncate">{script.name}</span>
         {problem && <span className="text-red-400" title={problem}>!</span>}
-        <button onClick={(e) => { e.stopPropagation(); onRemove(); }} title="Remove script" className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400">×</button>
+        <button onClick={(e) => { e.stopPropagation(); onRemove(); }} title="Remove script" className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400"><CloseIcon size={14} /></button>
       </div>
       {open && (
         <div className="px-2 pb-2 space-y-1.5">
@@ -231,7 +232,7 @@ export function SessionVars() {
             {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <input aria-label={`session variable ${i + 1} initial`} value={drafts[i] ?? (v.initial === undefined ? "" : String(v.initial))} onChange={(e) => setInitial(i, e.target.value)} placeholder="initial" className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 font-mono" />
-          <button onClick={() => remove(i)} title="Remove variable" className="text-zinc-600 hover:text-red-400 px-1">×</button>
+          <button onClick={() => remove(i)} title="Remove variable" className="text-zinc-600 hover:text-red-400 px-1"><CloseIcon size={14} /></button>
         </div>
       ))}
       <button onClick={add} className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700">+ add variable</button>
