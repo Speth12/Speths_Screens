@@ -59,34 +59,6 @@ const ALIGN_BUTTONS: { action: AlignAction; title: string; icon: Icon }[] = [
   { action: "dist-v",      title: "Distribute vertically",     icon: DistributeYIcon },
 ];
 
-// Not rendered anywhere yet: wire it in or delete it.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function AlignToolbar({ widgets, onAlign }: {
-  widgets: Widget[];
-  onAlign: (action: AlignAction) => void;
-}) {
-  if (widgets.length < 2) return null;
-  return (
-    <div className="flex items-center gap-0.5 px-2 py-1 bg-zinc-800/90 border-b border-zinc-700 shrink-0">
-      <span className="text-[10px] text-zinc-500 mr-1">{widgets.length} selected</span>
-      {ALIGN_BUTTONS.map(({ action, title, icon: Icon }) => (
-        <button
-          key={action}
-          title={title} aria-label={title}
-          onClick={() => onAlign(action)}
-          className="px-2 py-1 text-[11px] rounded hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
-        >
-          <Icon size={14} />
-        </button>
-      ))}
-      <div className="w-px h-4 bg-zinc-700 mx-1" />
-      <span className="text-[10px] text-zinc-500">{title(ALIGN_BUTTONS[0]!)}</span>
-    </div>
-  );
-}
-
-function title(b: { title: string }) { return ""; void b; }
-
 // ── Context menu ─────────────────────────────────────────────────────────────
 
 type CtxMenu = { x: number; y: number; widgetId: string };
