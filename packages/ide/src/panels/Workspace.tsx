@@ -7,6 +7,10 @@ import { SCREEN_TAB, datasourceOf, useWorkspace } from "../store/workspace";
 import { DatasourceTab } from "./DatasourceTab";
 import { PagesTab } from "./PagesTab";
 import { VariablesTab } from "./VariablesTab";
+import { AlarmsTab } from "./AlarmsTab";
+import { RecipesTab } from "./RecipesTab";
+import { ScriptsTab } from "./ScriptsTab";
+import { CustomWidgetsTab } from "./CustomWidgetsTab";
 import { CloseIcon } from "../ui/icons";
 
 export function Workspace({ screen }: { screen: ReactNode }) {
@@ -53,6 +57,10 @@ export function Workspace({ screen }: { screen: ReactNode }) {
       <div className={active.kind === "screen" ? "flex-1 flex flex-col min-h-0 min-w-0" : "hidden"}>{screen}</div>
       {active.kind === "variables" && <VariablesTab />}
       {active.kind === "pages" && <PagesTab />}
+      {active.kind === "alarms" && <AlarmsTab />}
+      {active.kind === "recipes" && <RecipesTab />}
+      {active.kind === "scripts" && <ScriptsTab />}
+      {active.kind === "customWidgets" && <CustomWidgetsTab />}
       {active.kind === "datasource" && <DatasourceTab key={active.id} dsId={datasourceOf(active)} />}
     </div>
   );

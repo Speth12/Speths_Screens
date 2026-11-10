@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useProject, type Datasource, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
-import { Alarms, AlarmBadge } from "./Alarms";
-import { Recipes } from "./Recipes";
-import { Scripts, SessionVars } from "./Scripts";
+import { AlarmBadge } from "./AlarmBadge";
 import { AddDatasourceModal } from "./AddDatasourceModal";
 import { Users } from "./Users";
 import { ChromeSettings } from "./ChromeSettings";
@@ -12,8 +10,7 @@ import { tagStoreClient } from "../store/tagStoreClient";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertPinModal, needsCertPin } from "./CertCheck";
-import { CustomWidgets } from "./CustomWidgets";
-import { datasourceTab, PAGES_TAB, useWorkspace } from "../store/workspace";
+import { ALARMS_TAB, CUSTOM_WIDGETS_TAB, RECIPES_TAB, SCRIPTS_TAB, datasourceTab, PAGES_TAB, useWorkspace } from "../store/workspace";
 import { MCPModal } from "./MCPModal";
 import { downloadGitFormat, importGitFormat, unpackGitFiles } from "../store/gitFormat";
 import { openProject, openSummary } from "../store/openProject";
@@ -88,15 +85,16 @@ function TreeSection({
 }
 
 /** A section that opens as a tab in the middle of the editor instead of unfolding in the tree. */
-function TreeLink({ label, count, onOpen }: { label: string; count?: number; onOpen: () => void }) {
-  const active = useWorkspace((s) => s.activeId) === label.toLowerCase();
+function TreeLink({ label, tabId, count, badge, onOpen }: { label: string; tabId: string; count?: number; badge?: React.ReactNode; onOpen: () => void }) {
+  const active = useWorkspace((s) => s.activeId) === tabId;
   return (
     <button
       onClick={onOpen}
       className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-left border-b border-zinc-800/60 hover:bg-zinc-800/30 ${active ? "bg-blue-600/15" : ""}`}
     >
-      <span className="text-zinc-600 text-[9px] w-3 shrink-0">▪</span>
+      <span className="mx-[3px] h-1.5 w-1.5 rounded-full bg-zinc-600 shrink-0" aria-hidden="true" />
       <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium flex-1">{label}</span>
+      {badge}
       {count !== undefined && count > 0 && <span className="text-[9px] text-zinc-600 bg-zinc-800 rounded px-1.5 py-0.5">{count}</span>}
       <OpenTabIcon size={12} className="text-zinc-600" />
     </button>
@@ -314,36 +312,20 @@ export function LeftPanel({ width }: { width?: number }) {
         </TreeSection>
 
         {/* The namespace (what screens bind to) and the controllers' own variables, in one tab */}
-        <TreeLink label="Variables" count={project.namespace?.filter((n) => n.type === "tag" || n.type === "virtual").length}
+        <TreeLink label="Variables" tabId="variables" count={project.namespace?.filter((n) => n.type === "tag" || n.type === "virtual").length}
           onOpen={() => openVariables()} />
 
-        {/* Alarms */}
-        <TreeSection
-          label="Alarms"
-          count={project.alarmRules?.length}
-          badge={<AlarmBadge />}
-        >
-          <Alarms />
-        </TreeSection>
+        {/* Alarm rules, and the events the runtime raises */}
+        <TreeLink label="Alarms" tabId={ALARMS_TAB.id} count={project.alarmRules?.length} badge={<AlarmBadge />} onOpen={() => openTab(ALARMS_TAB)} />
 
         {/* Runtime scripts, and the session variables (kept per browser tab) that screens and scripts share */}
-        <TreeSection label="Scripts" count={(project.scripts?.length ?? 0) + (project.sessionVars?.length ?? 0)}>
-          <Scripts />
-          <div className="mt-3 pt-2 border-t border-zinc-800/60">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5">Session variables</div>
-            <SessionVars />
-          </div>
-        </TreeSection>
+        <TreeLink label="Scripts" tabId={SCRIPTS_TAB.id} count={(project.scripts?.length ?? 0) + (project.sessionVars?.length ?? 0)} onOpen={() => openTab(SCRIPTS_TAB)} />
 
-        {/* Recipes */}
-        <TreeSection label="Recipes" count={project.recipes?.length}>
-          <Recipes />
-        </TreeSection>
+        {/* Recipes: sets of tag writes applied together */}
+        <TreeLink label="Recipes" tabId={RECIPES_TAB.id} count={project.recipes?.length} onOpen={() => openTab(RECIPES_TAB)} />
 
-        {/* Custom widgets */}
-        <TreeSection label="Custom widgets" count={project.customWidgets?.length}>
-          <CustomWidgets />
-        </TreeSection>
+        {/* Custom widgets: reusable pieces of screen */}
+        <TreeLink label="Custom widgets" tabId={CUSTOM_WIDGETS_TAB.id} count={project.customWidgets?.length} onOpen={() => openTab(CUSTOM_WIDGETS_TAB)} />
 
         {/* Project properties: the project's settings, its users and audit trail, and getting it in and out */}
         <TreeSection label="Project properties">

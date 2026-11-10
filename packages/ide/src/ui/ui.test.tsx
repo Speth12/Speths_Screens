@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { Badge, Button, Checkbox, Dialog, Field, IconButton, Input, Menu, SectionHeader, Select, Tabs, type MenuItem } from "./index";
+import { EmptyState, SelectList, TabHeader } from "./Layout";
 
 afterEach(cleanup);
 
@@ -330,5 +331,75 @@ describe("Badge and SectionHeader", () => {
   it("a badge says its state in words", () => {
     render(<Badge tone="danger">3 alarms</Badge>);
     expect(screen.getByText("3 alarms")).toBeTruthy();
+  });
+});
+
+describe("Layout", () => {
+  const items = [{ id: "a", content: "Alpha" }, { id: "b", content: "Beta" }, { id: "c", content: "Gamma" }];
+  function Chooser({ start = "a", onPick }: { start?: string | null; onPick?: (id: string) => void }) {
+    const [selected, setSelected] = useState<string | null>(start);
+    return <SelectList label="Letters" items={items} selected={selected} onSelect={(id) => { setSelected(id); onPick?.(id); }} />;
+  }
+  const options = () => screen.getAllByRole("option");
+  const chosen = () => options().filter((o) => o.getAttribute("aria-selected") === "true").map((o) => o.textContent);
+
+  it("a header shows its title, summary and actions", () => {
+    render(<TabHeader title="Alarms" summary="7 rules" actions={<Button>New rule</Button>} />);
+    expect(screen.getByRole("heading", { name: "Alarms" })).toBeTruthy();
+    expect(screen.getByText("7 rules")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "New rule" })).toBeTruthy();
+  });
+
+  it("an empty state says what is missing and offers what to do", () => {
+    render(<EmptyState title="Nothing yet" action={<Button>Make one</Button>}>Explain it.</EmptyState>);
+    expect(screen.getByText("Nothing yet")).toBeTruthy();
+    expect(screen.getByText("Explain it.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Make one" })).toBeTruthy();
+  });
+
+  it("a list is a named listbox with the chosen item marked", () => {
+    render(<Chooser start="b" />);
+    expect(screen.getByRole("listbox", { name: "Letters" })).toBeTruthy();
+    expect(chosen()).toEqual(["Beta"]);
+  });
+
+  it("a click chooses an item", () => {
+    const onPick = vi.fn();
+    render(<Chooser onPick={onPick} />);
+    fireEvent.click(options()[2]!);
+    expect(chosen()).toEqual(["Gamma"]);
+    expect(onPick).toHaveBeenCalledWith("c");
+  });
+
+  it.each([
+    ["ArrowDown", "a", "Beta"],
+    ["ArrowUp", "b", "Alpha"],
+    ["ArrowUp", "a", "Alpha"],
+    ["ArrowDown", "c", "Gamma"],
+    ["End", "a", "Gamma"],
+    ["Home", "c", "Alpha"],
+  ])("%s from %s chooses %s and moves the focus there", (key, start, want) => {
+    render(<Chooser start={start} />);
+    fireEvent.keyDown(options().find((o) => o.getAttribute("aria-selected") === "true")!, { key });
+    expect(chosen()).toEqual([want]);
+    // The focus follows a choice that moved; at an end the choice stays where it was.
+    if ({ a: "Alpha", b: "Beta", c: "Gamma" }[start] === want) return;
+    expect(document.activeElement!.textContent).toBe(want);
+  });
+
+  it("Enter and Space choose the item they are on", () => {
+    render(<Chooser />);
+    fireEvent.keyDown(options()[1]!, { key: "Enter" });
+    expect(chosen()).toEqual(["Beta"]);
+    fireEvent.keyDown(options()[2]!, { key: " " });
+    expect(chosen()).toEqual(["Gamma"]);
+  });
+
+  it("only the chosen item is a Tab stop; with none chosen, the first", () => {
+    const { unmount } = render(<Chooser start="b" />);
+    expect(options().map((o) => o.tabIndex)).toEqual([-1, 0, -1]);
+    unmount();
+    render(<Chooser start={null} />);
+    expect(options().map((o) => o.tabIndex)).toEqual([0, -1, -1]);
   });
 });
