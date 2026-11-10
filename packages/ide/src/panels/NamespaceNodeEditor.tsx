@@ -1,7 +1,23 @@
+// The dialog for one namespace node: its path (new nodes only), type, source variable, unit, data type and description.
+// With a memory datasource as the source, a new node also makes the memory variable it names: the form asks for the
+// variable's type, its starting value and whether to keep it across restarts, and the datasource gets the tag.
 import { useState } from "react";
-import type { NamespaceNode, NamespaceNodeType } from "@speths-screens/shared-types";
+import type { MemoryTag, NamespaceNode, NamespaceNodeType, Type } from "@speths-screens/shared-types";
+import { nsLeaf } from "../store/namespaceOps";
+import { MEMORY_TYPES, NS_DATA_TYPE } from "../store/memoryVars";
+import { typedInitial } from "./typedInitial";
+import { Button, Checkbox, Dialog, Field, Input, Select } from "../ui";
 
-/** The form for one namespace node: its path (new nodes only), type, source variable, unit, data type and description. */
+/** A datasource the node can come from; `memoryTags` are the names a memory datasource already has. */
+export type NodeSource = { id: string; label: string; type: string; memoryTags?: string[] };
+
+const TYPE_HELP: Record<Type, string> = {
+  bool: "true or false",
+  int: "a whole number",
+  real: "a number with decimals",
+  string: "text",
+};
+
 export function NamespaceNodeEditor({
   node,
   datasources,
@@ -9,8 +25,9 @@ export function NamespaceNodeEditor({
   onCancel,
 }: {
   node: Partial<NamespaceNode> & { path: string };
-  datasources: { id: string; label: string }[];
-  onSave: (n: NamespaceNode) => void;
+  datasources: NodeSource[];
+  /** `memory` is set when the node makes a memory variable: add it to the node's datasource as well. */
+  onSave: (n: NamespaceNode, memory?: MemoryTag) => void;
   onCancel: () => void;
 }) {
   const [path, setPath] = useState(node.path);
@@ -20,123 +37,125 @@ export function NamespaceNodeEditor({
   const [description, setDescription] = useState(node.description ?? "");
   const [unit, setUnit] = useState(node.unit ?? "");
   const [dataType, setDataType] = useState(node.dataType ?? "");
-
-  const inp = "w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-600";
-  const lbl = "block text-[10px] text-zinc-500 mb-0.5";
+  const [varType, setVarType] = useState<Type>("real");
+  const [initial, setInitial] = useState("");
+  const [retain, setRetain] = useState(false);
 
   const isNew = !node.driverId && !node.driverAddr;
+  const source = datasources.find((d) => d.id === driverId);
+  const named = type === "tag" || type === "virtual";
+  const memory = isNew && named && source?.type === "memory";
+
+  // A memory variable is named like the node unless another name is typed.
+  const address = driverAddr.trim() || (memory ? nsLeaf(path.trim()) : "");
+  const exists = memory && !!source?.memoryTags?.includes(address);
+  const creates = memory && !exists && address !== "";
+  const initialValue = creates ? typedInitial(varType, initial) : undefined;
+  const badInitial = creates && initial.trim() !== "" && initialValue === undefined;
+
+  const problem = !path.trim() ? "Give the node a path." : badInitial ? `The starting value is not ${TYPE_HELP[varType]}.` : "";
+
+  const save = () => {
+    if (problem) return;
+    const n: NamespaceNode = {
+      path: path.trim(),
+      type,
+      driverId: driverId || undefined,
+      driverAddr: address || undefined,
+      description: description || undefined,
+      unit: unit || undefined,
+      dataType: (creates ? NS_DATA_TYPE[varType] : dataType) || undefined,
+    };
+    const tag: MemoryTag | undefined = creates
+      ? { path: address, type: varType, ...(initialValue !== undefined ? { initial: initialValue } : {}), ...(retain ? { retain: true } : {}) }
+      : undefined;
+    onSave(n, tag);
+  };
 
   return (
-    <div className="p-3 space-y-2.5 border-t border-zinc-800 bg-zinc-900/60">
-      <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">
-        {isNew ? "New Node" : "Edit Node"}
-      </div>
+    <Dialog title={isNew ? "New node" : "Edit node"} size="md" onClose={onCancel}
+      footer={<><Button onClick={onCancel}>Cancel</Button><Button variant="primary" disabled={!!problem} onClick={save}>Save</Button></>}>
+    <div className="space-y-3">
+      <Field label="Path (dot-separated)">
+        <Input mono value={path} onChange={(e) => setPath(e.target.value)} placeholder="Building1.System1.Tank5.Level" disabled={!isNew} />
+      </Field>
 
-      <label>
-        <span className={lbl}>Path (dot-separated)</span>
-        <input
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          placeholder="Building1.System1.Tank5.Level"
-          className={`${inp} font-mono`}
-          disabled={!isNew}
-        />
-      </label>
-
-      <label>
-        <span className={lbl}>Type</span>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as NamespaceNodeType)}
-          className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs focus:outline-none"
-        >
+      <Field label="Type">
+        <Select value={type} onChange={(e) => setType(e.target.value as NamespaceNodeType)}>
           <option value="folder">Folder</option>
           <option value="asset">Asset</option>
           <option value="tag">Tag</option>
           <option value="virtual">Virtual</option>
-        </select>
-      </label>
+        </Select>
+      </Field>
 
-      {(type === "tag" || type === "virtual") && (
+      {named && (
         <>
-          <label>
-            <span className={lbl}>Driver</span>
-            <select
-              value={driverId}
-              onChange={(e) => setDriverId(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs focus:outline-none"
-            >
+          <Field label="Driver">
+            <Select value={driverId} onChange={(e) => setDriverId(e.target.value)}>
               <option value="">— none —</option>
-              {datasources.map((ds) => (
-                <option key={ds.id} value={ds.id}>{ds.label} [{ds.id}]</option>
-              ))}
-            </select>
-          </label>
+              {datasources.map((ds) => <option key={ds.id} value={ds.id}>{ds.label} [{ds.id}]</option>)}
+            </Select>
+          </Field>
 
           {driverId && (
-            <label>
-              <span className={lbl}>Driver Address (tag path in datasource)</span>
-              <input
-                value={driverAddr}
-                onChange={(e) => setDriverAddr(e.target.value)}
-                placeholder="Arp.Plc.Eclr/MainInstance.iInteger"
-                className={`${inp} font-mono`}
-              />
-              <div className="text-[9px] text-zinc-600 mt-0.5 font-mono">
-                binding: ns:{path || "…"}
-              </div>
-            </label>
+            <Field label={memory ? "Variable name in the datasource" : "Driver address (tag path in datasource)"}
+              hint={`binding: ns:${path || "…"}`}>
+              <Input mono value={driverAddr} onChange={(e) => setDriverAddr(e.target.value)}
+                placeholder={memory ? nsLeaf(path.trim()) || "Counter" : "Arp.Plc.Eclr/MainInstance.iInteger"} />
+            </Field>
           )}
         </>
       )}
 
+      {exists && (
+        <div className="text-ui-label text-zinc-400">
+          {source!.label} already has a variable named {address}; this node will point at it.
+        </div>
+      )}
+
+      {creates && (
+        <fieldset className="rounded border border-zinc-700 p-3 space-y-3">
+          <legend className="px-1 text-ui-label font-semibold uppercase tracking-wide text-zinc-400">New memory variable in {source!.label}</legend>
+          <Field label="Variable type" hint={TYPE_HELP[varType]}>
+            <Select value={varType} onChange={(e) => setVarType(e.target.value as Type)}>
+              {MEMORY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Select>
+          </Field>
+          <Field label="Starting value" hint="Left blank it starts as false, 0 or empty text."
+            error={badInitial ? `Not ${TYPE_HELP[varType]}.` : undefined}>
+            <Input mono value={initial} onChange={(e) => setInitial(e.target.value)} placeholder={varType === "bool" ? "false" : varType === "string" ? "" : "0"} />
+          </Field>
+          <Checkbox label="Keep the value when the runtime restarts" checked={retain} onChange={(e) => setRetain(e.target.checked)} />
+          <div className="text-ui-label text-zinc-400">Saving adds it to {source!.label}. Deploy the project to make it live.</div>
+        </fieldset>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
-        <label>
-          <span className={lbl}>Unit</span>
-          <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. °C" className={inp} />
-        </label>
-        <label>
-          <span className={lbl}>Data Type</span>
-          <select
-            value={dataType}
-            onChange={(e) => setDataType(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs focus:outline-none"
-          >
-            <option value="">auto</option>
-            <option value="float">float</option>
-            <option value="int">int</option>
-            <option value="bool">bool</option>
-            <option value="string">string</option>
-          </select>
-        </label>
+        <Field label="Unit"><Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. °C" /></Field>
+        {creates ? (
+          <Field label="Data type" hint="From the variable type.">
+            <Input value={NS_DATA_TYPE[varType]} disabled readOnly />
+          </Field>
+        ) : (
+          <Field label="Data type">
+            <Select value={dataType} onChange={(e) => setDataType(e.target.value)}>
+              <option value="">auto</option>
+              <option value="float">float</option>
+              <option value="int">int</option>
+              <option value="bool">bool</option>
+              <option value="string">string</option>
+            </Select>
+          </Field>
+        )}
       </div>
 
-      <label>
-        <span className={lbl}>Description</span>
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={inp} />
-      </label>
+      <Field label="Description">
+        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
+      </Field>
 
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={onCancel}
-          className="flex-1 py-1 text-xs rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400"
-        >Cancel</button>
-        <button
-          onClick={() => {
-            if (!path.trim()) return;
-            onSave({
-              path: path.trim(),
-              type,
-              driverId:    driverId || undefined,
-              driverAddr:  driverAddr || undefined,
-              description: description || undefined,
-              unit:        unit || undefined,
-              dataType:    dataType || undefined,
-            });
-          }}
-          className="flex-1 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 font-medium"
-        >Save</button>
-      </div>
+      {problem && <div className="text-ui-label text-zinc-400">{problem}</div>}
     </div>
+    </Dialog>
   );
 }

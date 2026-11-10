@@ -8,6 +8,7 @@ import { tagStoreClient, type TagState } from "../store/tagStoreClient";
 import { addrSegments, countNsRefs, nsJoin, nsLeaf, nsName, nsParent, nsTree, uniquePath, type NsTreeNode } from "../store/namespaceOps";
 import { publishToRuntime, useNamespaceIndex, useVariables, varKey, type Variable } from "../store/variables";
 import { useWorkspace } from "../store/workspace";
+import { isMemoryDatasource, memoryTagsOf } from "../store/memoryVars";
 import { NamespaceNodeEditor } from "./NamespaceNodeEditor";
 import { ImportNamespaceDialog } from "./ImportNamespaceDialog";
 import { ChevronDownIcon, ChevronRightIcon, FolderIcon, TagIcon } from "../ui/icons";
@@ -151,7 +152,7 @@ function TreeRow({ t, depth, selected, onSelect, onDropOn, renaming, onRename, o
 
 export function VariablesTab() {
   const project = useProject((s) => s.project);
-  const { upsertNamespaceNode, upsertNamespaceNodes, moveNamespaceNode, removeNamespaceNode, setWidgetTag } = useProject.getState();
+  const { upsertNamespaceNode, upsertNamespaceNodes, addMemoryVariable, moveNamespaceNode, removeNamespaceNode, setWidgetTag } = useProject.getState();
   const selectedWidgetId = useProject((s) => s.selectedWidgetId);
   const activePageId = useProject((s) => s.activePageId);
   const { vars, status, loading, refresh } = useVariables();
@@ -273,7 +274,7 @@ export function VariablesTab() {
       </div>
       {offline.length > 0 && !loading && (
         <div className="px-4 py-1.5 text-[11px] text-amber-600 bg-amber-500/10 border-b border-amber-500/30 shrink-0">
-          {offline.map((d) => `${d.label}: ${status[d.id] ? (status[d.id]!.lastError || "not connected") : "the runtime did not answer"}`).join(" · ")}
+          {offline.map((d) => `${d.label}: ${status[d.id] ? (status[d.id]!.lastError || "not connected") : "not on the runtime yet: deploy the project (or the runtime did not answer)"}`).join(" · ")}
         </div>
       )}
       <div className="flex-1 flex min-h-0">
@@ -366,14 +367,24 @@ export function VariablesTab() {
             </div>
           )}
           {editing && (
-            <div className="shrink-0 max-h-[55%] overflow-auto">
+            <>
               <NamespaceNodeEditor
                 node={editing}
-                datasources={project.datasources.map((d) => ({ id: d.id, label: d.label }))}
-                onSave={(n) => { upsertNamespaceNode(n); setEditing(null); setSelectedNs(n.path); }}
+                datasources={project.datasources.map((d) => ({ id: d.id, label: d.label, type: d.type, memoryTags: isMemoryDatasource(d) ? memoryTagsOf(d).map((t) => t.path) : undefined }))}
+                onSave={(n, memory) => {
+                  if (memory) {
+                    // A new memory variable: the node and the datasource's tag are added together.
+                    const r = addMemoryVariable(n, { dsId: n.driverId!, tag: memory });
+                    if (r.error) { setMessage({ ok: false, text: r.error }); return; }
+                    const label = project.datasources.find((d) => d.id === n.driverId)?.label ?? n.driverId;
+                    setMessage({ ok: true, text: `Added ${n.path}: ${memory.type === "int" ? "an" : "a"} ${memory.type} memory variable in ${label}. Deploy the project to make it live.` });
+                  } else upsertNamespaceNode(n);
+                  setEditing(null);
+                  setSelectedNs(n.path);
+                }}
                 onCancel={() => setEditing(null)}
               />
-            </div>
+            </>
           )}
           {message && (
             <div className={`px-3 py-1.5 text-[11px] border-t border-zinc-800 shrink-0 ${message.ok ? "text-emerald-600" : "text-red-600"}`} role="status">{message.text}</div>
