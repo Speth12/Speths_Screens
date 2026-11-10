@@ -85,6 +85,20 @@ html, body, #root { height: 100%; }
   --color-red-700:     color-mix(in srgb, var(--danger) 60%, black);
 }
 
+/*
+ * The editor's own text sizes (text-ui-label, text-ui, text-ui-title). They are fixed: the
+ * project's theme changes the --type-* sizes of the screen being designed, never the editor's.
+ * 12 px is the smallest text the editor shows.
+ */
+@theme {
+  --text-ui-label: 0.75rem;
+  --text-ui-label--line-height: 1rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-ui-title: 0.875rem;
+  --text-ui-title--line-height: 1.25rem;
+}
+
 /* base background and text driven by theme vars */
 body { background-color: var(--background); color: var(--foreground); }
 
