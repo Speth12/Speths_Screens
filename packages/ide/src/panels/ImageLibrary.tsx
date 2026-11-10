@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from "react";
 import { useProject, newWidgetId, type ImageAsset } from "../store/projectStore";
+import { DeleteIcon, UploadIcon, ImageIcon } from "../ui/icons";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"];
 const MAX_BYTES = 4 * 1024 * 1024; // 4 MB per image
@@ -122,8 +123,9 @@ function ImageCard({
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           title="Delete image"
           className="text-[10px] px-1.5 py-1 rounded bg-zinc-700 hover:bg-red-800 text-zinc-300"
+          aria-label="Delete image"
         >
-          ×
+          <DeleteIcon size={12} />
         </button>
       </div>
 
@@ -182,7 +184,7 @@ function DropZone({ onFiles }: { onFiles: (files: File[]) => void }) {
           : "border-zinc-700 hover:border-zinc-500 text-zinc-600 hover:text-zinc-400"
       }`}
     >
-      <div className="text-lg mb-1">⬆</div>
+      <div className="mb-1"><UploadIcon size={20} /></div>
       <div className="text-[11px] font-medium">Drop images here</div>
       <div className="text-[10px] mt-0.5">or click to browse</div>
       <div className="text-[9px] mt-1 opacity-60">PNG · JPG · SVG · GIF · WebP · max 4 MB</div>
@@ -255,7 +257,7 @@ export function ImageLibrary() {
 
       {images.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4 pb-6">
-          <div className="text-2xl mb-2 opacity-30">🖼</div>
+          <div className="mb-2 opacity-30"><ImageIcon size={32} /></div>
           <div className="text-[11px] text-zinc-600">No images yet.</div>
           <div className="text-[10px] text-zinc-700 mt-1">
             Import PNG, JPG, or SVG files to use them as widgets on the canvas.

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProject } from "../store/projectStore";
 import { apiBase } from "../store/runtimeTarget";
+import { CloseIcon } from "../ui/icons";
 
 function curlCmd(url: string, id: number, method: string, params?: string): string {
   const body = params
@@ -69,7 +70,7 @@ export function MCPModal({ onClose }: { onClose: () => void }) {
             <div className="font-semibold text-sm">MCP Server</div>
             <div className="text-[10px] text-zinc-500 mt-0.5 font-mono">{mcpUrl}</div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none"><CloseIcon size={14} /></button>
         </div>
 
         {/* Status */}

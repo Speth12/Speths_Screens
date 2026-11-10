@@ -6,6 +6,7 @@ import { manifestFor, type Device } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { SettingsFields } from "./SettingsEditor";
 import { LayoutStrip, PartFlexFields, StackPreview } from "./CustomWidgetStack";
+import { CloseIcon, ChevronDownIcon, ChevronRightIcon, EditIcon, WidgetIcon } from "../ui/icons";
 
 const uid = () => `lw-${Math.random().toString(36).slice(2, 8)}`;
 const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
@@ -16,20 +17,20 @@ const COLS = 12;
 const ROWS = 8;
 
 // Widget types available in the custom widget palette
-const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defaultH: number; icon: string }[] = [
-  { type: "button",         label: "Button",       defaultW: 3, defaultH: 1, icon: "⬛" },
-  { type: "led",            label: "LED",          defaultW: 2, defaultH: 2, icon: "🔴" },
-  { type: "numericDisplay", label: "Numeric",      defaultW: 3, defaultH: 2, icon: "123" },
-  { type: "textDisplay",    label: "Text",         defaultW: 4, defaultH: 1, icon: "T" },
-  { type: "gauge",          label: "Gauge",        defaultW: 4, defaultH: 3, icon: "◑" },
-  { type: "tank",           label: "Tank",         defaultW: 2, defaultH: 4, icon: "▊" },
-  { type: "setpoint",       label: "Setpoint",     defaultW: 4, defaultH: 2, icon: "⇔" },
-  { type: "numericInput",   label: "Numeric In",   defaultW: 3, defaultH: 2, icon: "▣" },
-  { type: "multiState",     label: "Multi-State",  defaultW: 3, defaultH: 2, icon: "◈" },
-  { type: "trend",          label: "Trend",        defaultW: 6, defaultH: 4, icon: "📈" },
-  { type: "table",          label: "Table",        defaultW: 4, defaultH: 4, icon: "⊞" },
-  { type: "image",          label: "Image",        defaultW: 4, defaultH: 3, icon: "🖼" },
-  { type: "customWidget",   label: "Custom widget", defaultW: 4, defaultH: 2, icon: "▦" },
+const PALETTE_WIDGETS: { type: WidgetType; label: string; defaultW: number; defaultH: number }[] = [
+  { type: "button",         label: "Button",       defaultW: 3, defaultH: 1 },
+  { type: "led",            label: "LED",          defaultW: 2, defaultH: 2 },
+  { type: "numericDisplay", label: "Numeric",      defaultW: 3, defaultH: 2 },
+  { type: "textDisplay",    label: "Text",         defaultW: 4, defaultH: 1 },
+  { type: "gauge",          label: "Gauge",        defaultW: 4, defaultH: 3 },
+  { type: "tank",           label: "Tank",         defaultW: 2, defaultH: 4 },
+  { type: "setpoint",       label: "Setpoint",     defaultW: 4, defaultH: 2 },
+  { type: "numericInput",   label: "Numeric In",   defaultW: 3, defaultH: 2 },
+  { type: "multiState",     label: "Multi-State",  defaultW: 3, defaultH: 2 },
+  { type: "trend",          label: "Trend",        defaultW: 6, defaultH: 4 },
+  { type: "table",          label: "Table",        defaultW: 4, defaultH: 4 },
+  { type: "image",          label: "Image",        defaultW: 4, defaultH: 3 },
+  { type: "customWidget",   label: "Custom widget", defaultW: 4, defaultH: 2 },
 ];
 
 // ── Part properties — mini property editor ────────────────────────────
@@ -236,7 +237,7 @@ function CustomWidgetEditorModal({
             <input value={p.name} onChange={(e) => updateParam(i, { name: e.target.value })}
               className="bg-transparent text-[10px] text-purple-300 font-mono w-20 outline-none" />
             <span className="text-[10px] text-purple-400 font-mono">{`}`}</span>
-            <button onClick={() => removeParam(i)} className="text-zinc-600 hover:text-red-400 text-[10px] ml-0.5">×</button>
+            <button onClick={() => removeParam(i)} aria-label="Remove parameter" className="text-zinc-600 hover:text-red-400 text-[10px] ml-0.5"><CloseIcon size={14} /></button>
           </div>
         ))}
         <button onClick={addParam}
@@ -254,12 +255,12 @@ function CustomWidgetEditorModal({
         {/* Palette */}
         <div className="w-40 border-r border-zinc-800 flex flex-col shrink-0 overflow-auto bg-zinc-900/30">
           <div className="text-[10px] uppercase tracking-wider text-zinc-500 px-3 pt-3 pb-2">Widgets</div>
-          {PALETTE_WIDGETS.map(({ type, label, defaultW, defaultH, icon }) => (
+          {PALETTE_WIDGETS.map(({ type, label, defaultW, defaultH }) => (
             <button key={type}
               onClick={() => addWidget(type, defaultW, defaultH)}
               className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 text-left transition-colors"
             >
-              <span className="text-sm w-5 shrink-0 text-center">{icon}</span>
+              <WidgetIcon type={type} size={14} className="w-5" />
               {label}
             </button>
           ))}
@@ -354,7 +355,7 @@ function CustomWidgetEditorModal({
               {/* Empty state */}
               {widgets.length === 0 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-600">
-                  <span className="text-3xl opacity-30">⬛</span>
+                  <WidgetIcon type="customWidget" size={32} className="opacity-30" />
                   <span className="text-[11px]">Click a widget type on the left to add it</span>
                 </div>
               )}
@@ -414,7 +415,7 @@ function ParamRow({ param, onChange, onRemove }: {
       <input value={param.description ?? ""} onChange={(e) => onChange({ description: e.target.value || undefined })}
         placeholder="description"
         className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5 text-[11px] focus:outline-none" />
-      <button onClick={onRemove} className="text-zinc-600 hover:text-red-400 text-xs">×</button>
+      <button onClick={onRemove} aria-label="Remove part" className="text-zinc-600 hover:text-red-400 text-xs"><CloseIcon size={14} /></button>
     </div>
   );
 }
@@ -440,7 +441,7 @@ function CustomWidgetCard({ fp }: { fp: CustomWidget }) {
           className="flex items-center gap-2 px-3 py-2 bg-zinc-800/40 cursor-pointer hover:bg-zinc-800/60"
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="text-[10px] text-zinc-500 w-3">{open ? "▾" : "▸"}</span>
+          <span className="text-[10px] text-zinc-500 w-3">{open ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}</span>
           <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
           <input
             value={fp.name}
@@ -454,8 +455,9 @@ function CustomWidgetCard({ fp }: { fp: CustomWidget }) {
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); removeCustomWidget(fp.id); }}
+            aria-label={`Delete ${fp.name}`}
             className="text-zinc-600 hover:text-red-400 text-xs shrink-0"
-          >×</button>
+          ><CloseIcon size={14} /></button>
         </div>
 
         {/* Expanded detail */}
@@ -473,7 +475,7 @@ function CustomWidgetCard({ fp }: { fp: CustomWidget }) {
               onClick={() => setShowEditor(true)}
               className="w-full text-xs py-2 rounded bg-purple-700/60 hover:bg-purple-600/70 text-purple-100 font-medium flex items-center justify-center gap-2"
             >
-              <span>⬛</span> Open Visual Editor
+              <EditIcon size={14} /> Open Visual Editor
             </button>
 
             {/* Parameters */}

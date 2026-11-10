@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { newWidgetId, useProject, type Widget } from "../store/projectStore";
 import { allPresets, instantiatePreset, presetFromWidgets, type PresetEntry } from "../store/presets";
+import { CloseIcon, EditIcon } from "../ui/icons";
 
 /** The drag type a preset carries onto the canvas; the value is the preset id. */
 export const PRESET_DRAG = "text/x-preset-id";
@@ -76,9 +77,9 @@ function PresetRow({ entry }: { entry: PresetEntry }) {
       ) : (
         <>
           <button onClick={() => setRenaming(true)} aria-label={`Rename ${preset.name}`}
-            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-zinc-200 text-[11px] px-1 shrink-0">✎</button>
+            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-zinc-200 text-[11px] px-1 shrink-0"><EditIcon size={12} /></button>
           <button onClick={() => removePreset(preset.id)} aria-label={`Delete ${preset.name}`}
-            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 text-[11px] pr-2 shrink-0">×</button>
+            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 text-[11px] pr-2 shrink-0"><CloseIcon size={14} /></button>
         </>
       )}
     </div>

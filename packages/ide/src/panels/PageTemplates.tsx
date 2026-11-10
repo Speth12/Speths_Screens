@@ -1,4 +1,5 @@
 import type { Widget } from "../store/projectStore";
+import { CloseIcon } from "../ui/icons";
 
 // Page templates: a new page can start from one of these instead of blank. ────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ export function TemplateModal({ onClose, onSelect }: { onClose: () => void; onSe
       >
         <div className="flex items-center justify-between">
           <span className="font-semibold text-sm">New Page — Choose Template</span>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none"><CloseIcon size={14} /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {PAGE_TEMPLATES.map((t) => (

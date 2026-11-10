@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { collectTexts } from "@speths-screens/widgets";
 import { useProject } from "../store/projectStore";
 import { useEditorView } from "../store/editorView";
+import { CloseIcon } from "../ui/icons";
 
 const CODE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
 
@@ -35,7 +36,7 @@ export function LanguagesPanel({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-3 px-3 py-2 border-b border-zinc-800">
         <div className="text-xs font-semibold text-zinc-200">Languages</div>
         <span className="text-[10px] text-zinc-500">{languages.length ? `${languages.length} language${languages.length > 1 ? "s" : ""}; the operator screen offers a switch from two` : "none yet: the screens show their text as written"}</span>
-        <button aria-label="Close languages" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1">×</button>
+        <button aria-label="Close languages" onClick={onClose} className="ml-auto text-zinc-500 hover:text-zinc-200 text-sm px-1"><CloseIcon size={14} /></button>
       </div>
       <div className="flex-1 overflow-auto p-3 flex flex-col gap-4">
         <section>
@@ -43,7 +44,7 @@ export function LanguagesPanel({ onClose }: { onClose: () => void }) {
             {languages.map((code, i) => (
               <span key={code} className="inline-flex items-center gap-1 rounded bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-200">
                 {code}{i === 0 && <span className="text-zinc-500">(written in)</span>}
-                <button aria-label={`Remove ${code}`} onClick={() => setLanguages(languages.filter((c) => c !== code))} className="text-zinc-500 hover:text-red-400">×</button>
+                <button aria-label={`Remove ${code}`} onClick={() => setLanguages(languages.filter((c) => c !== code))} className="text-zinc-500 hover:text-red-400"><CloseIcon size={14} /></button>
               </span>
             ))}
             <input aria-label="New language code" placeholder="de" value={adding} onChange={(e) => setAdding(e.target.value.trim())}

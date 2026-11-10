@@ -5,6 +5,7 @@ import { useProject } from "../store/projectStore";
 import { addrSegments, importPlan, nsName } from "../store/namespaceOps";
 import { publishToRuntime } from "../store/variables";
 import { apiFetch } from "../store/runtimeAuth";
+import { ChevronDownIcon, ChevronRightIcon, FolderIcon, TagIcon } from "../ui/icons";
 
 type TagDef = { Path: string; Description?: string };
 type TNode = { name: string; id: string; children: Map<string, TNode>; tags: string[]; all: string[] };
@@ -45,9 +46,9 @@ function BranchRow({ node, depth, picked, toggle, named }: {
   return (
     <>
       <div className="flex items-center gap-1.5 h-6 text-[11px] hover:bg-zinc-800/40" style={{ paddingLeft: 6 + depth * 14 }}>
-        <span className="w-3 text-[9px] text-zinc-500 cursor-pointer" onClick={() => setOpen((o) => !o)}>{kids.length || node.tags.length ? (open ? "▾" : "▸") : ""}</span>
+        <span className="w-3 text-[9px] text-zinc-500 cursor-pointer" onClick={() => setOpen((o) => !o)}>{kids.length || node.tags.length ? (open ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />) : ""}</span>
         <Check state={state} onChange={() => toggle(node.all)} label={`Import ${node.id}`} />
-        <span className="text-amber-400 text-[10px]">▣</span>
+        <FolderIcon size={12} className="text-amber-400" />
         <span className="flex-1 truncate text-zinc-200 cursor-pointer" onClick={() => setOpen((o) => !o)}>{node.name}</span>
         <span className="text-[10px] text-zinc-600 pr-2">{node.all.length}</span>
       </div>
@@ -55,7 +56,7 @@ function BranchRow({ node, depth, picked, toggle, named }: {
       {open && node.tags.map((p) => (
         <div key={p} className="flex items-center gap-1.5 h-6 text-[11px] hover:bg-zinc-800/40" style={{ paddingLeft: 6 + (depth + 1) * 14 + 15 }}>
           <Check state={picked.has(p) ? "all" : "none"} onChange={() => toggle([p])} label={`Import ${p}`} />
-          <span className="text-blue-400 text-[10px]">◆</span>
+          <TagIcon size={12} className="text-blue-400" />
           <span className="flex-1 truncate font-mono text-zinc-300" title={p}>{node.name}</span>
           {named.has(p) && <span className="text-[10px] text-zinc-600 pr-2">has a name</span>}
         </div>

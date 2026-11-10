@@ -15,6 +15,7 @@ import {
   setActiveTarget, addTarget, updateTarget, removeTarget,
   type Target,
 } from "../store/targetsStore";
+import { CloseIcon, CheckIcon, UndoIcon, RedoIcon, SaveIcon, OpenIcon, SettingsIcon, PreviewIcon, JsonIcon, LightIcon, DarkIcon } from "../ui/icons";
 
 // ── Manage Targets modal ───────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ function ManageTargetsModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between">
           <span className="font-semibold text-sm">Deploy Targets</span>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none"><CloseIcon size={14} /></button>
         </div>
 
         {/* Target list */}
@@ -81,8 +82,8 @@ function ManageTargetsModal({ onClose }: { onClose: () => void }) {
                     className={`${inp} w-28`} placeholder="Name" />
                   <input value={editUrl} onChange={(e) => setEditUrl(e.target.value)}
                     className={`${inp} flex-1 font-mono text-[10px]`} placeholder="http://host:8080" />
-                  <button onClick={commitEdit} className="text-xs px-2 py-0.5 rounded bg-blue-700 hover:bg-blue-600 text-white shrink-0">✓</button>
-                  <button onClick={() => setEditId(null)} className="text-xs text-zinc-500 hover:text-zinc-300 shrink-0">✕</button>
+                  <button onClick={commitEdit} aria-label="Save target" className="text-xs px-2 py-0.5 rounded bg-blue-700 hover:bg-blue-600 text-white shrink-0"><CheckIcon size={14} /></button>
+                  <button onClick={() => setEditId(null)} aria-label="Cancel" className="text-xs text-zinc-500 hover:text-zinc-300 shrink-0"><CloseIcon size={14} /></button>
                 </div>
               ) : (
                 <div className="flex-1 min-w-0">
@@ -96,8 +97,8 @@ function ManageTargetsModal({ onClose }: { onClose: () => void }) {
                 <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => startEdit(t)}
                     className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">edit</button>
-                  <button onClick={() => removeTarget(t.id)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-red-900 text-zinc-500 hover:text-red-400">×</button>
+                  <button aria-label={`Remove ${t.name}`} onClick={() => removeTarget(t.id)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-red-900 text-zinc-500 hover:text-red-400"><CloseIcon size={14} /></button>
                 </div>
               )}
             </div>
@@ -178,7 +179,7 @@ function RuntimeLoginModal({
       >
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">Runtime Login</span>
-          <button type="button" onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none"><CloseIcon size={14} /></button>
         </div>
         <div className="text-[10px] text-zinc-500 font-mono truncate">{targetUrl || "localhost"}</div>
         <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="Username" className={inp} autoFocus />
@@ -312,9 +313,9 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       <button onClick={() => setShowNew(true)} title="New project"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">New</button>
       <button onClick={saveToFile} title="Save to file"
-        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↓ Save</button>
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0"><SaveIcon size={14} /> Save</button>
       <button onClick={() => fileInputRef.current?.click()} title="Load from file"
-        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0">↑ Load</button>
+        className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0"><OpenIcon size={14} /> Load</button>
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={loadFromFile} />
       <button onClick={pullFromRuntime} disabled={busy !== "none"} title="Pull the project from the runtime"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 shrink-0">
@@ -329,9 +330,9 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
 
       {/* Undo / Redo */}
       <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)"
-        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 font-mono">↩</button>
+        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 font-mono" aria-label="Undo"><UndoIcon size={14} /></button>
       <button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)"
-        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 font-mono">↪</button>
+        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 font-mono" aria-label="Redo"><RedoIcon size={14} /></button>
 
       <div className="flex-1" />
 
@@ -351,9 +352,9 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         </select>
         <button
           onClick={() => setShowManage(true)}
-          title="Manage targets"
+          title="Manage targets" aria-label="Manage targets"
           className="text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200"
-        >⚙</button>
+        ><SettingsIcon size={14} /></button>
       </div>
 
       {/* Preview */}
@@ -361,16 +362,16 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         onClick={onPreview}
         title="Full-screen operator view (F5)"
         className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 shrink-0"
-      >⬡ Preview</button>
+      ><PreviewIcon size={14} /> Preview</button>
 
       {/* JSON toggle */}
       <button
         onClick={onToggleJSON}
-        title="View project JSON"
+        title="View project JSON" aria-label="View project JSON"
         className={`text-xs px-2 py-1 rounded font-mono shrink-0 transition-colors ${
           showJSON ? "bg-blue-700 text-white" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
         }`}
-      >{"{ }"}</button>
+      ><JsonIcon size={14} /></button>
 
       {/* What the editor shows: screen size and where the values come from */}
       <DeviceSwitch />
@@ -386,7 +387,7 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       <button onClick={() => { const next = ideMode === "dark" ? "light" : "dark"; setIdeMode(next); setIdeModeState(next); }}
         title={ideMode === "dark" ? "Switch the editor to the light look" : "Switch the editor to the dark look"}
         aria-label={ideMode === "dark" ? "Light look" : "Dark look"}
-        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 shrink-0">{ideMode === "dark" ? "☀" : "☾"}</button>
+        className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 shrink-0">{ideMode === "dark" ? <LightIcon size={14} /> : <DarkIcon size={14} />}</button>
 
       {/* Help */}
       <button onClick={onHelp} title="Keyboard shortcuts (?)"

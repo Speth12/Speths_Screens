@@ -4,6 +4,7 @@
 import type { Device } from "@speths-screens/widgets";
 import type { FrameSlot, FrameSlotOverride, Shell } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
+import { CloseIcon } from "../ui/icons";
 
 const field = "bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500";
 const EDGES = ["top", "right", "bottom", "left"] as const;
@@ -71,7 +72,7 @@ export function ChromeSettings() {
                   {customWidgets.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <button aria-label={`Remove ${slot.id}`} title="Remove this slot" onClick={() => put({ frame: slots.filter((_, j) => j !== i) })}
-                  className="text-zinc-600 hover:text-red-400 px-1">×</button>
+                  className="text-zinc-600 hover:text-red-400 px-1"><CloseIcon size={14} /></button>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="flex items-center gap-1 text-[10px] text-zinc-500">Edge

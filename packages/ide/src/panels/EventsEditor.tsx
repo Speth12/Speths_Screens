@@ -5,6 +5,7 @@ import type { Action, ActionType, Widget, WidgetEvents } from "../store/projectS
 import { useProject } from "../store/projectStore";
 import { BindingInput } from "./BindingInput";
 import { inp, parseValue } from "./SettingsEditor";
+import { CloseIcon } from "../ui/icons";
 
 type EventName = keyof WidgetEvents;
 
@@ -93,7 +94,7 @@ function ActionCard({ a, label, onChange, onRemove }: {
   return (
     <div className="border border-zinc-700/60 rounded p-1.5 space-y-1.5 relative">
       <button aria-label={`Remove ${label}`} onClick={onRemove}
-        className="absolute top-0.5 right-1 text-zinc-600 hover:text-red-400 text-xs">×</button>
+        className="absolute top-0.5 right-1 text-zinc-600 hover:text-red-400 text-xs"><CloseIcon size={14} /></button>
       <select aria-label={`${label} type`} value={a.type}
         onChange={(e) => onChange({ type: e.target.value as ActionType })} className={inp}>
         {ACTION_TYPES.map((t) => <option key={t.type} value={t.type}>{t.label}</option>)}

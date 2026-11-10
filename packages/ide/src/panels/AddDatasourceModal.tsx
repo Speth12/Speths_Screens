@@ -3,6 +3,7 @@ import type { DatasourceType } from "../store/projectStore";
 import type { CalculatedTag, CERTCheck } from "@speths-screens/shared-types";
 import { CertCheckField, testDatasource, type TestStatus } from "./CertCheck";
 import { CalculatedRowsEditor, MemoryRowsEditor, memoryTag, type MemoryRow } from "./DatasourceForms";
+import { CheckIcon, FailIcon } from "../ui/icons";
 
 // memoryTag is re-exported for the tests that import it from here.
 export { memoryTag };
@@ -178,7 +179,7 @@ export function AddDatasourceModal({ onClose, onAdd }: {
 
         <div className="flex items-center gap-2 pt-1">
           <button onClick={testConn} disabled={testing} className="text-xs px-3 py-1 rounded bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50">{testing ? "Testing…" : "Test"}</button>
-          {testResult && <span className={`text-[11px] flex-1 truncate ${testResult.ok ? "text-emerald-400" : "text-red-400"}`}>{testResult.ok ? "✓ " : "✗ "}{testResult.msg}</span>}
+          {testResult && <span className={`text-[11px] flex-1 truncate ${testResult.ok ? "text-emerald-400" : "text-red-400"}`}>{testResult.ok ? <CheckIcon size={12} /> : <FailIcon size={12} />} {testResult.msg}</span>}
           <div className="flex-1" />
           <button onClick={onClose} className="text-xs px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700">Cancel</button>
           <button onClick={() => { const { id: dsId, type: dsType, label: dsLabel, config } = buildPayload(); onAdd({ id: dsId, type: dsType, label: dsLabel, config }); }} className="text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 font-medium">Add</button>

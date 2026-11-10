@@ -15,6 +15,7 @@ import { SymbolLibrary } from "./panels/SymbolLibrary";
 import { PreviewMode } from "./panels/PreviewMode";
 import { useProject } from "./store/projectStore";
 import { useShallow } from "zustand/react/shallow";
+import { CloseIcon, ChevronRightIcon } from "./ui/icons";
 
 type RightTab = "props" | "widgets" | "images" | "symbols";
 
@@ -41,7 +42,7 @@ function ShortcutModal({ onClose }: { onClose: () => void }) {
       <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-5 w-80 shadow-2xl space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <span className="font-semibold text-sm">Keyboard Shortcuts</span>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">×</button>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-300"><CloseIcon size={14} /></button>
         </div>
         <div className="space-y-1">
           {SHORTCUTS.map((s) => (
@@ -182,8 +183,8 @@ export function App() {
               <button
                 onClick={() => setRightOpen(false)}
                 className="px-2 text-zinc-600 hover:text-zinc-300 text-base leading-none shrink-0"
-                title="Collapse panel"
-              >›</button>
+                title="Collapse panel" aria-label="Collapse panel"
+              ><ChevronRightIcon size={14} /></button>
             </div>
             <div className="flex-1 overflow-auto min-h-0">
               {rightTab === "props"   && <Properties />}

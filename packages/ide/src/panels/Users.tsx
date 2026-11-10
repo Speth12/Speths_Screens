@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../store/runtimeAuth";
+import { CheckIcon, ChevronDownIcon } from "../ui/icons";
 
 type Role = "operator" | "supervisor" | "engineer" | "admin";
 type User = { username: string; role: Role; enabled: boolean };
@@ -130,7 +131,7 @@ function PermList({ role }: { role: Role }) {
       <ul className="space-y-0.5">
         {l.perms.map(p => (
           <li key={p} className="flex items-center gap-1.5 text-[10px] text-zinc-300">
-            <span className={`${l.color} text-[8px]`}>✓</span>
+            <CheckIcon size={10} className={l.color} />
             {p}
           </li>
         ))}
@@ -248,7 +249,7 @@ export function Users() {
                 <ul className="space-y-0.5 ml-8">
                   {l.perms.map(p => (
                     <li key={p} className="flex items-center gap-1.5 text-[11px] text-zinc-300">
-                      <span className={`${l.color} text-[9px] shrink-0`}>✓</span>
+                      <CheckIcon size={11} className={l.color} />
                       {p}
                     </li>
                   ))}
@@ -329,7 +330,7 @@ export function Users() {
                       >
                         <span className="text-[9px]">L{l.level}</span>
                         {l.label}
-                        <span className="text-[9px] opacity-60">▾</span>
+                        <ChevronDownIcon size={10} className="opacity-60" />
                       </button>
                     </div>
 

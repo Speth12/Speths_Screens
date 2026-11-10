@@ -10,6 +10,7 @@ import { publishToRuntime, useNamespaceIndex, useVariables, varKey, type Variabl
 import { useWorkspace } from "../store/workspace";
 import { NamespaceNodeEditor } from "./NamespaceNodeEditor";
 import { ImportNamespaceDialog } from "./ImportNamespaceDialog";
+import { ChevronDownIcon, ChevronRightIcon, FolderIcon, TagIcon } from "../ui/icons";
 
 export const VAR_MIME = "application/x-speths-variables";
 export const NODE_MIME = "application/x-speths-nsnode";
@@ -57,7 +58,7 @@ function VariableRow({ v, node, selected, onToggle, onDragStart, onAdd, onBind, 
         <span className={`w-1.5 h-1.5 rounded-full ${dot(live?.quality)}`} title={live?.quality ?? ""} />
         {fmtValue(live)}
       </span>
-      <span className="w-32 shrink-0 truncate font-mono text-[10px] text-blue-600" title={node ? `ns:${node.path}` : ""}>{node ? `◆ ${node.path}` : ""}</span>
+      <span className="w-32 shrink-0 truncate font-mono text-[10px] text-blue-600" title={node ? `ns:${node.path}` : ""}>{node ? <><TagIcon size={11} /> {node.path}</> : ""}</span>
       <span className="w-14 shrink-0 flex justify-end gap-1 opacity-0 group-hover:opacity-100">
         {!node && <button onClick={onAdd} className="px-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Give it a name in the namespace">+ ns</button>}
         {canBind && <button onClick={onBind} className="px-1.5 rounded bg-blue-700 hover:bg-blue-600 text-white" title="Bind the selected widget to this variable">Bind</button>}
@@ -119,8 +120,8 @@ function TreeRow({ t, depth, selected, onSelect, onDropOn, renaming, onRename, o
         style={{ paddingLeft: 8 + depth * 14, height: ROW_H }}
         className={`group flex items-center gap-1.5 text-[11px] cursor-pointer border-b border-zinc-800/30 ${over ? "bg-blue-600/30" : selected === node.path ? "bg-blue-600/15" : "hover:bg-zinc-800/40"}`}
       >
-        <span className="w-3 text-[9px] text-zinc-500 shrink-0">{isFolder ? (open ? "▾" : "▸") : ""}</span>
-        <span className={`text-[10px] shrink-0 ${isFolder ? "text-amber-400" : "text-blue-400"}`}>{isFolder ? "▣" : "◆"}</span>
+        <span className="w-3 text-[9px] text-zinc-500 shrink-0">{isFolder ? (open ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />) : ""}</span>
+        <span className={`text-[10px] shrink-0 ${isFolder ? "text-amber-400" : "text-blue-400"}`}>{isFolder ? <FolderIcon size={12} /> : <TagIcon size={12} />}</span>
         {renaming === node.path ? (
           <input
             autoFocus defaultValue={nsLeaf(node.path)} aria-label="New name"

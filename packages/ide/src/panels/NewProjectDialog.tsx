@@ -2,6 +2,7 @@
 // top bar and navigation, or the project builds them from widgets.
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { CloseIcon } from "../ui/icons";
 
 export type Chrome = "builtin" | "custom";
 
@@ -21,7 +22,7 @@ export function NewProjectDialog({ onCreate, onCancel }: { onCreate: (chrome: Ch
       <div role="dialog" aria-label="New project" className="bg-zinc-900 border border-zinc-700 rounded-xl p-5 w-[28rem] shadow-2xl space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">New project</span>
-          <button type="button" onClick={onCancel} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none">×</button>
+          <button type="button" onClick={onCancel} aria-label="Close" className="text-zinc-500 hover:text-zinc-300 text-lg leading-none"><CloseIcon size={14} /></button>
         </div>
         <div className="text-xs text-zinc-400">Unsaved changes to the project you have open will be lost.</div>
         <div className="text-[10px] uppercase tracking-wider text-zinc-500">Header and navigation</div>

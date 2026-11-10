@@ -7,6 +7,7 @@ import { SCREEN_TAB, datasourceOf, useWorkspace } from "../store/workspace";
 import { DatasourceTab } from "./DatasourceTab";
 import { PagesTab } from "./PagesTab";
 import { VariablesTab } from "./VariablesTab";
+import { CloseIcon } from "../ui/icons";
 
 export function Workspace({ screen }: { screen: ReactNode }) {
   const tabs = useWorkspace((s) => s.tabs);
@@ -44,7 +45,7 @@ export function Workspace({ screen }: { screen: ReactNode }) {
                 onClick={(e) => { e.stopPropagation(); close(t.id); }}
                 className="w-4 h-4 leading-none rounded text-zinc-500 hover:bg-zinc-700 hover:text-zinc-100"
                 aria-label={`Close ${t.title}`} title="Close"
-              >×</button>
+              ><CloseIcon size={14} /></button>
             )}
           </div>
         ))}

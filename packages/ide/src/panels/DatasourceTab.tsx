@@ -9,6 +9,7 @@ import { datasourceUsage } from "../store/usage";
 import { CertCheckField, needsCertPin, testDatasource, type TestStatus } from "./CertCheck";
 import { CalculatedRowsEditor, MemoryRowsEditor, memoryRow, memoryTag, type MemoryRow } from "./DatasourceForms";
 import { TagScannerModal } from "./TagScannerModal";
+import { CheckIcon, FailIcon } from "../ui/icons";
 
 type Status = { connected: boolean; lastError: string; tagCount: number };
 type LogLine = { at: number; text: string };
@@ -210,7 +211,9 @@ export function DatasourceTab({ dsId }: { dsId: string }) {
             ) : null}
             {test && test !== "running" && (
               <div className={`text-xs ${test.connected ? "text-emerald-600" : "text-red-600"}`}>
-                {test.connected ? `✓ Connected${test.tagCount ? ` · ${test.tagCount} variables` : ""}` : `✗ ${test.lastError ?? "Connection failed"}`}
+                {test.connected
+                  ? <><CheckIcon size={12} /> {`Connected${test.tagCount ? ` · ${test.tagCount} variables` : ""}`}</>
+                  : <><FailIcon size={12} /> {test.lastError ?? "Connection failed"}</>}
               </div>
             )}
             {offerPin && (
