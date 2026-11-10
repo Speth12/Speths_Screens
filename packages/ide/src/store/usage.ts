@@ -94,3 +94,25 @@ export function datasourceUsage(project: Project, dsId: string): DatasourceUsage
     .reduce((n, d) => n + (((d.config as { tags?: { expr: string }[] }).tags ?? []).filter((t) => tagsInText(t.expr).some(mine)).length), 0);
   return { pages, alarms, scripts, named, calculated };
 }
+
+export type CustomWidgetUsage = {
+  /** Where it is placed, by page, with how many times on each. */
+  pages: { id: string; name: string; count: number }[];
+  /** The other custom widgets that hold it as a part. */
+  customWidgets: string[];
+  /** Screen edges (the header, the navigation) it is pinned to. */
+  frame: number;
+  /** Everything above, as one count. */
+  total: number;
+};
+
+/** Where a custom widget is used. Deleting it breaks each of these places. */
+export function customWidgetUsage(project: Project, id: string): CustomWidgetUsage {
+  const isIt = (w: { type: string; props?: unknown }) => w.type === "customWidget" && (w.props as { customWidgetId?: string } | undefined)?.customWidgetId === id;
+  const pages = project.pages
+    .map((p) => ({ id: p.id, name: p.name, count: p.widgets.filter(isIt).length }))
+    .filter((p) => p.count > 0);
+  const customWidgets = (project.customWidgets ?? []).filter((cw) => cw.id !== id && cw.widgets.some(isIt)).map((cw) => cw.name || cw.id);
+  const frame = (project.shell?.frame ?? []).filter((slot) => slot.customWidgetId === id).length;
+  return { pages, customWidgets, frame, total: pages.reduce((n, p) => n + p.count, 0) + customWidgets.length + frame };
+}

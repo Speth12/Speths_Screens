@@ -42,7 +42,7 @@ describe("icons", () => {
 // Symbols typed as text used to stand in for icons. They draw differently on every machine, cannot
 // be sized or colored like the rest, and are read out by screen readers ("black diamond").
 describe("the editor's source", () => {
-  const GLYPHS = "✓✗✕▾▸◆▣⊕⚠↺🔒🔓⬛🔴◑▊⇔◈📈⊞🖼▦↩↪⚙⬡☀☾⬆↗◀▶✎⌫⬤▲▼↔↕↑↓";
+  const GLYPHS = "▪✓✗✕▾▸◆▣⊕⚠↺🔒🔓⬛🔴◑▊⇔◈📈⊞🖼▦↩↪⚙⬡☀☾⬆↗◀▶✎⌫⬤▲▼↔↕↑↓";
   const src = join(dirname(fileURLToPath(import.meta.url)), "..");
   const walk = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
 

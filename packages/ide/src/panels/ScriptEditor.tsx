@@ -5,12 +5,14 @@ import { loadMonaco, setScriptApi, type ScriptKind } from "../store/monaco";
 
 type Editor = import("monaco-editor").editor.IStandaloneCodeEditor;
 
-export function ScriptEditor({ value, onChange, kind, label, rows = 10 }: {
+export function ScriptEditor({ value, onChange, kind, label, rows = 10, fill = false }: {
   value: string;
   onChange: (source: string) => void;
   kind: ScriptKind;
   label: string;
   rows?: number;
+  /** Takes the height of the box around it instead of `rows` lines (the box must have a height). */
+  fill?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<Editor | null>(null);
@@ -25,7 +27,7 @@ export function ScriptEditor({ value, onChange, kind, label, rows = 10 }: {
       if (disposed || !host.current) return;
       setScriptApi(monaco, kind);
       const e = monaco.editor.create(host.current, {
-        value: initial.current, language: "javascript", theme: document.documentElement.dataset.themeMode === "dark" ? "vs-dark" : "vs", fontSize: 11,
+        value: initial.current, language: "javascript", theme: document.documentElement.dataset.themeMode === "dark" ? "vs-dark" : "vs", fontSize: fill ? 13 : 11,
         minimap: { enabled: false }, lineNumbers: "on", scrollBeyondLastLine: false,
         automaticLayout: true, tabSize: 2, wordWrap: "on",
       });
@@ -38,7 +40,7 @@ export function ScriptEditor({ value, onChange, kind, label, rows = 10 }: {
       editor.current?.dispose();
       editor.current = null;
     };
-  }, [kind]);
+  }, [kind, fill]);
 
   // A change from outside (undo, another panel) reaches the editor.
   useEffect(() => {
@@ -49,10 +51,10 @@ export function ScriptEditor({ value, onChange, kind, label, rows = 10 }: {
 
   return (
     <>
-      <div ref={host} style={{ height: rows * 16 }} className={ready ? "border border-zinc-800 rounded overflow-hidden" : "hidden"} />
+      <div ref={host} style={fill ? undefined : { height: rows * 16 }} className={ready ? `border border-zinc-800 rounded overflow-hidden ${fill ? "h-full" : ""}` : "hidden"} />
       {!ready && (
         <textarea aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} spellCheck={false} rows={rows}
-          className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono leading-snug resize-y" />
+          className={`w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono leading-snug ${fill ? "h-full resize-none" : "resize-y"}`} />
       )}
     </>
   );

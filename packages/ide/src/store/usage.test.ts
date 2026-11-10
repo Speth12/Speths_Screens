@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Page, Project, Widget } from "@speths-screens/shared-types";
-import { datasourceOfTag, datasourceUsage, pageSummary, tagsInText, tagsOfWidget } from "./usage";
+import { customWidgetUsage, datasourceOfTag, datasourceUsage, pageSummary, tagsInText, tagsOfWidget } from "./usage";
 
 const w = (id: string, type: string, extra: Partial<Widget> = {}): Widget => ({ id, type, x: 0, y: 0, w: 2, h: 2, ...extra }) as Widget;
 const project = (pages: Page[], extra: Partial<Project> = {}): Project => ({
@@ -70,5 +70,32 @@ describe("datasource usage", () => {
     expect(opc.pages).toEqual([{ id: "p1", name: "Overview", widgets: 1 }]); // through its namespace name
     expect(opc.alarms).toEqual(["Other"]);
     expect(opc.named).toBe(1);
+  });
+});
+
+describe("custom widget usage", () => {
+  const use = (id: string) => ({ id: `w${Math.random()}`, type: "customWidget", x: 0, y: 0, w: 2, h: 2, props: { customWidgetId: id } }) as unknown as Widget;
+  const base = (over: Partial<Project>): Project => ({ schemaVersion: 6, version: "1", datasources: [], pages: [], ...over }) as Project;
+
+  it("is nothing for a custom widget nothing uses", () => {
+    expect(customWidgetUsage(base({ pages: [{ id: "p", name: "Main", widgets: [use("other")] }] }), "cw")).toEqual({ pages: [], customWidgets: [], frame: 0, total: 0 });
+  });
+
+  it("counts each place: pages, other custom widgets and screen edges", () => {
+    const project = base({
+      pages: [{ id: "a", name: "Overview", widgets: [use("cw"), use("cw"), use("x")] }, { id: "b", name: "Trends", widgets: [use("x")] }, { id: "c", name: "Process", widgets: [use("cw")] }],
+      customWidgets: [
+        { id: "cw", name: "Pump card", params: [], widgets: [] },
+        { id: "tile", name: "Pump tile", params: [], widgets: [{ localId: "p", type: "customWidget", x: 0, y: 0, w: 1, h: 1, props: { customWidgetId: "cw" } }] },
+        { id: "self", name: "Loop", params: [], widgets: [] },
+      ] as unknown as Project["customWidgets"],
+      shell: { frame: [{ id: "s1", customWidgetId: "cw", edge: "top" }, { id: "s2", customWidgetId: "other", edge: "left" }] } as unknown as Project["shell"],
+    });
+    expect(customWidgetUsage(project, "cw")).toEqual({
+      pages: [{ id: "a", name: "Overview", count: 2 }, { id: "c", name: "Process", count: 1 }],
+      customWidgets: ["Pump tile"],
+      frame: 1,
+      total: 5,
+    });
   });
 });

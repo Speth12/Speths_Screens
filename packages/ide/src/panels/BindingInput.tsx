@@ -28,6 +28,7 @@ export function BindingInput({
   placeholder = "ns:plant.tag or datasource:path",
   className,
   wrapClassName = "",
+  ariaLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -35,6 +36,8 @@ export function BindingInput({
   className?: string;
   /** Classes for the outer box, e.g. flex-1 in a row. */
   wrapClassName?: string;
+  /** The input's name for screen readers, when no label sits beside it. */
+  ariaLabel?: string;
 }) {
   const { project, upsertNamespaceNode } = useProject();
   const [open, setOpen] = useState(false);
@@ -66,6 +69,7 @@ export function BindingInput({
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
+        aria-label={ariaLabel}
         className={className}
       />
       {twin && (
