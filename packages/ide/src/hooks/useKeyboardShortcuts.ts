@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
+import { saveProjectFile } from "../store/projectFiles";
 
 // Module-level clipboard — survives page switches and effect re-runs.
 let _clipboard: Widget | Widget[] | null = null;
 export const setClipboard = (w: Widget | Widget[] | null) => { _clipboard = w; };
 
 export function useKeyboardShortcuts() {
-  const { activePageId, selectedWidgetId, selectWidget, removeWidget, addWidget, project, exportJSON, undo, redo } = useProject();
+  const { activePageId, selectedWidgetId, selectWidget, removeWidget, addWidget, project, undo, redo } = useProject();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -46,13 +47,7 @@ export function useKeyboardShortcuts() {
       // Ctrl/Cmd+S — save to file
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        const blob = new Blob([exportJSON()], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${(project.name ?? "project").replace(/\s+/g, "-")}.screens.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        saveProjectFile();
         return;
       }
 
@@ -98,5 +93,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activePageId, selectedWidgetId, project, exportJSON, selectWidget, removeWidget, addWidget, undo, redo]);
+  }, [activePageId, selectedWidgetId, project, selectWidget, removeWidget, addWidget, undo, redo]);
 }

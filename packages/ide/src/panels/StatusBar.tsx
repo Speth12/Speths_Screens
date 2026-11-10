@@ -1,7 +1,7 @@
 // Bottom status bar: whether a runtime answers, the live-data connection, and datasource health.
 import { useEffect, useState } from "react";
-import { tagStoreClient } from "../store/tagStoreClient";
 import { apiBase } from "../store/runtimeTarget";
+import { reachLabel, useRuntimeReach } from "../store/runtimeReach";
 import { authHeader } from "../store/runtimeAuth";
 import { useProject } from "../store/projectStore";
 
@@ -9,30 +9,11 @@ type DSStatus = { connected: boolean; lastError: string; tagCount: number };
 
 export function StatusBar() {
   const { project } = useProject();
-  const [wsOk, setWsOk] = useState(false);
   // Whether a runtime answers at the target at all; the live-data connection only opens when a screen
   // reads a tag from a datasource, so it can be closed while the runtime is fine.
-  const [reachable, setReachable] = useState<boolean | null>(null);
+  const reach = useRuntimeReach();
+  const { reachable, streaming: wsOk } = reach;
   const [dsStatus, setDsStatus] = useState<Record<string, DSStatus>>({});
-
-  // Poll WS connection state via tagStoreClient
-  useEffect(() => {
-    const id = setInterval(() => setWsOk(tagStoreClient.isConnected()), 1500);
-    setWsOk(tagStoreClient.isConnected());
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const probe = async () => {
-      try {
-        const r = await fetch(`${apiBase}/api/v1/datasources`, { headers: authHeader(apiBase) });
-        setReachable(r.ok || r.status === 401);
-      } catch { setReachable(false); }
-    };
-    void probe();
-    const id = setInterval(probe, 4000);
-    return () => clearInterval(id);
-  }, []);
 
   // Poll datasource status every 4 s
   useEffect(() => {
@@ -67,7 +48,7 @@ export function StatusBar() {
       }>
         <span className={`w-1.5 h-1.5 rounded-full ${reachable === false ? "bg-red-500 animate-pulse" : reachable ? "bg-emerald-500" : "bg-zinc-500"}`} />
         <span className={reachable === false ? "text-red-400" : reachable ? "text-emerald-500" : ""}>
-          {reachable === false ? "No runtime" : reachable ? (wsOk ? "Runtime connected" : "Runtime ready") : "Checking…"}
+          {reachLabel(reach)}
         </span>
       </div>
 
