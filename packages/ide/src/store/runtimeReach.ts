@@ -11,9 +11,11 @@ export type Reach = {
   reachable: boolean | null;
   /** The live-data connection is open (it only opens when a screen reads a tag from a datasource). */
   streaming: boolean;
+  /** The newest project format the runtime reads, when it says (null: not known, or an older runtime). */
+  targetFormat: number | null;
 };
 
-export const useReach = create<Reach>(() => ({ reachable: null, streaming: false }));
+export const useReach = create<Reach>(() => ({ reachable: null, streaming: false, targetFormat: null }));
 
 const PROBE_MS = 4000;
 const STREAM_MS = 1500;
@@ -23,10 +25,12 @@ let timers: ReturnType<typeof setInterval>[] = [];
 
 async function probe(): Promise<void> {
   try {
-    const r = await fetch(`${apiBase}/api/v1/datasources`, { headers: authHeader(apiBase) });
-    useReach.setState({ reachable: r.ok || r.status === 401 });
+    // One request: a runtime answers "alive" without a login, and says which project format it reads.
+    const r = await fetch(`${apiBase}/api/v1/alive`, { headers: authHeader(apiBase) });
+    const body = r.ok ? ((await r.json().catch(() => ({}))) as { schemaVersion?: unknown } | null) : null;
+    useReach.setState({ reachable: r.ok || r.status === 401, targetFormat: typeof body?.schemaVersion === "number" ? body.schemaVersion : null });
   } catch {
-    useReach.setState({ reachable: false });
+    useReach.setState({ reachable: false, targetFormat: null });
   }
 }
 
@@ -51,6 +55,6 @@ export function useRuntimeReach(): Reach {
 }
 
 /** What to say about the runtime in a few words. */
-export function reachLabel(r: Reach): string {
+export function reachLabel(r: Pick<Reach, "reachable" | "streaming">): string {
   return r.reachable === false ? "No runtime" : r.reachable ? (r.streaming ? "Runtime connected" : "Runtime ready") : "Checking…";
 }

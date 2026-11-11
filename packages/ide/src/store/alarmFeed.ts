@@ -2,7 +2,7 @@
 // screen that wants it is mounted, and the call that acknowledges one.
 import { useEffect, useState } from "react";
 import type { AlarmSeverity } from "./projectStore";
-import { apiBase } from "./runtimeTarget";
+import { apiBase, wsOrigin } from "./runtimeTarget";
 import { authHeader, getToken } from "./runtimeAuth";
 import { applyAlarmMessage } from "./alarmMessages";
 
@@ -49,9 +49,7 @@ export async function ackAlarm(eventId: string): Promise<boolean> {
 export function useAlarmFeed(): AlarmEvent[] {
   const [events, setEvents] = useState<AlarmEvent[]>([]);
   useEffect(() => {
-    const wsBase = apiBase
-      ? apiBase.replace(/^http/, "ws")
-      : (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+    const wsBase = wsOrigin(apiBase);
     const token = getToken(apiBase); // needed with security.mode "login"
     const ws = new WebSocket(`${wsBase}/ws/alarms${token ? `?token=${encodeURIComponent(token)}` : ""}`);
     ws.onmessage = (e) => {

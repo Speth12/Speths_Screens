@@ -9,14 +9,15 @@ import { validateProject } from "../store/validateProject";
 import { setApiBase } from "../store/runtimeTarget";
 import { describeFailure, isNetworkFailure } from "../store/targetErrors";
 import { tagStoreClient } from "../store/tagStoreClient";
-import { clearToken, authHeader } from "../store/runtimeAuth";
-import { subscribeTargets, getTargets, getActiveTarget, setActiveTarget } from "../store/targetsStore";
+import { clearToken, authHeader, loginBaseFor } from "../store/runtimeAuth";
+import { subscribeTargets, getTargets, getActiveTarget, setActiveTarget, baseOf, loadTargets } from "../store/targetsStore";
+import { CURRENT_SCHEMA_VERSION } from "@speths-screens/shared-types/upgrade";
 import { setIdeMode, storedIdeMode, type IdeMode } from "../store/ideTheme";
 import { useEditorView } from "../store/editorView";
 import { useEditorStatus, say } from "../store/editorStatus";
 import { exportGitFiles, exportHtmlFile, openProjectFile, saveProjectFile } from "../store/projectFiles";
 import { EDIT_SHORTCUTS, runEditCommand } from "../store/editActions";
-import { reachLabel, useRuntimeReach } from "../store/runtimeReach";
+import { reachLabel, useReach, useRuntimeReach } from "../store/runtimeReach";
 import { DataSwitch, DEVICES, DeviceSwitch } from "./DeviceSwitch";
 import { NewProjectDialog } from "./NewProjectDialog";
 import { TargetsDialog } from "./TargetsDialog";
@@ -56,52 +57,70 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
   const [busy, setBusy] = useState<"none" | "deploy" | "pull">("none");
   const [showTargets, setShowTargets] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [loginBase, setLoginBase] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showMCP, setShowMCP] = useState(false);
   const [ideMode, setIdeModeState] = useState<IdeMode>(storedIdeMode);
 
   // Keep apiBase + WebSocket in sync whenever the active target changes.
+  // Requests to any target but this program's own runtime go through its relay (see store/runtimeTarget.ts).
+  const base = baseOf(activeTarget);
   useEffect(() => {
-    setApiBase(activeTarget.url);
-    tagStoreClient.reconnectTo(activeTarget.url);
-  }, [activeTarget.url]);
+    setApiBase(base);
+    tagStoreClient.reconnectTo(base);
+  }, [base]);
+  // The saved targets live in the program that serves the editor.
+  useEffect(() => { void loadTargets(); }, []);
+
+  // A 401 is either the target's or, for a relayed request that never left, this program's own.
+  const askLogin = (r: Response) => {
+    const who = loginBaseFor(base, r);
+    clearToken(who);
+    setLoginBase(who);
+    setBusy("none");
+    setShowLogin(true);
+  };
 
   const doDeploy = async () => {
     const problems = validateProject(useProject.getState().project);
     if (problems.length) { say(`not deployed: ${problems.join("; ")}`); return; }
+    // A runtime that says which project format it reads is asked before the project is sent.
+    const reads = useReach.getState().targetFormat;
+    if (reads !== null && reads < CURRENT_SCHEMA_VERSION) {
+      say(`not deployed: ${activeTarget.name} runs an older Speth's Screens (it reads project format ${reads} and this project is format ${CURRENT_SCHEMA_VERSION}). Update the runtime there first.`);
+      return;
+    }
     setBusy("deploy"); say("");
     try {
-      const r = await fetch(`${activeTarget.url}/api/v1/project`, {
+      const r = await fetch(`${base}/api/v1/project`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader(activeTarget.url) },
+        headers: { "Content-Type": "application/json", ...authHeader(base) },
         body: exportJSON(),
       });
-      if (r.status === 401) {
-        // Token missing or expired: ask for a login, which deploys again.
-        clearToken(activeTarget.url);
-        setBusy("none");
-        setShowLogin(true);
-        return;
-      }
+      if (r.status === 401) { askLogin(r); return; } // token missing or expired: a login deploys again
       const body = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number };
       say(r.ok ? `deployed → ${activeTarget.name} (${body.datasources} ds, ${body.pages} pg)` : `error: ${body.error}`);
     } catch (e) {
-      say(`error: ${describeFailure(activeTarget.url, e)}`);
+      say(`error: ${describeFailure(e)}`);
     } finally { setBusy("none"); }
   };
 
   const pullFromRuntime = async () => {
     setBusy("pull");
     try {
-      const r = await fetch(`${activeTarget.url}/api/v1/project`, { headers: { ...authHeader(activeTarget.url) } });
-      if (r.status === 401) { setBusy("none"); setShowLogin(true); return; }
-      if (!r.ok) throw new Error();
+      const r = await fetch(`${base}/api/v1/project`, { headers: { ...authHeader(base) } });
+      if (r.status === 401) { askLogin(r); return; }
+      if (!r.ok) {
+        const why = ((await r.json().catch(() => ({}))) as { error?: string }).error;
+        say(why ? `pull failed: ${why}` : "pull failed");
+        return;
+      }
       const p = await r.json();
       if (!p) { say("runtime has no project"); return; }
       const o = openProject(p);
       if (o.ok) loadProject(o.project);
       say(openSummary(`the project from ${activeTarget.name}`, o));
-    } catch (e) { say(isNetworkFailure(e) ? `pull failed: ${describeFailure(activeTarget.url, e)}` : "pull failed"); }
+    } catch (e) { say(isNetworkFailure(e) ? `pull failed: ${describeFailure(e)}` : "pull failed"); }
     finally { setBusy("none"); }
   };
 
@@ -220,7 +239,8 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       {showNew && <NewProjectDialog onCancel={() => setShowNew(false)} onCreate={(chrome) => { newProject({ chrome }); setShowNew(false); }} />}
       {showTargets && <TargetsDialog onClose={() => setShowTargets(false)} />}
       {showMCP && <MCPModal onClose={() => setShowMCP(false)} />}
-      {showLogin && <RuntimeLoginDialog targetUrl={activeTarget.url} onClose={() => setShowLogin(false)} onSuccess={() => { setShowLogin(false); void doDeploy(); }} />}
+      {showLogin && <RuntimeLoginDialog targetUrl={loginBase} label={loginBase ? `${activeTarget.name} (${activeTarget.url})` : "the runtime that serves this editor"}
+        onClose={() => setShowLogin(false)} onSuccess={() => { setShowLogin(false); void loadTargets(); void doDeploy(); }} />}
     </header>
   );
 }

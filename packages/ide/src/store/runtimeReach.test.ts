@@ -9,7 +9,7 @@ const settle = () => act(async () => { await Promise.resolve(); await Promise.re
 
 beforeEach(() => {
   vi.useFakeTimers();
-  useReach.setState({ reachable: null, streaming: false });
+  useReach.setState({ reachable: null, streaming: false, targetFormat: null });
   vi.spyOn(tagStoreClient, "isConnected").mockReturnValue(false);
 });
 afterEach(() => {
@@ -40,6 +40,20 @@ describe("useRuntimeReach", () => {
     expect(h.result.current.reachable).toBeNull();
     await settle();
     expect(h.result.current.reachable).toBe(want);
+    h.unmount();
+  });
+
+  it("reads which project format the runtime says it reads, and forgets it when the runtime goes", async () => {
+    answer(async () => new Response(JSON.stringify({ ok: true, version: "v0.8.0", schemaVersion: 5 })));
+    const h = renderHook(() => useRuntimeReach());
+    await settle();
+    expect(h.result.current).toMatchObject({ reachable: true, targetFormat: 5 });
+    answer(async () => new Response(JSON.stringify({ ok: true }))); // an older runtime does not say
+    await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+    expect(h.result.current).toMatchObject({ reachable: true, targetFormat: null });
+    answer(async () => { throw new Error("offline"); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+    expect(h.result.current).toMatchObject({ reachable: false, targetFormat: null });
     h.unmount();
   });
 

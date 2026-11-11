@@ -1,6 +1,7 @@
 // Bottom status bar: whether a runtime answers, the live-data connection, and datasource health.
 import { useEffect, useState } from "react";
 import { apiBase } from "../store/runtimeTarget";
+import { getActiveTarget } from "../store/targetsStore";
 import { reachLabel, useRuntimeReach } from "../store/runtimeReach";
 import { authHeader } from "../store/runtimeAuth";
 import { useProject } from "../store/projectStore";
@@ -53,7 +54,7 @@ export function StatusBar() {
       </div>
 
       {/* Target */}
-      <span className="text-zinc-600 truncate max-w-[220px]">{apiBase || `${location.host} (${import.meta.env.DEV ? "dev server" : "this runtime"})`}</span>
+      <span className="text-zinc-600 truncate max-w-[220px]">{getActiveTarget().url || `${location.host} (${import.meta.env.DEV ? "dev server" : "this runtime"})`}</span>
 
       {/* Datasource health */}
       {totalDs > 0 && (

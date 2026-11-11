@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/Speth12/Speths_Screens/internal/mcp"
 	"github.com/Speth12/Speths_Screens/internal/runtime"
+	"github.com/Speth12/Speths_Screens/internal/targets"
 	"github.com/Speth12/Speths_Screens/internal/versionstore"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -23,6 +25,15 @@ type Server struct {
 	// AllowedOrigins are the web origins (scheme://host:port) other than
 	// the runtime's own that may call the API and open WebSockets.
 	AllowedOrigins []string
+
+	// Targets are the runtimes this program relays the IDE's requests to (see targets.go). Nil, the default,
+	// means no relay: the target routes answer 404. Only the program that serves the IDE sets it.
+	Targets *targets.Store
+	// Version is what /api/v1/alive reports, so an IDE can tell an older runtime before deploying to it.
+	Version string
+
+	relayOnce sync.Once
+	relayRT   http.RoundTripper
 }
 
 // DefaultAllowedOrigins are the IDE and operator dev servers on this machine.
@@ -152,6 +163,16 @@ func (s *Server) routes(assets http.Handler) {
 			r.With(s.requirePerm("recipe.edit")).Put("/{id}/recipes/{rid}", s.handleUpdateSetRecipe)
 			r.With(s.requirePerm("recipe.edit")).Delete("/{id}/recipes/{rid}", s.handleDeleteSetRecipe)
 			r.With(s.requirePerm("recipe.apply")).Post("/{id}/recipes/{rid}/apply", s.handleApplySetRecipe)
+		})
+
+		// Deploy targets and the relay to them; 404 unless this program serves the IDE.
+		r.Route("/targets", func(r chi.Router) {
+			r.Use(s.requireTargets)
+			r.Get("/", s.handleListTargets)
+			r.Post("/", s.handleAddTarget)
+			r.Put("/{id}", s.handleUpdateTarget)
+			r.Delete("/{id}", s.handleRemoveTarget)
+			r.HandleFunc("/{id}/relay/*", s.handleRelay)
 		})
 
 		r.Route("/versions", func(r chi.Router) {

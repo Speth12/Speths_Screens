@@ -38,3 +38,6 @@ scripts/panel/panel-probe*.txt
 
 # The IDE build embedded into programs built with -tags ide (scripts/release/build.mjs)
 /cmd/speths-screens/ide/
+
+# The deploy targets a runtime started in this folder saves (--targets-file)
+/targets.json

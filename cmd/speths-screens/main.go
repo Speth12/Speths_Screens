@@ -36,6 +36,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/runtime"
 	"github.com/Speth12/Speths_Screens/internal/security"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/targets"
 	"github.com/Speth12/Speths_Screens/internal/versionstore"
 )
 
@@ -59,6 +60,7 @@ func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	mode := flag.String("mode", "dev", "dev | runtime")
+	targetsFile := flag.String("targets-file", "targets.json", "where the IDE's deploy targets are saved (only the program that serves the IDE uses it)")
 	noIDE := flag.Bool("no-ide", false, "runtime mode: do not serve the IDE at /ide/ (only in programs built with it)")
 	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
@@ -223,18 +225,30 @@ func main() {
 
 	// Serve operator UI for runtime mode; nil assets (IDE proxies its own) for dev.
 	var assets http.Handler
+	ideOn := false
 	if *mode == "runtime" {
 		var ide fs.FS
 		if !*noIDE {
 			ide = ideFS() // nil unless the program was built with the IDE
 		}
 		assets = uiHandler(spaHandler(), ide)
+		ideOn = ide != nil
 		if ide != nil {
 			log.Printf("[Speth's Screens] the IDE is at /ide/ on this address")
 		}
 	}
 	srv := api.New(rt, assets, versionSt)
 	srv.DevMode = *mode == "dev"
+	srv.Version = version
+	// The program that serves the IDE (dev mode, or a runtime built with it) relays the IDE's requests to the
+	// saved deploy targets; a runtime without the IDE, such as the panel's, has no relay.
+	if *mode == "dev" || ideOn {
+		ts, err := targets.Open(*targetsFile)
+		if err != nil {
+			log.Fatalf("[Speth's Screens] deploy targets: %v", err)
+		}
+		srv.Targets = ts
+	}
 	srv.AllowedOrigins = append(append([]string(nil), api.DefaultAllowedOrigins...), splitList(*corsOrigins)...)
 
 	httpSrv := &http.Server{

@@ -64,12 +64,19 @@ in" set to your folder) or a service wrapper such as NSSM.
 ### With the runtime you downloaded (nothing else to install)
 
 Start the Windows or Linux runtime (section 2) and open <http://localhost:8080/ide/>. The IDE is part of the runtime
-program, so its version always matches the runtime's, and the **Local** target (the gear in the header) is that
-runtime: use **Deploy** to put the open project on it, then look at <http://localhost:8080/> for what operators see.
-This is the way to design and try screens on one PC.
+program, so its version always matches the runtime's, and the first target (the gear in the header), **This PC**, is
+that runtime: use **Deploy** to put the open project on it, then look at <http://localhost:8080/> for what operators
+see. This is the way to design and try screens on one PC.
 
-Press **Deploy** to send a project to this runtime, or add the address of another runtime (the panel) as a target
-(below). Starting the runtime with `--no-ide` turns the IDE off.
+To deploy to **another runtime** (the panel), open the target gear, add its address, for example
+`http://10.0.0.118:8090`, select it and use **Deploy** or **Pull**. Your browser only ever talks to the program on
+your PC; that program passes the request on to the panel and tells you plainly when the panel does not answer or
+runs an older version. So the panel needs no setting for the IDE: it only has to be reachable from your PC
+(section 4). The targets are saved in `targets.json` beside the program.
+
+Other targets can be used from the PC the program runs on. From another computer they need the program's own login
+to be on (section 7) and a user who may deploy. Starting the runtime with `--no-ide` turns the IDE and its targets
+off.
 
 ### From the source code (for development)
 
@@ -94,10 +101,8 @@ go run ./cmd/speths-screens --mode=dev --project=demo.screens.json     # port 30
 
 To work with a runtime on **another machine** (the panel, a server), open the **target** gear in the IDE's header, add
 a target such as `http://10.0.0.118:8090`, select it and use **Pull** (read its project) or **Deploy** (send it yours).
-The runtime has to be listening on the network for that (section 4). A runtime accepts requests from the IDE run with
-`npm run dev` (port 5173) and from its own address; any other address, such as the IDE served by the runtime on your
-PC (`http://localhost:8080`), has to be named with `--cors-origins` on the runtime you deploy to (section 4 shows
-how on the panel).
+The runtime has to be listening on the network for that (section 4). The request goes through the development
+runtime on your PC, the same way as with a downloaded runtime (above).
 
 Useful in the IDE: **New** (built-in or custom header and navigation), **Save** and **Load** (any `.json` file),
 **Preview**, the **Desktop / Tablet / Phone** switch, the **Data** switch (live or made-up values for designing with
@@ -138,12 +143,8 @@ and later include them).
 By default nothing on the network can reach the runtime. To let the IDE on your PC Pull and Deploy:
 
 ```powershell
-ssh admin@10.0.0.118 "cd panel-test && SPETHS_LISTEN=:8090 SPETHS_CORS=http://localhost:8080 sh install-service.sh"
+ssh admin@10.0.0.118 "cd panel-test && SPETHS_LISTEN=:8090 sh install-service.sh"
 ```
-
-`SPETHS_CORS` is the address of the IDE you design in: `http://localhost:8080` for the IDE of a runtime on your PC at
-its default port (use the address and port you actually open; separate several with commas). Leave it out if you only
-use the IDE from the source code with `npm run dev`. Nothing else is opened by it.
 
 Check <http://10.0.0.118:8090/> answers from your PC, then add it as a target in the IDE (section 3).
 
@@ -284,7 +285,9 @@ Switching a project from `login` to `none` needs a logged-in deploy. The develop
 | `--project` | none | The project file to load. A deploy from the IDE replaces it. |
 | `--history`, `--history-retention` | `history.db`, 7 days | Trend database (`:memory:` keeps none) and how long to keep it |
 | `--alarm-db`, `--security-db`, `--recipe-db`, `--memory-db`, `--version-db`, `--audit-db` | files in the working folder (the audit log is off unless `--audit-db` is set) | Where each store lives |
-| `--cors-origins` | none | Extra web origins allowed to call the API (a differently hosted IDE) |
+| `--cors-origins` | none | Extra web origins allowed to call the API from a browser page served somewhere else. The IDE does not need it: it reaches other runtimes through its own program |
+| `--targets-file` | `targets.json` | Where the IDE's deploy targets are saved (only a program that serves the IDE) |
+| `--no-ide` | | Do not serve the IDE at `/ide/`, and have no deploy targets |
 | `--jwt-secret` | random | Signs login tokens |
 | `--version` | | Print the version and exit |
 | `--healthcheck` | | Exit 0 if a runtime on `--addr` answers |
