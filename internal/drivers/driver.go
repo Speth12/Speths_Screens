@@ -45,6 +45,17 @@ type DriverStatus struct {
 	CertFingerprint string `json:"certFingerprint,omitempty"`
 }
 
+// Reconfigurer is implemented by a driver that can take new settings while it
+// runs, keeping what it holds. A redeploy that changes a datasource's settings
+// calls it instead of rebuilding the driver. A driver without it is
+// disconnected and built again with the new settings, which reconnects it.
+//
+// Reconfigure returns quickly. When it returns an error the driver keeps
+// running with the settings it had.
+type Reconfigurer interface {
+	Reconfigure(cfg DriverConfig) error
+}
+
 // ProtocolDriver is implemented by every driver instance.
 //
 // Lifecycle: Connect → SetTags (any number of times) → (Write) → Disconnect.
