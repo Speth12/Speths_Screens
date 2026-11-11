@@ -31,6 +31,9 @@ type Types struct {
 	// page with new ids; nothing links back to the preset. The runtime ignores presets.
 	Presets []Preset `json:"presets,omitempty"`
 	Recipes []Recipe `json:"recipes,omitempty"`
+	// Recipe sets: one list of variables with many named recipes that operators can save, load
+	// and delete on the runtime
+	RecipeSets []RecipeSet `json:"recipeSets,omitempty"`
 	// Project file format. A file without it is format 1 and is upgraded when opened
 	SchemaVersion int64 `json:"schemaVersion"`
 	// The role runtime scripts write as (roles and limits apply, and the audit names the
@@ -454,9 +457,11 @@ type CustomWidgetPartProps struct {
 	Compact *bool `json:"compact,omitempty"`
 	// Show the signed-in name beside the icon
 	ShowName *bool `json:"showName,omitempty"`
-	// Show only this recipe; missing shows every recipe
+	// Older projects: the recipe (shown as a set of its own) the widget shows
 	RecipeID *string `json:"recipeId,omitempty"`
-	// List each recipe's tags and values (default true)
+	// The recipe set the table shows; missing shows the first set of the project
+	RecipeSetID *string `json:"recipeSetId,omitempty"`
+	// Older projects: list the tags and values
 	ShowEntries *bool `json:"showEntries,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
@@ -871,9 +876,11 @@ type WidgetProps struct {
 	Compact *bool `json:"compact,omitempty"`
 	// Show the signed-in name beside the icon
 	ShowName *bool `json:"showName,omitempty"`
-	// Show only this recipe; missing shows every recipe
+	// Older projects: the recipe (shown as a set of its own) the widget shows
 	RecipeID *string `json:"recipeId,omitempty"`
-	// List each recipe's tags and values (default true)
+	// The recipe set the table shows; missing shows the first set of the project
+	RecipeSetID *string `json:"recipeSetId,omitempty"`
+	// Older projects: list the tags and values
 	ShowEntries *bool `json:"showEntries,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
@@ -886,6 +893,40 @@ type Preset struct {
 	// Ordinary widgets; x and y are relative to the preset's top-left corner, ids are replaced
 	// on insert
 	Widgets []Widget `json:"widgets"`
+}
+
+// A fixed list of variables and the named recipes that set them. Operators can load, save,
+// save as and delete recipes on the runtime; recipes made there are kept by the runtime,
+// and a deploy adds the ones listed here without overwriting or restoring any an operator
+// changed or deleted
+type RecipeSet struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// The recipes shipped with the project
+	Recipes []SetRecipe `json:"recipes,omitempty"`
+	// The variables every recipe of the set writes, in column order
+	Variables []RecipeVariable `json:"variables"`
+}
+
+type SetRecipe struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Value per variable binding
+	Values map[string]interface{} `json:"values"`
+}
+
+type RecipeVariable struct {
+	// ns:path or datasource_id:tag_path
+	Binding string `json:"binding"`
+	// The value of a recipe that has none for this variable (a variable added after the recipe
+	// was saved); with no default the variable is left alone when the recipe is loaded
+	Default interface{} `json:"default,omitempty"`
+	// Column heading; missing shows the tag name
+	Label *string `json:"label,omitempty"`
+	// A saved or typed value above this is refused
+	Max *float64 `json:"max,omitempty"`
+	// A saved or typed value below this is refused
+	Min *float64 `json:"min,omitempty"`
 }
 
 type Recipe struct {

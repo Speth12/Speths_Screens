@@ -52,6 +52,7 @@ const (
 	PermWriteTag    Permission = "tag.write"
 	PermAckAlarm    Permission = "alarm.ack"
 	PermApplyRecipe Permission = "recipe.apply"
+	PermEditRecipe  Permission = "recipe.edit" // save, change and delete the recipes of a recipe set
 	PermDeploy      Permission = "project.deploy"
 	PermManageUsers Permission = "users.manage"
 )
@@ -59,9 +60,9 @@ const (
 // defaultPermissions maps roles to their allowed permissions.
 var defaultPermissions = map[Role][]Permission{
 	RoleOperator:   {PermReadTag, PermWriteTag, PermAckAlarm},
-	RoleSupervisor: {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe},
-	RoleEngineer:   {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermDeploy},
-	RoleAdmin:      {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermDeploy, PermManageUsers},
+	RoleSupervisor: {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermEditRecipe},
+	RoleEngineer:   {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermEditRecipe, PermDeploy},
+	RoleAdmin:      {PermReadTag, PermWriteTag, PermAckAlarm, PermApplyRecipe, PermEditRecipe, PermDeploy, PermManageUsers},
 }
 
 // User represents a Speth's Screens system user.

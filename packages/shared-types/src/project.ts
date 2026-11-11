@@ -46,6 +46,11 @@ export interface Project {
     presets?: Preset[];
     recipes?: Recipe[];
     /**
+     * Recipe sets: one list of variables with many named recipes that operators can save, load
+     * and delete on the runtime
+     */
+    recipeSets?: RecipeSet[];
+    /**
      * Project file format. A file without it is format 1 and is upgraded when opened
      */
     schemaVersion: number;
@@ -738,11 +743,15 @@ export interface CustomWidgetPartProps {
      */
     showName?: boolean;
     /**
-     * Show only this recipe; missing shows every recipe
+     * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
     /**
-     * List each recipe's tags and values (default true)
+     * The recipe set the table shows; missing shows the first set of the project
+     */
+    recipeSetId?: string;
+    /**
+     * Older projects: list the tags and values
      */
     showEntries?: boolean;
     /**
@@ -1461,11 +1470,15 @@ export interface WidgetProps {
      */
     showName?: boolean;
     /**
-     * Show only this recipe; missing shows every recipe
+     * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
     /**
-     * List each recipe's tags and values (default true)
+     * The recipe set the table shows; missing shows the first set of the project
+     */
+    recipeSetId?: string;
+    /**
+     * Older projects: list the tags and values
      */
     showEntries?: boolean;
     /**
@@ -1484,6 +1497,58 @@ export interface Preset {
      * on insert
      */
     widgets: Widget[];
+}
+
+/**
+ * A fixed list of variables and the named recipes that set them. Operators can load, save,
+ * save as and delete recipes on the runtime; recipes made there are kept by the runtime,
+ * and a deploy adds the ones listed here without overwriting or restoring any an operator
+ * changed or deleted
+ */
+export interface RecipeSet {
+    id:   string;
+    name: string;
+    /**
+     * The recipes shipped with the project
+     */
+    recipes?: SetRecipe[];
+    /**
+     * The variables every recipe of the set writes, in column order
+     */
+    variables: RecipeVariable[];
+}
+
+export interface SetRecipe {
+    id:   string;
+    name: string;
+    /**
+     * Value per variable binding
+     */
+    values: { [key: string]: any };
+}
+
+export interface RecipeVariable {
+    /**
+     * ns:path or datasource_id:tag_path
+     */
+    binding: string;
+    /**
+     * The value of a recipe that has none for this variable (a variable added after the recipe
+     * was saved); with no default the variable is left alone when the recipe is loaded
+     */
+    default?: any;
+    /**
+     * Column heading; missing shows the tag name
+     */
+    label?: string;
+    /**
+     * A saved or typed value above this is refused
+     */
+    max?: number;
+    /**
+     * A saved or typed value below this is refused
+     */
+    min?: number;
 }
 
 export interface Recipe {

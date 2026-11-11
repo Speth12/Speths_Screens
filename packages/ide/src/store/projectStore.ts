@@ -7,7 +7,7 @@ import type {
   Action, ActionType, AlarmRule, AlarmSeverity, CanvasResolution, CanvasSnap,
   Datasource, DatasourceType, Drive, CustomWidget, CustomWidgetParam,
   CustomWidgetPart, ImageAsset, NamespaceNode, NamespaceNodeType, Page, Preset, Project, Recipe,
-  RecipeEntry, Role, RuntimeScript, SessionVar, Shell, Theme, Widget, WidgetBindings, WidgetEvents, WidgetType,
+  RecipeEntry, RecipeSet, Role, RuntimeScript, SessionVar, Shell, Theme, Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { placeFor } from "@speths-screens/widgets";
 import { readStored } from "./storage";
@@ -70,6 +70,10 @@ type State = {
   addAlarmRule: (rule: AlarmRule) => void;
   updateAlarmRule: (id: string, patch: Partial<AlarmRule>) => void;
   removeAlarmRule: (id: string) => void;
+
+  addRecipeSet: (set: RecipeSet) => void;
+  updateRecipeSet: (id: string, patch: Partial<RecipeSet>) => void;
+  removeRecipeSet: (id: string) => void;
 
   addRecipe: (recipe: Recipe) => void;
   updateRecipe: (id: string, patch: Partial<Recipe>) => void;
@@ -494,6 +498,21 @@ export const useProject = create<State>((set, get) => {
           alarmRules: (s.project.alarmRules ?? []).filter((r) => r.id !== id),
         },
       }));
+    },
+
+    addRecipeSet: (recipeSet) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, recipeSets: [...(s.project.recipeSets ?? []), recipeSet] } }));
+    },
+
+    updateRecipeSet: (id, patch) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, recipeSets: (s.project.recipeSets ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)) } }));
+    },
+
+    removeRecipeSet: (id) => {
+      pushHistory();
+      set((s) => ({ project: { ...s.project, recipeSets: (s.project.recipeSets ?? []).filter((r) => r.id !== id) } }));
     },
 
     addRecipe: (recipe) => {

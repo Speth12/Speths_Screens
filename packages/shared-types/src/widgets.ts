@@ -1056,9 +1056,11 @@ export interface RecipesProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
-  /** Show only this recipe; missing shows every recipe */
+  /** The recipe set the table shows; missing shows the first set of the project */
+  recipeSetId?: string;
+  /** Older projects: the recipe (shown as a set of its own) the widget shows */
   recipeId?: string;
-  /** List each recipe's tags and values (default true) */
+  /** Older projects: list the tags and values */
   showEntries?: boolean;
 }
 
@@ -1161,7 +1163,7 @@ export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByTy
   clock: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"],
   driverStatus: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"],
   userMenu: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"],
-  recipes: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeId", "showEntries"],
+  recipes: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"],
   table: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"],
 };
 

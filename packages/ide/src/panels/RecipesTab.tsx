@@ -2,17 +2,19 @@
 // The list is on the left; on the right the chosen recipe's writes, each with the value the tag has right now,
 // and Apply, which has the runtime make the writes.
 import { useState } from "react";
-import type { Recipe, RecipeEntry } from "@speths-screens/shared-types";
+import type { Recipe, RecipeEntry, RecipeSet } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { useWorkspace } from "../store/workspace";
 import { applyOnRuntime, entryValueText, parseEntryValue } from "../store/recipeApply";
 import { BindingInput } from "./BindingInput";
+import { RecipeSetEditor } from "./RecipeSetEditor";
 import { LiveValue } from "./LiveValue";
 import { Button, Field, IconButton, Input } from "../ui";
 import { EmptyState, SelectList, TabHeader } from "../ui/Layout";
 import { AddIcon, CheckIcon, CloseIcon, DeleteIcon } from "../ui/icons";
 
 const NONE: Recipe[] = [];
+const NO_SETS: RecipeSet[] = [];
 type Apply = { state: "idle" | "busy" | "ok" | "err"; message: string };
 
 const newId = () => `rec-${Math.random().toString(36).slice(2, 8)}`;
@@ -20,13 +22,33 @@ const writes = (n: number) => `${n} write${n === 1 ? "" : "s"}`;
 
 export function RecipesTab() {
   const recipes = useProject((s) => s.project.recipes) ?? NONE;
-  const { addRecipe, updateRecipe, removeRecipe } = useProject.getState();
+  const recipeSets = useProject((s) => s.project.recipeSets) ?? NO_SETS;
+  const { addRecipe, updateRecipe, removeRecipe, addRecipeSet } = useProject.getState();
   const chosen = useWorkspace((s) => s.selection.recipes);
   const select = useWorkspace((s) => s.select);
   const [applied, setApplied] = useState<Record<string, Apply>>({});
   const [confirm, setConfirm] = useState(false);
 
-  const recipe = recipes.find((r) => r.id === chosen) ?? recipes[0];
+  // A recipe set is chosen when its id is; with nothing chosen the first set, else the first single recipe, is shown.
+  const chosenSet = recipeSets.find((s) => s.id === chosen) ?? (recipes.some((r) => r.id === chosen) ? undefined : recipeSets[0]);
+  const recipe = chosenSet ? undefined : recipes.find((r) => r.id === chosen) ?? recipes[0];
+
+  const addSet = () => {
+    const s: RecipeSet = { id: newId(), name: `Recipe set ${recipeSets.length + 1}`, variables: [], recipes: [] };
+    addRecipeSet(s);
+    select("recipes", s.id);
+  };
+  // An older single recipe becomes a set of one recipe: its tags are the variables, its values the one recipe.
+  const convert = (r: Recipe) => {
+    const entries = r.entries.filter((e) => e.binding.trim() !== "");
+    const s: RecipeSet = {
+      id: `set-${r.id}`, name: r.name || "Recipe set", variables: entries.map((e) => ({ binding: e.binding })),
+      recipes: [{ id: newId(), name: r.name || "Recipe", values: Object.fromEntries(entries.map((e) => [e.binding, e.value])) }],
+    };
+    addRecipeSet(s);
+    removeRecipe(r.id);
+    select("recipes", s.id);
+  };
 
   const add = () => {
     const r: Recipe = { id: newId(), name: `Recipe ${recipes.length + 1}`, description: "", entries: [] };
@@ -46,17 +68,28 @@ export function RecipesTab() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-zinc-950">
-      <TabHeader title="Recipes" summary={`${recipes.length} recipe${recipes.length === 1 ? "" : "s"}`}
-        actions={<Button variant="primary" icon={<AddIcon size={14} />} onClick={add}>New recipe</Button>} />
+      <TabHeader title="Recipes" summary={`${recipes.length} recipe${recipes.length === 1 ? "" : "s"}${recipeSets.length ? `, ${recipeSets.length} recipe set${recipeSets.length === 1 ? "" : "s"}` : ""}`}
+        actions={<><Button icon={<AddIcon size={14} />} onClick={add}>New recipe</Button><Button variant="primary" icon={<AddIcon size={14} />} onClick={addSet}>New recipe set</Button></>} />
       <div className="flex-1 flex min-h-0">
         <section className="w-72 shrink-0 min-w-0 flex flex-col border-r border-zinc-800">
-          {recipes.length === 0 ? (
-            <EmptyState title="No recipes yet" action={<Button variant="primary" icon={<AddIcon size={14} />} onClick={add}>New recipe</Button>}>
-              A recipe writes a set of tag values in one go, for a startup or shutdown sequence or a product changeover.
+          {recipes.length === 0 && recipeSets.length === 0 ? (
+            <EmptyState title="No recipes yet" action={<Button variant="primary" icon={<AddIcon size={14} />} onClick={addSet}>New recipe set</Button>}>
+              A recipe set is a list of variables with named recipes that set them: a product changeover, a startup sequence. Operators load, save and delete recipes on the screen.
             </EmptyState>
           ) : (
-            <SelectList label="Recipes" className="flex-1 min-h-0" selected={recipe?.id ?? null} onSelect={(id) => { select("recipes", id); setConfirm(false); }}
-              items={recipes.map((r) => ({
+            <SelectList label="Recipes" className="flex-1 min-h-0" selected={chosenSet?.id ?? recipe?.id ?? null} onSelect={(id) => { select("recipes", id); setConfirm(false); }}
+              items={[...recipeSets.map((s) => ({
+                id: s.id,
+                content: (
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 truncate text-ui font-medium text-zinc-100">{s.name || "Unnamed set"}</span>
+                      <span className="text-ui-label text-zinc-500 shrink-0">{`${s.variables.length} variable${s.variables.length === 1 ? "" : "s"}`}</span>
+                    </div>
+                    <div className="truncate text-ui-label text-zinc-500">{`Recipe set, ${(s.recipes ?? []).length} shipped`}</div>
+                  </div>
+                ),
+              })), ...recipes.map((r) => ({
                 id: r.id,
                 content: (
                   <div className="flex flex-col gap-0.5">
@@ -67,12 +100,14 @@ export function RecipesTab() {
                     {r.description && <div className="truncate text-ui-label text-zinc-500">{r.description}</div>}
                   </div>
                 ),
-              }))} />
+              }))]} />
           )}
         </section>
 
         <section className="flex-1 min-w-0 min-h-0 overflow-auto">
-          {!recipe ? (
+          {chosenSet ? (
+            <div key={chosenSet.id} className="max-w-5xl"><RecipeSetEditor set={chosenSet} /></div>
+          ) : !recipe ? (
             <EmptyState title="Choose a recipe, or make one" />
           ) : (
             <div key={recipe.id} className="p-4 max-w-3xl space-y-4">
@@ -84,6 +119,7 @@ export function RecipesTab() {
                   icon={result?.state === "ok" ? <CheckIcon size={14} /> : undefined} onClick={() => void apply(recipe)}>
                   {result?.state === "busy" ? "Applying…" : "Apply on the runtime"}
                 </Button>
+                <Button onClick={() => convert(recipe)}>Convert to a recipe set</Button>
                 {confirm ? (
                   <>
                     <Button variant="danger" onClick={() => { removeRecipe(recipe.id); setConfirm(false); }}>Delete</Button>

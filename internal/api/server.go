@@ -145,6 +145,15 @@ func (s *Server) routes(assets http.Handler) {
 			r.With(s.requirePerm("recipe.apply")).Post("/pending/{pendingId}/reject", s.handleRejectRecipe)
 		})
 
+		// Recipe sets: one list of variables, many named recipes that supervisors save, load and delete.
+		r.Route("/recipe-sets", func(r chi.Router) {
+			r.Get("/", s.handleListRecipeSets)
+			r.With(s.requirePerm("recipe.edit")).Post("/{id}/recipes", s.handleCreateSetRecipe)
+			r.With(s.requirePerm("recipe.edit")).Put("/{id}/recipes/{rid}", s.handleUpdateSetRecipe)
+			r.With(s.requirePerm("recipe.edit")).Delete("/{id}/recipes/{rid}", s.handleDeleteSetRecipe)
+			r.With(s.requirePerm("recipe.apply")).Post("/{id}/recipes/{rid}/apply", s.handleApplySetRecipe)
+		})
+
 		r.Route("/versions", func(r chi.Router) {
 			r.Get("/", s.handleListVersions)
 			r.Get("/{id}", s.handleGetVersion)

@@ -1,7 +1,7 @@
 // Draws the settings a widget manifest declares (@speths-screens/widgets),
 // one control per field kind. Replaces the hand-written editor per widget.
 import { useRef } from "react";
-import { SYMBOLS, SymbolSVG, type Field } from "@speths-screens/widgets";
+import { SYMBOLS, SymbolSVG, recipeSetsOf, type Field } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { useProject } from "../store/projectStore";
 import { BindingInput } from "./BindingInput";
@@ -257,12 +257,12 @@ function withKey(obj: Config, key: string, value: unknown): Config {
 }
 
 function RecipePicker({ f, value, put }: { f: Field; value?: string; put: (v: unknown) => void }) {
-  const recipes = useProject((s) => s.project.recipes) ?? [];
+  const recipes = recipeSetsOf(useProject((s) => s.project));
   return (
     <div>
       <Label text={f.label} />
       <select aria-label={f.label} value={value ?? ""} onChange={(e) => put(e.target.value || undefined)} className={inp}>
-        <option value="">— every recipe —</option>
+        <option value="">— first recipe set —</option>
         {recipes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
       </select>
       {f.note && <div className="text-[10px] text-zinc-600 mt-1">{f.note}</div>}

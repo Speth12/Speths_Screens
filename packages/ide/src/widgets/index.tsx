@@ -2,7 +2,7 @@
 // host the canvas and preview draw with.
 import { useMemo } from "react";
 import {
-  WidgetHostProvider, WidgetRenderer as LibraryRenderer, appTag, findCustomWidget, pickLanguage, splitApp, translator,
+  WidgetHostProvider, WidgetRenderer as LibraryRenderer, appTag, findCustomWidget, pickLanguage, recipeSetsOf, splitApp, translator,
   type AlarmView, type AppValues, type DriverInfo, type UserInfo, type WidgetHost, type WriteRequest,
 } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
@@ -111,10 +111,11 @@ function useIdeDrivers(): DriverInfo[] {
   return useMemo(() => datasources.map((d) => ({ id: d.id, label: d.label, connected: true })), [datasources]);
 }
 
-function useIdeRecipes() {
-  return useProject((s) => s.project.recipes) ?? NO_RECIPES;
+function useIdeRecipeSets() {
+  const recipes = useProject((s) => s.project.recipes);
+  const recipeSets = useProject((s) => s.project.recipeSets);
+  return useMemo(() => recipeSetsOf({ recipes, recipeSets }), [recipes, recipeSets]);
 }
-const NO_RECIPES: never[] = [];
 
 function useIdeUser(): UserInfo {
   const loginRequired = useProject((s) => s.project.security?.mode === "login");
@@ -135,7 +136,7 @@ export const ideHost: WidgetHost = {
   usePages: useIdePages,
   useDrivers: useIdeDrivers,
   useUser: useIdeUser,
-  useRecipes: useIdeRecipes,
+  useRecipeSets: useIdeRecipeSets,
   useTranslate: useIdeTranslate,
 };
 

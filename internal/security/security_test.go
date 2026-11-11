@@ -149,3 +149,25 @@ func TestOperatorMayWriteTags(t *testing.T) {
 		}
 	}
 }
+
+// Supervisors and above save, change and delete the recipes of a recipe set; operators can neither load nor change them.
+func TestRecipeEditPermission(t *testing.T) {
+	tests := []struct {
+		role  Role
+		apply bool
+		edit  bool
+	}{
+		{RoleOperator, false, false},
+		{RoleSupervisor, true, true},
+		{RoleEngineer, true, true},
+		{RoleAdmin, true, true},
+	}
+	for _, tc := range tests {
+		if got := HasPermission(tc.role, PermApplyRecipe); got != tc.apply {
+			t.Errorf("%s recipe.apply = %v, want %v", tc.role, got, tc.apply)
+		}
+		if got := HasPermission(tc.role, PermEditRecipe); got != tc.edit {
+			t.Errorf("%s recipe.edit = %v, want %v", tc.role, got, tc.edit)
+		}
+	}
+}
