@@ -58,6 +58,7 @@ Dan is the only developer and owns the code.
 | `schema.json` | The project contract |
 | `demo.screens.json` | Demo project; must keep loading through every phase |
 | `scripts/panel` | Tools for trying the runtime on a Phoenix Contact WP 6000 panel: `probe.sh` (read-only facts about the panel), `browser-check.html` (what the panel's browser supports), `run-test.sh`, `install-service.sh` and `uninstall-service.sh` (see its README). **Never commit `panel-probe.txt`**: it holds the panel's network addresses and hardware address |
+| `scripts/e2e/memory-widgets` | End-to-end runs with a real runtime and a real browser: a memory variable on every widget type (`run.mjs`) and the IDE authoring path from naming a variable to using a button (`ide-flow.mjs`); see its README |
 | `samples/` | Sample projects with the scripts in `scripts/samples` that build them (`design-directions`: the design board's screen) |
 | `project/project.json` | Dan's local project with real credentials. **Never commit it.** Use `project/project.example.json` |
 

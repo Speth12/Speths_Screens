@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useProject, type Datasource, type CanvasResolution, type CanvasSnap } from "../store/projectStore";
 import { SYMBOL_PACKS, SYMBOLS } from "@speths-screens/widgets";
 import { AlarmBadge } from "./AlarmBadge";
+import { NamespaceList } from "./NamespaceList";
 import { AddDatasourceModal } from "./AddDatasourceModal";
 import { Users } from "./Users";
 import { ChromeSettings } from "./ChromeSettings";
@@ -270,9 +271,11 @@ export function LeftPanel({ width }: { width?: number }) {
           </div>
         </TreeSection>
 
-        {/* The namespace (what screens bind to) and the controllers' own variables, in one tab */}
-        <TreeLink label="Variables" tabId="variables" count={project.namespace?.filter((n) => n.type === "tag" || n.type === "virtual").length}
-          onOpen={() => openVariables()} />
+        {/* The named variables to drag onto widgets; the Variables tab makes and names them */}
+        <TreeSection label="Variables" count={project.namespace?.filter((n) => n.type === "tag" || n.type === "virtual").length}
+          defaultOpen onOpen={() => openVariables()}>
+          <NamespaceList onOpenVariables={() => openVariables()} />
+        </TreeSection>
 
         {/* Alarm rules, and the events the runtime raises */}
         <TreeLink label="Alarms" tabId={ALARMS_TAB.id} count={project.alarmRules?.length} badge={<AlarmBadge />} onOpen={() => openTab(ALARMS_TAB)} />

@@ -37,7 +37,8 @@ export function PageStage({ widgets: all, resolution: fixedOrNot, pixel, fit, vi
     <div data-testid="page-stage" style={{ width: stage.width * scale, height: stage.height * scale, margin: stage.fixed ? "0 auto" : undefined }}>
       <div style={{ position: "relative", width: stage.width, height: stage.height, transform: `scale(${scale})`, transformOrigin: "top left" }}>
         {widgets.map((w) => (
-          <div key={w.id} style={{ position: "absolute", ...placement(w, pixel) }}>
+          // The id and type let a test (or a person inspecting the page) find a widget; a widget hidden by its visibility tag leaves this box empty.
+          <div key={w.id} data-widget-id={w.id} data-widget-type={w.type} style={{ position: "absolute", ...placement(w, pixel) }}>
             <WidgetRenderer w={w} />
           </div>
         ))}
