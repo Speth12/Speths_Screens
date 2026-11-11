@@ -221,7 +221,7 @@ export const MANIFESTS: WidgetManifest[] = [
   ], { bindings: [], events: [] }),
   widget("recipes", "Recipes", 4, 5, [
     { key: "recipeId", label: "Recipe", kind: "recipe", note: "Blank shows every recipe of the project." },
-    { key: "showEntries", label: "List the tags and values", kind: "boolean", default: true },
+    { key: "showEntries", label: "Show the variables as a table", kind: "boolean", default: true },
   ], { bindings: [], events: [] }),
   widget("userMenu", "User menu", 1, 1, [
     { key: "showName", label: "Show the name beside the icon", kind: "boolean", default: false },

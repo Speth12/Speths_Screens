@@ -460,7 +460,7 @@ describe("recipes widget", () => {
   ];
   const withRecipes = (answer: { status?: number; body: unknown }) => {
     const apiFetch = vi.fn(async () => new Response(JSON.stringify(answer.body), { status: answer.status ?? 200 }));
-    return { apiFetch, host: fakeHost({}, { useRecipes: () => recipes, apiFetch }) };
+    return { apiFetch, host: fakeHost({ "plc:Setpoint": 40 }, { useRecipes: () => recipes, apiFetch }) };
   };
 
   it("lists every recipe with its tags and values, or just the chosen one", () => {
@@ -468,7 +468,11 @@ describe("recipes widget", () => {
     expect(screen.getByText("Batch A")).toBeTruthy();
     expect(screen.getByText("Batch B")).toBeTruthy();
     expect(screen.getByText("Slow ramp")).toBeTruthy();
-    expect(screen.getAllByText("Setpoint = 40").length).toBe(1);
+    // the variables are a table: one row per write, with the recipe value and what the tag holds now
+    const table = screen.getByTestId("recipe-table-r1");
+    const rows = Array.from(table.querySelectorAll("tbody tr")).map((tr) => Array.from(tr.querySelectorAll("td")).map((td) => td.textContent));
+    expect(rows).toEqual([["1", "Setpoint", "40", "40 ✓"], ["2", "Mode", "auto", "—"]]);
+    expect(Array.from(table.querySelectorAll("th")).map((th) => th.textContent)).toEqual(["#", "Variable", "Recipe value", "Now"]);
     cleanup();
     draw({ type: "recipes", props: { recipeId: "r2", showEntries: false } }, withRecipes({ body: {} }).host);
     expect(screen.queryByText("Batch A")).toBeNull();
