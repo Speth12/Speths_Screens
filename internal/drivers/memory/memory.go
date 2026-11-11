@@ -62,11 +62,9 @@ func (d *Driver) ID() string { return "memory" }
 // Connect sets every tag to its retained value, if it keeps one of the right
 // type, else to its initial value, and sends them all.
 func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<- tagstore.TagUpdate) error {
-	var list []Spec
-	if raw := cfg.Extra["memoryTags"]; raw != "" {
-		if err := json.Unmarshal([]byte(raw), &list); err != nil {
-			return fmt.Errorf("memory: invalid memoryTags JSON: %w", err)
-		}
+	list, err := parseSpecs(cfg)
+	if err != nil {
+		return err
 	}
 	ds := cfg.Extra["datasourceId"]
 	var stored map[string]any
@@ -84,16 +82,7 @@ func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<-
 	for _, s := range list {
 		d.specs[s.Path] = s
 		d.order = append(d.order, s.Path)
-		v, err := convert(s.Type, s.Initial)
-		if s.Initial == nil || err != nil {
-			v = zero(s.Type)
-		}
-		if old, ok := stored[s.Path]; ok && s.Retain {
-			if kept, err := convert(s.Type, old); err == nil {
-				v = kept
-			}
-		}
-		d.values[s.Path] = v
+		d.values[s.Path] = startValue(s, stored)
 	}
 	d.mu.Unlock()
 	d.connected.Store(true)
@@ -109,6 +98,97 @@ func (d *Driver) Connect(_ context.Context, cfg drivers.DriverConfig, out chan<-
 		d.wg.Add(1)
 		go d.saveLoop(stop)
 	}
+	return nil
+}
+
+// parseSpecs reads the tag list from the driver's config.
+func parseSpecs(cfg drivers.DriverConfig) ([]Spec, error) {
+	var list []Spec
+	if raw := cfg.Extra["memoryTags"]; raw != "" {
+		if err := json.Unmarshal([]byte(raw), &list); err != nil {
+			return nil, fmt.Errorf("memory: invalid memoryTags JSON: %w", err)
+		}
+	}
+	return list, nil
+}
+
+// startValue is where a tag begins: its retained value, if it keeps one of the right type, else its initial value,
+// else false, 0 or empty text.
+func startValue(s Spec, stored map[string]any) any {
+	v, err := convert(s.Type, s.Initial)
+	if s.Initial == nil || err != nil {
+		v = zero(s.Type)
+	}
+	if old, ok := stored[s.Path]; ok && s.Retain {
+		if kept, err := convert(s.Type, old); err == nil {
+			v = kept
+		}
+	}
+	return v
+}
+
+// Reconfigure takes a changed tag list while the driver runs (drivers.Reconfigurer). A tag that stays, with the same
+// type, keeps its value, so a deploy does not reset a counter; a tag that is new, or has a new type, starts from its
+// retained or initial value and is sent; a tag that is gone is sent Bad, so a screen that still reads it says so. When
+// the new list cannot be read the driver keeps the one it has.
+func (d *Driver) Reconfigure(cfg drivers.DriverConfig) error {
+	list, err := parseSpecs(cfg)
+	if err != nil {
+		return err
+	}
+	d.mu.Lock()
+	ds, connected := d.ds, d.stop != nil
+	d.mu.Unlock()
+	if !connected {
+		return fmt.Errorf("memory: not connected")
+	}
+	var stored map[string]any
+	if d.retain != nil {
+		stored, _ = d.retain.Load(ds) // new retained tags start from it; if it cannot be read they start from their initial value
+	}
+
+	d.mu.Lock()
+	specs, values, order := map[string]Spec{}, map[string]any{}, []string(nil)
+	var fresh, gone []string
+	for _, s := range list {
+		if _, repeated := specs[s.Path]; repeated {
+			continue // validation reports a name used twice; the first one wins
+		}
+		old, had := d.specs[s.Path]
+		if had && old.Type == s.Type {
+			values[s.Path] = d.values[s.Path]
+		} else {
+			values[s.Path] = startValue(s, stored)
+			fresh = append(fresh, s.Path)
+		}
+		specs[s.Path] = s
+		order = append(order, s.Path)
+		if !s.Retain {
+			delete(d.pending, s.Path)
+		} else if !had || !old.Retain {
+			d.pending[s.Path] = values[s.Path] // newly kept: save what it holds now
+		}
+	}
+	for p := range d.specs {
+		if _, stays := specs[p]; !stays {
+			gone = append(gone, p)
+			delete(d.pending, p)
+		}
+	}
+	d.specs, d.values, d.order = specs, values, order
+	sends := make([]tagstore.TagUpdate, 0, len(fresh)+len(gone))
+	now := time.Now().UnixNano()
+	for _, p := range fresh {
+		sends = append(sends, tagstore.TagUpdate{Path: p, State: tagstore.TagState{Value: values[p], Quality: "Good", TS: now}})
+	}
+	for _, p := range gone {
+		sends = append(sends, tagstore.TagUpdate{Path: p, State: tagstore.TagState{Quality: "Bad", TS: now, Reason: "this memory variable was removed from the project"}})
+	}
+	d.mu.Unlock()
+	for _, u := range sends { // not under the lock: send waits when the runtime is busy
+		d.send(u)
+	}
+	log.Printf("[DRIVER] memory %s: tags changed in place: %d now, %d new, %d removed", ds, len(list), len(fresh), len(gone))
 	return nil
 }
 

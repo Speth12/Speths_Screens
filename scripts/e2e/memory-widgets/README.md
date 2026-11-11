@@ -35,7 +35,7 @@ mkdir scratch; cd scratch
 Then, from the repo root:
 
 ```powershell
-node scripts/e2e/memory-widgets/run.mjs            # every widget type: 50 checks
+node scripts/e2e/memory-widgets/run.mjs            # every widget type: 50 checks, all pass
 ```
 
 `ide-flow.mjs` needs the IDE as well (`npm run dev`, with `VITE_RUNTIME_ADDR` pointing at the runtime if it is not on the default port):
@@ -49,5 +49,5 @@ Set `CHROME` to another Chromium if Chrome is not in its usual place on Windows,
 
 ## What it found
 
-- A memory variable added by a **second deploy** could not be written (`memory: no tag "…"`): the runtime kept the memory datasource it already had. `run.mjs` ends with this check, so it fails until that is fixed.
+- A memory variable added by a **second deploy** could not be written (`memory: no tag "…"`): the runtime kept the memory datasource it already had. `run.mjs` ends with this check, it passes since the runtime applies a changed datasource on deploy (memory and calculated-tag datasources keep their values; the others are rebuilt).
 - A new Button is **momentary** (it writes 1 while pressed and 0 on release), so bound to a variable it never counts. To count, replace those actions with On click → Increment (the `--increment` flag of `ide-flow.mjs` does this).

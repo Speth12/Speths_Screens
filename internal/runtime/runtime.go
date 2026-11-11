@@ -3,6 +3,8 @@ package runtime
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -55,6 +57,7 @@ type Runtime struct {
 	mu        sync.RWMutex
 	drivers   map[string]drivers.ProtocolDriver // datasource id → driver
 	fanStop   map[string]context.CancelFunc     // datasource id → stops its fan-in
+	dsBuilt   map[string]dsSignature            // datasource id → what its driver was built or last configured from
 	nsAliases map[string][]string               // "driverId:driverAddr" → []nsPath
 
 	// demand is the subscription manager (see demand.go).
@@ -96,6 +99,7 @@ func New(store *tagstore.TagStore, h *historian.Historian) *Runtime {
 		Events:    eventbus.New(),
 		drivers:   make(map[string]drivers.ProtocolDriver),
 		fanStop:   make(map[string]context.CancelFunc),
+		dsBuilt:   make(map[string]dsSignature),
 		demand:    demand{sources: map[string]map[string]struct{}{}},
 		pumpBox:   tagstore.NewMailbox(),
 
@@ -142,6 +146,7 @@ func (r *Runtime) Stop() {
 	}
 	r.drivers = nil
 	r.fanStop = nil
+	r.dsBuilt = nil
 	r.mu.Unlock()
 	if r.cancel != nil {
 		r.cancel()
@@ -149,7 +154,26 @@ func (r *Runtime) Stop() {
 	r.wg.Wait()
 }
 
+// dsSignature identifies what a datasource's driver was built from: its type and
+// a hash of its settings (a hash, so no second copy of a password is kept). A
+// project whose datasource has a different signature than the running driver
+// asks for that datasource to be changed.
+type dsSignature struct {
+	typ project.DatasourceType
+	cfg string
+}
+
+func signatureOf(ds project.Datasource) dsSignature {
+	b, _ := json.Marshal(buildConfig(ds)) // a map and strings: it cannot fail
+	sum := sha256.Sum256(b)
+	return dsSignature{typ: ds.Type, cfg: hex.EncodeToString(sum[:])}
+}
+
 // LoadProject reconfigures drivers based on a project file.
+//
+// A datasource the runtime does not have yet gets a new driver. One it already has keeps its driver while its
+// settings are the same. When they changed (a host, a credential, a memory or computed tag), a driver that can take
+// new settings while it runs (drivers.Reconfigurer) is given them; any other driver is disconnected and built again.
 // Existing drivers not in the new project are disconnected.
 // Safe to call any number of times; Start must have been called first.
 func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
@@ -222,17 +246,44 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	for _, ds := range p.Datasources {
 		desired[ds.ID] = true
 	}
-	// disconnect removed datasources
+	// Datasources the runtime already has whose settings changed, and what to do about each: configure in place, or
+	// disconnect and build again (the loop below builds a datasource the runtime does not have).
+	changed := map[string]project.Datasource{}
+	for _, ds := range p.Datasources {
+		if _, have := r.drivers[ds.ID]; have && r.dsBuilt[ds.ID] != signatureOf(ds) {
+			changed[ds.ID] = ds
+		}
+	}
 	for id, d := range r.drivers {
-		if !desired[id] {
-			_ = d.Disconnect()
-			if stop := r.fanStop[id]; stop != nil {
-				stop()
-			}
-			delete(r.drivers, id)
-			delete(r.fanStop, id)
+		ds, isChanged := changed[id]
+		_, inPlace := d.(drivers.Reconfigurer)
+		if desired[id] && !(isChanged && (!inPlace || r.dsBuilt[id].typ != ds.Type)) {
+			continue
+		}
+		_ = d.Disconnect() // removed, or changed in a way this driver cannot take while running
+		if stop := r.fanStop[id]; stop != nil {
+			stop()
+		}
+		delete(r.drivers, id)
+		delete(r.fanStop, id)
+		delete(r.dsBuilt, id)
+		delete(changed, id)
+		if desired[id] {
+			log.Printf("[RUNTIME] datasource %s changed: rebuilding it", id)
+		} else {
 			log.Printf("[RUNTIME] removed datasource %s", id)
 		}
+	}
+	// What is left in changed keeps its driver, which takes the new settings now.
+	for id, ds := range changed {
+		rc := r.drivers[id].(drivers.Reconfigurer)
+		if err := rc.Reconfigure(buildConfig(ds)); err != nil {
+			// The driver keeps the settings it had; the next load tries again.
+			log.Printf("[RUNTIME] %s: new settings not applied: %v", id, err)
+			continue
+		}
+		r.dsBuilt[id] = signatureOf(ds)
+		log.Printf("[RUNTIME] updated datasource %s (%s) without reconnecting", id, ds.Type)
 	}
 	r.mu.Unlock()
 
@@ -248,6 +299,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 			// Register driver before connecting so status endpoint always exists.
 			r.mu.Lock()
 			r.drivers[ds.ID] = drv
+			r.dsBuilt[ds.ID] = signatureOf(ds)
 			r.mu.Unlock()
 			cfg := buildConfig(ds)
 			if err := drv.Connect(ctx, cfg, fanCh); err != nil {
