@@ -627,7 +627,12 @@ func (s *Server) executeRecipeEntries(r *http.Request, entries []recipestore.Ent
 	applied := 0
 	// One at a time, in recipe order: a recipe may set a mode before a
 	// setpoint that depends on it.
-	for _, entry := range entries {
+	for i, entry := range entries {
+		if strings.TrimSpace(entry.Binding) == "" {
+			// A row added with "Add write" and never given a tag: say which one, not ": failed: ...".
+			errs = append(errs, fmt.Sprintf("write %d has no tag chosen", i+1))
+			continue
+		}
 		res := s.writeTag(r, runtime.WriteRequest{Binding: entry.Binding, Value: entry.Value, Recipe: true})
 		if res.Status != runtime.WriteConfirmed && res.Status != runtime.WriteSent {
 			errs = append(errs, entry.Binding+": "+res.Status+": "+res.Reason)

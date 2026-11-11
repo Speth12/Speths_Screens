@@ -26,6 +26,8 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
 
   const recipes: Recipe[] = w.props?.recipeId ? all.filter((r) => r.id === w.props!.recipeId) : all;
   const showEntries = w.props?.showEntries !== false;
+  // The values the tags hold now, for the "Now" column. A hook, so it runs before the early return.
+  const live = host.useTags(showEntries ? [...new Set(recipes.flatMap((r) => r.entries.map((e) => e.binding)).filter(Boolean))] : []);
 
   const apply = async (r: Recipe) => {
     setApplying(r.id);
@@ -55,9 +57,33 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
             <div className="text-sm font-medium">{t(rec.name)}</div>
             {rec.description && <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t(rec.description)}</div>}
             {showEntries && (
-              <div className="text-[11px] font-mono" style={{ color: "var(--muted-foreground)" }}>
-                {rec.entries.map((e, i) => <div key={i}>{e.binding.split(":").pop()} = {String(e.value)}</div>)}
-              </div>
+              <table className="w-full text-xs border-collapse" data-testid={`recipe-table-${rec.id}`}>
+                <thead>
+                  <tr style={{ color: "var(--muted-foreground)" }}>
+                    <th className="text-left font-medium px-1 py-0.5 w-6">#</th>
+                    <th className="text-left font-medium px-1 py-0.5">{t("Variable")}</th>
+                    <th className="text-right font-medium px-1 py-0.5">{t("Recipe value")}</th>
+                    <th className="text-right font-medium px-1 py-0.5">{t("Now")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rec.entries.map((e, i) => {
+                    const st = live[e.binding];
+                    const known = st !== undefined && st.quality !== "Unknown" && st.quality !== "Bad" && st.value !== null && st.value !== undefined;
+                    const same = known && String(st.value) === String(e.value);
+                    return (
+                      <tr key={i} style={{ borderTop: "1px solid var(--border)" }}>
+                        <td className="px-1 py-0.5 tabular-nums" style={{ color: "var(--muted-foreground)" }}>{i + 1}</td>
+                        <td className="px-1 py-0.5 font-mono">{e.binding.replace(/^(ns|[^:]+):/, "") || "—"}</td>
+                        <td className="px-1 py-0.5 text-right font-mono tabular-nums">{String(e.value)}</td>
+                        <td className="px-1 py-0.5 text-right font-mono tabular-nums" style={{ color: same ? "#16a34a" : undefined }}>
+                          {known ? String(st.value) : "—"}{same ? " ✓" : ""}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
             {res && (
               <div role="status" className="text-xs font-medium" style={{ color: res.ok ? "#16a34a" : "var(--alarm-critical)" }}>

@@ -504,3 +504,31 @@ func TestVersionRestoreNotFound(t *testing.T) {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 func int64str(n int64) string { return strconv.FormatInt(n, 10) }
+
+// A recipe row added with "Add write" and never given a tag is reported by its
+// number, not as ": failed: does not name a tag"; the other writes still go out.
+func TestRecipeApplyNamesARowWithNoTag(t *testing.T) {
+	_, _, hs := newTestServer(t)
+	withBlank := strings.Replace(projectWithRecipes,
+		`"entries":[{"binding":"virt:sp","value":0}]`,
+		`"entries":[{"binding":"","value":1},{"binding":"virt:sp","value":0}]`, 1)
+	resp := postJSON(t, hs.URL+"/api/v1/project", withBlank)
+	resp.Body.Close()
+	time.Sleep(100 * time.Millisecond)
+
+	resp2, err := http.Post(hs.URL+"/api/v1/recipes/rec1/apply", "application/json", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := decodeBody(t, resp2)
+	if resp2.StatusCode != 207 {
+		t.Fatalf("status %d, want 207; body=%v", resp2.StatusCode, body)
+	}
+	errs, _ := body["errors"].([]any)
+	if len(errs) != 1 || errs[0] != "write 1 has no tag chosen" {
+		t.Errorf("errors = %v, want [write 1 has no tag chosen]", errs)
+	}
+	if applied, _ := body["applied"].(float64); applied != 1 {
+		t.Errorf("applied = %v, want 1", body["applied"])
+	}
+}

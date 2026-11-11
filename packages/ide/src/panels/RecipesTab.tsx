@@ -80,7 +80,7 @@ export function RecipesTab() {
                 <Field label="Name" className="flex-1">
                   <Input value={recipe.name} onChange={(e) => updateRecipe(recipe.id, { name: e.target.value })} />
                 </Field>
-                <Button variant="primary" disabled={result?.state === "busy" || recipe.entries.length === 0}
+                <Button variant="primary" disabled={result?.state === "busy" || recipe.entries.length === 0 || recipe.entries.some((e) => !e.binding.trim())}
                   icon={result?.state === "ok" ? <CheckIcon size={14} /> : undefined} onClick={() => void apply(recipe)}>
                   {result?.state === "busy" ? "Applying…" : "Apply on the runtime"}
                 </Button>
@@ -107,6 +107,7 @@ export function RecipesTab() {
                 <div className="grid grid-cols-[2rem_minmax(0,1fr)_8rem_9rem_2rem] gap-2 px-1 pb-1 text-ui-label uppercase tracking-wide text-zinc-500">
                   <span>#</span><span>Tag</span><span>Value to write</span><span>Now</span><span />
                 </div>
+                {recipe.entries.some((e) => !e.binding.trim()) && <div role="alert" className="px-1 pb-2 text-ui-label text-red-500">Some writes have no tag chosen. Pick a tag for each, or remove the row; the recipe cannot be applied until then.</div>}
                 {recipe.entries.length === 0 && <div className="px-1 py-3 text-ui text-zinc-500">No writes yet. Add the tags this recipe sets.</div>}
                 {recipe.entries.map((entry, i) => (
                   <EntryRow key={i} index={i} entry={entry}
