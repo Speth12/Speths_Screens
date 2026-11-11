@@ -82,6 +82,8 @@ export interface WidgetManifest {
   defaults?: { props?: Record<string, unknown>; events?: WidgetEvents };
   /** What the widget gallery shows it with. */
   sample: GallerySample;
+  /** Settings older projects may still hold that the widget no longer offers (the schema keeps accepting them). */
+  legacyProps?: string[];
 }
 
 /** A widget type's sample for the gallery: the value its tag holds in the

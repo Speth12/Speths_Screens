@@ -88,6 +88,11 @@
       "type": "array",
       "items": { "$ref": "#/$defs/Recipe" }
     },
+    "recipeSets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/RecipeSet" },
+      "description": "Recipe sets: one list of variables with many named recipes that operators can save, load and delete on the runtime"
+    },
     "historian": {
       "$ref": "#/$defs/HistorianSettings",
       "description": "What the historian stores and for how long. Missing means every change, plus one sample per tag every 60 s, kept for the runtime's --history-retention (default 7 days)"
@@ -721,6 +726,43 @@
         "name":        { "type": "string" },
         "description": { "type": "string" },
         "entries":     { "type": "array", "items": { "$ref": "#/$defs/RecipeEntry" } }
+      }
+    },
+    "RecipeSet": {
+      "title": "RecipeSet",
+      "type": "object",
+      "description": "A fixed list of variables and the named recipes that set them. Operators can load, save, save as and delete recipes on the runtime; recipes made there are kept by the runtime, and a deploy adds the ones listed here without overwriting or restoring any an operator changed or deleted",
+      "required": ["id", "name", "variables"],
+      "additionalProperties": false,
+      "properties": {
+        "id":        { "type": "string" },
+        "name":      { "type": "string" },
+        "variables": { "type": "array", "items": { "$ref": "#/$defs/RecipeVariable" }, "description": "The variables every recipe of the set writes, in column order" },
+        "recipes":   { "type": "array", "items": { "$ref": "#/$defs/SetRecipe" }, "description": "The recipes shipped with the project" }
+      }
+    },
+    "RecipeVariable": {
+      "title": "RecipeVariable",
+      "type": "object",
+      "required": ["binding"],
+      "additionalProperties": false,
+      "properties": {
+        "binding": { "type": "string", "description": "ns:path or datasource_id:tag_path" },
+        "label":   { "type": "string", "description": "Column heading; missing shows the tag name" },
+        "min":     { "type": "number", "description": "A saved or typed value below this is refused" },
+        "max":     { "type": "number", "description": "A saved or typed value above this is refused" },
+        "default": { "description": "The value of a recipe that has none for this variable (a variable added after the recipe was saved); with no default the variable is left alone when the recipe is loaded" }
+      }
+    },
+    "SetRecipe": {
+      "title": "SetRecipe",
+      "type": "object",
+      "required": ["id", "name", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "id":     { "type": "string" },
+        "name":   { "type": "string" },
+        "values": { "type": "object", "additionalProperties": {}, "description": "Value per variable binding" }
       }
     },
     "RecipeEntry": {
@@ -1471,8 +1513,9 @@
       "description": "Settings of a recipes widget: the project's recipes, each with a button that writes its values",
       "allOf": [{ "$ref": "#/$defs/FrameProps" }],
       "properties": {
-        "recipeId": { "type": "string", "description": "Show only this recipe; missing shows every recipe" },
-        "showEntries": { "type": "boolean", "description": "List each recipe's tags and values (default true)" }
+        "recipeSetId": { "type": "string", "description": "The recipe set the table shows; missing shows the first set of the project" },
+        "recipeId": { "type": "string", "description": "Older projects: the recipe (shown as a set of its own) the widget shows" },
+        "showEntries": { "type": "boolean", "description": "Older projects: list the tags and values" }
       },
       "unevaluatedProperties": false
     },

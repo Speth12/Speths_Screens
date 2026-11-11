@@ -2,7 +2,7 @@
 // runtime's WebSocket, writes through the write pipeline client, alarms from
 // the runtime with acknowledge, and the project's images and custom widgets.
 import { useMemo } from "react";
-import { appTag, deviceFor, findCustomWidget, splitApp, translator, type AppValues, type DriverInfo, type AlarmView, type Device, type WidgetHost, type WriteRequest } from "@speths-screens/widgets";
+import { appTag, deviceFor, findCustomWidget, recipeSetsOf, splitApp, translator, type AppValues, type DriverInfo, type AlarmView, type Device, type WidgetHost, type WriteRequest } from "@speths-screens/widgets";
 import type { Project } from "@speths-screens/shared-types";
 import { useTag } from "./hooks/useTag";
 import { useTags } from "./hooks/useTags";
@@ -17,7 +17,6 @@ const NO_PAGES: Project["pages"] = [];
 /** The id the built-in Settings screen goes by in the page list. */
 export const SETTINGS_PAGE_ID = "settings";
 const SETTINGS_PAGE = { id: SETTINGS_PAGE_ID, name: "Settings", icon: "settings" as const, widgets: [] };
-const NO_RECIPES: NonNullable<Project["recipes"]> = [];
 
 /** The screen size, from the window's width (the same rule the operator draws pages by). */
 function useOperatorDevice(): Device {
@@ -50,7 +49,9 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
   const translations = project?.translations;
   const { pageName, pageId, projectName } = app;
   const pages = project?.pages;
-  const recipes = project?.recipes ?? NO_RECIPES;
+  const projectRecipes = project?.recipes;
+  const projectRecipeSets = project?.recipeSets;
+  const recipeSets = useMemo(() => recipeSetsOf({ recipes: projectRecipes, recipeSets: projectRecipeSets }), [projectRecipes, projectRecipeSets]);
   const { drivers = NO_DRIVERS, token = null, loginRequired = false, onLogout, settings = false } = shell;
   return useMemo(() => {
     const translate = translator({ languages, translations }, language);
@@ -83,11 +84,11 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
       useDevice: useOperatorDevice,
       usePages: () => ({ pages: settings ? [...(pages ?? NO_PAGES), SETTINGS_PAGE] : pages ?? NO_PAGES, activeId: pageId }),
       useDrivers: () => drivers,
-      useRecipes: () => recipes,
+      useRecipeSets: () => recipeSets,
       useUser: () => {
         const user = tokenUser(token);
         return { name: user?.name, role: user?.role, loginRequired, logout: user ? onLogout : undefined };
       },
     };
-  }, [viewOnly, images, customWidgets, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipes, drivers, token, loginRequired, onLogout, settings]);
+  }, [viewOnly, images, customWidgets, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipeSets, drivers, token, loginRequired, onLogout, settings]);
 }

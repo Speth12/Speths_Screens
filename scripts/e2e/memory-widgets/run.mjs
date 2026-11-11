@@ -94,9 +94,9 @@ await expectBoth("setpoint", "moving the slider to 55 writes it", "setpoint", 55
 await writeVar("setpoint", 20); await expectBoth("setpoint", "follows a change made elsewhere", "setpoint", 20, /\b20\b/);
 
 // recipes: apply a recipe that writes two variables.
-await clickIn("recipes", "button");
-await q(`[...document.querySelectorAll('${sel("recipes")} button')].find(b => /Apply/i.test(b.textContent))?.click()`);
-await expectBoth("recipes", "Apply writes the first variable (11)", "recA", 11, null);
+await until(() => q(`[...document.querySelectorAll('${sel("recipes")} button')].some(b => b.textContent.trim() === 'Load' && !b.disabled)`), (v) => v === true);
+await q(`[...document.querySelectorAll('${sel("recipes")} button')].find(b => b.textContent.trim() === 'Load')?.click()`);
+await expectBoth("recipes", "Load writes the first variable (11)", "recA", 11, null);
 await expectBoth("recipes", "…and the second (RECIPE_X)", "recB", "RECIPE_X", null);
 { const a = await until(() => textOf("recADisplay"), (t) => /\b11\b/.test(t)); const b = await until(() => textOf("recBDisplay"), (t) => /RECIPE_X/.test(t));
   record("recipes", "…and displays of them show the values", a.ok && b.ok, `screen "${a.v}" / "${b.v}"`); }
@@ -124,7 +124,7 @@ await gate("clock", "visClock", { expr: `(document.querySelector('${sel("clock")
 await gate("driverStatus", "visDriverStatus", { expr: `(document.querySelector('${sel("driverStatus")}')?.innerText ?? '')`, ok: (t) => /Script state/.test(t) });
 await gate("userMenu", "visUserMenu", { expr: `document.querySelectorAll('${sel("userMenu")} button').length`, ok: (v) => v > 0 });
 await gate("customWidget", "visCustom", null);
-await gate("recipesVisible", "visRecipes", { expr: `(document.querySelector('${sel("recipesVisible")}')?.innerText ?? '')`, ok: (t) => /Apply/i.test(t) });
+await gate("recipesVisible", "visRecipes", { expr: `(document.querySelector('${sel("recipesVisible")}')?.innerText ?? '')`, ok: (t) => /Load/.test(t) });
 
 // Values that drive a property: symbol animation, pipe flow.
 await writeVar("visSymbol", true); await writeVar("symAnim", false); await sleep(600);
@@ -147,6 +147,37 @@ await writeVar("visAlarmBanner", true); await writeVar("alarmLevel", 75);
 await writeVar("alarmLevel", 10);
 { const s = await until(() => textOf("alarmBanner"), (t) => !/ALARM_RAISED/.test(t) || /normal|cleared|ack/i.test(t), 5000); record("alarmBanner", "…and clears or marks it normal when it falls back", s.ok, `screen "${s.v}"`); }
 await page.shot("display");
+
+// ── A recipe set: Load, Save as, Save and Delete from the widget ─────────────────────────────────────────────────
+{
+  const RS = sel("recipeSet");
+  const sets = async () => { const r = await rt.j("GET", "/api/v1/recipe-sets"); return r.data.find((s) => s.id === "mix")?.recipes ?? []; };
+  const mine = async () => (await sets()).find((r) => r.name === "Mine");
+  const pick = (name) => q(`(() => { const s = document.querySelector('${RS} select[aria-label="Recipe"]'); const o = s && [...s.options].find((o) => o.text === ${JSON.stringify(name)}); if (!o) return false; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, o.value); s.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+  const press = (text, within = "") => q(`(() => { const b = [...document.querySelectorAll('${RS} ${within} button')].find((b) => b.textContent.trim() === ${JSON.stringify(text)} && !b.disabled); if (!b) return false; b.click(); return true; })()`);
+  const typeName = (text) => q(`(() => { const i = document.querySelector('${RS} input[aria-label="New recipe name"]'); if (!i) return false; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, ${JSON.stringify(text)}); i.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+
+  const shown = await until(() => q(`[...(document.querySelector('${RS} select[aria-label="Recipe"]')?.options ?? [])].map((o) => o.text).join(',')`), (t) => t === "One,Two");
+  record("recipeSet", "lists the recipes the project ships", shown.ok, `options "${shown.v}"`);
+
+  await pick("Two"); await sleep(200); await press("Load");
+  await expectBoth("recipeSet", "Load writes the recipe's first variable (2)", "recA", 2, null);
+  await expectBoth("recipeSet", "…and the second (two)", "recB", "two", null);
+
+  await press("Save as…"); await sleep(200); await typeName("Mine"); await sleep(200); await press("Save", "form");
+  const saved = await until(mine, (r) => r && r.values["Test.recA"] === 2 || r?.values?.["ns:Test.recA"] === 2, 4000);
+  record("recipeSet", "Save as keeps what the variables hold now under a new name", saved.ok, JSON.stringify(saved.v));
+
+  await writeVar("recA", 7); await sleep(500);
+  await pick("Mine"); await sleep(200); await press("Save"); await sleep(200); await press("Overwrite");
+  const over = await until(mine, (r) => r?.values?.["ns:Test.recA"] === 7, 4000);
+  record("recipeSet", "Save overwrites it with the new values", over.ok, JSON.stringify(over.v));
+
+  await pick("Mine"); await sleep(200); await press("Delete"); await sleep(200); await press("Delete", '[aria-label="Confirm delete"]');
+  const gone = await until(mine, (r) => r === undefined, 4000);
+  record("recipeSet", "Delete removes it", gone.ok, JSON.stringify(gone.v));
+  await page.shot("recipe-set");
+}
 
 // ── A variable added by a later deploy ───────────────────────────────────────────────────────────────────────────
 const later = buildProject();

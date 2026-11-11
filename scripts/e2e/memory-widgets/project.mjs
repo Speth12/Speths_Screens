@@ -64,7 +64,7 @@ export function buildProject() {
     W("numericInput", "numericInput", 2, 1, { bindings: { value: ns("numericInput") }, props: { min: 0, max: 1000 } }),
     W("textInput", "textInput", 3, 1, { bindings: { value: ns("textInput") } }),
     W("setpoint", "setpoint", 0, 2, { bindings: { value: ns("setpoint") }, props: { min: 0, max: 100, step: 1, unit: "u" } }),
-    W("recipes", "recipes", 1, 2, { props: { recipeId: "preset", showEntries: true } }, [3, 3]),
+    W("recipes", "recipes", 1, 2, { props: { recipeSetId: "preset" } }, [3, 3]),
     W("numericDisplay", "recADisplay", 0, 3, { bindings: { value: ns("recA") } }),
     W("textDisplay", "recBDisplay", 2, 3, { bindings: { value: ns("recB") } }),
   ];
@@ -81,7 +81,8 @@ export function buildProject() {
     W("driverStatus", "driverStatus", 2, 1, { bindings: { visible: ns("visDriverStatus") } }),
     W("userMenu", "userMenu", 3, 1, { bindings: { visible: ns("visUserMenu") } }),
     W("customWidget", "customWidget", 0, 2, { bindings: { visible: ns("visCustom") }, props: { customWidgetId: "tile", params: { v: ns("customVal") } } }),
-    W("recipes", "recipesVisible", 1, 2, { bindings: { visible: ns("visRecipes") }, props: { recipeId: "preset" } }),
+    W("recipes", "recipesVisible", 1, 2, { bindings: { visible: ns("visRecipes") }, props: { recipeSetId: "preset" } }),
+    W("recipes", "recipeSet", 0, 4, { props: { recipeSetId: "mix" } }, [4, 6]),
   ];
 
   return {
@@ -94,6 +95,8 @@ export function buildProject() {
       ...VARS.map(([path, type]) => ({ path: `Test.${path}`, type: "tag", driverId: "mem", driverAddr: path, dataType: type === "real" ? "float" : type })),
     ],
     alarmRules: [{ id: "level-high", name: "Level high", expr: "{ns:Test.alarmLevel} > 50", severity: "warning", message: "ALARM_RAISED" }],
+    recipeSets: [{ id: "mix", name: "Mixer", variables: [{ binding: ns("recA") }, { binding: ns("recB") }],
+      recipes: [{ id: "one", name: "One", values: { [ns("recA")]: 1, [ns("recB")]: "one" } }, { id: "two", name: "Two", values: { [ns("recA")]: 2, [ns("recB")]: "two" } }] }],
     recipes: [{ id: "preset", name: "Preset", entries: [{ binding: ns("recA"), value: 11 }, { binding: ns("recB"), value: "RECIPE_X" }] }],
     customWidgets: [{ id: "tile", name: "Tile", params: [{ name: "v" }], widgets: [
       { localId: "inner", type: "numericDisplay", x: 0, y: 0, w: 4, h: 2, bindings: { value: "{v}" }, props: { label: "Inner" } },

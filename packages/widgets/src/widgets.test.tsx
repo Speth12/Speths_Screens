@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { CustomWidget, Widget } from "@speths-screens/shared-types";
 import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, toggled, rewriteBinding } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost, type AlarmView } from "./host";
@@ -57,7 +57,7 @@ describe("each widget renders", () => {
     usePages: () => ({ pages: [{ id: "p1", name: "Overview" }, { id: "p2", name: "Pumps" }], activeId: "p1" }),
     useDrivers: () => [{ id: "plc", label: "PLC", connected: true }, { id: "mqtt", label: "Broker", connected: false }],
     useUser: () => ({ name: "dan", role: "admin", loginRequired: true, logout: () => {} }),
-    useRecipes: () => [{ id: "r1", name: "Batch A", entries: [{ binding: "plc:Setpoint", value: 40 }] }],
+    useRecipeSets: () => [{ id: "s1", name: "Batch", variables: [{ binding: "plc:Setpoint" }], recipes: [{ id: "r1", name: "Batch A", values: { "plc:Setpoint": 40 } }] }],
   });
   const sym = SYMBOLS[0]!;
   const cases: { type: string; w: Omit<W, "type">; shows: string | RegExp }[] = [
@@ -454,50 +454,138 @@ describe("header and navigation widgets", () => {
 });
 
 describe("recipes widget", () => {
-  const recipes = [
-    { id: "r1", name: "Batch A", description: "Slow ramp", entries: [{ binding: "plc:Setpoint", value: 40 }, { binding: "plc:Mode", value: "auto" }] },
-    { id: "r2", name: "Batch B", entries: [{ binding: "plc:Setpoint", value: 80 }] },
-  ];
-  const withRecipes = (answer: { status?: number; body: unknown }) => {
-    const apiFetch = vi.fn(async () => new Response(JSON.stringify(answer.body), { status: answer.status ?? 200 }));
-    return { apiFetch, host: fakeHost({ "plc:Setpoint": 40 }, { useRecipes: () => recipes, apiFetch }) };
+  // A runtime that keeps one recipe set, answering the way the real one does.
+  type Rec = { id: string; name: string; values: Record<string, unknown> };
+  const setup = (opts: { user?: { role?: string; loginRequired: boolean }; reply?: (method: string, path: string) => Response | undefined; live?: Record<string, unknown> } = {}) => {
+    const recipes: Rec[] = [
+      { id: "slow", name: "Slow", values: { "plc:Speed": 10, "plc:Mode": "gentle" } },
+      { id: "fast", name: "Fast", values: { "plc:Speed": 90 } },
+    ];
+    const calls: { method: string; path: string; body?: Record<string, unknown> }[] = [];
+    const apiFetch = vi.fn(async (path: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : undefined;
+      calls.push({ method, path, body });
+      const forced = opts.reply?.(method, path);
+      if (forced) return forced;
+      const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
+      if (method === "GET") return json([{ id: "mix", name: "Mixer", variables: [{ binding: "plc:Speed", label: "Speed" }, { binding: "plc:Mode" }], recipes }]);
+      if (method === "POST" && path.endsWith("/apply")) return json({ ok: true, applied: 2 });
+      if (method === "POST") { const r = { id: "new1", name: String(body!.name), values: (body!.values ?? { "plc:Speed": 55, "plc:Mode": "now" }) as Rec["values"] }; recipes.push(r); return json(r, 201); }
+      if (method === "PUT") { const r = recipes.find((x) => path.endsWith("/" + x.id))!; r.values = (body!.values ?? { "plc:Speed": 55, "plc:Mode": "now" }) as Rec["values"]; return json(r); }
+      if (method === "DELETE") { recipes.splice(recipes.findIndex((x) => path.endsWith("/" + x.id)), 1); return json({ ok: true }); }
+      return json({}, 404);
+    });
+    const host = fakeHost(opts.live ?? { "plc:Speed": 10 }, { apiFetch, useUser: () => opts.user ?? { loginRequired: false } });
+    return { apiFetch, calls, host };
   };
+  const rows = () => Array.from(screen.getByTestId("recipe-table").querySelectorAll("tbody tr")).map((tr) =>
+    Array.from(tr.querySelectorAll("td")).map((td) => (td.querySelector("input") ? (td.querySelector("input") as HTMLInputElement).value : td.textContent)));
+  const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+  const recipePicker = () => screen.getByRole("combobox", { name: "Recipe" }) as HTMLSelectElement;
 
-  it("lists every recipe with its tags and values, or just the chosen one", () => {
-    draw({ type: "recipes" }, withRecipes({ body: {} }).host);
+  it("shows the variables as a table with the chosen recipe's values and what the tags hold now", async () => {
+    draw({ type: "recipes" }, setup().host);
+    await screen.findByText("Fast");
+    expect(Array.from(screen.getByTestId("recipe-table").querySelectorAll("th")).map((th) => th.textContent)).toEqual(["#", "Variable", "Recipe value", "Now"]);
+    expect(rows()).toEqual([["1", "Speed", "10", "10 ✓"], ["2", "Mode", "gentle", "—"]]);
+    fireEvent.change(recipePicker(), { target: { value: "fast" } });
+    expect(rows()).toEqual([["1", "Speed", "90", "10"], ["2", "Mode", "", "—"]]);
+  });
+
+  it("shows the project's recipes until the runtime answers, and at design time", () => {
+    const { host } = setup({ reply: () => new Response("no", { status: 503 }) });
+    draw({ type: "recipes" }, { ...host, useRecipeSets: () => [{ id: "s1", name: "Batch", variables: [{ binding: "plc:Speed" }], recipes: [{ id: "r1", name: "Batch A", values: { "plc:Speed": 40 } }] }] });
     expect(screen.getByText("Batch A")).toBeTruthy();
-    expect(screen.getByText("Batch B")).toBeTruthy();
-    expect(screen.getByText("Slow ramp")).toBeTruthy();
-    // the variables are a table: one row per write, with the recipe value and what the tag holds now
-    const table = screen.getByTestId("recipe-table-r1");
-    const rows = Array.from(table.querySelectorAll("tbody tr")).map((tr) => Array.from(tr.querySelectorAll("td")).map((td) => td.textContent));
-    expect(rows).toEqual([["1", "Setpoint", "40", "40 ✓"], ["2", "Mode", "auto", "—"]]);
-    expect(Array.from(table.querySelectorAll("th")).map((th) => th.textContent)).toEqual(["#", "Variable", "Recipe value", "Now"]);
-    cleanup();
-    draw({ type: "recipes", props: { recipeId: "r2", showEntries: false } }, withRecipes({ body: {} }).host);
-    expect(screen.queryByText("Batch A")).toBeNull();
-    expect(screen.queryByText(/Setpoint/)).toBeNull();
   });
 
-  it("applies through the runtime and says how many tags were written", async () => {
-    const { apiFetch, host } = withRecipes({ body: { ok: true, applied: 2 } });
-    draw({ type: "recipes", props: { recipeId: "r1" } }, host);
-    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
-    expect(await screen.findByText(/Applied 2 tags/)).toBeTruthy();
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recipes/r1/apply", { method: "POST" });
+  it("Load writes the recipe through the runtime and says how many variables", async () => {
+    const { calls, host } = setup();
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    click("Load");
+    expect(await screen.findByText(/Loaded 2 variables/)).toBeTruthy();
+    expect(calls.at(-1)).toMatchObject({ method: "POST", path: "/api/v1/recipe-sets/mix/recipes/slow/apply" });
   });
 
-  it("shows why a recipe was refused", async () => {
-    draw({ type: "recipes", props: { recipeId: "r1" } }, withRecipes({ status: 403, body: { error: "forbidden" } }).host);
-    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
-    expect(await screen.findByText(/Not allowed/)).toBeTruthy();
-    cleanup();
-    draw({ type: "recipes", props: { recipeId: "r1" } }, withRecipes({ status: 200, body: { ok: false, errors: ["plc:Setpoint: above the maximum 50"] } }).host);
-    fireEvent.click(screen.getByRole("button", { name: "Apply recipe" }));
+  it("Save asks first, then stores the values the variables hold now", async () => {
+    const { calls, host } = setup();
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    click("Save");
+    expect(screen.getByText(/with the values the variables hold now/)).toBeTruthy();
+    expect(calls.filter((c) => c.method === "PUT")).toHaveLength(0);
+    click("Overwrite");
+    expect(await screen.findByText(/Saved “Slow”/)).toBeTruthy();
+    expect(calls.find((c) => c.method === "PUT")).toMatchObject({ path: "/api/v1/recipe-sets/mix/recipes/slow", body: { fromCurrent: true } });
+  });
+
+  it("typed values are what Save stores, with the cells marked and the confirmation saying so", async () => {
+    const { calls, host } = setup();
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    fireEvent.change(screen.getByRole("textbox", { name: /Speed recipe value/ }), { target: { value: "42.5" } });
+    click("Save");
+    expect(screen.getByText(/with the values typed in the table/)).toBeTruthy();
+    click("Overwrite");
+    await screen.findByText(/Saved “Slow”/);
+    expect(calls.find((c) => c.method === "PUT")!.body).toEqual({ values: { "plc:Speed": 42.5, "plc:Mode": "gentle" } });
+  });
+
+  it("Save as makes a new recipe and selects it", async () => {
+    const { calls, host } = setup();
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    click("Save as…");
+    fireEvent.change(screen.getByRole("textbox", { name: "New recipe name" }), { target: { value: "  Mine " } });
+    fireEvent.click(within(screen.getByRole("textbox", { name: "New recipe name" }).closest("form")!).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(/Saved as “Mine”/)).toBeTruthy();
+    expect(calls.find((c) => c.method === "POST" && !c.path.endsWith("/apply"))).toMatchObject({ path: "/api/v1/recipe-sets/mix/recipes", body: { name: "  Mine " } });
+    await waitFor(() => expect(recipePicker().value).toBe("new1"));
+  });
+
+  it("Delete asks first, then removes the recipe", async () => {
+    const { calls, host } = setup();
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    click("Delete");
+    expect(calls.filter((c) => c.method === "DELETE")).toHaveLength(0);
+    fireEvent.click(within(screen.getByRole("group", { name: "Confirm delete" })).getByRole("button", { name: "Delete" }));
+    expect(await screen.findByText(/Deleted “Slow”/)).toBeTruthy();
+    expect(calls.find((c) => c.method === "DELETE")).toMatchObject({ path: "/api/v1/recipe-sets/mix/recipes/slow" });
+    await waitFor(() => expect(Array.from(recipePicker().options).map((o) => o.text)).toEqual(["Fast"]));
+  });
+
+  it("shows why the runtime refused", async () => {
+    const { host } = setup({ reply: (m, p) => (m === "PUT" ? new Response(JSON.stringify({ error: "Speed: 150 is above the maximum 100" }), { status: 400 }) : p.endsWith("/apply") ? new Response(JSON.stringify({ ok: false, errors: ["plc:Speed: above the maximum 50"] }), { status: 207 }) : undefined) });
+    draw({ type: "recipes" }, host);
+    await screen.findByText("Fast");
+    click("Load");
     expect(await screen.findByText(/above the maximum 50/)).toBeTruthy();
+    click("Save");
+    click("Overwrite");
+    expect(await screen.findByText(/above the maximum 100/)).toBeTruthy();
   });
 
-  it("says so when there are no recipes", () => {
+  it("offers an operator no buttons and no cells to type in", async () => {
+    draw({ type: "recipes" }, setup({ user: { role: "operator", loginRequired: true } }).host);
+    await screen.findByText("Fast");
+    expect(screen.queryByRole("button", { name: "Load" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryAllByRole("textbox")).toHaveLength(0);
+    expect(rows()[0]).toEqual(["1", "Speed", "10", "10 ✓"]);
+  });
+
+  it("a supervisor who is logged in gets the buttons", async () => {
+    draw({ type: "recipes" }, setup({ user: { name: "pat", role: "supervisor", loginRequired: true } as never }).host);
+    await screen.findByText("Fast");
+    expect(screen.getByRole("button", { name: "Load" })).toBeTruthy();
+  });
+
+  it("shows only the chosen set, and says so when there are no recipes", () => {
+    draw({ type: "recipes", props: { recipeSetId: "nope" } }, setup().host);
+    expect(screen.getByText("No recipes")).toBeTruthy();
+    cleanup();
     draw({ type: "recipes" }, fakeHost());
     expect(screen.getByText("No recipes")).toBeTruthy();
   });

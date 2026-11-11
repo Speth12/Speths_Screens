@@ -6,7 +6,8 @@ export {
   type WidgetHost, type TagState, type Quality, type WriteRequest, type AlarmView, type PageInfo, type DriverInfo, type UserInfo,
 } from "./host";
 export { formatClock, groupPages, driverSummary } from "./shell";
-export { applyResult } from "./recipes";
+export { recipeSetsOf, mayEditRecipes } from "./recipeSets";
+export { parseCell } from "./recipes";
 export { ChromeFrame } from "./ChromeFrame";
 export { DEFAULT_IDS, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget, type ChromeNav } from "./chrome";
 export { SymbolSVG } from "./SymbolSVG";

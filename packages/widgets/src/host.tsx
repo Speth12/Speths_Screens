@@ -2,7 +2,7 @@
 // The IDE (canvas, preview) and the operator screen each provide one; the
 // widgets never import app code, so one library serves both.
 import { createContext, useContext } from "react";
-import type { CustomWidget, PageIcon, Recipe } from "@speths-screens/shared-types";
+import type { CustomWidget, PageIcon, RecipeSet } from "@speths-screens/shared-types";
 import type { Device } from "./layout";
 
 export type Quality = "Good" | "Bad" | "Uncertain" | "Unknown";
@@ -62,8 +62,9 @@ export interface WidgetHost {
   useDrivers(): DriverInfo[];
   /** Who is signed in (user menu). */
   useUser(): UserInfo;
-  /** The project's recipes (recipes widget). */
-  useRecipes(): Recipe[];
+  /** The project's recipe sets, with the recipes it ships (recipes widget): what to show before the runtime answers,
+   *  and at design time. The runtime's own list, with what operators saved, comes from the API. */
+  useRecipeSets(): RecipeSet[];
   /** Turns text into the language being shown; a text with no translation stays as written.
    *  A hook, so a widget draws again when the language changes. */
   useTranslate(): (text: string) => string;
@@ -82,7 +83,7 @@ const IDENTITY = (text: string) => text;
 const NO_PAGES = { pages: [] as PageInfo[], activeId: undefined };
 const NO_DRIVERS: DriverInfo[] = [];
 const NO_USER: UserInfo = { loginRequired: false };
-const NO_RECIPES: Recipe[] = [];
+const NO_RECIPES: RecipeSet[] = [];
 
 /** A host with nothing behind it: no values, writes go nowhere. */
 export const inertHost: WidgetHost = {
@@ -99,7 +100,7 @@ export const inertHost: WidgetHost = {
   usePages: () => NO_PAGES,
   useDrivers: () => NO_DRIVERS,
   useUser: () => NO_USER,
-  useRecipes: () => NO_RECIPES,
+  useRecipeSets: () => NO_RECIPES,
   useTranslate: () => IDENTITY,
 };
 

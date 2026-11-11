@@ -220,9 +220,8 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "compact", label: "One summary instead of a chip each", kind: "boolean", default: false },
   ], { bindings: [], events: [] }),
   widget("recipes", "Recipes", 4, 5, [
-    { key: "recipeId", label: "Recipe", kind: "recipe", note: "Blank shows every recipe of the project." },
-    { key: "showEntries", label: "Show the variables as a table", kind: "boolean", default: true },
-  ], { bindings: [], events: [] }),
+    { key: "recipeSetId", label: "Recipe set", kind: "recipe", note: "Blank shows the first set of the project." },
+  ], { bindings: [], events: [], legacyProps: ["recipeId", "showEntries"] }),
   widget("userMenu", "User menu", 1, 1, [
     { key: "showName", label: "Show the name beside the icon", kind: "boolean", default: false },
   ], { bindings: [], events: [] }),

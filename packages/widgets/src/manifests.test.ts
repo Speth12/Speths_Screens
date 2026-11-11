@@ -66,7 +66,7 @@ describe("manifests", () => {
   for (const m of MANIFESTS) {
     it(`${m.type}: its settings plus the frame's are exactly its settings type`, () => {
       for (const f of m.settings) checkField(m.type, f, settingNode(m.type, f.key));
-      const edited = [...frameFields, ...m.settings].map((f) => f.key).sort();
+      const edited = [...frameFields, ...m.settings].map((f) => f.key).concat(m.legacyProps ?? []).sort();
       expect(edited).toEqual([...PROPS_KEYS[m.type]].sort());
     });
   }

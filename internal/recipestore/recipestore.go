@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -59,7 +60,8 @@ type PendingRequest struct {
 
 // Store persists recipe runs and pending approvals in SQLite.
 type Store struct {
-	db *sql.DB
+	db    *sql.DB
+	setMu sync.Mutex // one change to a recipe set at a time (name checks and writes)
 }
 
 // Open opens (or creates) a recipe store at path.
@@ -69,7 +71,10 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	s := &Store{db: db}
-	return s, s.migrate()
+	if err := s.migrate(); err != nil {
+		return s, err
+	}
+	return s, s.migrateSets()
 }
 
 // Close releases the database connection.
