@@ -1,0 +1,72 @@
+Speth's Screens Source-Available License
+Version 0.1 (draft)
+
+Copyright (c) 2026 Speth12. All rights reserved except as stated below.
+
+DRAFT: This is a plain-language license written to state the owner's intent while the project is
+shared for evaluation. It has not been reviewed by a lawyer. Replace it with reviewed terms before any
+commercial release.
+
+1. What you may do, free of charge
+
+   You may download, read, build, run and modify this software ("the Software") for:
+
+   a. evaluating it, including testing it with your own controllers, panels and projects in a lab or
+      other non-production setting;
+   b. learning from it and developing and testing your own screens and projects with it;
+   c. personal, non-commercial use; and
+   d. contributing to it (see section 4).
+
+   The license is non-exclusive, non-transferable and revocable under section 7.
+
+2. What you may not do without written permission from the owner
+
+   a. Use the Software in production, or in any commercial setting: for example to run or operate a
+      machine, plant or product that you or your employer sells, operates or relies on.
+   b. Sell, sublicense, rent or lease the Software, or offer it, or a modified version of it, to
+      others as a product or service (including hosted or managed offerings).
+   c. Distribute copies of the Software, modified or not, except by pointing to the official
+      repository at https://github.com/Speth12/Speths_Screens.
+   d. Remove or change this license, copyright notices or the name of the Software.
+   e. Use the name "Speth's Screens" for a product or service that you offer.
+
+   To ask for permission or a commercial license, contact the owner through the repository
+   (open a discussion, or use the contact details on the owner's GitHub profile).
+
+3. Projects you make are yours
+
+   Project files, screens, scripts, recipes and other content that you create with the Software belong
+   to you. This license does not apply to them, and it places no restriction on how you use them.
+   (The Software itself, including its sample projects, remains under this license.)
+
+4. Contributions
+
+   If you contribute code, documentation or other material to the Software, you grant the owner a
+   perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to use, copy, modify,
+   sublicense and distribute your contribution, as part of the Software and under any license the
+   owner chooses, including commercial licenses. You confirm that you have the right to do so.
+
+5. Third-party components
+
+   The Software includes and depends on third-party components, for example the fonts in
+   packages/widgets/fonts (SIL Open Font License; the license texts are beside them) and the Go and
+   npm packages listed in go.mod and package-lock.json. Each is under its own license, which applies
+   to that component and is not changed by this license.
+
+6. No warranty, and not for safety functions
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING THE
+   WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT
+   SHALL THE OWNER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+   The Software is not designed, tested or approved for safety-related functions (such as emergency
+   stops, interlocks or personnel protection) and must not be used for them. Writing values to a
+   controller can start, stop or change a machine; you are responsible for doing so safely.
+
+7. Termination
+
+   This license ends automatically if you break any of its terms. You must then stop using the
+   Software and delete your copies. The owner may also end it for anyone by changing the license of
+   future versions; versions you already have stay under the terms you received them with, for
+   evaluation and the other uses in section 1.

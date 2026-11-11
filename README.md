@@ -53,3 +53,11 @@ How the code is organized, the rules for changing it, and what each phase decide
 Without a login a runtime lets anyone who can reach it deploy a project and write to the PLC's tags. Keep it on a
 closed network or turn on logins ([Install guide, section 7](docs/install.md#7-security-and-logins)). Never commit
 passwords, tokens, keys or `project/project.json`.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+## License
+
+Speth's Screens is source-available, not open source: you may evaluate, learn from, modify and contribute to it, and
+use it for personal non-commercial work, but production and commercial use need the owner's permission. Projects you
+make with it are yours. See [LICENSE](LICENSE) (a draft that has not been reviewed by a lawyer).
