@@ -53,7 +53,7 @@ export function StatusBar() {
       </div>
 
       {/* Target */}
-      <span className="text-zinc-600 truncate max-w-[220px]">{apiBase || `${location.host} (dev server)`}</span>
+      <span className="text-zinc-600 truncate max-w-[220px]">{apiBase || `${location.host} (${import.meta.env.DEV ? "dev server" : "this runtime"})`}</span>
 
       {/* Datasource health */}
       {totalDs > 0 && (

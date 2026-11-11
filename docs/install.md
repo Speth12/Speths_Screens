@@ -19,11 +19,13 @@ that designs screens, and how to connect it to a PLCnext controller.
 | Part | What it is | Where it runs |
 | --- | --- | --- |
 | **Runtime** | One program (`speths-screens`). It talks to the PLCs, keeps the tag values, runs alarms, the historian, logins and scripts, and serves the **operator screen** to any browser. | A PC, a server or the panel |
-| **IDE** | A web app where you design screens and deploy them to a runtime. | Your PC, in a browser |
+| **IDE** | A web app where you design screens and deploy them to a runtime. | Your PC, in a browser. The runtime for Windows and Linux PCs serves it at `/ide/`. |
 | **Project** | One file, `<name>.screens.json`, holding the screens, tags, alarms and scripts. | The IDE saves it; the runtime loads it |
 
-The operator screen is built into the runtime, so a panel needs only the runtime. The IDE is not part of the runtime
-and is run from the source code for now (section 3); a packaged IDE is planned.
+The operator screen is built into every runtime, so a panel needs only the runtime. The **IDE is built into the
+runtime for Windows and Linux PCs** (`windows-amd64` and `linux-amd64`): start it and open `/ide/` (section 3). The
+**panel package has no IDE**: the panel only runs the program you deploy to it, and you design on your PC. The IDE is
+also available from the source code, for development.
 
 Ports used: **8080** is the runtime's default and **8090** is used on the WP panel (the panel's own settings app,
 Cockpit, holds 8080). The IDE uses **5173** and a development runtime **3001**.
@@ -34,9 +36,9 @@ The runtime is one file with nothing to install (no database, no Node, no Go).
 
 1. Open the [latest release](https://github.com/Speth12/Speths_Screens/releases/latest) and download the runtime for
    your system:
-   - `speths-screens-<version>-windows-amd64.exe` for Windows
-   - `speths-screens-<version>-linux-amd64` for Linux on a PC or server
-   - `speths-screens-<version>-linux-arm64` for 64-bit ARM Linux
+   - `speths-screens-<version>-windows-amd64.exe` for Windows (with the IDE)
+   - `speths-screens-<version>-linux-amd64` for Linux on a PC or server (with the IDE)
+   - `speths-screens-<version>-linux-arm64` for 64-bit ARM Linux (runtime only, no IDE; the panel package is the same program)
    - the sample projects (`demo.screens.json` and others) beside them
 
    File names below use `v0.8.0` as an example: use the version you downloaded.
@@ -47,7 +49,7 @@ The runtime is one file with nothing to install (no database, no Node, no Go).
    .\speths-screens-v0.8.0-windows-amd64.exe --mode=runtime --project=demo.screens.json
    ```
 
-4. Open <http://localhost:8080/>. Windows may ask to allow network access the first time; allow it on a private
+4. Open <http://localhost:8080/> for the operator screen and <http://localhost:8080/ide/> for the **IDE**. Windows may ask to allow network access the first time; allow it on a private
    network if other devices (a phone, a tablet) should reach the screen at `http://<this-PC's-address>:8080/`.
 
 `--version` prints the version. The runtime keeps its data next to where you start it: `history.db` (trends),
@@ -59,7 +61,19 @@ in" set to your folder) or a service wrapper such as NSSM.
 
 ## 3. Run the IDE
 
-The IDE runs from the source code today. You need [Git](https://git-scm.com/), [Node.js 22](https://nodejs.org/)
+### With the runtime you downloaded (nothing else to install)
+
+Start the Windows or Linux runtime (section 2) and open <http://localhost:8080/ide/>. The IDE is part of the runtime
+program, so its version always matches the runtime's, and the **Local** target (the gear in the header) is that
+runtime: use **Deploy** to put the open project on it, then look at <http://localhost:8080/> for what operators see.
+This is the way to design and try screens on one PC.
+
+Press **Deploy** to send a project to this runtime, or add the address of another runtime (the panel) as a target
+(below). Starting the runtime with `--no-ide` turns the IDE off.
+
+### From the source code (for development)
+
+You need [Git](https://git-scm.com/), [Node.js 22](https://nodejs.org/)
 and, only if you also want to build the runtime yourself, [Go 1.25](https://go.dev/dl/).
 
 ```powershell
@@ -80,8 +94,10 @@ go run ./cmd/speths-screens --mode=dev --project=demo.screens.json     # port 30
 
 To work with a runtime on **another machine** (the panel, a server), open the **target** gear in the IDE's header, add
 a target such as `http://10.0.0.118:8090`, select it and use **Pull** (read its project) or **Deploy** (send it yours).
-The runtime has to be listening on the network for that (section 4). The IDE run with `npm run dev` is already an
-allowed origin; a differently served IDE needs `--cors-origins` on the runtime.
+The runtime has to be listening on the network for that (section 4). A runtime accepts requests from the IDE run with
+`npm run dev` (port 5173) and from its own address; any other address, such as the IDE served by the runtime on your
+PC (`http://localhost:8080`), has to be named with `--cors-origins` on the runtime you deploy to (section 4 shows
+how on the panel).
 
 Useful in the IDE: **New** (built-in or custom header and navigation), **Save** and **Load** (any `.json` file),
 **Preview**, the **Desktop / Tablet / Phone** switch, the **Data** switch (live or made-up values for designing with
@@ -122,8 +138,12 @@ and later include them).
 By default nothing on the network can reach the runtime. To let the IDE on your PC Pull and Deploy:
 
 ```powershell
-ssh admin@10.0.0.118 "cd panel-test && SPETHS_LISTEN=:8090 sh install-service.sh"
+ssh admin@10.0.0.118 "cd panel-test && SPETHS_LISTEN=:8090 SPETHS_CORS=http://localhost:8080 sh install-service.sh"
 ```
+
+`SPETHS_CORS` is the address of the IDE you design in: `http://localhost:8080` for the IDE of a runtime on your PC at
+its default port (use the address and port you actually open; separate several with commas). Leave it out if you only
+use the IDE from the source code with `npm run dev`. Nothing else is opened by it.
 
 Check <http://10.0.0.118:8090/> answers from your PC, then add it as a target in the IDE (section 3).
 
@@ -232,7 +252,8 @@ Switching a project from `login` to `none` needs a logged-in deploy. The develop
   (`speths-screens` is the file inside the panel package; leave out `SPETHS_LISTEN=:8090` to keep the panel closed to
   the network.) The operator screen is **built into the runtime**, so a runtime from before a screen change keeps
   showing the old screen however new the IDE is. Check with `speths-screens --version`.
-- **IDE:** `git pull`, `npm ci`, `npm run dev`.
+- **IDE:** it is inside the runtime for Windows and Linux PCs, so it updates with the runtime. From the source code:
+  `git pull`, `npm ci`, `npm run dev`.
 - **Projects:** an older project file is upgraded when it is loaded (the IDE and the runtime both do it).
   A runtime that is older than a project refuses it ("the project is format 6; this version reads up to 5"): update
   the runtime. `speths-screens upgrade <file>` upgrades a file on disk and keeps a `.bak`.

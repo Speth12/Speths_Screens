@@ -7,6 +7,7 @@ import { useProject } from "../store/projectStore";
 import { openProject, openSummary } from "../store/openProject";
 import { validateProject } from "../store/validateProject";
 import { setApiBase } from "../store/runtimeTarget";
+import { describeFailure, isNetworkFailure } from "../store/targetErrors";
 import { tagStoreClient } from "../store/tagStoreClient";
 import { clearToken, authHeader } from "../store/runtimeAuth";
 import { subscribeTargets, getTargets, getActiveTarget, setActiveTarget } from "../store/targetsStore";
@@ -85,7 +86,7 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       const body = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number };
       say(r.ok ? `deployed → ${activeTarget.name} (${body.datasources} ds, ${body.pages} pg)` : `error: ${body.error}`);
     } catch (e) {
-      say(`error: ${(e as Error).message}`);
+      say(`error: ${describeFailure(activeTarget.url, e)}`);
     } finally { setBusy("none"); }
   };
 
@@ -100,7 +101,7 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
       const o = openProject(p);
       if (o.ok) loadProject(o.project);
       say(openSummary(`the project from ${activeTarget.name}`, o));
-    } catch { say("pull failed"); }
+    } catch (e) { say(isNetworkFailure(e) ? `pull failed: ${describeFailure(activeTarget.url, e)}` : "pull failed"); }
     finally { setBusy("none"); }
   };
 

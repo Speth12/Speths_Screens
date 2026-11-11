@@ -17,6 +17,12 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go vet ./...
+      - name: The program with the IDE embedded still builds (-tags ide)
+        run: |
+          mkdir -p cmd/speths-screens/ide
+          echo '<!doctype html>' > cmd/speths-screens/ide/index.html
+          go vet -tags ide ./cmd/...
+          rm -r cmd/speths-screens/ide
       - run: go test -race ./...
 
   web:

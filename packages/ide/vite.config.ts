@@ -7,7 +7,9 @@ import tailwindcss from "@tailwindcss/vite";
 // panel-ip:8080) to point the IDE at a running container instead.
 const runtimeAddr = process.env.VITE_RUNTIME_ADDR ?? "localhost:3001";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // The built IDE is served by the runtime under /ide/; the dev server keeps the root.
+  base: command === "build" ? "/ide/" : "/",
   plugins: [react(), tailwindcss()],
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
@@ -22,4 +24,4 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
   },
-});
+}));

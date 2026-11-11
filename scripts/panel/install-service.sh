@@ -15,6 +15,14 @@
 #
 #   SPETHS_LISTEN=:8090 sh install-service.sh
 #
+# The IDE that a runtime on your PC serves (http://localhost:8080/ide/) is another address, and the panel
+# only accepts requests from its own address and the IDE dev server unless you name it. For Deploy and Pull
+# from that IDE, add its address:
+#
+#   SPETHS_LISTEN=:8090 SPETHS_CORS=http://localhost:8080 sh install-service.sh
+#
+# (several addresses: separate them with commas). Nothing else is opened by it.
+#
 # THAT HAS NO LOGIN unless the project turns security on: anyone who can reach the panel can deploy a
 # project to it, write to its tags and read everything. Do it only on a network you trust, and go back with
 #   sh install-service.sh        (listens on the panel only again)
@@ -22,6 +30,7 @@ set -e
 DIR=$(cd "$(dirname "$0")" && pwd)
 PROJECT="${1:-design-directions.screens.json}"
 LISTEN="${SPETHS_LISTEN:-127.0.0.1:8090}"
+CORS="${SPETHS_CORS:-}"   # extra browser addresses allowed to call this runtime (the IDE's address)
 [ -f "$DIR/$PROJECT" ] || { echo "no such project file in $DIR: $PROJECT"; exit 1; }
 chmod +x "$DIR/speths-screens"
 mkdir -p "$HOME/.config/systemd/user"
@@ -32,7 +41,7 @@ After=network-online.target
 
 [Service]
 WorkingDirectory=$DIR
-ExecStart=$DIR/speths-screens --mode=runtime --addr=$LISTEN --project=$DIR/$PROJECT --history=:memory:
+ExecStart=$DIR/speths-screens --mode=runtime --addr=$LISTEN --project=$DIR/$PROJECT --history=:memory:${CORS:+ --cors-origins=$CORS}
 Restart=on-failure
 RestartSec=3
 

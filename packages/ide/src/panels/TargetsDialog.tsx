@@ -50,7 +50,7 @@ export function TargetsDialog({ onClose }: { onClose: () => void }) {
                   <button type="button" role="radio" aria-checked={active.id === t.id} onClick={() => setActiveTarget(t.id)}
                     className="flex-1 min-w-0 text-left rounded focus-visible:outline-2 focus-visible:outline-blue-500">
                     <div className="text-ui font-medium text-zinc-100">{t.name}{active.id === t.id && <span className="ml-2 text-ui-label text-zinc-400">active</span>}</div>
-                    <div className="truncate font-mono text-ui-label text-zinc-400">{t.url || "this computer, through the dev server"}</div>
+                    <div className="truncate font-mono text-ui-label text-zinc-400">{t.url || (import.meta.env.DEV ? "this computer, through the dev server" : "the runtime this page came from")}</div>
                   </button>
                   {t.id !== "local" && (
                     <>

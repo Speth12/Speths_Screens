@@ -49,20 +49,7 @@ func spaHandler() http.Handler {
 	if err != nil {
 		log.Fatalf("[Speth's Screens] embed sub: %v", err)
 	}
-	fileServer := http.FileServer(http.FS(sub))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Try to open the exact file. If missing, serve index.html.
-		f, err := sub.Open(r.URL.Path[1:]) // strip leading /
-		if err == nil {
-			f.Close()
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-		// fall back to SPA index
-		data, _ := fs.ReadFile(sub, "index.html")
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(data)
-	})
+	return spaFS(sub)
 }
 
 func main() {
@@ -72,6 +59,7 @@ func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	mode := flag.String("mode", "dev", "dev | runtime")
+	noIDE := flag.Bool("no-ide", false, "runtime mode: do not serve the IDE at /ide/ (only in programs built with it)")
 	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
 	historyDB := flag.String("history", "history.db", "SQLite WAL file (use ':memory:' to disable persistence)")
@@ -236,7 +224,14 @@ func main() {
 	// Serve operator UI for runtime mode; nil assets (IDE proxies its own) for dev.
 	var assets http.Handler
 	if *mode == "runtime" {
-		assets = spaHandler()
+		var ide fs.FS
+		if !*noIDE {
+			ide = ideFS() // nil unless the program was built with the IDE
+		}
+		assets = uiHandler(spaHandler(), ide)
+		if ide != nil {
+			log.Printf("[Speth's Screens] the IDE is at /ide/ on this address")
+		}
 	}
 	srv := api.New(rt, assets, versionSt)
 	srv.DevMode = *mode == "dev"

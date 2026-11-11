@@ -35,3 +35,6 @@ soak-runs/
 
 # A panel probe holds the panel's network and hardware addresses: never commit it
 scripts/panel/panel-probe*.txt
+
+# The IDE build embedded into programs built with -tags ide (scripts/release/build.mjs)
+/cmd/speths-screens/ide/
