@@ -753,6 +753,65 @@ type PipeProps struct {
 	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
 }
 
+// ShapeProps holds the settings of a shape widget.
+type ShapeProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Shape: rectangle (missing means this), ellipse or line
+	Kind *ShapeKind `json:"kind,omitempty"`
+	// Shape: the color inside a rectangle or ellipse, a CSS color or a token such as token:process-running; missing means none
+	Fill *string `json:"fill,omitempty"`
+	// Shape: the color of the outline or the line, a CSS color or a token; missing means the theme's text color
+	Stroke *string `json:"stroke,omitempty"`
+	// Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no outline
+	Weight *float64 `json:"weight,omitempty"`
+	// Shape: a rectangle's corner radius in pixels; missing means 0
+	CornerRadius *float64 `json:"cornerRadius,omitempty"`
+	// Shape: how a line crosses its box; missing means horizontal
+	Direction *ShapeLineDirection `json:"direction,omitempty"`
+	// Shape: the outline or the line is dashed
+	Dashed *bool `json:"dashed,omitempty"`
+	// Shape: a line has an arrow head where it starts (left, or the top for an upright line)
+	ArrowStart *bool `json:"arrowStart,omitempty"`
+	// Shape: a line has an arrow head where it ends
+	ArrowEnd *bool `json:"arrowEnd,omitempty"`
+}
+
 // CustomWidgetProps holds the settings of a customWidget widget.
 type CustomWidgetProps struct {
 	Label       *string `json:"label,omitempty"`
@@ -1178,6 +1237,13 @@ func (w Widget) AsPipe() (PipeProps, error) {
 	return p, decodeProps(w.Type, Pipe, w.Props, &p)
 }
 
+// AsShape returns w's settings as a shape widget's. It fails when w is
+// another type or has a setting a shape does not have.
+func (w Widget) AsShape() (ShapeProps, error) {
+	var p ShapeProps
+	return p, decodeProps(w.Type, Shape, w.Props, &p)
+}
+
 // AsCustomWidget returns w's settings as a customWidget widget's. It fails when w is
 // another type or has a setting a customWidget does not have.
 func (w Widget) AsCustomWidget() (CustomWidgetProps, error) {
@@ -1245,6 +1311,7 @@ var PropsKeys = map[WidgetType][]string{
 	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
 	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
 	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
+	Shape:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
 	CustomWidget:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
 	PageList:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"},
 	Clock:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},

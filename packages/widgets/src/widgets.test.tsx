@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { CustomWidget, Widget } from "@speths-screens/shared-types";
-import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, toggled, rewriteBinding } from "./widgets";
+import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, shapeLineEnds, toggled, rewriteBinding } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost, type AlarmView } from "./host";
 import { SYMBOLS } from "./symbols";
 import { driverSummary, formatClock } from "./shell";
@@ -85,6 +85,7 @@ describe("each widget renders", () => {
     { type: "driverStatus",   w: {},                                                   shows: "Broker" },
     { type: "userMenu",       w: {},                                                   shows: "" },
     { type: "recipes",        w: {},                                                   shows: "Batch A" },
+    { type: "shape",          w: { props: { kind: "rectangle" } },                     shows: "" },
   ];
   for (const c of cases) {
     it(`${c.type}: ${String(c.shows)}`, () => {
@@ -105,6 +106,74 @@ describe("each widget renders", () => {
   it("the visible tag hides the widget while it is off", () => {
     draw({ type: "numericDisplay", bindings: { value: "plc:T", visible: "plc:Off" } }, fakeHost({ "plc:T": 1, "plc:Off": false }));
     expect(screen.queryByText("1")).toBeNull();
+  });
+});
+
+describe("shapes", () => {
+  const shape = (container: HTMLElement) => container.querySelector<HTMLElement>("[data-shape]")!;
+
+  it("a rectangle is a box with its fill, outline and corners, and no card around it", () => {
+    const { container } = draw({ type: "shape", props: { kind: "rectangle", fill: "#336699", stroke: "#112233", weight: 3, cornerRadius: 6 } });
+    const el = shape(container);
+    expect(el.dataset.shape).toBe("rectangle");
+    expect(el.style.background).toBe("rgb(51, 102, 153)");
+    expect(el.style.border).toBe("3px solid rgb(17, 34, 51)");
+    expect(el.style.borderRadius).toBe("6px");
+    // The frame around it draws nothing of its own.
+    expect(container.innerHTML).not.toContain("var(--card)");
+    expect(container.innerHTML).not.toContain("var(--pad");
+  });
+
+  it("with no settings it is an outlined rectangle with nothing inside", () => {
+    const el = shape(draw({ type: "shape" }).container);
+    expect(el.dataset.shape).toBe("rectangle");
+    expect(el.style.background).toBe("transparent");
+    expect(el.getAttribute("style")).toContain("2px solid var(--foreground)");
+  });
+
+  it("an ellipse is round, and width 0 draws no outline", () => {
+    const el = shape(draw({ type: "shape", props: { kind: "ellipse", fill: "#ff0000", weight: 0 } }).container);
+    expect(el.style.borderRadius).toBe("50%");
+    expect(el.style.borderStyle).toBe("none");
+  });
+
+  it("a color may be a design token", () => {
+    const el = shape(draw({ type: "shape", props: { fill: "token:alarm-critical" } }).container);
+    expect(el.getAttribute("style")).toContain("var(--alarm-critical)");
+  });
+
+  it("a line crosses its box in the direction given, in pixels wide", () => {
+    const { container } = draw({ type: "shape", props: { kind: "line", direction: "down", stroke: "#336699", weight: 4 } });
+    const line = container.querySelector("line")!;
+    expect([line.getAttribute("x1"), line.getAttribute("y1"), line.getAttribute("x2"), line.getAttribute("y2")]).toEqual(["0%", "0%", "100%", "100%"]);
+    expect(line.style.strokeWidth).toBe("4");
+    expect(container.querySelector("marker")).toBeNull();
+    // No viewBox: nothing stretches with the widget.
+    expect(container.querySelector("svg")!.hasAttribute("viewBox")).toBe(false);
+  });
+
+  it.each([
+    ["horizontal", { x1: 0, y1: 50, x2: 100, y2: 50 }],
+    ["vertical", { x1: 50, y1: 0, x2: 50, y2: 100 }],
+    ["down", { x1: 0, y1: 0, x2: 100, y2: 100 }],
+    ["up", { x1: 0, y1: 100, x2: 100, y2: 0 }],
+    [undefined, { x1: 0, y1: 50, x2: 100, y2: 50 }],
+  ])("a line going %s", (direction, want) => {
+    expect(shapeLineEnds(direction)).toEqual(want);
+  });
+
+  it("a line has arrow heads only at the ends that ask for one, in the line's color", () => {
+    const { container } = draw({ type: "shape", props: { kind: "line", stroke: "#336699", arrowEnd: true } });
+    const line = container.querySelector("line")!;
+    expect(line.getAttribute("marker-end")).toBe("url(#shape-head-w1)");
+    expect(line.getAttribute("marker-start")).toBeNull();
+    expect(container.querySelector<SVGPathElement>("marker path")!.style.fill).toBe("rgb(51, 102, 153)");
+  });
+
+  it("a dashed line and a dashed outline", () => {
+    expect(draw({ type: "shape", props: { kind: "line", dashed: true, weight: 2 } }).container.querySelector("line")!.getAttribute("stroke-dasharray")).toBe("6 4");
+    cleanup();
+    expect(shape(draw({ type: "shape", props: { dashed: true } }).container).getAttribute("style")).toContain("2px dashed");
   });
 });
 

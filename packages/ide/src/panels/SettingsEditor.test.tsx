@@ -129,4 +129,25 @@ describe("properties panel", () => {
     fireEvent.change(screen.getByLabelText("Rows to fetch"), { target: { value: "" } });
     expect(props()).toBeUndefined();
   });
+
+  it("Plain takes the card away in one step, and Card gives it back", () => {
+    const wid = { id: "x", type: "numericDisplay", x: 0, y: 0, w: 2, h: 2, props: { unit: "bar" } } as Widget;
+    useProject.getState().loadProject(project([wid]));
+    useProject.getState().selectWidget("x");
+    render(<Properties />);
+    const props = () => useProject.getState().project.pages[0]!.widgets[0]!.props;
+    expect(screen.getByRole("button", { name: "Card" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Plain" }));
+    expect(props()).toEqual({ unit: "bar", bgColor: "transparent", borderColor: "transparent", showLabel: false });
+    expect(screen.getByRole("button", { name: "Plain" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    expect(props()).toEqual({ unit: "bar" });
+  });
+
+  it.each(["pipe", "shape"])("a %s is always a drawing: no Card or Plain switch", (type) => {
+    useProject.getState().loadProject(project([{ id: "x", type, x: 0, y: 0, w: 2, h: 2 } as Widget]));
+    useProject.getState().selectWidget("x");
+    render(<Properties />);
+    expect(screen.queryByRole("button", { name: "Plain" })).toBeNull();
+  });
 });

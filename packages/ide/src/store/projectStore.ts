@@ -140,6 +140,8 @@ const blankProject = (): Project => ({
   schemaVersion: 6,
   version: "0.1.0",
   datasources: [],
+  // A new project places widgets freely, in pixels; the cell grid stays a project setting.
+  canvasSnap: "pixel",
   pages: [{ id: "p1", name: "Main", widgets: [] }],
 });
 

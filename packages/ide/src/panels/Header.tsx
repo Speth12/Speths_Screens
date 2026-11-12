@@ -158,6 +158,11 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         { label: "Delete", shortcut: EDIT_SHORTCUTS.delete, onSelect: () => runEditCommand("delete") },
         { separator: true },
         { label: "Select all", shortcut: EDIT_SHORTCUTS.selectAll, onSelect: () => runEditCommand("selectAll") },
+        { separator: true },
+        { label: "Bring to front", shortcut: EDIT_SHORTCUTS.toFront, onSelect: () => runEditCommand("toFront") },
+        { label: "Bring forward", shortcut: EDIT_SHORTCUTS.forward, onSelect: () => runEditCommand("forward") },
+        { label: "Send backward", shortcut: EDIT_SHORTCUTS.backward, onSelect: () => runEditCommand("backward") },
+        { label: "Send to back", shortcut: EDIT_SHORTCUTS.toBack, onSelect: () => runEditCommand("toBack") },
       ],
     },
     {

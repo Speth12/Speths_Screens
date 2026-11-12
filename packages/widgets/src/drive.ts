@@ -57,7 +57,7 @@ export const DRIVEN_KIND: Record<string, Kind> = {
   visible: "flag", disabled: "flag", blink: "flag", animate: "flag", flow: "flag", reverse: "flag",
   opacity: "number", rotate: "number", min: "number", max: "number", step: "number",
   label: "text", unit: "text", staticText: "text", trueLabel: "text", falseLabel: "text", src: "text",
-  bgColor: "color", borderColor: "color", textColor: "color", trueColor: "color", falseColor: "color", btnColor: "color", stroke: "color", color: "color",
+  bgColor: "color", borderColor: "color", textColor: "color", trueColor: "color", falseColor: "color", btnColor: "color", stroke: "color", color: "color", fill: "color",
 };
 
 /** The value for a property, or undefined when v does not suit it. Flags

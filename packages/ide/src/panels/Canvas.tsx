@@ -9,6 +9,7 @@ import { ScreenFrame } from "./ScreenFrame";
 import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
+import { boundsOf, resizeCells, snapMove, snapResize, SNAP_STEP, type Corner, type Guides, type Rect } from "../store/canvasSnapping";
 import { CloseIcon, ResetIcon, LockIcon, UnlockIcon, AlignLeftIcon, AlignCenterXIcon, AlignRightIcon, AlignTopIcon, AlignCenterYIcon, AlignBottomIcon, DistributeXIcon, DistributeYIcon, type Icon } from "../ui/icons";
 
 const COLS  = 12;
@@ -16,14 +17,14 @@ const ROW_H = 64;
 const GAP   = 8;
 const COL_W = 80;
 
-// Module-level drag state — avoids stale closures during drag events.
-let widgetDrag: {
-  ids: string[];
-  anchorId: string;
-  ox: number; oy: number;
-  origins: Record<string, { x: number; y: number }>;
-} | null = null;
-let resizeDrag: { id: string; originX: number; originY: number; corner: "br" | "bl" | "tr" | "tl" } | null = null;
+/** A move or a resize in progress: where the pointer went down and where each widget was. */
+type Drag =
+  | { kind: "move"; sx: number; sy: number; starts: Record<string, Rect>; moved: boolean }
+  | { kind: "resize"; sx: number; sy: number; id: string; start: Rect; corner: Corner; moved: boolean };
+/** How far the pointer travels before a press becomes a drag, so a click still selects. */
+const DRAG_START = 3;
+/** Where the dragged widgets are drawn until the pointer is let go, and the lines they sit on. */
+type Preview = { rects: Record<string, Rect>; guides: Guides };
 
 function cellFromEvent(grid: HTMLElement, e: React.DragEvent | MouseEvent, zoom: number) {
   const rect = grid.getBoundingClientRect();
@@ -100,10 +101,10 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
     >
       {!multi && item(isLocked ? <><UnlockIcon size={14} /> Unlock</> : <><LockIcon size={14} /> Lock</>, "lock")}
       {!multi && <div className="border-t border-zinc-700 my-1" />}
-      {!multi && item("Bring to Front", "z-front", false)}
-      {!multi && item("Bring Forward", "z-forward", false)}
-      {!multi && item("Send Backward", "z-backward", false)}
-      {!multi && item("Send to Back", "z-back", false)}
+      {!multi && item("Bring to front  Ctrl+Shift+]", "z-front", false)}
+      {!multi && item("Bring forward  Ctrl+]", "z-forward", false)}
+      {!multi && item("Send backward  Ctrl+[", "z-backward", false)}
+      {!multi && item("Send to back  Ctrl+Shift+[", "z-back", false)}
       <div className="border-t border-zinc-700 my-1" />
       {multi && item(`Group ${multiCount} widgets`, "group")}
       {!multi && w?.groupId && item("Ungroup", "ungroup")}
@@ -139,6 +140,12 @@ export function Canvas() {
   const [rubber, setRubber] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const rubberActive = useRef(false);
 
+  // A move or resize in progress. The widgets follow the pointer as a preview; the project changes
+  // once, when the pointer is let go, so one drag is one undo step.
+  const dragRef = useRef<Drag | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const draggedRef = useRef(false);
+
   const rawPage = project.pages.find((p) => p.id === activePageId);
   // The page as it sits on the screen size being edited; a hidden widget stays, faded, to be shown again.
   const device = useEditorView((s) => s.device);
@@ -148,6 +155,10 @@ export function Canvas() {
   );
   const snapMode   = project.canvasSnap ?? "grid";
   const resolution = project.canvasResolution ?? { type: "dynamic" };
+
+  // Hooks stay above the early return below: React needs the same hooks in
+  // every render, with or without a page.
+  const isPixelMode = snapMode === "pixel";
 
   // Keep single-select store in sync with multi-select local state
   useEffect(() => {
@@ -191,6 +202,14 @@ export function Canvas() {
         return;
       }
 
+      // Which widget is drawn over which (the page's widgets are drawn in order, the last on top)
+      if ((e.ctrlKey || e.metaKey) && (e.key === "]" || e.key === "[" || e.key === "}" || e.key === "{") && selectedIds.length === 1) {
+        e.preventDefault();
+        const up = e.key === "]" || e.key === "}";
+        reorderWidget(activePageId, selectedIds[0]!, e.shiftKey ? (up ? "front" : "back") : (up ? "forward" : "backward"));
+        return;
+      }
+
       // Arrow nudge
       const delta: Record<string, { dx: number; dy: number }> = {
         ArrowLeft:  { dx: -1, dy: 0 },
@@ -201,7 +220,8 @@ export function Canvas() {
       const step = delta[e.key];
       if (step && selectedIds.length > 0) {
         e.preventDefault();
-        const { dx, dy } = step;
+        const by = e.shiftKey && isPixelMode ? SNAP_STEP : 1;
+        const dx = step.dx * by, dy = step.dy * by;
         updateWidgets(activePageId, selectedIds.map(id => {
           const w = page.widgets.find(x => x.id === id)!;
           return { id, patch: { x: Math.max(0, w.x + dx), y: Math.max(0, w.y + dy) } };
@@ -216,11 +236,7 @@ export function Canvas() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedIds, activePageId, page, removeWidget, removeWidgets, updateWidgets]);
-
-  // Hooks stay above the early return below: React needs the same hooks in
-  // every render, with or without a page.
-  const isPixelMode = snapMode === "pixel";
+  }, [selectedIds, activePageId, page, removeWidget, removeWidgets, updateWidgets, reorderWidget, isPixelMode]);
 
   const onOuterMouseMove = useCallback((e: React.MouseEvent) => {
     if (!rubberActive.current || !outerRef.current) return;
@@ -343,12 +359,79 @@ export function Canvas() {
     if (patches.length) updateWidgets(activePageId, patches);
   };
 
+  // ── Moving and resizing with the pointer ──────────────────────────────────
+
+  const colPitch = eColW + GAP, rowPitch = eRowH + GAP;
+  const rectOf = (w: Widget): Rect => ({ x: w.x ?? 0, y: w.y ?? 0, w: w.w, h: w.h });
+  const stage = resolution.type === "fixed" ? { w: resolution.width ?? 1920, h: resolution.height ?? 1080 } : undefined;
+
+  /** Where the dragged widgets are now, for a pointer that has travelled (dx, dy) screen pixels. */
+  const dragTo = (d: Drag, dx: number, dy: number, free: boolean): Preview => {
+    if (d.kind === "resize") {
+      if (!isPixelMode) {
+        return { rects: { [d.id]: resizeCells(d.start, d.corner, Math.round(dx / colPitch), Math.round(dy / rowPitch), COLS) }, guides: { xs: [], ys: [] } };
+      }
+      const others = page.widgets.filter(w => w.id !== d.id).map(rectOf);
+      const r = snapResize(d.start, d.corner, dx / zoom, dy / zoom, { others, stage, zoom, free });
+      return { rects: { [d.id]: r.rect }, guides: r.guides };
+    }
+    const ids = Object.keys(d.starts);
+    const box = boundsOf(Object.values(d.starts));
+    let mx: number, my: number, guides: Guides = { xs: [], ys: [] };
+    if (isPixelMode) {
+      const others = page.widgets.filter(w => !ids.includes(w.id)).map(rectOf);
+      const to = snapMove({ ...box, x: box.x + dx / zoom, y: box.y + dy / zoom }, { others, stage, zoom, free });
+      mx = to.x - box.x; my = to.y - box.y; guides = to.guides;
+    } else {
+      mx = Math.max(-box.x, Math.min(Math.max(0, COLS - box.x - box.w), Math.round(dx / colPitch)));
+      my = Math.max(-box.y, Math.round(dy / rowPitch));
+    }
+    const rects: Record<string, Rect> = {};
+    for (const id of ids) { const st = d.starts[id]!; rects[id] = { ...st, x: st.x + mx, y: st.y + my }; }
+    return { rects, guides };
+  };
+
+  const beginDrag = (d: Drag) => {
+    dragRef.current = d;
+    const onMove = (ev: PointerEvent) => {
+      const cur = dragRef.current;
+      if (!cur) return;
+      const dx = ev.clientX - cur.sx, dy = ev.clientY - cur.sy;
+      if (!cur.moved && Math.hypot(dx, dy) < DRAG_START) return;
+      cur.moved = true;
+      setPreview(dragTo(cur, dx, dy, ev.altKey));
+    };
+    const end = (ev?: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("keydown", onKey);
+      const cur = dragRef.current;
+      dragRef.current = null;
+      setPreview(null);
+      if (!cur?.moved) return;
+      // The click that ends a drag must not change the selection.
+      draggedRef.current = true;
+      setTimeout(() => { draggedRef.current = false; }, 0);
+      if (!ev) return; // Escape: the widgets go back to where they were
+      const { rects } = dragTo(cur, ev.clientX - cur.sx, ev.clientY - cur.sy, ev.altKey);
+      const patches = Object.entries(rects).map(([id, r]) => ({
+        id, patch: cur.kind === "resize" ? { x: r.x, y: r.y, w: r.w, h: r.h } : { x: r.x, y: r.y },
+      }));
+      if (patches.length === 1) updateWidget(activePageId, patches[0]!.id, patches[0]!.patch);
+      else if (patches.length > 1) updateWidgets(activePageId, patches);
+    };
+    const onUp = (ev: PointerEvent) => end(ev);
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") end(); };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("keydown", onKey);
+  };
+
   // ── Drop handler ──────────────────────────────────────────────────────────
 
   const onDragOver = (e: React.DragEvent) => {
     const types = e.dataTransfer.types;
-    if (types.includes("text/x-widget-id") || types.includes("text/x-tag-binding") ||
-        types.includes("text/x-resize")    || types.includes("text/x-image-id")    ||
+    if (types.includes("text/x-tag-binding") || types.includes("text/x-image-id")    ||
         types.includes("text/x-symbol-id") || types.includes(PRESET_DRAG) || types.includes(GALLERY_DRAG))
       e.preventDefault();
   };
@@ -411,56 +494,6 @@ export function Canvas() {
       });
       setSelectedIds([id]);
       return;
-    }
-
-    if (resizeDrag) {
-      const w = page.widgets.find(x => x.id === resizeDrag!.id);
-      if (w) {
-        const { corner, originX, originY } = resizeDrag;
-        let nx = w.x, ny = w.y, nw = w.w, nh = w.h;
-        if (isPixel) {
-          const minSz = 20;
-          if (corner === "br") { nw = Math.max(minSz, pxX - originX); nh = Math.max(minSz, pxY - originY); }
-          else if (corner === "bl") { const nx2 = Math.min(pxX, originX + w.w - minSz); nw = Math.max(minSz, originX + w.w - nx2); nx = nx2; nh = Math.max(minSz, pxY - originY); }
-          else if (corner === "tr") { nw = Math.max(minSz, pxX - originX); const ny2 = Math.min(pxY, originY + w.h - minSz); nh = Math.max(minSz, originY + w.h - ny2); ny = ny2; }
-          else { const nx2 = Math.min(pxX, originX + w.w - minSz); nw = Math.max(minSz, originX + w.w - nx2); nx = nx2; const ny2 = Math.min(pxY, originY + w.h - minSz); nh = Math.max(minSz, originY + w.h - ny2); ny = ny2; }
-        } else {
-          if (corner === "br") { nw = Math.max(1, col - originX + 1); nh = Math.max(1, row - originY + 1); }
-          else if (corner === "bl") { const nx2 = Math.min(col, originX + w.w - 1); nw = Math.max(1, originX + w.w - nx2); nx = nx2; nh = Math.max(1, row - originY + 1); }
-          else if (corner === "tr") { nw = Math.max(1, col - originX + 1); const ny2 = Math.min(row, originY + w.h - 1); nh = Math.max(1, originY + w.h - ny2); ny = ny2; }
-          else { const nx2 = Math.min(col, originX + w.w - 1); nw = Math.max(1, originX + w.w - nx2); nx = nx2; const ny2 = Math.min(row, originY + w.h - 1); nh = Math.max(1, originY + w.h - ny2); ny = ny2; }
-          nx = Math.max(0, Math.min(COLS - nw, nx));
-          nw = Math.min(COLS, nw);
-        }
-        updateWidget(activePageId, resizeDrag.id, { x: Math.max(0, nx), y: Math.max(0, ny), w: nw, h: Math.max(isPixel ? 20 : 1, nh) });
-      }
-      resizeDrag = null;
-      return;
-    }
-
-    if (widgetDrag) {
-      const { ids, anchorId, ox, oy, origins } = widgetDrag;
-      const anchor = page.widgets.find(x => x.id === anchorId);
-      if (anchor) {
-        const newAnchorX = isPixel
-          ? Math.max(0, pxX - ox)
-          : Math.max(0, Math.min(COLS - anchor.w, col - ox));
-        const newAnchorY = isPixel
-          ? Math.max(0, pxY - oy)
-          : Math.max(0, row - oy);
-        const dx = newAnchorX - origins[anchorId]!.x;
-        const dy = newAnchorY - origins[anchorId]!.y;
-
-        if (ids.length === 1) {
-          updateWidget(activePageId, anchorId, { x: newAnchorX, y: newAnchorY });
-        } else {
-          updateWidgets(activePageId, ids.map(id => {
-            const orig = origins[id]!;
-            return { id, patch: { x: Math.max(0, orig.x + dx), y: Math.max(0, orig.y + dy) } };
-          }));
-        }
-      }
-      widgetDrag = null;
     }
   };
 
@@ -620,29 +653,18 @@ export function Canvas() {
             const selected = selectedIds.includes(w.id);
             const locked   = w.locked ?? false;
 
-            const onDragStart = (e: React.DragEvent) => {
-              if (locked) { e.preventDefault(); return; }
+            const onPointerDown = (e: React.PointerEvent) => {
+              if (locked || e.button !== 0) return;
               const tag = (e.target as HTMLElement).tagName;
-              if (tag === "INPUT" || tag === "BUTTON" || tag === "TEXTAREA") { e.preventDefault(); return; }
-              if (!gridRef.current) return;
-
-              // Build the drag group
-              const ids = selected && selectedIds.length > 1 ? selectedIds : [w.id];
-              const origins: Record<string, { x: number; y: number }> = {};
-              ids.forEach(id => {
-                const ww = page.widgets.find(x => x.id === id);
-                if (ww) origins[id] = { x: ww.x ?? 0, y: ww.y ?? 0 };
-              });
-
-              if (isPixelMode) {
-                const { x: px, y: py } = pixelFromEvent(gridRef.current, e, zoom);
-                widgetDrag = { ids, anchorId: w.id, ox: px - (w.x ?? 0), oy: py - (w.y ?? 0), origins };
-              } else {
-                const { col, row } = cellFromEvent(gridRef.current, e, zoom);
-                widgetDrag = { ids, anchorId: w.id, ox: col - (w.x ?? 0), oy: row - (w.y ?? 0), origins };
-              }
-              e.dataTransfer.setData("text/x-widget-id", w.id);
-              e.dataTransfer.effectAllowed = "move";
+              if (tag === "INPUT" || tag === "BUTTON" || tag === "TEXTAREA" || tag === "SELECT") return;
+              if (e.shiftKey || e.ctrlKey || e.metaKey) return; // a click that adds to or takes from the selection
+              // What moves: the selection the widget is part of, or the widget (with its group).
+              let ids = selected ? selectedIds : w.groupId ? page.widgets.filter(x => x.groupId === w.groupId).map(x => x.id) : [w.id];
+              ids = ids.filter(id => !page.widgets.find(x => x.id === id)?.locked);
+              if (!selected) setSelectedIds(ids);
+              const starts: Record<string, Rect> = {};
+              for (const id of ids) { const ww = page.widgets.find(x => x.id === id); if (ww) starts[id] = rectOf(ww); }
+              beginDrag({ kind: "move", sx: e.clientX, sy: e.clientY, starts, moved: false });
             };
 
             const onContextMenu = (e: React.MouseEvent) => {
@@ -655,6 +677,7 @@ export function Canvas() {
             const onClick = (e: React.MouseEvent) => {
               e.stopPropagation();
               setCtxMenu(null);
+              if (draggedRef.current) return;
               // If widget belongs to a group, select all group members together
               const isAdditive = e.shiftKey || e.ctrlKey || e.metaKey;
               if (w.groupId && !isAdditive) {
@@ -669,26 +692,31 @@ export function Canvas() {
               }
             };
 
+            // While it is dragged, the widget is drawn where the drag has it.
+            const at = preview?.rects[w.id] ?? rectOf(w);
             const widgetStyle = isPixelMode
               ? {
                   position: "absolute" as const,
-                  left:   (w.x ?? 0) * zoom,
-                  top:    (w.y ?? 0) * zoom,
-                  width:  w.w * zoom,
-                  height: w.h * zoom,
+                  left:   at.x * zoom,
+                  top:    at.y * zoom,
+                  width:  at.w * zoom,
+                  height: at.h * zoom,
                   cursor: locked ? "default" : "grab",
+                  touchAction: "none" as const,
                 }
               : {
-                  gridColumn: `${(w.x ?? 0) + 1} / span ${w.w}`,
-                  gridRow:    `${(w.y ?? 0) + 1} / span ${w.h}`,
+                  gridColumn: `${at.x + 1} / span ${at.w}`,
+                  gridRow:    `${at.y + 1} / span ${at.h}`,
                   cursor: locked ? "default" : "grab",
+                  touchAction: "none" as const,
                 };
 
             return (
               <div
                 key={w.id}
-                draggable={!locked}
-                onDragStart={onDragStart}
+                data-widget-id={w.id}
+                onPointerDown={onPointerDown}
+                onDragStart={(e) => e.preventDefault()}
                 onClick={onClick}
                 onContextMenu={onContextMenu}
                 className={`group relative rounded-lg ${
@@ -718,13 +746,11 @@ export function Canvas() {
                     {(["br","bl","tr","tl"] as const).map((corner) => (
                       <div
                         key={corner}
-                        draggable
-                        onDragStart={(e) => {
+                        data-resize={corner}
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
                           e.stopPropagation();
-                          if (!gridRef.current) return;
-                          resizeDrag = { id: w.id, originX: w.x ?? 0, originY: w.y ?? 0, corner };
-                          e.dataTransfer.setData("text/x-resize", w.id);
-                          e.dataTransfer.effectAllowed = "move";
+                          beginDrag({ kind: "resize", sx: e.clientX, sy: e.clientY, id: w.id, start: rectOf(w), corner, moved: false });
                         }}
                         className="absolute w-3 h-3 bg-blue-500 rounded-full z-20 border-2 border-zinc-900 hover:bg-blue-400"
                         style={{
@@ -748,6 +774,14 @@ export function Canvas() {
               </div>
             );
           })}
+
+          {/* The lines a dragged widget sits on */}
+          {preview?.guides.xs.map((x) => (
+            <div key={`gx${x}`} data-testid="snap-guide" aria-hidden="true" className="absolute top-0 bottom-0 pointer-events-none z-40" style={{ left: x * zoom, borderLeft: "1px solid #ec4899" }} />
+          ))}
+          {preview?.guides.ys.map((y) => (
+            <div key={`gy${y}`} data-testid="snap-guide" aria-hidden="true" className="absolute left-0 right-0 pointer-events-none z-40" style={{ top: y * zoom, borderTop: "1px solid #ec4899" }} />
+          ))}
 
           {/* Where a tablet or phone screen ends: widgets past this line are off its edge */}
           {device !== "desktop" && (

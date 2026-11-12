@@ -6,6 +6,8 @@ import { BindingInput, LiveTagPreview } from "./BindingInput";
 import { SettingsFields, inp } from "./SettingsEditor";
 import { EventsEditor } from "./EventsEditor";
 import { ScriptEditor } from "./ScriptEditor";
+import { Segmented } from "../ui/Segmented";
+import { lookOf, withLook, type Look } from "../store/widgetLook";
 
 
 function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string } }) {
@@ -126,6 +128,18 @@ export function Properties() {
         <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
         {tagInput("visible", "blank: always visible")}
       </div>
+
+      {/* Card or plain: one switch for the settings that take the card away (a pipe and a shape are always drawings) */}
+      {w.type !== "pipe" && w.type !== "shape" && (
+        <SettingsGroupBox title="Look">
+          <Segmented<Look> label="Look" value={lookOf(props)}
+            options={[
+              { id: "card", label: "Card", title: "A card with a background, a border and a label" },
+              { id: "plain", label: "Plain", title: "No card: the widget sits on whatever is behind it, like a number on a drawing" },
+            ]}
+            onChange={(look) => updateWidget(page.id, w.id, { props: withLook(props, look) })} />
+        </SettingsGroupBox>
+      )}
 
       {/* Frame settings every widget has */}
       {FRAME_SETTINGS.map((g) => (

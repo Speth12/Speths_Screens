@@ -186,8 +186,8 @@ func TestPropsKeysFromSchema(t *testing.T) {
 		{"textInput", "label", true},
 		{"textInput", "unit", false},
 	}
-	if len(keys) != 23 {
-		t.Errorf("%d widget types, want 23", len(keys))
+	if len(keys) != 24 {
+		t.Errorf("%d widget types, want 24", len(keys))
 	}
 	for _, tc := range tests {
 		if keys[tc.typ][tc.key] != tc.ok {
