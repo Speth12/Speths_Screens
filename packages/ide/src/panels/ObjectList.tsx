@@ -5,6 +5,7 @@
 import { manifestFor } from "@speths-screens/widgets";
 import { useProject, type Widget } from "../store/projectStore";
 import { useSelection } from "../store/selection";
+import { surfaceOf } from "../store/surface";
 import { NEEDS, arrange, type ArrangeAction, type StackMove } from "../store/arrange";
 import { IconButton } from "../ui";
 import {
@@ -49,7 +50,7 @@ export function ObjectList() {
   const { project, activePageId, updateWidget, updateWidgets, reorderWidgets, groupWidgets, ungroupWidgets, removeWidgets } = useProject();
   const ids = useSelection((s) => s.ids);
   const setIds = useSelection((s) => s.set);
-  const page = project.pages.find((p) => p.id === activePageId);
+  const page = surfaceOf(project, activePageId);
   if (!page) return <div className="p-3 text-ui text-zinc-500">No page selected.</div>;
 
   // In the order they were selected: sizes follow the first.

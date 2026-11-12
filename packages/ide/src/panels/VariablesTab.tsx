@@ -1,6 +1,7 @@
 // The Variables tab: every variable the datasources offer, in one flat list on the left, and the project's namespace
 // (the names screens bind to) as a tree on the right. Drag variables into the tree to give them names, or import a
 // datasource's own structure.
+import { surfaceOf } from "../store/surface";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { NamespaceNode } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
@@ -189,7 +190,7 @@ export function VariablesTab() {
   // New names go under the folder that is selected (or beside the node that is).
   const folderOfSelection = selectedNs ? (isLeaf(selectedNode) ? nsParent(selectedNs) : selectedNs) : "";
 
-  const selectedWidget = selectedWidgetId ? project.pages.find((p) => p.id === activePageId)?.widgets.find((w) => w.id === selectedWidgetId) : undefined;
+  const selectedWidget = selectedWidgetId ? surfaceOf(project, activePageId)?.widgets.find((w) => w.id === selectedWidgetId) : undefined;
   const bindTo = (binding: string) => {
     if (!selectedWidgetId) return;
     setWidgetTag(activePageId, selectedWidgetId, "value", binding);

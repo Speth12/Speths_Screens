@@ -8,6 +8,8 @@ import { EventsEditor } from "./EventsEditor";
 import { ScriptEditor } from "./ScriptEditor";
 import { Segmented } from "../ui/Segmented";
 import { lookOf, withLook, type Look } from "../store/widgetLook";
+import { surfaceCustomWidget, surfaceOf } from "../store/surface";
+import { AnchorFields, CustomWidgetProperties } from "./CustomWidgetCanvas";
 
 
 function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string; hideInNav?: boolean } }) {
@@ -68,10 +70,12 @@ function PageProperties({ page }: { page: { id: string; name: string; background
 
 export function Properties() {
   const { project, activePageId, selectedWidgetId, updateWidget, setWidgetTag } = useProject();
-  const page = project.pages.find((p) => p.id === activePageId);
+  const page = surfaceOf(project, activePageId);
   const w = page?.widgets.find((x) => x.id === selectedWidgetId);
 
+  const editingCw = surfaceCustomWidget(project, activePageId);
   if (!w || !page) {
+    if (editingCw) return <CustomWidgetProperties cw={editingCw} />;
     return page
       ? <PageProperties page={page} />
       : <div className="p-3 text-xs text-zinc-500">No page selected.</div>;
@@ -134,6 +138,12 @@ export function Properties() {
         <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
         {tagInput("visible", "blank: always visible")}
       </div>
+
+      {/* A custom widget's part: where it stays when the custom widget is pinned to a wider edge */}
+      {editingCw && (() => {
+        const a = w as typeof w & { anchorX?: Parameters<typeof AnchorFields>[0]["anchorX"]; anchorY?: Parameters<typeof AnchorFields>[0]["anchorY"] };
+        return <AnchorFields anchorX={a.anchorX} anchorY={a.anchorY} onChange={(patch) => updateWidget(page.id, w.id, patch as never)} />;
+      })()}
 
       {/* Card or plain: one switch for the settings that take the card away (a pipe and a shape are always drawings) */}
       {w.type !== "pipe" && w.type !== "shape" && (

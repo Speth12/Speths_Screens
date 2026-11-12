@@ -16,6 +16,7 @@ import { moveNsNode } from "./namespaceOps";
 import { addMemoryVariable as addMemoryVariableTo, type MemoryVariable } from "./memoryVars";
 import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
 import { restack } from "./arrange";
+import { customWidgetIdOf, mapSurface, surfaceId, surfaceOf, withDesignedSize } from "./surface";
 
 export type {
   Action, ActionType, AlarmRule, AlarmSeverity, CanvasResolution, CanvasSnap,
@@ -40,6 +41,13 @@ type State = {
   redo: () => void;
 
   setActivePage: (id: string) => void;
+  /** The page to go back to when the custom widget on the canvas is closed. */
+  returnPageId: string;
+  /** Edits a custom widget on the canvas, with every tool a page has. A free-layout one without a
+   *  designed size is given one first (its parts in pixels). */
+  openCustomWidgetOnCanvas: (id: string) => void;
+  /** Goes back from a custom widget on the canvas to the page it was opened from. */
+  closeCustomWidgetCanvas: () => void;
   selectWidget: (id: string | null) => void;
 
   addPage: (name?: string) => void;
@@ -132,6 +140,12 @@ type State = {
 
 /** A widget change as it is stored: while a tablet or phone is being edited, a new x, y, w or h is
  *  that size's layout and not the widget's own. */
+/** A change to a widget, where it goes: a page's widget on a tablet or a phone gets it in that size's
+ *  layout; a custom widget's part has no layouts of its own. */
+function placeOn(pageId: string, w: Widget, patch: Partial<Widget>): Partial<Widget> {
+  return customWidgetIdOf(pageId) === null ? forDevice(w, patch) : patch;
+}
+
 function forDevice(w: Widget, patch: Partial<Widget>): Partial<Widget> {
   const device = useEditorView.getState().device;
   if (device === "desktop" || (patch.x === undefined && patch.y === undefined && patch.w === undefined && patch.h === undefined)) return patch;
@@ -165,6 +179,7 @@ export const useProject = create<State>((set, get) => {
   return {
     project: blankProject(),
     activePageId: "p1",
+    returnPageId: "p1",
     selectedWidgetId: null,
     _past: [],
     _future: [],
@@ -287,83 +302,46 @@ export const useProject = create<State>((set, get) => {
       }));
     },
 
+    // A page's widgets, or a custom widget's parts (pageId "cw:<id>", see store/surface.ts).
     addWidgets: (pageId, ws) => {
       if (!ws.length) return;
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) => p.id === pageId ? { ...p, widgets: [...p.widgets, ...ws] } : p),
-        },
-        selectedWidgetId: ws[0]!.id,
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => [...list, ...ws]), selectedWidgetId: ws[0]!.id }));
     },
     addWidget: (pageId, w) => {
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id === pageId ? { ...p, widgets: [...p.widgets, w] } : p,
-          ),
-        },
-        selectedWidgetId: w.id,
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => [...list, w]), selectedWidgetId: w.id }));
     },
 
     updateWidget: (pageId, id, patch) => {
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId
-              ? p
-              : { ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...forDevice(w, patch) } : w)) },
-          ),
-        },
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.map((w) => (w.id === id ? { ...w, ...placeOn(pageId, w, patch) } : w))) }));
     },
 
     setWidgetHidden: (pageId, id, hidden) => {
       const device = useEditorView.getState().device;
-      if (device === "desktop") return;
+      if (device === "desktop" || customWidgetIdOf(pageId) !== null) return;
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId ? p : { ...p, widgets: p.widgets.map((w) => (w.id === id ? { ...w, ...placeFor(w, device, { hidden }) } : w)) },
-          ),
-        },
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.map((w) => (w.id === id ? { ...w, ...placeFor(w, device, { hidden }) } : w))) }));
     },
 
     resetWidgetLayout: (pageId, id) => {
       const device = useEditorView.getState().device;
-      if (device === "desktop") return;
+      if (device === "desktop" || customWidgetIdOf(pageId) !== null) return;
       pushHistory();
       set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId ? p : {
-              ...p,
-              widgets: p.widgets.map((w) => {
-                if (w.id !== id || !w.layout) return w;
-                const layout = { ...w.layout };
-                delete layout[device];
-                const { layout: _old, ...rest } = w;
-                return Object.keys(layout).length ? { ...rest, layout } : rest;
-              }),
-            },
-          ),
-        },
+        project: mapSurface(s.project, pageId, (list) => list.map((w) => {
+          if (w.id !== id || !w.layout) return w;
+          const layout = { ...w.layout };
+          delete layout[device];
+          const { layout: _old, ...rest } = w;
+          return Object.keys(layout).length ? { ...rest, layout } : rest;
+        })),
       }));
     },
 
     setWidgetTag: (pageId, id, slot, tag) => {
-      const w = get().project.pages.find((p) => p.id === pageId)?.widgets.find((x) => x.id === id);
+      const w = surfaceOf(get().project, pageId)?.widgets.find((x) => x.id === id);
       if (!w) return;
       const bindings: WidgetBindings = { ...w.bindings };
       if (tag) bindings[slot] = tag;
@@ -375,106 +353,66 @@ export const useProject = create<State>((set, get) => {
       pushHistory();
       const patchMap = new Map(patches.map(({ id, patch }) => [id, patch]));
       set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId ? p : {
-              ...p,
-              widgets: p.widgets.map((w) => {
-                const patch = patchMap.get(w.id);
-                return patch ? { ...w, ...forDevice(w, patch) } : w;
-              }),
-            },
-          ),
-        },
+        project: mapSurface(s.project, pageId, (list) => list.map((w) => {
+          const patch = patchMap.get(w.id);
+          return patch ? { ...w, ...placeOn(pageId, w, patch) } : w;
+        })),
       }));
     },
 
     removeWidget: (pageId, id) => {
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id === pageId ? { ...p, widgets: p.widgets.filter((w) => w.id !== id) } : p,
-          ),
-        },
-        selectedWidgetId: null,
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.filter((w) => w.id !== id)), selectedWidgetId: null }));
     },
 
     removeWidgets: (pageId, ids) => {
       pushHistory();
       const idSet = new Set(ids);
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id === pageId ? { ...p, widgets: p.widgets.filter((w) => !idSet.has(w.id)) } : p,
-          ),
-        },
-        selectedWidgetId: null,
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.filter((w) => !idSet.has(w.id))), selectedWidgetId: null }));
     },
 
     reorderWidget: (pageId, id, dir) => {
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) => {
-            if (p.id !== pageId) return p;
-            const ws = [...p.widgets];
-            const i = ws.findIndex((w) => w.id === id);
-            if (i < 0) return p;
-            const item = ws.splice(i, 1)[0]!;
-            if (dir === "front")    ws.push(item);
-            else if (dir === "back") ws.unshift(item);
-            else if (dir === "forward") ws.splice(Math.min(ws.length, i + 1), 0, item);
-            else ws.splice(Math.max(0, i - 1), 0, item);
-            return { ...p, widgets: ws };
-          }),
-        },
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => restack(list, [id], dir)) }));
     },
 
     reorderWidgets: (pageId, ids, dir) => {
       pushHistory();
-      set((s) => ({
-        project: { ...s.project, pages: s.project.pages.map((p) => (p.id !== pageId ? p : { ...p, widgets: restack(p.widgets, ids, dir) })) },
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => restack(list, ids, dir)) }));
     },
 
     groupWidgets: (pageId, ids) => {
       pushHistory();
       const groupId = `grp-${Math.random().toString(36).slice(2, 8)}`;
       const idSet = new Set(ids);
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId ? p : {
-              ...p,
-              widgets: p.widgets.map((w) => idSet.has(w.id) ? { ...w, groupId } : w),
-            }
-          ),
-        },
-      }));
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.map((w) => (idSet.has(w.id) ? { ...w, groupId } : w))) }));
     },
 
     ungroupWidgets: (pageId, groupId) => {
       pushHistory();
-      set((s) => ({
-        project: {
-          ...s.project,
-          pages: s.project.pages.map((p) =>
-            p.id !== pageId ? p : {
-              ...p,
-              widgets: p.widgets.map((w) => w.groupId === groupId ? { ...w, groupId: undefined } : w),
-            }
-          ),
-        },
+      set((s) => ({ project: mapSurface(s.project, pageId, (list) => list.map((w) => (w.groupId === groupId ? { ...w, groupId: undefined } : w))) }));
+    },
+
+    openCustomWidgetOnCanvas: (id) => {
+      const s = get();
+      const cw = s.project.customWidgets?.find((c) => c.id === id);
+      if (!cw) return;
+      const sized = cw.layout?.mode === "stack" ? cw : withDesignedSize(cw, s.project);
+      if (sized !== cw) {
+        pushHistory();
+        set((st) => ({ project: { ...st.project, customWidgets: st.project.customWidgets?.map((c) => (c.id === id ? sized : c)) } }));
+      }
+      set((st) => ({
+        activePageId: surfaceId(id), selectedWidgetId: null,
+        returnPageId: customWidgetIdOf(st.activePageId) === null ? st.activePageId : st.returnPageId,
       }));
+    },
+
+    closeCustomWidgetCanvas: () => {
+      set((st) => {
+        const back = st.project.pages.some((p) => p.id === st.returnPageId) ? st.returnPageId : st.project.pages[0]?.id ?? "p1";
+        return { activePageId: back, selectedWidgetId: null };
+      });
     },
 
     updatePage: (id, patch) => {

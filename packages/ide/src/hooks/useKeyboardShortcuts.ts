@@ -1,5 +1,6 @@
 // Global keyboard shortcut handler for the IDE.
 // Mounted once in App — uses window event listeners.
+import { surfaceOf } from "../store/surface";
 import { useEffect } from "react";
 import { useProject, type Widget } from "../store/projectStore";
 import { newWidgetId } from "../store/projectStore";
@@ -53,7 +54,7 @@ export function useKeyboardShortcuts() {
 
       // Ctrl/Cmd+C — copy selected widget (works across pages)
       if ((e.ctrlKey || e.metaKey) && e.key === "c" && selectedWidgetId) {
-        const page = project.pages.find((p) => p.id === activePageId);
+        const page = surfaceOf(project, activePageId);
         const w = page?.widgets.find((x) => x.id === selectedWidgetId);
         if (w) { setClipboard(w); }
         return;
@@ -62,7 +63,7 @@ export function useKeyboardShortcuts() {
       // Ctrl/Cmd+D — duplicate selected widget
       if ((e.ctrlKey || e.metaKey) && e.key === "d" && selectedWidgetId) {
         e.preventDefault();
-        const page = project.pages.find((p) => p.id === activePageId);
+        const page = surfaceOf(project, activePageId);
         const w = page?.widgets.find((x) => x.id === selectedWidgetId);
         if (w) {
           const nextY = page!.widgets.reduce((max, wg) => Math.max(max, wg.y + wg.h), 0);
@@ -74,7 +75,7 @@ export function useKeyboardShortcuts() {
       // Ctrl/Cmd+V — paste widget(s) onto active page (cross-page supported)
       if ((e.ctrlKey || e.metaKey) && e.key === "v" && _clipboard) {
         e.preventDefault();
-        const page = project.pages.find((p) => p.id === activePageId);
+        const page = surfaceOf(project, activePageId);
         const nextY = page?.widgets.reduce((max, wg) => Math.max(max, wg.y + wg.h), 0) ?? 0;
         if (Array.isArray(_clipboard)) {
           _clipboard.forEach((w) => addWidget(activePageId, { ...w, id: newWidgetId(), y: nextY, locked: undefined }));

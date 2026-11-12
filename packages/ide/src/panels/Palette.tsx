@@ -3,6 +3,7 @@ import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
 import { PresetList } from "./Presets";
 import { PALETTE_DRAG, newWidget, placeNew, visibleCanvasRect } from "../store/newWidget";
 import { useSelection } from "../store/selection";
+import { surfaceOf, surfaceSnap } from "../store/surface";
 import { WidgetIcon } from "../ui/icons";
 
 /** The palette: every widget type except symbols, which the symbol library adds. */
@@ -13,9 +14,9 @@ function useAddWidget() {
   const { activePageId, addWidget } = useProject();
   return (m: WidgetManifest) => {
     const { project } = useProject.getState();
-    const page = project.pages.find((p) => p.id === activePageId);
+    const page = surfaceOf(project, activePageId);
     if (!page) return;
-    const pixel = project.canvasSnap === "pixel";
+    const pixel = surfaceSnap(project, activePageId) === "pixel";
     const w = newWidget(m, pixel);
     const at = placeNew(visibleCanvasRect(), w, page.widgets, pixel);
     addWidget(page.id, { ...w, ...at });

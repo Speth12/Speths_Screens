@@ -1,17 +1,24 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, createEvent, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Project } from "@speths-screens/shared-types";
 import { CustomWidgetsTab } from "./CustomWidgetsTab";
+import { Canvas } from "./Canvas";
+import { Properties } from "./Properties";
+import { WidgetPalette } from "./Palette";
 import { useProject } from "../store/projectStore";
-import { useWorkspace } from "../store/workspace";
+import { SCREEN_TAB, useWorkspace } from "../store/workspace";
 import { useDrafts } from "../store/drafts";
+import { useSelection } from "../store/selection";
 
 beforeEach(() => {
+  vi.stubGlobal("WebSocket", class { readyState = 0; addEventListener() {} send() {} close() {} });
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
   useDrafts.setState({ entries: {} });
-  useWorkspace.setState({ selection: {} });
+  useWorkspace.setState({ selection: {}, activeId: "customWidgets" });
+  useSelection.getState().set([]);
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 type Part = { x: number; y: number; w: number; h: number };
 
@@ -34,20 +41,12 @@ const PUMP: Part[] = [{ x: 12, y: 8, w: 80, h: 72 }, { x: 104, y: 8, w: 184, h: 
 function open(p: Project) {
   useProject.getState().loadProject(p);
   render(<CustomWidgetsTab />);
-  return view();
 }
-function view() {
-  const canvas = screen.getByTestId("custom-widget-canvas");
-  const px = (v: string) => parseFloat(v);
-  const box = { w: px(canvas.style.width), h: px(canvas.style.height) };
-  const parts = Array.from(canvas.querySelectorAll<HTMLElement>("[data-part]")).map((el) => ({
-    el, left: px(el.style.left), top: px(el.style.top), right: px(el.style.left) + px(el.style.width), bottom: px(el.style.top) + px(el.style.height),
-  }));
-  return { canvas, box, parts };
-}
-const widgets = () => useProject.getState().project.customWidgets![0]!.widgets.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h }));
+const cw = () => useProject.getState().project.customWidgets![0]!;
+const parts = () => cw().widgets.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h }));
 const save = () => fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 const list = () => screen.getByRole("listbox", { name: "Custom widgets" });
+const editOnCanvas = () => fireEvent.click(screen.getByRole("button", { name: "Edit on the canvas" }));
 
 describe("the list", () => {
   it("shows each custom widget with its parameters, parts and where it is used, the first one chosen", () => {
@@ -59,15 +58,17 @@ describe("the list", () => {
     expect(screen.getByText("Used on: Main.")).toBeTruthy();
   });
 
-  it("says what a custom widget is when there are none, and makes one", () => {
+  it("says what a custom widget is when there are none, and makes one with a designed size, open on the canvas", () => {
     useProject.getState().loadProject({ ...project("grid", []), customWidgets: [] });
     render(<CustomWidgetsTab />);
     expect(screen.getByText("No custom widgets yet")).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: "New custom widget" })[0]!);
     const cws = useProject.getState().project.customWidgets!;
     expect(cws).toHaveLength(1);
-    expect(cws[0]).toMatchObject({ name: "Custom widget 1", params: [{ name: "prefix" }], widgets: [] });
+    expect(cws[0]).toMatchObject({ name: "Custom widget 1", params: [], widgets: [], width: 480, height: 120 });
     expect(useWorkspace.getState().selection.customWidgets).toBe(cws[0]!.id);
+    expect(useProject.getState().activePageId).toBe(`cw:${cws[0]!.id}`);
+    expect(useWorkspace.getState().activeId).toBe(SCREEN_TAB.id);
   });
 
   it("choosing another custom widget opens it", () => {
@@ -80,156 +81,148 @@ describe("the list", () => {
   });
 });
 
-describe("the canvas", () => {
-  it("draws a pixel project's parts inside the box, at the size the widget has on a page", () => {
-    const { box, parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    expect(box).toEqual({ w: 600, h: 320 }); // 300 by 160 px at twice the size
-    expect(parts).toHaveLength(3);
-    for (const p of parts) {
-      expect(p.left).toBeGreaterThanOrEqual(0);
-      expect(p.top).toBeGreaterThanOrEqual(0);
-      expect(p.right).toBeLessThanOrEqual(box.w);
-      expect(p.bottom).toBeLessThanOrEqual(box.h);
-    }
-    expect(screen.getByText("300 × 160 px, the size it has on a page — drag to place")).toBeTruthy();
+describe("opening it on the canvas", () => {
+  it("a pixel project's parts stay as they are, and its size is the one it is used at", () => {
+    open(project("pixel", PUMP, { w: 300, h: 160 }));
+    editOnCanvas();
+    expect(cw()).toMatchObject({ width: 300, height: 160 });
+    expect(parts()).toEqual(PUMP);
+    expect(useProject.getState().activePageId).toBe("cw:cw");
+    expect(useWorkspace.getState().activeId).toBe(SCREEN_TAB.id);
   });
 
-  it("still draws a grid project on 12 by 8 cells", () => {
-    const { box, parts } = open(project("grid", [{ x: 0, y: 0, w: 2, h: 2 }, { x: 2, y: 0, w: 3, h: 2 }, { x: 0, y: 2, w: 5, h: 1 }]));
-    expect(box).toEqual({ w: 864, h: 576 });
-    expect(parts[1]!.left).toBe(2 * 72 + 2);
-    expect(screen.getByText("12 × 8 grid — drag to place")).toBeTruthy();
+  it("a grid project's parts are turned from cells into pixels", () => {
+    open(project("grid", [{ x: 1, y: 0, w: 2, h: 2 }], { w: 4, h: 3 }));
+    editOnCanvas();
+    // 4 by 3 cells of 88 by 72 is 344 by 208; a part at column 1, 2 by 2 cells, is at 88 and 168 by 136.
+    expect(cw()).toMatchObject({ width: 344, height: 208 });
+    expect(parts()).toEqual([{ x: 88, y: 0, w: 168, h: 136 }]);
   });
 
-  it("a click on a part selects it and shows its properties, a click on the canvas deselects", () => {
-    const { canvas, parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    expect(screen.queryByLabelText("X")).toBeNull();
-    fireEvent.mouseDown(parts[0]!.el, { clientX: 0, clientY: 0 });
-    fireEvent.mouseUp(window);
-    fireEvent.click(parts[0]!.el);
-    expect((screen.getByLabelText("X") as HTMLInputElement).value).toBe("12");
-    fireEvent.click(canvas);
-    expect(screen.queryByLabelText("X")).toBeNull();
+  it("one that is used nowhere gets the box around its parts, at least 160 by 64", () => {
+    open(project("pixel", [{ x: 0, y: 0, w: 40, h: 20 }]));
+    editOnCanvas();
+    expect(cw()).toMatchObject({ width: 160, height: 64 });
+  });
+
+  it("a stack is edited here, not on the canvas", () => {
+    const p = project("pixel", PUMP);
+    p.customWidgets![0]!.layout = { mode: "stack", direction: "row" };
+    open(p);
+    expect(screen.queryByRole("button", { name: "Edit on the canvas" })).toBeNull();
+    expect(screen.getByLabelText("Layout mode")).toBeTruthy();
+  });
+
+  it("can be laid out as a stack instead", () => {
+    open(project("pixel", PUMP));
+    fireEvent.click(screen.getByRole("button", { name: "Lay it out as a stack instead" }));
+    save();
+    expect(cw().layout).toMatchObject({ mode: "stack", direction: "row" });
   });
 });
 
-describe("editing is a draft", () => {
-  it("opening changes nothing, and Save and Revert wait for a change", () => {
-    open(project("pixel", PUMP, { w: 300, h: 160 }));
-    expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Revert" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(widgets()).toEqual(PUMP);
+/** A pointer event at a position; jsdom's events take no position of their own. */
+function pointer(type: "pointerDown" | "pointerMove" | "pointerUp", target: Element | Window, x: number, y: number) {
+  const ev = createEvent[type](target as Element, { button: 0, bubbles: true });
+  Object.defineProperty(ev, "clientX", { value: x });
+  Object.defineProperty(ev, "clientY", { value: y });
+  Object.defineProperty(ev, "button", { value: 0 });
+  act(() => { fireEvent(target as Element, ev); });
+}
+
+describe("on the canvas, it is edited like a page", () => {
+  const onCanvas = () => {
+    useProject.getState().loadProject(project("pixel", PUMP, { w: 300, h: 160 }));
+    useProject.getState().openCustomWidgetOnCanvas("cw");
+    render(<><Canvas /><Properties /><WidgetPalette /></>);
+  };
+  const box = (id: string) => document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`)!;
+
+  it("shows its parts in its own box, says what is being edited, and goes back to the page", () => {
+    onCanvas();
+    expect(["p0", "p1", "p2"].every((id) => box(id))).toBe(true);
+    expect(screen.getByTestId("custom-widget-bar").textContent).toContain("Pump card");
+    expect(screen.getByTestId("custom-widget-bar").textContent).toContain("300 × 160 px");
+    expect(screen.queryByTestId("frame-header")).toBeNull(); // no header or navigation around it
+    fireEvent.click(screen.getByRole("button", { name: "Back to Main" }));
+    expect(useProject.getState().activePageId).toBe("p1");
   });
 
-  it("a drag moves a pixel part by pixels of the widget, in the draft until Save", () => {
-    const { parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(parts[0]!.el, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(window, { clientX: 140, clientY: 120 }); // 40 by 20 on screen, at twice the size
-    fireEvent.mouseUp(window);
-    expect(widgets()[0]).toEqual({ x: 12, y: 8, w: 80, h: 72 });
-    expect(within(list()).getAllByRole("option")[0]!.textContent).toContain("unsaved");
-    expect(screen.getByText(/Your changes are not saved\./)).toBeTruthy();
-    save();
-    expect(widgets()[0]).toEqual({ x: 32, y: 18, w: 80, h: 72 });
-    expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
+  it("a drag moves a part, written to the custom widget, one undo step", () => {
+    onCanvas();
+    pointer("pointerDown", box("p0"), 20, 20);
+    pointer("pointerMove", window, 60, 44);
+    pointer("pointerUp", window, 60, 44);
+    expect(parts()[0]).toEqual({ x: 56, y: 32, w: 80, h: 72 });
+    act(() => useProject.getState().undo());
+    expect(parts()[0]).toEqual(PUMP[0]);
   });
 
-  it("Revert gives the changes up", () => {
-    const { parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(parts[0]!.el, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(window, { clientX: 140, clientY: 120 });
-    fireEvent.mouseUp(window);
-    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
-    expect(view().parts[0]!.left).toBe(12 * 2 + 2);
-    expect(widgets()).toEqual(PUMP);
+  it("with nothing selected the properties are the custom widget's: its size and parameters", () => {
+    onCanvas();
+    fireEvent.change(screen.getByLabelText("Width (px)"), { target: { value: "1280" } });
+    expect(cw().width).toBe(1280);
+    fireEvent.click(screen.getByRole("button", { name: "Add parameter" }));
+    fireEvent.change(screen.getByLabelText("Parameter 2 name"), { target: { value: "speed" } });
+    expect(cw().params).toEqual([{ name: "run" }, { name: "speed" }]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove parameter 1" }));
+    expect(cw().params).toEqual([{ name: "speed" }]);
   });
 
-  it("the position fields are in pixels and keep the part inside the box", () => {
-    const { parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(parts[0]!.el, { clientX: 0, clientY: 0 });
-    fireEvent.mouseUp(window);
-    fireEvent.click(parts[0]!.el);
-    expect(screen.getByText("X (px)")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("X"), { target: { value: "5000" } });
-    save();
-    expect(widgets()[0]).toEqual({ x: 220, y: 8, w: 80, h: 72 });
+  it("a selected part has anchors", () => {
+    onCanvas();
+    act(() => useSelection.getState().set(["p2"]));
+    fireEvent.change(screen.getByLabelText("Across"), { target: { value: "stretch" } });
+    fireEvent.change(screen.getByLabelText("Down"), { target: { value: "bottom" } });
+    expect(cw().widgets[2]).toMatchObject({ localId: "p2", anchorX: "stretch", anchorY: "bottom" });
+    fireEvent.change(screen.getByLabelText("Across"), { target: { value: "left" } });
+    expect(cw().widgets[2]!.anchorX).toBeUndefined();
   });
 
-  it("a part added in a pixel project starts at a size in pixels", () => {
-    open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.click(screen.getByRole("button", { name: "LED" }));
-    save();
-    expect(widgets()[3]).toEqual({ x: 0, y: 0, w: 168, h: 136 }); // 2 by 2 cells of the page grid
+  it("the palette adds a part to it, in pixels, with any widget type", () => {
+    onCanvas();
+    fireEvent.click(screen.getByRole("button", { name: /Page list$/ }));
+    const added = cw().widgets[3]!;
+    expect(added.type).toBe("pageList");
+    expect(added.localId).toBeTruthy();
+    expect(added.w).toBeGreaterThan(20); // pixels, not cells
   });
+});
 
-  it("a removed part is gone after Save", () => {
-    const { parts } = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(parts[2]!.el, { clientX: 0, clientY: 0 });
-    fireEvent.mouseUp(window);
-    fireEvent.click(parts[2]!.el);
-    fireEvent.click(screen.getByRole("button", { name: "Remove part" }));
-    save();
-    expect(widgets()).toEqual(PUMP.slice(0, 2));
-  });
-
+describe("its name and description are a draft, saved or reverted", () => {
   it("renames it and describes it, and refuses a blank name", () => {
     open(project("grid", [{ x: 0, y: 0, w: 2, h: 2 }]));
+    expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "  " } });
     expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Pump tile" } });
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "A pump" } });
     save();
-    expect(useProject.getState().project.customWidgets![0]).toMatchObject({ name: "Pump tile", description: "A pump" });
+    expect(cw()).toMatchObject({ name: "Pump tile", description: "A pump" });
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "" } });
     save();
-    expect(useProject.getState().project.customWidgets![0]!.description).toBeUndefined();
+    expect(cw().description).toBeUndefined();
   });
 
-  it("adds and removes parameters, and a new part starts bound to the first", () => {
-    open(project("grid", [{ x: 0, y: 0, w: 2, h: 2 }]));
-    fireEvent.click(screen.getByRole("button", { name: "Add parameter" }));
-    fireEvent.change(screen.getByLabelText("Parameter 2 name"), { target: { value: "speed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Numeric" }));
-    save();
-    const cw = useProject.getState().project.customWidgets![0]!;
-    expect(cw.params).toEqual([{ name: "run" }, { name: "speed" }]);
-    expect(cw.widgets[1]).toMatchObject({ type: "numericDisplay", bindings: { value: "{run}" } });
-    fireEvent.click(screen.getByRole("button", { name: "Remove parameter 1" }));
-    save();
-    expect(useProject.getState().project.customWidgets![0]!.params).toEqual([{ name: "speed" }]);
-  });
-
-  it("changing the layout to a stack is saved with it", () => {
-    open(project("grid", [{ x: 0, y: 0, w: 2, h: 2 }]));
-    fireEvent.change(screen.getByLabelText("Layout mode"), { target: { value: "stack" } });
-    save();
-    expect(useProject.getState().project.customWidgets![0]!.layout).toMatchObject({ mode: "stack", direction: "row" });
-  });
-});
-
-describe("unsaved edits", () => {
-  it("survive the tab being closed and opened again", () => {
-    const first = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(first.parts[0]!.el, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(window, { clientX: 140, clientY: 120 });
-    fireEvent.mouseUp(window);
+  it("an unsaved name survives the tab being closed and opened again, and Revert gives it up", () => {
+    open(project("pixel", PUMP));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Pump tile" } });
     cleanup();
     render(<CustomWidgetsTab />);
-    expect(view().parts[0]!.left).toBe(32 * 2 + 2);
-    expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(false);
-    expect(widgets()[0]).toEqual({ x: 12, y: 8, w: 80, h: 72 });
+    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Pump tile");
+    expect(within(list()).getAllByRole("option")[0]!.textContent).toContain("unsaved");
+    expect(cw().name).toBe("Pump card");
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Pump card");
   });
 
-  it("are given up when the custom widget changed somewhere else in the meantime", () => {
-    const first = open(project("pixel", PUMP, { w: 300, h: 160 }));
-    fireEvent.mouseDown(first.parts[0]!.el, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(window, { clientX: 140, clientY: 120 });
-    fireEvent.mouseUp(window);
+  it("is given up when the custom widget changed somewhere else in the meantime", () => {
+    open(project("pixel", PUMP));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Pump tile" } });
     cleanup();
     useProject.getState().updateCustomWidget("cw", { name: "Renamed by a pull" });
     render(<CustomWidgetsTab />);
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Renamed by a pull");
-    expect(view().parts[0]!.left).toBe(12 * 2 + 2);
   });
 });
 
