@@ -49,6 +49,10 @@ The runtime is one file with nothing to install (no database, no Node, no Go).
    .\speths-screens-v0.8.0-windows-amd64.exe --mode=runtime --project=demo.screens.json
    ```
 
+   **Quicker:** double-click the program (or start it with no arguments). It runs for this PC only, keeps its files in
+   `%LOCALAPPDATA%\Speths Screens\` (a project saved there as `project.screens.json` is loaded at start), uses the
+   first free port from 8080 and opens the IDE in your browser. Starting it again while it runs opens the browser on the
+   running one. `--no-browser` skips the browser; `--data-dir` picks another folder.
 4. Open <http://localhost:8080/> for the operator screen and <http://localhost:8080/ide/> for the **IDE**. Windows may ask to allow network access the first time; allow it on a private
    network if other devices (a phone, a tablet) should reach the screen at `http://<this-PC's-address>:8080/`.
 
@@ -287,6 +291,9 @@ Switching a project from `login` to `none` needs a logged-in deploy. The develop
 | `--alarm-db`, `--security-db`, `--recipe-db`, `--memory-db`, `--version-db`, `--audit-db` | files in the working folder (the audit log is off unless `--audit-db` is set) | Where each store lives |
 | `--cors-origins` | none | Extra web origins allowed to call the API from a browser page served somewhere else. The IDE does not need it: it reaches other runtimes through its own program |
 | `--targets-file` | `targets.json` | Where the IDE's deploy targets are saved (only a program that serves the IDE) |
+| `--desktop` | the default with no arguments, in a program that has the IDE | Run for this PC only (127.0.0.1), keep files in the data folder, pick a free port from 8080 and open the IDE |
+| `--data-dir` | the per-user folder in desktop mode, else none | Folder for the databases and `targets.json`; relative file flags are placed inside it |
+| `--no-browser` | | Desktop mode: do not open the browser |
 | `--no-ide` | | Do not serve the IDE at `/ide/`, and have no deploy targets |
 | `--jwt-secret` | random | Signs login tokens |
 | `--version` | | Print the version and exit |
