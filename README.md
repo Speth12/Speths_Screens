@@ -15,6 +15,7 @@ runtime, and operate them from any browser, including the panel's own screen.
 
 | I want to | Go to |
 | --- | --- |
+| Get going in one page: install, a demo, a PLC | [Getting started](docs/getting-started.md) |
 | Run it on my PC and look at a demo | [Install guide, section 2](docs/install.md#2-run-the-runtime-on-a-pc) |
 | Design screens (the IDE is built into the Windows and Linux runtime: open `/ide/`) | [Install guide, section 3](docs/install.md#3-run-the-ide) |
 | Put it on a WP 6000 panel | [Install guide, section 4](docs/install.md#4-install-on-a-wp-6000-panel) |
