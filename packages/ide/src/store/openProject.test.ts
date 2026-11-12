@@ -47,6 +47,15 @@ describe("validateProject", () => {
     ["preset widget", widgetDoc(w("led"), {
       presets: [{ id: "ps", name: "Start/Stop", widgets: [{ id: "b", type: "button", x: 0, y: 0, w: 1, h: 1, props: { min: 1 } }] }],
     }), [`preset "Start/Stop", widget b (button): unknown setting min`]],
+    // The same cases as in internal/project/validate_test.go.
+    ["a custom widget given a width and no height", {
+      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      customWidgets: [{ id: "a", name: "A", params: [], width: 300, widgets: [] }],
+    }, ["/customWidgets/0: properties 'height' required, if 'width' exists"]],
+    ["anchors that do not exist", {
+      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      customWidgets: [{ id: "a", name: "A", params: [], width: 300, height: 50, widgets: [{ localId: "x", type: "textDisplay", x: 0, y: 0, w: 10, h: 10, anchorX: "middle" }] }],
+    }, [`custom widget "A", widget x (textDisplay): anchorX: value must be one of 'left', 'right', 'center', 'stretch'`]],
     ["empty preset", widgetDoc(w("led"), { presets: [{ id: "ps", name: "Empty", widgets: [] }] }),
       ["/presets/0/widgets: must NOT have fewer than 1 items"]],
   ] as const)("%s", (_, doc, want) => {

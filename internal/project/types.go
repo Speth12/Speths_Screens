@@ -94,12 +94,19 @@ type CanvasResolution struct {
 
 type CustomWidgetElement struct {
 	Description *string `json:"description,omitempty"`
-	ID          string  `json:"id"`
+	// See width
+	Height *int64 `json:"height,omitempty"`
+	ID     string `json:"id"`
 	// How the parts are placed; missing means free (each at its own x, y, w, h)
 	Layout  *CustomWidgetLayout `json:"layout,omitempty"`
 	Name    string              `json:"name"`
 	Params  []CustomWidgetParam `json:"params"`
 	Widgets []CustomWidgetPart  `json:"widgets"`
+	// The size it is designed at, in pixels. With width and height the parts' x, y, w and h are
+	// pixels in that box: placed on a page it is scaled to fit the place it is given, keeping
+	// its proportions; pinned to a screen edge its parts follow their anchors and are not
+	// scaled. Missing means the parts are placed as fractions of the place it is given
+	Width *int64 `json:"width,omitempty"`
 }
 
 // How the parts are placed; missing means free (each at its own x, y, w, h)
@@ -145,6 +152,8 @@ type CustomWidgetParam struct {
 // A widget inside a custom widget. Same as Widget, but identified by localId, and it may
 // say how it is laid out in a stack (flex, hiddenOn)
 type CustomWidgetPart struct {
+	AnchorX  *AnchorX        `json:"anchorX,omitempty"`
+	AnchorY  *AnchorY        `json:"anchorY,omitempty"`
 	Bindings *WidgetBindings `json:"bindings,omitempty"`
 	// Driven properties, by property name; which names a widget type has is listed in TypedProps
 	Dynamics map[string]Drive `json:"dynamics,omitempty"`
@@ -1079,6 +1088,8 @@ type FrameSlot struct {
 	Devices []DeviceElement `json:"devices,omitempty"`
 	Edge    FrameEdge       `json:"edge"`
 	ID      string          `json:"id"`
+	// Drawn over the page along its edge instead of taking room from it (default false)
+	Overlay *bool `json:"overlay,omitempty"`
 	// Parameter name to binding, as on a custom widget placed on a page
 	Params map[string]string  `json:"params,omitempty"`
 	Phone  *FrameSlotOverride `json:"phone,omitempty"`
@@ -1229,10 +1240,10 @@ const (
 type Align string
 
 const (
-	AlignCenter Align = "center"
-	AlignEnd    Align = "end"
-	AlignStart  Align = "start"
-	Stretch     Align = "stretch"
+	AlignCenter  Align = "center"
+	AlignEnd     Align = "end"
+	AlignStart   Align = "start"
+	AlignStretch Align = "stretch"
 )
 
 type Direction string
@@ -1258,6 +1269,29 @@ type Mode string
 const (
 	Free  Mode = "free"
 	Stack Mode = "stack"
+)
+
+// Where a part of a custom widget pinned to a screen edge stays when the edge is wider than
+// the custom widget's width: at its distance from the left (the default), from the right,
+// from the middle, or both, stretching
+type AnchorX string
+
+const (
+	AnchorXCenter  AnchorX = "center"
+	AnchorXLeft    AnchorX = "left"
+	AnchorXRight   AnchorX = "right"
+	AnchorXStretch AnchorX = "stretch"
+)
+
+// The same as AnchorX, down: at its distance from the top (the default), from the bottom,
+// from the middle, or both, stretching
+type AnchorY string
+
+const (
+	AnchorYBottom  AnchorY = "bottom"
+	AnchorYCenter  AnchorY = "center"
+	AnchorYStretch AnchorY = "stretch"
+	AnchorYTop     AnchorY = "top"
 )
 
 type TransformKind string
@@ -1554,10 +1588,10 @@ const (
 type FrameEdge string
 
 const (
-	Bottom         FrameEdge = "bottom"
-	FrameEdgeLeft  FrameEdge = "left"
-	FrameEdgeRight FrameEdge = "right"
-	Top            FrameEdge = "top"
+	FrameEdgeBottom FrameEdge = "bottom"
+	FrameEdgeLeft   FrameEdge = "left"
+	FrameEdgeRight  FrameEdge = "right"
+	FrameEdgeTop    FrameEdge = "top"
 )
 
 // What the clock shows, or none for no clock; missing means timeSeconds

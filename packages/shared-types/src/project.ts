@@ -144,7 +144,11 @@ export type CanvasSnap = "grid" | "pixel";
 
 export interface CustomWidget {
     description?: string;
-    id:           string;
+    /**
+     * See width
+     */
+    height?: number;
+    id:      string;
     /**
      * How the parts are placed; missing means free (each at its own x, y, w, h)
      */
@@ -152,6 +156,13 @@ export interface CustomWidget {
     name:    string;
     params:  CustomWidgetParam[];
     widgets: CustomWidgetPart[];
+    /**
+     * The size it is designed at, in pixels. With width and height the parts' x, y, w and h are
+     * pixels in that box: placed on a page it is scaled to fit the place it is given, keeping
+     * its proportions; pinned to a screen edge its parts follow their anchors and are not
+     * scaled. Missing means the parts are placed as fractions of the place it is given
+     */
+    width?: number;
 }
 
 /**
@@ -234,6 +245,8 @@ export interface CustomWidgetParam {
  * say how it is laid out in a stack (flex, hiddenOn)
  */
 export interface CustomWidgetPart {
+    anchorX?:  AnchorX;
+    anchorY?:  AnchorY;
     bindings?: WidgetBindings;
     /**
      * Driven properties, by property name; which names a widget type has is listed in TypedProps
@@ -276,6 +289,19 @@ export interface CustomWidgetPart {
      */
     y: number;
 }
+
+/**
+ * Where a part of a custom widget pinned to a screen edge stays when the edge is wider than
+ * the custom widget's width: at its distance from the left (the default), from the right,
+ * from the middle, or both, stretching
+ */
+export type AnchorX = "left" | "right" | "center" | "stretch";
+
+/**
+ * The same as AnchorX, down: at its distance from the top (the default), from the bottom,
+ * from the middle, or both, stretching
+ */
+export type AnchorY = "top" | "bottom" | "center" | "stretch";
 
 /**
  * The tags a widget reads, by slot. Values are ds:path or ns:path (widgets inside a custom
@@ -1820,6 +1846,10 @@ export interface FrameSlot {
     devices?: Device[];
     edge:     FrameEdge;
     id:       string;
+    /**
+     * Drawn over the page along its edge instead of taking room from it (default false)
+     */
+    overlay?: boolean;
     /**
      * Parameter name to binding, as on a custom widget placed on a page
      */

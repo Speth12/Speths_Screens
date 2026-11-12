@@ -135,6 +135,9 @@ function describe(project: unknown, e: ErrorObject): string {
     if (rest.at(-1) === "props") rest = rest.slice(0, -1);
   } else if (e.keyword === "enum") {
     what = `value must be one of ${(params.allowedValues as unknown[]).map((v) => `'${String(v)}'`).join(", ")}`;
+  } else if (e.keyword === "dependentRequired") {
+    // The runtime's wording (santhosh-tekuri/jsonschema), so both validators read the same.
+    what = `properties '${String(params.missingProperty)}' required, if '${String(params.property)}' exists`;
   } else {
     what = e.message ?? e.keyword;
   }

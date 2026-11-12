@@ -157,4 +157,15 @@
       "header: the alarm count opens page \"gone\", which does not exist",
       "header: the logo is image \"nope\", which does not exist"
     ] }
+  ,{ "name": "a custom widget with a designed size, anchors and an overlay slot is accepted",
+    "project": {
+      "datasources": [],
+      "pages": [{ "id": "p1", "name": "Main", "widgets": [] }, { "id": "p2", "name": "Pumps", "widgets": [] }],
+      "customWidgets": [{ "id": "hdr", "name": "Header", "params": [], "width": 1280, "height": 64, "widgets": [
+        { "localId": "go", "type": "button", "x": 1180, "y": 12, "w": 88, "h": 40, "anchorX": "right", "anchorY": "center", "props": { "label": "Pumps" }, "events": { "onClick": [{ "type": "navigate", "page": "p2" }] } },
+        { "localId": "bar", "type": "shape", "x": 0, "y": 60, "w": 1280, "h": 4, "anchorX": "stretch", "anchorY": "bottom" }
+      ] }],
+      "shell": { "chrome": "custom", "frame": [{ "id": "top", "customWidgetId": "hdr", "edge": "top", "size": 64, "overlay": true }] }
+    },
+    "want": [] }
 ]
