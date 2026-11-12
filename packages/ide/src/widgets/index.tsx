@@ -56,7 +56,10 @@ function useIdeImage(id: string): string | undefined {
 
 function useIdeCustomWidget(id: string | undefined) {
   const customWidgets = useProject((s) => s.project.customWidgets);
-  return findCustomWidget({ customWidgets }, id);
+  // The built-in header and navigation are built from the project's choices for them.
+  const shell = useProject((s) => s.project.shell);
+  const security = useProject((s) => s.project.security);
+  return findCustomWidget({ customWidgets, shell, security }, id);
 }
 
 const isSession = (path: string) => sessionName(path) !== undefined;

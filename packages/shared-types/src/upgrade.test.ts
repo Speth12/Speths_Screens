@@ -130,7 +130,7 @@ describe("versions", () => {
 
 it("reads each widget type's settings from schema.json", () => {
   const keys = propsKeys();
-  expect(keys.size).toBe(24);
+  expect(keys.size).toBe(26);
   expect(keys.get("gauge")?.has("min")).toBe(true);
   expect(keys.get("gauge")?.has("label")).toBe(true);
   expect(keys.get("gauge")?.has("momentary")).toBe(false);

@@ -3161,6 +3161,236 @@
 </div>
 </div>
 </div>
+<div style="font-size:11px;font-weight:600">Alarm count</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-normal" title="Alarm count, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-running" title="Alarm count, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-off" title="Alarm count, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-critical" title="Alarm count, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-warning" title="Alarm count, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-info" title="Alarm count, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-bad" title="Alarm count, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-alarmIndicator-disabled" title="Alarm count, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="h-full w-full flex items-center justify-center">
+<button type="button" data-testid="alarm-indicator" data-worst="none" aria-label="No active alarms" title="No active alarms" disabled="" class="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums" style="cursor:default;border-radius:999px;background:transparent;color:var(--muted-foreground)">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0">
+</path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="font-size:11px;font-weight:600">Page title</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-normal" title="Page title, Normal" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-running" title="Page title, Running" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-off" title="Page title, Off" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-critical" title="Page title, Critical alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-warning" title="Page title, Warning alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-info" title="Page title, Info alarm" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-bad" title="Page title, Bad quality" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="position:relative;width:168px;height:112px" data-testid="gallery-pageTitle-disabled" title="Page title, Disabled" draggable="false">
+<div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
+<div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
+</div>
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="flex-1 min-h-0 flex flex-col">
+<div class="flex-1 min-h-0 flex flex-col">
+</div>
+</div>
+</div>
+</div>
+</div>
 <div style="font-size:11px;font-weight:600">Page list</div>
 <div style="position:relative;width:168px;height:112px" data-testid="gallery-pageList-normal" title="Page list, Normal" draggable="false">
 <div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">

@@ -10,7 +10,7 @@ import { Segmented } from "../ui/Segmented";
 import { lookOf, withLook, type Look } from "../store/widgetLook";
 
 
-function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string } }) {
+function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string; hideInNav?: boolean } }) {
   const { updatePage } = useProject();
   const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
   return (
@@ -21,6 +21,12 @@ function PageProperties({ page }: { page: { id: string; name: string; background
         <div className="text-[10px] text-zinc-500 mb-0.5">Page name</div>
         <input value={page.name} onChange={(e) => updatePage(page.id, { name: e.target.value })} className={inp} />
       </div>
+
+      <label className="flex items-start gap-2 text-xs text-zinc-200 cursor-pointer">
+        <input type="checkbox" className="mt-0.5" checked={!!page.hideInNav}
+          onChange={(e) => updatePage(page.id, { hideInNav: e.target.checked || undefined })} />
+        <span>Leave out of the navigation<span className="block text-[10px] text-zinc-500">The page is reached by a button or a script, not from the page list.</span></span>
+      </label>
 
       <div>
         <div className="text-[10px] text-zinc-500 mb-1">Background color</div>

@@ -71,7 +71,7 @@ export interface WidgetHost {
 }
 
 /** A page of the project, as the page list shows it. */
-export interface PageInfo { id: string; name: string; icon?: PageIcon; group?: string }
+export interface PageInfo { id: string; name: string; icon?: PageIcon; group?: string; /** Kept out of the page list; it is reached by a button. */ hideInNav?: boolean }
 /** A datasource and whether its driver is connected. */
 export interface DriverInfo { id: string; label?: string; connected: boolean; lastError?: string; tagCount?: number }
 /** Who is using the screen. A name means signed in; loginRequired false means security is off. */

@@ -18,7 +18,7 @@ import { SymbolSVG } from "./SymbolSVG";
 import { partStyle, stackFor, stackStyle } from "./layout";
 import { RecipesWidget } from "./recipes";
 import { TrendWidget } from "./trend";
-import { ClockWidget, DriverStatusWidget, PageListWidget, UserMenuWidget } from "./shell";
+import { AlarmIndicatorWidget, ClockWidget, DriverStatusWidget, PageListWidget, PageTitleWidget, UserMenuWidget } from "./shell";
 import { DEFAULT_STATES } from "./manifests";
 
 /** A renderer's props: its widget, typed for its type. */
@@ -169,7 +169,7 @@ export function resolveColor(value: unknown, thresholds: Threshold[]): string | 
 const NO_THRESHOLDS: Threshold[] = [];
 
 /** The header and navigation widgets sit on the page without a card of their own, unless given a color. */
-const SHELL_TYPES = new Set<string>(["pageList", "clock", "driverStatus", "userMenu"]);
+const SHELL_TYPES = new Set<string>(["pageList", "clock", "driverStatus", "userMenu", "alarmIndicator", "pageTitle"]);
 
 function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   // Driven properties are already in w.props (DriveApplicator).
@@ -1003,6 +1003,8 @@ const renderers: { [K in WidgetType]: React.ComponentType<WP<K>> } = {
   alarmBanner:    AlarmBannerWidget,
   pipe:           PipeWidget,
   shape:          ShapeWidget,
+  alarmIndicator: AlarmIndicatorWidget,
+  pageTitle:      PageTitleWidget,
   customWidget:   CustomWidgetView,
   pageList:       PageListWidget,
   clock:          ClockWidget,

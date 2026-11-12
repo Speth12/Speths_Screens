@@ -120,4 +120,41 @@
       "custom widget \"B\" contains itself (B > A > B)",
       "custom widget \"C\" contains itself (C > C)"
     ] }
+  ,{ "name": "the built-in header's choices: every one at once is accepted",
+    "project": {
+      "datasources": [],
+      "images": [{ "id": "img1", "name": "Logo", "mimeType": "image/png", "width": 1, "height": 1, "size": 3, "dataUrl": "data:image/png;base64,AAAA" }],
+      "pages": [
+        { "id": "p1", "name": "Main", "widgets": [
+          { "id": "w1", "type": "alarmIndicator", "x": 0, "y": 0, "w": 1, "h": 1, "props": { "page": "p2" } },
+          { "id": "w2", "type": "pageTitle", "x": 1, "y": 0, "w": 3, "h": 1, "props": { "showIcon": false } },
+          { "id": "w3", "type": "pageList", "x": 0, "y": 1, "w": 3, "h": 4, "props": { "style": "list", "showIcons": false, "showLabels": true, "showSettings": false } }
+        ] },
+        { "id": "p2", "name": "Alarms", "hideInNav": true, "widgets": [] }
+      ],
+      "shell": {
+        "nav": "none",
+        "header": {
+          "logo": "image", "logoImage": "img1", "logoText": "PX", "showProjectName": false, "showPageName": true, "pageIcon": true,
+          "titleAlign": "center", "drivers": "summary", "clock": "dateTime", "clockWeekday": false, "showUser": false,
+          "alarms": true, "alarmsPage": "p2", "height": 72,
+          "style": { "background": "#0b3d91", "textColor": "#ffffff", "borderColor": "token:alarm-info", "font": "roboto", "fontSize": "large", "bold": true }
+        },
+        "navOptions": {
+          "width": 240, "tabletIcons": true, "showIcons": false, "showSettings": false,
+          "style": { "background": "#111827", "textColor": "#e5e7eb", "activeBackground": "#f59e0b", "activeTextColor": "#111827", "fontSize": "small" }
+        }
+      }
+    },
+    "want": [] }
+  ,{ "name": "the built-in header names a page and a picture that do not exist",
+    "project": {
+      "datasources": [],
+      "pages": [{ "id": "p1", "name": "Main", "widgets": [] }],
+      "shell": { "header": { "alarms": true, "alarmsPage": "gone", "logo": "image", "logoImage": "nope" } }
+    },
+    "want": [
+      "header: the alarm count opens page \"gone\", which does not exist",
+      "header: the logo is image \"nope\", which does not exist"
+    ] }
 ]

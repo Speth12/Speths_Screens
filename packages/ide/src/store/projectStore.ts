@@ -15,6 +15,7 @@ import { useEditorView } from "./editorView";
 import { moveNsNode } from "./namespaceOps";
 import { addMemoryVariable as addMemoryVariableTo, type MemoryVariable } from "./memoryVars";
 import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
+import { restack } from "./arrange";
 
 export type {
   Action, ActionType, AlarmRule, AlarmSeverity, CanvasResolution, CanvasSnap,
@@ -63,6 +64,8 @@ type State = {
   removeWidget: (pageId: string, id: string) => void;
   removeWidgets: (pageId: string, ids: string[]) => void;
   reorderWidget: (pageId: string, id: string, dir: "front" | "back" | "forward" | "backward") => void;
+  /** Moves several widgets in the drawing order at once; they keep their order among themselves. */
+  reorderWidgets: (pageId: string, ids: string[], dir: "front" | "back" | "forward" | "backward") => void;
   groupWidgets: (pageId: string, ids: string[]) => void;
   ungroupWidgets: (pageId: string, groupId: string) => void;
   updatePage: (id: string, patch: Partial<Omit<Page, "id" | "widgets">>) => void;
@@ -435,6 +438,13 @@ export const useProject = create<State>((set, get) => {
       }));
     },
 
+    reorderWidgets: (pageId, ids, dir) => {
+      pushHistory();
+      set((s) => ({
+        project: { ...s.project, pages: s.project.pages.map((p) => (p.id !== pageId ? p : { ...p, widgets: restack(p.widgets, ids, dir) })) },
+      }));
+    },
+
     groupWidgets: (pageId, ids) => {
       pushHistory();
       const groupId = `grp-${Math.random().toString(36).slice(2, 8)}`;
@@ -731,7 +741,8 @@ export const useProject = create<State>((set, get) => {
       pushHistory();
       set((s) => {
         const have = { customWidgets: s.project.customWidgets, frame: s.project.shell?.frame };
-        const add = missingDefaults(have);
+        // What the project chose for the built-in header and navigation is carried into the copies.
+        const add = missingDefaults(have, s.project.shell?.nav ?? "sidebar", s.project);
         return { project: {
           ...s.project,
           customWidgets: [...(s.project.customWidgets ?? []), ...add.customWidgets],

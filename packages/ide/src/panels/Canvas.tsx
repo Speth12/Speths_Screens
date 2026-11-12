@@ -4,12 +4,16 @@ import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
 import { GALLERY_DRAG, insertGalleryWidget } from "./GalleryPanel";
-import { DEVICE_WIDTH, SYMBOLS, effectiveFrame, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { DEVICE_WIDTH, SYMBOLS, chromeStyles, effectiveFrame, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
 import { ScreenFrame } from "./ScreenFrame";
 import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 import { boundsOf, resizeCells, snapMove, snapResize, SNAP_STEP, type Corner, type Guides, type Rect } from "../store/canvasSnapping";
+import { useSelection } from "../store/selection";
+import { arrange, type ArrangeAction } from "../store/arrange";
+import { PALETTE_DRAG, newWidget } from "../store/newWidget";
+import { manifestFor } from "@speths-screens/widgets";
 import { CloseIcon, ResetIcon, LockIcon, UnlockIcon, AlignLeftIcon, AlignCenterXIcon, AlignRightIcon, AlignTopIcon, AlignCenterYIcon, AlignBottomIcon, DistributeXIcon, DistributeYIcon, type Icon } from "../ui/icons";
 
 const COLS  = 12;
@@ -44,10 +48,7 @@ function pixelFromEvent(grid: HTMLElement, e: React.DragEvent | MouseEvent, zoom
 
 // ── Align toolbar ────────────────────────────────────────────────────────────
 
-type AlignAction =
-  | "align-left" | "align-right" | "align-top" | "align-bottom"
-  | "align-cx" | "align-cy"
-  | "dist-h" | "dist-v";
+type AlignAction = ArrangeAction;
 
 const ALIGN_BUTTONS: { action: AlignAction; title: string; icon: Icon }[] = [
   { action: "align-left",  title: "Align left edges",         icon: AlignLeftIcon },
@@ -101,10 +102,10 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
     >
       {!multi && item(isLocked ? <><UnlockIcon size={14} /> Unlock</> : <><LockIcon size={14} /> Lock</>, "lock")}
       {!multi && <div className="border-t border-zinc-700 my-1" />}
-      {!multi && item("Bring to front  Ctrl+Shift+]", "z-front", false)}
-      {!multi && item("Bring forward  Ctrl+]", "z-forward", false)}
-      {!multi && item("Send backward  Ctrl+[", "z-backward", false)}
-      {!multi && item("Send to back  Ctrl+Shift+[", "z-back", false)}
+      {item("Bring to front  Ctrl+Shift+]", "z-front", false)}
+      {item("Bring forward  Ctrl+]", "z-forward", false)}
+      {item("Send backward  Ctrl+[", "z-backward", false)}
+      {item("Send to back  Ctrl+Shift+[", "z-back", false)}
       <div className="border-t border-zinc-700 my-1" />
       {multi && item(`Group ${multiCount} widgets`, "group")}
       {!multi && w?.groupId && item("Ungroup", "ungroup")}
@@ -124,7 +125,7 @@ export function Canvas() {
   const {
     project, activePageId, selectedWidgetId,
     selectWidget, removeWidget, removeWidgets,
-    updateWidget, updateWidgets, addWidget, reorderWidget,
+    updateWidget, updateWidgets, addWidget, reorderWidget, reorderWidgets,
     groupWidgets, ungroupWidgets,
   } = useProject();
 
@@ -134,7 +135,9 @@ export function Canvas() {
   const [zoom, setZoom]           = useState(1);
   const [ctxMenu, setCtxMenu]     = useState<CtxMenu | null>(null);
   const [presetFrom, setPresetFrom] = useState<Widget[] | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // The selection is shared with the object list.
+  const selectedIds = useSelection((s) => s.ids);
+  const setSelectedIds = useSelection((s) => s.set);
 
   // Rubber-band state (screen coords relative to outerRef)
   const [rubber, setRubber] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
@@ -167,7 +170,7 @@ export function Canvas() {
   }, [selectedIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear selection when page changes
-  useEffect(() => { setSelectedIds([]); }, [activePageId]);
+  useEffect(() => { setSelectedIds([]); }, [activePageId, setSelectedIds]);
 
   // Sync incoming selectWidget calls (from Properties etc) back to selectedIds
   useEffect(() => {
@@ -203,10 +206,10 @@ export function Canvas() {
       }
 
       // Which widget is drawn over which (the page's widgets are drawn in order, the last on top)
-      if ((e.ctrlKey || e.metaKey) && (e.key === "]" || e.key === "[" || e.key === "}" || e.key === "{") && selectedIds.length === 1) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "]" || e.key === "[" || e.key === "}" || e.key === "{") && selectedIds.length > 0) {
         e.preventDefault();
         const up = e.key === "]" || e.key === "}";
-        reorderWidget(activePageId, selectedIds[0]!, e.shiftKey ? (up ? "front" : "back") : (up ? "forward" : "backward"));
+        reorderWidgets(activePageId, selectedIds, e.shiftKey ? (up ? "front" : "back") : (up ? "forward" : "backward"));
         return;
       }
 
@@ -236,7 +239,7 @@ export function Canvas() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedIds, activePageId, page, removeWidget, removeWidgets, updateWidgets, reorderWidget, isPixelMode]);
+  }, [selectedIds, setSelectedIds, activePageId, page, removeWidget, removeWidgets, updateWidgets, reorderWidgets, isPixelMode]);
 
   const onOuterMouseMove = useCallback((e: React.MouseEvent) => {
     if (!rubberActive.current || !outerRef.current) return;
@@ -283,7 +286,7 @@ export function Canvas() {
       }
       return null;
     });
-  }, [page, zoom, isPixelMode]);
+  }, [page, zoom, isPixelMode, setSelectedIds]);
 
   if (!page) return <div className="p-6 text-zinc-500">No page selected.</div>;
 
@@ -311,51 +314,9 @@ export function Canvas() {
   // ── Align actions ─────────────────────────────────────────────────────────
 
   const handleAlign = (action: AlignAction) => {
-    if (selectedIds.length < 2) return;
-    const ws = page.widgets.filter(w => selectedIds.includes(w.id));
-
-    const patches: { id: string; patch: Partial<Widget> }[] = [];
-
-    if (action === "align-left") {
-      const minX = Math.min(...ws.map(w => w.x));
-      ws.forEach(w => patches.push({ id: w.id, patch: { x: minX } }));
-    } else if (action === "align-right") {
-      const maxR = Math.max(...ws.map(w => w.x + w.w));
-      ws.forEach(w => patches.push({ id: w.id, patch: { x: maxR - w.w } }));
-    } else if (action === "align-top") {
-      const minY = Math.min(...ws.map(w => w.y));
-      ws.forEach(w => patches.push({ id: w.id, patch: { y: minY } }));
-    } else if (action === "align-bottom") {
-      const maxB = Math.max(...ws.map(w => w.y + w.h));
-      ws.forEach(w => patches.push({ id: w.id, patch: { y: maxB - w.h } }));
-    } else if (action === "align-cx") {
-      const minX = Math.min(...ws.map(w => w.x));
-      const maxR = Math.max(...ws.map(w => w.x + w.w));
-      const cx = (minX + maxR) / 2;
-      ws.forEach(w => patches.push({ id: w.id, patch: { x: Math.round(cx - w.w / 2) } }));
-    } else if (action === "align-cy") {
-      const minY = Math.min(...ws.map(w => w.y));
-      const maxB = Math.max(...ws.map(w => w.y + w.h));
-      const cy = (minY + maxB) / 2;
-      ws.forEach(w => patches.push({ id: w.id, patch: { y: Math.round(cy - w.h / 2) } }));
-    } else if (action === "dist-h") {
-      const sorted = [...ws].sort((a, b) => a.x - b.x);
-      const first  = sorted[0]!, last = sorted[sorted.length - 1]!;
-      const totalW = sorted.reduce((s, w) => s + w.w, 0);
-      const span   = last.x + last.w - first.x;
-      const gap    = (span - totalW) / (sorted.length - 1);
-      let cur = first.x;
-      sorted.forEach(w => { patches.push({ id: w.id, patch: { x: Math.round(cur) } }); cur += w.w + gap; });
-    } else if (action === "dist-v") {
-      const sorted = [...ws].sort((a, b) => a.y - b.y);
-      const first  = sorted[0]!, last = sorted[sorted.length - 1]!;
-      const totalH = sorted.reduce((s, w) => s + w.h, 0);
-      const span   = last.y + last.h - first.y;
-      const gap    = (span - totalH) / (sorted.length - 1);
-      let cur = first.y;
-      sorted.forEach(w => { patches.push({ id: w.id, patch: { y: Math.round(cur) } }); cur += w.h + gap; });
-    }
-
+    // In the order they were selected: sizes follow the first.
+    const ws = selectedIds.map((id) => page.widgets.find((w) => w.id === id)).filter((w): w is Widget => !!w);
+    const patches = arrange(ws.map((w) => ({ id: w.id, x: w.x, y: w.y, w: w.w, h: w.h })), action);
     if (patches.length) updateWidgets(activePageId, patches);
   };
 
@@ -431,7 +392,7 @@ export function Canvas() {
 
   const onDragOver = (e: React.DragEvent) => {
     const types = e.dataTransfer.types;
-    if (types.includes("text/x-tag-binding") || types.includes("text/x-image-id")    ||
+    if (types.includes("text/x-tag-binding") || types.includes("text/x-image-id")    || types.includes(PALETTE_DRAG) ||
         types.includes("text/x-symbol-id") || types.includes(PRESET_DRAG) || types.includes(GALLERY_DRAG))
       e.preventDefault();
   };
@@ -449,6 +410,19 @@ export function Canvas() {
         ? page.widgets.find(w => pxX >= w.x && pxX < w.x + w.w && pxY >= w.y && pxY < w.y + w.h)
         : page.widgets.find(w => col >= (w.x ?? 0) && col < (w.x ?? 0) + w.w && row >= (w.y ?? 0) && row < (w.y ?? 0) + w.h);
       if (target) updateWidget(activePageId, target.id, { bindings: { ...target.bindings, value: preferNs(project, tagBinding) } });
+      return;
+    }
+
+    // A widget dragged from the palette lands where it is dropped, its top left under the pointer.
+    const paletteType = e.dataTransfer.getData(PALETTE_DRAG);
+    const dropped = paletteType ? manifestFor(paletteType) : undefined;
+    if (dropped) {
+      const w = newWidget(dropped, isPixel);
+      const at = isPixel
+        ? { x: Math.max(0, Math.round(pxX / SNAP_STEP) * SNAP_STEP), y: Math.max(0, Math.round(pxY / SNAP_STEP) * SNAP_STEP) }
+        : { x: Math.max(0, Math.min(COLS - w.w, col)), y: Math.max(0, row) };
+      addWidget(activePageId, { ...w, ...at });
+      setSelectedIds([w.id]);
       return;
     }
 
@@ -531,10 +505,14 @@ export function Canvas() {
         setSelectedIds([id]);
       }
     }
-    if (action === "z-front")    reorderWidget(activePageId, widgetId, "front");
-    if (action === "z-back")     reorderWidget(activePageId, widgetId, "back");
-    if (action === "z-forward")  reorderWidget(activePageId, widgetId, "forward");
-    if (action === "z-backward") reorderWidget(activePageId, widgetId, "backward");
+    // The whole selection moves when the widget clicked is part of it.
+    const stack = selectedIds.includes(widgetId) && selectedIds.length > 1 ? selectedIds : null;
+    const restackTo = (dir: "front" | "back" | "forward" | "backward") =>
+      (stack ? reorderWidgets(activePageId, stack, dir) : reorderWidget(activePageId, widgetId, dir));
+    if (action === "z-front")    restackTo("front");
+    if (action === "z-back")     restackTo("back");
+    if (action === "z-forward")  restackTo("forward");
+    if (action === "z-backward") restackTo("backward");
 
     if (action === "group" && selectedIds.length > 1) {
       groupWidgets(activePageId, selectedIds);
@@ -593,6 +571,7 @@ export function Canvas() {
 
       <div
         ref={outerRef}
+        data-canvas-scroll=""
         className="flex-1 overflow-auto p-6 bg-zinc-950 select-none relative"
         onDragOver={onDragOver}
         onDrop={onDrop}
@@ -628,9 +607,10 @@ export function Canvas() {
           />
         )}
 
-        <ScreenFrame frame={effectiveFrame(project)} device={device} theme={screenTheme}>
+        <ScreenFrame frame={effectiveFrame(project)} device={device} theme={screenTheme} styles={chromeStyles(project)}>
         <div
           ref={gridRef}
+          data-canvas-page="" data-zoom={zoom}
           className={isPixelMode ? "relative" : "grid relative"}
           style={{
             ...(isPixelMode ? {

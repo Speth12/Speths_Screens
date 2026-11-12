@@ -6,7 +6,7 @@ import type { CustomWidget, Widget } from "@speths-screens/shared-types";
 import { RENDERED_TYPES, WidgetRenderer, actionWrite, parsePipePoints, shapeLineEnds, toggled, rewriteBinding } from "./widgets";
 import { WidgetHostProvider, EMPTY_TAG, inertHost, type TagState, type WidgetHost, type AlarmView } from "./host";
 import { SYMBOLS } from "./symbols";
-import { driverSummary, formatClock } from "./shell";
+import { alarmSummary, driverSummary, formatClock } from "./shell";
 
 afterEach(cleanup);
 
@@ -86,6 +86,8 @@ describe("each widget renders", () => {
     { type: "userMenu",       w: {},                                                   shows: "" },
     { type: "recipes",        w: {},                                                   shows: "Batch A" },
     { type: "shape",          w: { props: { kind: "rectangle" } },                     shows: "" },
+    { type: "alarmIndicator", w: {},                                                   shows: "1" },
+    { type: "pageTitle",      w: {},                                                   shows: "Overview" },
   ];
   for (const c of cases) {
     it(`${c.type}: ${String(c.shows)}`, () => {
@@ -459,6 +461,89 @@ describe("header and navigation widgets", () => {
   it.each(["tabs", "icons", "bar"] as const)("the %s style lists every page", (style) => {
     draw({ type: "pageList", props: { style } }, withPages());
     expect(screen.getAllByText(/Overview|Pumps|Tanks/).length).toBe(3);
+  });
+
+  it("a page kept out of the navigation is not listed, in any style", () => {
+    const some = [...pages, { id: "p4", name: "Pump detail", hideInNav: true }];
+    for (const style of ["list", "tabs", "icons", "bar"] as const) {
+      draw({ type: "pageList", props: { style } }, fakeHost({}, { usePages: () => ({ pages: some, activeId: "p1" }) }));
+      expect(screen.queryByText("Pump detail")).toBeNull();
+      expect(screen.getAllByText("Tanks").length).toBe(1);
+      cleanup();
+    }
+  });
+
+  it("the Settings screen is listed unless the list is told not to", () => {
+    const some = [...pages, { id: "settings", name: "Settings", icon: "settings" as const }];
+    const host = () => fakeHost({}, { usePages: () => ({ pages: some, activeId: "p1" }) });
+    draw({ type: "pageList" }, host());
+    expect(screen.getByRole("button", { name: /Settings/ })).toBeTruthy();
+    cleanup();
+    draw({ type: "pageList", props: { showSettings: false } }, host());
+    expect(screen.queryByRole("button", { name: /Settings/ })).toBeNull();
+  });
+
+  it("with no names the list is icons, each still named for a screen reader and on hover", () => {
+    const { container } = draw({ type: "pageList", props: { showLabels: false } }, withPages());
+    const overview = screen.getByRole("button", { name: "Overview" });
+    expect(overview.getAttribute("title")).toBe("Overview");
+    expect(overview.querySelector("svg")).toBeTruthy();
+    expect(overview.textContent).toBe("");
+    expect(screen.queryByText("Plant")).toBeNull(); // no room for a heading
+    expect(container.querySelectorAll("button").length).toBe(3);
+  });
+
+  it.each(["list", "icons", "bar"] as const)("the %s style can leave the icons out", (style) => {
+    const { container } = draw({ type: "pageList", props: { style, showIcons: false } }, withPages());
+    expect(container.querySelector("nav svg")).toBeNull();
+    expect(screen.getByText("Overview")).toBeTruthy();
+  });
+
+  it("the page title is the open page's name with its icon, in the language shown", () => {
+    const host = fakeHost({}, { usePages: () => ({ pages, activeId: "p1" }), useTranslate: () => (t: string) => (t === "Overview" ? "Übersicht" : t) });
+    const { container } = draw({ type: "pageTitle" }, host);
+    expect(screen.getByText("Übersicht")).toBeTruthy();
+    expect(container.querySelector("[data-testid='page-title'] svg")).toBeTruthy();
+    cleanup();
+    expect(draw({ type: "pageTitle", props: { showIcon: false } }, host).container.querySelector("[data-testid='page-title'] svg")).toBeNull();
+  });
+
+  it("the page title can sit in the middle", () => {
+    draw({ type: "pageTitle", props: { textAlign: "center" } }, withPages());
+    expect(screen.getByTestId("page-title").style.justifyContent).toBe("center");
+  });
+
+  const alarm = (id: string, severity: string, active = true): AlarmView => ({ id, severity, message: id, active, acked: false });
+
+  it.each<[string, AlarmView[], { count: number; worst: string | null }]>([
+    ["none", [], { count: 0, worst: null }],
+    ["only ones that cleared", [alarm("a", "critical", false)], { count: 0, worst: null }],
+    ["one warning", [alarm("a", "warning")], { count: 1, worst: "warning" }],
+    ["the worst of several", [alarm("a", "info"), alarm("b", "critical"), alarm("c", "warning")], { count: 3, worst: "critical" }],
+    ["a cleared critical does not count", [alarm("a", "critical", false), alarm("b", "info")], { count: 1, worst: "info" }],
+    ["a severity it does not know reads as info", [alarm("a", "odd")], { count: 1, worst: "info" }],
+  ])("alarm summary: %s", (_name, alarms, want) => {
+    expect(alarmSummary(alarms)).toEqual(want);
+  });
+
+  it("the alarm count says how many and how bad in words, and opens its page", () => {
+    const host = fakeHost({}, { useAlarms: () => ({ alarms: [alarm("a", "warning"), alarm("b", "critical")] }) });
+    draw({ type: "alarmIndicator", props: { page: "p2" } }, host);
+    const button = screen.getByRole("button", { name: "2 active alarms, the worst critical" });
+    expect(button.textContent).toBe("2");
+    expect(button.dataset.worst).toBe("critical");
+    expect(button.getAttribute("style")).toContain("background: var(--alarm-critical)");
+    expect(button.getAttribute("style")).toContain("color: var(--background)");
+    fireEvent.click(button);
+    expect(host.navigate).toHaveBeenCalledWith("p2");
+  });
+
+  it("with no alarms it shows no number, and with no page a click does nothing", () => {
+    const host = fakeHost({}, { useAlarms: () => ({ alarms: [] }) });
+    draw({ type: "alarmIndicator" }, host);
+    const button = screen.getByRole("button", { name: "No active alarms" }) as HTMLButtonElement;
+    expect(button.textContent).toBe("");
+    expect(button.disabled).toBe(true);
   });
 
   it("the page names read in the language shown", () => {

@@ -302,6 +302,10 @@ type PartFlexOverride struct {
 //
 // Settings of a pipe widget: a line through points with an animated flow
 //
+// Settings of an alarm indicator widget: how many alarms are active, colored by the worst
+//
+// Settings of a page title widget: the name of the page being shown, with its icon
+//
 // Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
 //
 // # Settings of a custom widget placement
@@ -446,6 +450,10 @@ type CustomWidgetPartProps struct {
 	// Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
 	// outline
 	Weight *float64 `json:"weight,omitempty"`
+	// The id of the page a click opens; missing means a click does nothing
+	Page *string `json:"page,omitempty"`
+	// Show the page's icon before its name (default true)
+	ShowIcon *bool `json:"showIcon,omitempty"`
 	// Shape: a line has an arrow head where it ends
 	ArrowEnd *bool `json:"arrowEnd,omitempty"`
 	// Shape: a line has an arrow head where it starts (left, or the top for an upright line)
@@ -467,6 +475,12 @@ type CustomWidgetPartProps struct {
 	Params map[string]string `json:"params,omitempty"`
 	// list: show each page group's heading (default true)
 	ShowGroups *bool `json:"showGroups,omitempty"`
+	// Show each page's icon (default true); tabs never show one
+	ShowIcons *bool `json:"showIcons,omitempty"`
+	// list: show each page's name (default true); false leaves the icons
+	ShowLabels *bool `json:"showLabels,omitempty"`
+	// List the built-in Settings screen after the pages (default true)
+	ShowSettings *bool `json:"showSettings,omitempty"`
 	// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
 	// buttons in a row; bar: icon over name, sharing the width
 	Style *Style `json:"style,omitempty"`
@@ -652,6 +666,8 @@ type Page struct {
 	BackgroundColor *string `json:"backgroundColor,omitempty"`
 	// Pages with the same group are listed together under that heading in the sidebar
 	Group *string `json:"group,omitempty"`
+	// Leave the page out of the navigation; it is reached by a button or a script
+	HideInNav *bool `json:"hideInNav,omitempty"`
 	// Shown beside the page's name in the navigation; missing shows the name's first letter
 	Icon *PageIcon `json:"icon,omitempty"`
 	ID   string    `json:"id"`
@@ -743,6 +759,10 @@ type WidgetPlacement struct {
 // # Settings of a symbol widget
 //
 // Settings of a pipe widget: a line through points with an animated flow
+//
+// Settings of an alarm indicator widget: how many alarms are active, colored by the worst
+//
+// Settings of a page title widget: the name of the page being shown, with its icon
 //
 // Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
 //
@@ -888,6 +908,10 @@ type WidgetProps struct {
 	// Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
 	// outline
 	Weight *float64 `json:"weight,omitempty"`
+	// The id of the page a click opens; missing means a click does nothing
+	Page *string `json:"page,omitempty"`
+	// Show the page's icon before its name (default true)
+	ShowIcon *bool `json:"showIcon,omitempty"`
 	// Shape: a line has an arrow head where it ends
 	ArrowEnd *bool `json:"arrowEnd,omitempty"`
 	// Shape: a line has an arrow head where it starts (left, or the top for an upright line)
@@ -909,6 +933,12 @@ type WidgetProps struct {
 	Params map[string]string `json:"params,omitempty"`
 	// list: show each page group's heading (default true)
 	ShowGroups *bool `json:"showGroups,omitempty"`
+	// Show each page's icon (default true); tabs never show one
+	ShowIcons *bool `json:"showIcons,omitempty"`
+	// list: show each page's name (default true); false leaves the icons
+	ShowLabels *bool `json:"showLabels,omitempty"`
+	// List the built-in Settings screen after the pages (default true)
+	ShowSettings *bool `json:"showSettings,omitempty"`
 	// list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
 	// buttons in a row; bar: icon over name, sharing the width
 	Style *Style `json:"style,omitempty"`
@@ -1035,8 +1065,10 @@ type Shell struct {
 	Chrome *Chrome `json:"chrome,omitempty"`
 	// With chrome custom: custom widgets pinned to the edges of every page, drawn around the
 	// page
-	Frame []FrameSlot `json:"frame,omitempty"`
-	Nav   *ShellNav   `json:"nav,omitempty"`
+	Frame      []FrameSlot      `json:"frame,omitempty"`
+	Header     *ShellHeader     `json:"header,omitempty"`
+	Nav        *ShellNav        `json:"nav,omitempty"`
+	NavOptions *ShellNavOptions `json:"navOptions,omitempty"`
 }
 
 // A custom widget pinned to an edge of the screen, with the page drawn in the room that is
@@ -1060,6 +1092,73 @@ type FrameSlot struct {
 type FrameSlotOverride struct {
 	Edge *FrameEdge `json:"edge,omitempty"`
 	Size *int64     `json:"size,omitempty"`
+}
+
+// With chrome builtin: what the built-in header shows and how it looks. Everything is
+// optional; missing means the header as it always was
+type ShellHeader struct {
+	// Show how many alarms are active, colored by the worst (default false)
+	Alarms *bool `json:"alarms,omitempty"`
+	// The id of the page a click on the alarm count opens
+	AlarmsPage *string `json:"alarmsPage,omitempty"`
+	// What the clock shows, or none for no clock; missing means timeSeconds
+	Clock *ClockEnum `json:"clock,omitempty"`
+	// Put the weekday before the clock (default true)
+	ClockWeekday *bool `json:"clockWeekday,omitempty"`
+	// The datasource connections: a chip each (the default), one summary such as 2/3, or not
+	// shown
+	Drivers *Drivers `json:"drivers,omitempty"`
+	// Pixels high on a desktop and a tablet; missing means 60
+	Height *int64 `json:"height,omitempty"`
+	// mark (the default): a letter on the theme's color; image: a picture from the project's
+	// images; none: no logo
+	Logo *Logo `json:"logo,omitempty"`
+	// With logo image: the id of a project image
+	LogoImage *string `json:"logoImage,omitempty"`
+	// The letters of the mark; missing means S
+	LogoText *string `json:"logoText,omitempty"`
+	// Show the page's icon beside its name (default false)
+	PageIcon *bool `json:"pageIcon,omitempty"`
+	// Show the name of the page being shown (default true)
+	ShowPageName *bool `json:"showPageName,omitempty"`
+	// Show the project's name (default true)
+	ShowProjectName *bool `json:"showProjectName,omitempty"`
+	// Show the user menu (default true). A project with security mode login always shows it, so
+	// there is a way to log out
+	ShowUser *bool       `json:"showUser,omitempty"`
+	Style    *ShellStyle `json:"style,omitempty"`
+	// Where the project and page names sit; missing means left
+	TitleAlign *TitleAlign `json:"titleAlign,omitempty"`
+}
+
+// The look of the built-in header or navigation where it differs from the theme. A color is
+// a CSS color or a token such as token:alarm-critical
+type ShellStyle struct {
+	// Navigation: the background of the page being shown
+	ActiveBackground *string `json:"activeBackground,omitempty"`
+	// Navigation: the text of the page being shown
+	ActiveTextColor *string    `json:"activeTextColor,omitempty"`
+	Background      *string    `json:"background,omitempty"`
+	Bold            *bool      `json:"bold,omitempty"`
+	BorderColor     *string    `json:"borderColor,omitempty"`
+	Font            *ThemeFont `json:"font,omitempty"`
+	// Text size against the theme's; missing means normal
+	FontSize  *FontSize `json:"fontSize,omitempty"`
+	TextColor *string   `json:"textColor,omitempty"`
+}
+
+// With chrome builtin: how the built-in navigation looks. Everything is optional
+type ShellNavOptions struct {
+	// Show each page's icon (default true)
+	ShowIcons *bool `json:"showIcons,omitempty"`
+	// List the built-in Settings screen (language, light or dark, lock screen) after the pages
+	// (default true)
+	ShowSettings *bool       `json:"showSettings,omitempty"`
+	Style        *ShellStyle `json:"style,omitempty"`
+	// On a tablet the sidebar shows icons only (default false)
+	TabletIcons *bool `json:"tabletIcons,omitempty"`
+	// The sidebar's width in pixels; missing means 208
+	Width *int64 `json:"width,omitempty"`
 }
 
 // The look of every screen: a preset, light or dark, and any element changed from the
@@ -1202,8 +1301,8 @@ const (
 type ButtonRounded string
 
 const (
+	ButtonRoundedFull ButtonRounded = "full"
 	ButtonRoundedNone ButtonRounded = "none"
-	Full              ButtonRounded = "full"
 	Lg                ButtonRounded = "lg"
 	Md                ButtonRounded = "md"
 	Sm                ButtonRounded = "sm"
@@ -1245,10 +1344,10 @@ const (
 type Format string
 
 const (
-	Date        Format = "date"
-	DateTime    Format = "dateTime"
-	FormatTime  Format = "time"
-	TimeSeconds Format = "timeSeconds"
+	FormatDate        Format = "date"
+	FormatDateTime    Format = "dateTime"
+	FormatTime        Format = "time"
+	FormatTimeSeconds Format = "timeSeconds"
 )
 
 // Shape: rectangle (missing means this), ellipse or line
@@ -1306,30 +1405,32 @@ const (
 type WidgetType string
 
 const (
-	AlarmBanner    WidgetType = "alarmBanner"
-	Button         WidgetType = "button"
-	Clock          WidgetType = "clock"
-	CustomWidget   WidgetType = "customWidget"
-	DriverStatus   WidgetType = "driverStatus"
-	Gauge          WidgetType = "gauge"
-	HistoryLog     WidgetType = "historyLog"
-	Image          WidgetType = "image"
-	LED            WidgetType = "led"
-	MultiState     WidgetType = "multiState"
-	NumericDisplay WidgetType = "numericDisplay"
-	NumericInput   WidgetType = "numericInput"
-	PageList       WidgetType = "pageList"
-	Pipe           WidgetType = "pipe"
-	Recipes        WidgetType = "recipes"
-	Setpoint       WidgetType = "setpoint"
-	Shape          WidgetType = "shape"
-	Symbol         WidgetType = "symbol"
-	Table          WidgetType = "table"
-	Tank           WidgetType = "tank"
-	TextDisplay    WidgetType = "textDisplay"
-	TextInput      WidgetType = "textInput"
-	Trend          WidgetType = "trend"
-	UserMenu       WidgetType = "userMenu"
+	AlarmBanner     WidgetType = "alarmBanner"
+	AlarmIndicator  WidgetType = "alarmIndicator"
+	Button          WidgetType = "button"
+	Clock           WidgetType = "clock"
+	CustomWidget    WidgetType = "customWidget"
+	DriverStatus    WidgetType = "driverStatus"
+	Gauge           WidgetType = "gauge"
+	HistoryLog      WidgetType = "historyLog"
+	LED             WidgetType = "led"
+	MultiState      WidgetType = "multiState"
+	NumericDisplay  WidgetType = "numericDisplay"
+	NumericInput    WidgetType = "numericInput"
+	PageList        WidgetType = "pageList"
+	PageTitle       WidgetType = "pageTitle"
+	Pipe            WidgetType = "pipe"
+	Recipes         WidgetType = "recipes"
+	Setpoint        WidgetType = "setpoint"
+	Shape           WidgetType = "shape"
+	Symbol          WidgetType = "symbol"
+	Table           WidgetType = "table"
+	Tank            WidgetType = "tank"
+	TextDisplay     WidgetType = "textDisplay"
+	TextInput       WidgetType = "textInput"
+	Trend           WidgetType = "trend"
+	UserMenu        WidgetType = "userMenu"
+	WidgetTypeImage WidgetType = "image"
 )
 
 // How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
@@ -1459,11 +1560,72 @@ const (
 	Top            FrameEdge = "top"
 )
 
-// How a person moves between pages: a list on the left, a row of large icon buttons, or
-// tabs. A phone always gets a bar along the bottom. Missing means tabs
+// What the clock shows, or none for no clock; missing means timeSeconds
+type ClockEnum string
+
+const (
+	ClockDate        ClockEnum = "date"
+	ClockDateTime    ClockEnum = "dateTime"
+	ClockNone        ClockEnum = "none"
+	ClockTime        ClockEnum = "time"
+	ClockTimeSeconds ClockEnum = "timeSeconds"
+)
+
+// The datasource connections: a chip each (the default), one summary such as 2/3, or not
+// shown
+type Drivers string
+
+const (
+	DriversFull Drivers = "full"
+	DriversNone Drivers = "none"
+	Summary     Drivers = "summary"
+)
+
+// mark (the default): a letter on the theme's color; image: a picture from the project's
+// images; none: no logo
+type Logo string
+
+const (
+	LogoImage Logo = "image"
+	LogoNone  Logo = "none"
+	Mark      Logo = "mark"
+)
+
+// The text font. All but system are bundled, so a PLC with no internet shows the same text
+type ThemeFont string
+
+const (
+	Inter    ThemeFont = "inter"
+	NotoSans ThemeFont = "noto-sans"
+	OpenSans ThemeFont = "open-sans"
+	Roboto   ThemeFont = "roboto"
+	System   ThemeFont = "system"
+)
+
+// Text size against the theme's; missing means normal
+type FontSize string
+
+const (
+	Large  FontSize = "large"
+	Normal FontSize = "normal"
+	Small  FontSize = "small"
+)
+
+// Where the project and page names sit; missing means left
+type TitleAlign string
+
+const (
+	TitleAlignCenter TitleAlign = "center"
+	TitleAlignLeft   TitleAlign = "left"
+)
+
+// How a person moves between pages: a list on the left, a row of large icon buttons, tabs,
+// or none (pages are reached by buttons). A phone gets a bar along the bottom unless it is
+// none. Missing means tabs
 type ShellNav string
 
 const (
+	ShellNavNone ShellNav = "none"
 	ShellNavTabs ShellNav = "tabs"
 	Sidebar      ShellNav = "sidebar"
 	Toolbar      ShellNav = "toolbar"
@@ -1496,17 +1658,6 @@ const (
 	Borderless     ThemeDepth = "borderless"
 	Raised         ThemeDepth = "raised"
 	ThemeDepthFlat ThemeDepth = "flat"
-)
-
-// The text font. All but system are bundled, so a PLC with no internet shows the same text
-type ThemeFont string
-
-const (
-	Inter    ThemeFont = "inter"
-	NotoSans ThemeFont = "noto-sans"
-	OpenSans ThemeFont = "open-sans"
-	Roboto   ThemeFont = "roboto"
-	System   ThemeFont = "system"
 )
 
 // Missing means the preset's own (light for calm and clean, dark for modern)

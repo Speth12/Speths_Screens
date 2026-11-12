@@ -8,9 +8,9 @@
 import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter,
-  ArrowDown, ArrowUp, ArrowUpRight, Bell, Braces, ChartLine, Check, ChevronDown, ChevronLeft, ChevronRight,
+  ArrowDown, ArrowUp, ArrowUpRight, Bell, BellRing, Braces, BringToFront, Group, SendToBack, Ungroup, ChartLine, Check, ChevronDown, ChevronLeft, ChevronRight,
   CircleDot, CirclePlus, CircleX, Clock, Component, Cylinder, Delete, Download, Diamond, FlaskConical, Folder, FolderOpen,
-  Gauge, Hash, History, Image, Layers, List, Lock, LockOpen, Moon, Pencil, Play, Plug, Redo2, RefreshCw, RotateCcw,
+  Gauge, Hash, Heading, History, Image, Layers, List, Lock, LockOpen, Moon, Pencil, Play, Plug, Redo2, RefreshCw, RotateCcw,
   Settings, Shapes, SlidersHorizontal, Spline, Square, Sun, Table, Tag, TextCursorInput, Trash2, TriangleAlert,
   Type, Undo2, Upload, User, X,
   type LucideIcon, type LucideProps,
@@ -42,6 +42,11 @@ export const FolderIcon = ui(Folder);
 export const TagIcon = ui(Tag);
 export const ArrowUpIcon = ui(ArrowUp);
 export const ArrowDownIcon = ui(ArrowDown);
+// The drawing order and grouping of widgets
+export const ToFrontIcon = ui(BringToFront);
+export const ToBackIcon = ui(SendToBack);
+export const GroupIcon = ui(Group);
+export const UngroupIcon = ui(Ungroup);
 /** Opens in a tab of its own. */
 export const OpenTabIcon = ui(ArrowUpRight);
 
@@ -104,6 +109,8 @@ export const WIDGET_ICONS: Record<WidgetType, Icon> = {
   userMenu: ui(User),
   recipes: ui(FlaskConical),
   shape: ui(Diamond),
+  alarmIndicator: ui(BellRing),
+  pageTitle: ui(Heading),
 };
 
 /** The icon of a widget type. */

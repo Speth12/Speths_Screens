@@ -1,26 +1,33 @@
-import { newWidgetId, useProject } from "../store/projectStore";
+import { useProject } from "../store/projectStore";
 import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
-import { convertWidget } from "../store/presets";
 import { PresetList } from "./Presets";
+import { PALETTE_DRAG, newWidget, placeNew, visibleCanvasRect } from "../store/newWidget";
+import { useSelection } from "../store/selection";
+import { WidgetIcon } from "../ui/icons";
 
 /** The palette: every widget type except symbols, which the symbol library adds. */
 const PALETTE = MANIFESTS.filter((m) => m.palette !== false);
 
+/** Adds a widget in the middle of the part of the page in view, and selects it. */
 function useAddWidget() {
-  const { activePageId, addWidget, project } = useProject();
-  const page = project.pages.find((p) => p.id === activePageId);
+  const { activePageId, addWidget } = useProject();
   return (m: WidgetManifest) => {
+    const { project } = useProject.getState();
+    const page = project.pages.find((p) => p.id === activePageId);
     if (!page) return;
-    const { project: latest } = useProject.getState();
-    const latestPage = latest.pages.find((p) => p.id === activePageId) ?? page;
-    const nextY = latestPage.widgets.reduce((max, wg) => Math.max(max, wg.y + wg.h), 0);
-    // A new widget starts with its manifest's defaults (a button writes 1 while pressed).
-    // Default sizes are grid cells; a pixel canvas gets them in pixels.
-    const base = { id: newWidgetId(), type: m.type, x: 0, y: 0, w: m.defaultSize.w, h: m.defaultSize.h };
-    const sized = latest.canvasSnap === "pixel" ? convertWidget(base, "pixel") : base;
-    addWidget(page.id, { ...sized, y: nextY, ...structuredClone(m.defaults) });
+    const pixel = project.canvasSnap === "pixel";
+    const w = newWidget(m, pixel);
+    const at = placeNew(visibleCanvasRect(), w, page.widgets, pixel);
+    addWidget(page.id, { ...w, ...at });
+    useSelection.getState().set([w.id]);
   };
 }
+
+/** A drag from the palette carries the widget's type; the canvas puts it where it is dropped. */
+const dragType = (m: WidgetManifest) => (e: React.DragEvent) => {
+  e.dataTransfer.setData(PALETTE_DRAG, m.type);
+  e.dataTransfer.effectAllowed = "copy";
+};
 
 export function Palette() {
   const add = useAddWidget();
@@ -30,6 +37,7 @@ export function Palette() {
       {PALETTE.map((it) => (
         <button
           key={it.type}
+          draggable onDragStart={dragType(it)}
           onClick={() => add(it)}
           className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 whitespace-nowrap shrink-0 transition-colors"
         >
@@ -44,13 +52,17 @@ export function WidgetPalette() {
   const add = useAddWidget();
   return (
     <>
+    <div className="px-2 pt-2 text-[10px] text-zinc-500">Click to add in the middle of the page, or drag onto the page.</div>
     <div className="p-2 space-y-1">
       {PALETTE.map((it) => (
         <button
           key={it.type}
+          draggable onDragStart={dragType(it)}
           onClick={() => add(it)}
-          className="w-full text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
+          title={`Add a ${it.label}: click, or drag onto the page`}
+          className="w-full flex items-center gap-2 text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors cursor-grab"
         >
+          <WidgetIcon type={it.type} size={14} />
           {it.label}
         </button>
       ))}

@@ -5,6 +5,7 @@ import type { Device } from "@speths-screens/widgets";
 import type { FrameSlot, FrameSlotOverride, Shell } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { CloseIcon } from "../ui/icons";
+import { ChromeOptions } from "./ChromeOptions";
 
 const field = "bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500";
 const EDGES = ["top", "right", "bottom", "left"] as const;
@@ -60,6 +61,8 @@ export function ChromeSettings() {
         </label>
       </div>
 
+      {!custom && <ChromeOptions />}
+
       {custom && (
         <>
           {slots.length === 0 && <div className="text-[11px] text-zinc-500 italic">No slots yet: the screen shows only the page.</div>}
@@ -113,7 +116,7 @@ export function ChromeSettings() {
               disabled={customWidgets.length === 0} title={customWidgets.length === 0 ? "Make a custom widget first" : undefined}
               className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-300">+ Add slot</button>
             <button onClick={addDefaultChrome} className="text-[10px] px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-              title="Adds the default header and navigation custom widgets, and a slot for each, if the project does not have them">Add the default header and navigation</button>
+              title="Adds the default header and navigation custom widgets, as the built-in choices made them, and a slot for each, if the project does not have them">Add the default header and navigation</button>
           </div>
         </>
       )}

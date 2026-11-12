@@ -9,6 +9,7 @@ import { Header } from "./panels/Header";
 import { ImageLibrary } from "./panels/ImageLibrary";
 import { LeftPanel } from "./panels/LeftPanel";
 import { WidgetPalette } from "./panels/Palette";
+import { ObjectList } from "./panels/ObjectList";
 import { Properties } from "./panels/Properties";
 import { StatusBar } from "./panels/StatusBar";
 import { SymbolLibrary } from "./panels/SymbolLibrary";
@@ -17,7 +18,7 @@ import { useProject } from "./store/projectStore";
 import { useShallow } from "zustand/react/shallow";
 import { CloseIcon, ChevronRightIcon } from "./ui/icons";
 
-type RightTab = "props" | "widgets" | "images" | "symbols";
+type RightTab = "props" | "widgets" | "objects" | "images" | "symbols";
 
 const SHORTCUTS = [
   { keys: "Del / Backspace", desc: "Delete selected widget" },
@@ -169,7 +170,7 @@ export function App() {
           <div className="shrink-0 border-l border-zinc-800 bg-zinc-900/50 flex flex-col min-h-0" style={{ width: rightW }}>
             {/* Tab bar */}
             <div className="flex items-center border-b border-zinc-800 shrink-0">
-              {(["props", "widgets", "images", "symbols"] as RightTab[]).map((t) => (
+              {(["props", "widgets", "objects", "images", "symbols"] as RightTab[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setRightTab(t)}
@@ -178,7 +179,7 @@ export function App() {
                       ? "text-zinc-200 border-b-2 border-blue-500"
                       : "text-zinc-500 hover:text-zinc-300"
                   }`}
-                >{{ props: "Props", widgets: "Widgets", images: "Images", symbols: "Symbols" }[t]}</button>
+                >{{ props: "Props", widgets: "Widgets", objects: "Objects", images: "Images", symbols: "Symbols" }[t]}</button>
               ))}
               <button
                 onClick={() => setRightOpen(false)}
@@ -189,6 +190,7 @@ export function App() {
             <div className="flex-1 overflow-auto min-h-0">
               {rightTab === "props"   && <Properties />}
               {rightTab === "widgets" && <WidgetPalette />}
+              {rightTab === "objects" && <ObjectList />}
               {rightTab === "images"  && <ImageLibrary />}
               {rightTab === "symbols" && <SymbolLibrary />}
             </div>

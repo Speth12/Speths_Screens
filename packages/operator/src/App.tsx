@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChromeFrame, WidgetHostProvider, effectiveFrame } from "@speths-screens/widgets";
+import { ChromeFrame, WidgetHostProvider, chromeStyles, effectiveFrame } from "@speths-screens/widgets";
 import { SETTINGS_PAGE_ID, useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
@@ -264,6 +264,7 @@ export function App() {
   const phone = device === "phone";
   // The header and navigation: the project's own frame, or the built-in one (kiosk draws neither).
   const frame = isKiosk ? [] : effectiveFrame(project);
+  const frameStyles = chromeStyles(project);
 
   return (
     <AlarmContext.Provider value={{ alarms, ack }}>
@@ -305,7 +306,7 @@ export function App() {
         )}
 
         <div className="flex-1 min-h-0">
-        <ChromeFrame frame={frame} device={device}>
+        <ChromeFrame frame={frame} device={device} styles={frameStyles}>
         {/* Canvas — responsive, swipe-enabled in kiosk */}
         <div
           ref={canvasRef}
