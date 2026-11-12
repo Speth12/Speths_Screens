@@ -42,6 +42,27 @@ func customWidgetProblems(p *Project) []string {
 			seen[slot.ID] = true
 			missing(fmt.Sprintf("frame slot %q", slot.ID), &slot.CustomWidgetID)
 		}
+		// What the built-in header names has to exist: the page its alarm count opens, and its logo.
+		if h := p.Shell.Header; h != nil {
+			if h.AlarmsPage != nil && *h.AlarmsPage != "" {
+				found := false
+				for _, pg := range p.Pages {
+					found = found || pg.ID == *h.AlarmsPage
+				}
+				if !found {
+					out = append(out, fmt.Sprintf("header: the alarm count opens page %q, which does not exist", *h.AlarmsPage))
+				}
+			}
+			if h.LogoImage != nil && *h.LogoImage != "" {
+				found := false
+				for _, img := range p.Images {
+					found = found || img.ID == *h.LogoImage
+				}
+				if !found {
+					out = append(out, fmt.Sprintf("header: the logo is image %q, which does not exist", *h.LogoImage))
+				}
+			}
+		}
 	}
 	// A custom widget that can reach itself: follow the custom widgets its parts name.
 	var walk func(cw *CustomWidgetElement, target string, path []string, seen map[string]bool) []string

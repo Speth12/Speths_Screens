@@ -470,6 +470,10 @@ export type HiddenOn = "tablet" | "phone";
  *
  * Settings of a pipe widget: a line through points with an animated flow
  *
+ * Settings of an alarm indicator widget: how many alarms are active, colored by the worst
+ *
+ * Settings of a page title widget: the name of the page being shown, with its icon
+ *
  * Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
  *
  * Settings of a custom widget placement
@@ -714,6 +718,14 @@ export interface CustomWidgetPartProps {
      */
     weight?: number;
     /**
+     * The id of the page a click opens; missing means a click does nothing
+     */
+    page?: string;
+    /**
+     * Show the page's icon before its name (default true)
+     */
+    showIcon?: boolean;
+    /**
      * Shape: a line has an arrow head where it ends
      */
     arrowEnd?: boolean;
@@ -754,6 +766,18 @@ export interface CustomWidgetPartProps {
      * list: show each page group's heading (default true)
      */
     showGroups?: boolean;
+    /**
+     * Show each page's icon (default true); tabs never show one
+     */
+    showIcons?: boolean;
+    /**
+     * list: show each page's name (default true); false leaves the icons
+     */
+    showLabels?: boolean;
+    /**
+     * List the built-in Settings screen after the pages (default true)
+     */
+    showSettings?: boolean;
     /**
      * list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
      * buttons in a row; bar: icon over name, sharing the width
@@ -907,7 +931,7 @@ export type TextAlign = "left" | "center" | "right";
  */
 export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
 
-export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "customWidget" | "table" | "pipe" | "pageList" | "clock" | "driverStatus" | "userMenu" | "recipes" | "shape";
+export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "customWidget" | "table" | "pipe" | "pageList" | "clock" | "driverStatus" | "userMenu" | "recipes" | "shape" | "alarmIndicator" | "pageTitle";
 
 export interface Datasource {
     config: DatasourceConfig;
@@ -1118,6 +1142,10 @@ export interface Page {
      */
     group?: string;
     /**
+     * Leave the page out of the navigation; it is reached by a button or a script
+     */
+    hideInNav?: boolean;
+    /**
      * Shown beside the page's name in the navigation; missing shows the name's first letter
      */
     icon?: PageIcon;
@@ -1248,6 +1276,10 @@ export interface WidgetPlacement {
  * Settings of a symbol widget
  *
  * Settings of a pipe widget: a line through points with an animated flow
+ *
+ * Settings of an alarm indicator widget: how many alarms are active, colored by the worst
+ *
+ * Settings of a page title widget: the name of the page being shown, with its icon
  *
  * Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
  *
@@ -1493,6 +1525,14 @@ export interface WidgetProps {
      */
     weight?: number;
     /**
+     * The id of the page a click opens; missing means a click does nothing
+     */
+    page?: string;
+    /**
+     * Show the page's icon before its name (default true)
+     */
+    showIcon?: boolean;
+    /**
      * Shape: a line has an arrow head where it ends
      */
     arrowEnd?: boolean;
@@ -1533,6 +1573,18 @@ export interface WidgetProps {
      * list: show each page group's heading (default true)
      */
     showGroups?: boolean;
+    /**
+     * Show each page's icon (default true); tabs never show one
+     */
+    showIcons?: boolean;
+    /**
+     * list: show each page's name (default true); false leaves the icons
+     */
+    showLabels?: boolean;
+    /**
+     * List the built-in Settings screen after the pages (default true)
+     */
+    showSettings?: boolean;
     /**
      * list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
      * buttons in a row; bar: icon over name, sharing the width
@@ -1744,8 +1796,10 @@ export interface Shell {
      * With chrome custom: custom widgets pinned to the edges of every page, drawn around the
      * page
      */
-    frame?: FrameSlot[];
-    nav?:   ShellNav;
+    frame?:      FrameSlot[];
+    header?:     ShellHeader;
+    nav?:        ShellNav;
+    navOptions?: ShellNavOptions;
 }
 
 /**
@@ -1792,10 +1846,158 @@ export interface FrameSlotOverride {
 }
 
 /**
- * How a person moves between pages: a list on the left, a row of large icon buttons, or
- * tabs. A phone always gets a bar along the bottom. Missing means tabs
+ * With chrome builtin: what the built-in header shows and how it looks. Everything is
+ * optional; missing means the header as it always was
  */
-export type ShellNav = "sidebar" | "toolbar" | "tabs";
+export interface ShellHeader {
+    /**
+     * Show how many alarms are active, colored by the worst (default false)
+     */
+    alarms?: boolean;
+    /**
+     * The id of the page a click on the alarm count opens
+     */
+    alarmsPage?: string;
+    /**
+     * What the clock shows, or none for no clock; missing means timeSeconds
+     */
+    clock?: Clock;
+    /**
+     * Put the weekday before the clock (default true)
+     */
+    clockWeekday?: boolean;
+    /**
+     * The datasource connections: a chip each (the default), one summary such as 2/3, or not
+     * shown
+     */
+    drivers?: Drivers;
+    /**
+     * Pixels high on a desktop and a tablet; missing means 60
+     */
+    height?: number;
+    /**
+     * mark (the default): a letter on the theme's color; image: a picture from the project's
+     * images; none: no logo
+     */
+    logo?: Logo;
+    /**
+     * With logo image: the id of a project image
+     */
+    logoImage?: string;
+    /**
+     * The letters of the mark; missing means S
+     */
+    logoText?: string;
+    /**
+     * Show the page's icon beside its name (default false)
+     */
+    pageIcon?: boolean;
+    /**
+     * Show the name of the page being shown (default true)
+     */
+    showPageName?: boolean;
+    /**
+     * Show the project's name (default true)
+     */
+    showProjectName?: boolean;
+    /**
+     * Show the user menu (default true). A project with security mode login always shows it, so
+     * there is a way to log out
+     */
+    showUser?: boolean;
+    style?:    ShellStyle;
+    /**
+     * Where the project and page names sit; missing means left
+     */
+    titleAlign?: TitleAlign;
+}
+
+/**
+ * What the clock shows, or none for no clock; missing means timeSeconds
+ */
+export type Clock = "none" | "time" | "timeSeconds" | "dateTime" | "date";
+
+/**
+ * The datasource connections: a chip each (the default), one summary such as 2/3, or not
+ * shown
+ */
+export type Drivers = "full" | "summary" | "none";
+
+/**
+ * mark (the default): a letter on the theme's color; image: a picture from the project's
+ * images; none: no logo
+ */
+export type Logo = "mark" | "image" | "none";
+
+/**
+ * The look of the built-in header or navigation where it differs from the theme. A color is
+ * a CSS color or a token such as token:alarm-critical
+ */
+export interface ShellStyle {
+    /**
+     * Navigation: the background of the page being shown
+     */
+    activeBackground?: string;
+    /**
+     * Navigation: the text of the page being shown
+     */
+    activeTextColor?: string;
+    background?:      string;
+    bold?:            boolean;
+    borderColor?:     string;
+    font?:            ThemeFont;
+    /**
+     * Text size against the theme's; missing means normal
+     */
+    fontSize?:  FontSize;
+    textColor?: string;
+}
+
+/**
+ * The text font. All but system are bundled, so a PLC with no internet shows the same text
+ */
+export type ThemeFont = "inter" | "roboto" | "open-sans" | "noto-sans" | "system";
+
+/**
+ * Text size against the theme's; missing means normal
+ */
+export type FontSize = "small" | "normal" | "large";
+
+/**
+ * Where the project and page names sit; missing means left
+ */
+export type TitleAlign = "left" | "center";
+
+/**
+ * How a person moves between pages: a list on the left, a row of large icon buttons, tabs,
+ * or none (pages are reached by buttons). A phone gets a bar along the bottom unless it is
+ * none. Missing means tabs
+ */
+export type ShellNav = "sidebar" | "toolbar" | "tabs" | "none";
+
+/**
+ * With chrome builtin: how the built-in navigation looks. Everything is optional
+ */
+export interface ShellNavOptions {
+    /**
+     * Show each page's icon (default true)
+     */
+    showIcons?: boolean;
+    /**
+     * List the built-in Settings screen (language, light or dark, lock screen) after the pages
+     * (default true)
+     */
+    showSettings?: boolean;
+    style?:        ShellStyle;
+    /**
+     * On a tablet the sidebar shows icons only (default false)
+     */
+    tabletIcons?: boolean;
+    /**
+     * The sidebar's width in pixels; missing means 208
+     */
+    width?: number;
+}
 
 /**
  * The look of every screen: a preset, light or dark, and any element changed from the
@@ -1835,11 +2037,6 @@ export type ThemeDensity = "compact" | "comfortable" | "touch";
  * color alone
  */
 export type ThemeDepth = "flat" | "raised" | "borderless";
-
-/**
- * The text font. All but system are bundled, so a PLC with no internet shows the same text
- */
-export type ThemeFont = "inter" | "roboto" | "open-sans" | "noto-sans" | "system";
 
 /**
  * Missing means the preset's own (light for calm and clean, dark for modern)

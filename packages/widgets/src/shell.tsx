@@ -1,10 +1,10 @@
-// The four widgets that make up a project's header and navigation: the page list, the clock, the
-// driver status and the user menu. They read the app through the host (pages, drivers, user), so a
+// The widgets that make up a project's header and navigation: the page list, the page title, the
+// clock, the driver status, the alarm indicator and the user menu. They read the app through the host (pages, drivers, user), so a
 // custom widget built from them works on the operator screen and in the IDE alike.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ClockProps, PageListProps } from "@speths-screens/shared-types";
-import { useHost, type DriverInfo, type PageInfo } from "./host";
+import type { AlarmIndicatorProps, ClockProps, PageListProps, PageTitleProps } from "@speths-screens/shared-types";
+import { useHost, type AlarmView, type DriverInfo, type PageInfo } from "./host";
 import { Icon } from "./icons";
 
 const ACTIVE = { background: "var(--primary)", color: "var(--primary-foreground)" } as const;
@@ -22,18 +22,29 @@ export function groupPages(pages: readonly PageInfo[]): { group: string | null; 
   return out;
 }
 
+/** The id the hosts give the built-in Settings screen in the page list. */
+export const SETTINGS_PAGE_ID = "settings";
+
+/** The pages a page list offers: not the ones a project keeps out of the navigation, and the
+ *  built-in Settings screen only when the list asks for it. */
+export function listedPages(pages: readonly PageInfo[], showSettings = true): PageInfo[] {
+  return pages.filter((p) => !p.hideInNav && (showSettings || p.id !== SETTINGS_PAGE_ID));
+}
+
 // ── Page list ────────────────────────────────────────────────────────────
 
 export function PageListWidget({ w }: { w: { props?: PageListProps } }) {
   const host = useHost();
   const t = host.useTranslate();
-  const { pages, activeId } = host.usePages();
+  const { pages: all, activeId } = host.usePages();
   const style = w.props?.style ?? "list";
   const select = (id: string) => host.navigate(id);
+  const pages = listedPages(all, w.props?.showSettings !== false);
+  const icons = w.props?.showIcons !== false;
 
   if (style === "tabs") {
     return (
-      <div role="tablist" className="flex gap-1 items-center min-w-0 overflow-x-auto">
+      <div role="tablist" className="flex h-full gap-1 items-center min-w-0 overflow-x-auto">
         {pages.map((p) => (
           <button key={p.id} role="tab" aria-selected={p.id === activeId} onClick={() => select(p.id)}
             className="text-xs px-3 py-1 rounded transition-colors shrink-0"
@@ -52,7 +63,7 @@ export function PageListWidget({ w }: { w: { props?: PageListProps } }) {
           <button key={p.id} aria-current={p.id === activeId ? "page" : undefined} onClick={() => select(p.id)}
             className="flex flex-col items-center justify-center gap-1 px-4 min-w-[88px] text-xs font-medium transition-colors shrink-0"
             style={{ minHeight: "calc(var(--control-height, 2rem) * 1.75)", borderRadius: "var(--radius)", ...(p.id === activeId ? ACTIVE : { background: "var(--secondary)", color: "var(--muted-foreground)" }) }}>
-            <Icon name={p.icon} label={t(p.name)} size={26} />
+            {icons && <Icon name={p.icon} label={t(p.name)} size={26} />}
             <span className="truncate max-w-[110px]">{t(p.name)}</span>
           </button>
         ))}
@@ -67,7 +78,7 @@ export function PageListWidget({ w }: { w: { props?: PageListProps } }) {
           <button key={p.id} aria-current={p.id === activeId ? "page" : undefined} onClick={() => select(p.id)}
             className="flex flex-1 min-w-[64px] flex-col items-center justify-center gap-0.5 py-1.5 text-xs transition-colors"
             style={{ minHeight: 56, ...(p.id === activeId ? { color: "var(--primary)", fontWeight: 600 } : { color: "var(--muted-foreground)" }) }}>
-            <Icon name={p.icon} label={t(p.name)} size={22} />
+            {icons && <Icon name={p.icon} label={t(p.name)} size={22} />}
             <span className="truncate max-w-[72px]">{t(p.name)}</span>
           </button>
         ))}
@@ -75,7 +86,9 @@ export function PageListWidget({ w }: { w: { props?: PageListProps } }) {
     );
   }
 
-  const showGroups = w.props?.showGroups !== false;
+  // Icons only (a narrow sidebar): the name is the button's name and its tooltip, and there is no room for headings.
+  const labels = w.props?.showLabels !== false;
+  const showGroups = w.props?.showGroups !== false && labels;
   return (
     <nav aria-label="Pages" className="h-full w-full overflow-y-auto py-1">
       {groupPages(pages).map((g, gi) => (
@@ -85,15 +98,73 @@ export function PageListWidget({ w }: { w: { props?: PageListProps } }) {
           )}
           {g.items.map((p) => (
             <button key={p.id} aria-current={p.id === activeId ? "page" : undefined} onClick={() => select(p.id)}
-              className="flex w-full items-center gap-3 px-4 text-sm text-left transition-colors"
-              style={{ minHeight: "var(--control-height, 2rem)", ...(p.id === activeId ? ACTIVE : IDLE) }}>
-              <Icon name={p.icon} label={t(p.name)} size={18} />
-              <span className="truncate">{t(p.name)}</span>
+              aria-label={labels ? undefined : t(p.name)} title={labels ? undefined : t(p.name)}
+              className={`flex w-full items-center gap-3 text-sm text-left transition-colors ${labels ? "px-4" : "justify-center"}`}
+              style={{ minHeight: labels ? "var(--control-height, 2rem)" : "calc(var(--control-height, 2rem) * 1.25)", ...(p.id === activeId ? ACTIVE : IDLE) }}>
+              {(icons || !labels) && <Icon name={p.icon} label={t(p.name)} size={labels ? 18 : 22} />}
+              {labels && <span className="truncate">{t(p.name)}</span>}
             </button>
           ))}
         </div>
       ))}
     </nav>
+  );
+}
+
+// ── Page title ───────────────────────────────────────────────────────────
+
+/** The name of the page being shown, with its icon. The text follows the frame's size and color. */
+export function PageTitleWidget({ w }: { w: { props?: PageTitleProps } }) {
+  const host = useHost();
+  const t = host.useTranslate();
+  const { pages, activeId } = host.usePages();
+  const page = pages.find((p) => p.id === activeId);
+  if (!page) return null;
+  const name = t(page.name);
+  const align = w.props?.textAlign;
+  return (
+    <div data-testid="page-title" className="h-full w-full flex items-center gap-1.5 min-w-0"
+      style={{ justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start" }}>
+      {w.props?.showIcon !== false && <span className="shrink-0 inline-flex"><Icon name={page.icon} label={name} size={16} /></span>}
+      <span className="truncate">{name}</span>
+    </div>
+  );
+}
+
+// ── Alarm indicator ──────────────────────────────────────────────────────
+
+const SEVERITY_ORDER = ["critical", "warning", "info"] as const;
+
+/** How many alarms are active and the worst severity among them. */
+export function alarmSummary(alarms: readonly AlarmView[]): { count: number; worst: "critical" | "warning" | "info" | null } {
+  const active = alarms.filter((a) => a.active);
+  const worst = SEVERITY_ORDER.find((s) => active.some((a) => a.severity === s)) ?? (active.length ? "info" : null);
+  return { count: active.length, worst };
+}
+
+/** A bell with the number of active alarms, in the color of the worst; a click opens a page. The
+ *  number and the words say what the color says, so the state does not depend on color alone. */
+export function AlarmIndicatorWidget({ w }: { w: { props?: AlarmIndicatorProps } }) {
+  const host = useHost();
+  const { count, worst } = alarmSummary(host.useAlarms().alarms);
+  const page = w.props?.page;
+  // Filled in the alarm's color with the page's background for the number, a pair every theme keeps
+  // readable, so the count reads on a header of any color.
+  const color = worst ? `var(--alarm-${worst})` : "var(--muted-foreground)";
+  const says = count === 0 ? "No active alarms" : `${count} active alarm${count === 1 ? "" : "s"}, the worst ${worst}`;
+  return (
+    <div className="h-full w-full flex items-center justify-center">
+      <button type="button" data-testid="alarm-indicator" data-worst={worst ?? "none"} aria-label={says} title={says}
+        disabled={!page} onClick={() => page && host.navigate(page)}
+        className="inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold tabular-nums"
+        style={{
+          cursor: page ? "pointer" : "default", borderRadius: "999px",
+          ...(count ? { background: color, color: "var(--background)" } : { background: "transparent", color }),
+        }}>
+        <Icon name="alarm" size={18} />
+        {count > 0 && <span>{count}</span>}
+      </button>
+    </div>
   );
 }
 

@@ -2,11 +2,13 @@
 // width of the screen size being edited. The project's theme applies here, not the IDE's own.
 import type { CSSProperties, ReactNode } from "react";
 import type { FrameSlot } from "@speths-screens/shared-types";
-import { ChromeFrame, DEVICE_WIDTH, WidgetHostProvider, type Device } from "@speths-screens/widgets";
+import { ChromeFrame, DEVICE_WIDTH, WidgetHostProvider, type Device, type SlotStyle } from "@speths-screens/widgets";
 import { ideHost } from "../widgets";
 
-export function ScreenFrame({ frame, device, theme, children }: {
+export function ScreenFrame({ frame, device, theme, styles, children }: {
   frame: readonly FrameSlot[];
+  /** The look of the header and navigation slots (chromeStyles). */
+  styles?: Record<string, SlotStyle>;
   device: Device;
   theme: CSSProperties;
   children: ReactNode;
@@ -23,7 +25,7 @@ export function ScreenFrame({ frame, device, theme, children }: {
         fontFamily: "var(--font-sans, inherit)",
       }}>
       <WidgetHostProvider value={ideHost}>
-        <ChromeFrame frame={frame} device={device}>{children}</ChromeFrame>
+        <ChromeFrame frame={frame} device={device} styles={styles}>{children}</ChromeFrame>
       </WidgetHostProvider>
     </div>
   );

@@ -753,6 +753,92 @@ type PipeProps struct {
 	CycleSeconds *float64 `json:"cycleSeconds,omitempty"`
 }
 
+// AlarmIndicatorProps holds the settings of a alarmIndicator widget.
+type AlarmIndicatorProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// The id of the page a click opens; missing means a click does nothing
+	Page *string `json:"page,omitempty"`
+}
+
+// PageTitleProps holds the settings of a pageTitle widget.
+type PageTitleProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	NoPadding   *bool   `json:"noPadding,omitempty"`
+	// mono | sans | serif; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Show the page's icon before its name (default true)
+	ShowIcon *bool `json:"showIcon,omitempty"`
+}
+
 // ShapeProps holds the settings of a shape widget.
 type ShapeProps struct {
 	Label       *string `json:"label,omitempty"`
@@ -900,6 +986,12 @@ type PageListProps struct {
 	Style *string `json:"style,omitempty"`
 	// list: show each page group's heading (default true)
 	ShowGroups *bool `json:"showGroups,omitempty"`
+	// Show each page's icon (default true); tabs never show one
+	ShowIcons *bool `json:"showIcons,omitempty"`
+	// list: show each page's name (default true); false leaves the icons
+	ShowLabels *bool `json:"showLabels,omitempty"`
+	// List the built-in Settings screen after the pages (default true)
+	ShowSettings *bool `json:"showSettings,omitempty"`
 }
 
 // ClockProps holds the settings of a clock widget.
@@ -1220,7 +1312,7 @@ func (w Widget) AsAlarmBanner() (AlarmBannerProps, error) {
 // another type or has a setting a image does not have.
 func (w Widget) AsImage() (ImageProps, error) {
 	var p ImageProps
-	return p, decodeProps(w.Type, Image, w.Props, &p)
+	return p, decodeProps(w.Type, WidgetTypeImage, w.Props, &p)
 }
 
 // AsSymbol returns w's settings as a symbol widget's. It fails when w is
@@ -1235,6 +1327,20 @@ func (w Widget) AsSymbol() (SymbolProps, error) {
 func (w Widget) AsPipe() (PipeProps, error) {
 	var p PipeProps
 	return p, decodeProps(w.Type, Pipe, w.Props, &p)
+}
+
+// AsAlarmIndicator returns w's settings as a alarmIndicator widget's. It fails when w is
+// another type or has a setting a alarmIndicator does not have.
+func (w Widget) AsAlarmIndicator() (AlarmIndicatorProps, error) {
+	var p AlarmIndicatorProps
+	return p, decodeProps(w.Type, AlarmIndicator, w.Props, &p)
+}
+
+// AsPageTitle returns w's settings as a pageTitle widget's. It fails when w is
+// another type or has a setting a pageTitle does not have.
+func (w Widget) AsPageTitle() (PageTitleProps, error) {
+	var p PageTitleProps
+	return p, decodeProps(w.Type, PageTitle, w.Props, &p)
 }
 
 // AsShape returns w's settings as a shape widget's. It fails when w is
@@ -1295,28 +1401,30 @@ func (w Widget) AsTable() (TableProps, error) {
 
 // PropsKeys lists each widget type's settings, frame settings first.
 var PropsKeys = map[WidgetType][]string{
-	Gauge:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	NumericDisplay: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextDisplay:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
-	LED:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
-	Tank:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	Button:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
-	Setpoint:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
-	MultiState:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
-	Trend:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
-	NumericInput:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextInput:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
-	HistoryLog:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
-	AlarmBanner:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
-	Image:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
-	Symbol:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
-	Pipe:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
-	Shape:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
-	CustomWidget:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
-	PageList:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"},
-	Clock:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
-	DriverStatus:   {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
-	UserMenu:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
-	Recipes:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"},
-	Table:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
+	Gauge:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	NumericDisplay:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextDisplay:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
+	LED:             {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
+	Tank:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	Button:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
+	Setpoint:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
+	MultiState:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
+	Trend:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
+	NumericInput:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextInput:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
+	HistoryLog:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
+	AlarmBanner:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
+	WidgetTypeImage: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
+	Symbol:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
+	Pipe:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
+	AlarmIndicator:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"},
+	PageTitle:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"},
+	Shape:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
+	CustomWidget:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
+	PageList:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"},
+	Clock:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
+	DriverStatus:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
+	UserMenu:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
+	Recipes:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"},
+	Table:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }

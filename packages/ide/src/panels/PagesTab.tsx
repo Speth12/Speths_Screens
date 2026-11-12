@@ -14,7 +14,7 @@ const TYPE_COLOR: Record<string, string> = {
   gauge: "#3b82f6", numericDisplay: "#22c55e", numericInput: "#16a34a", textDisplay: "#6b7280", textInput: "#4b5563",
   led: "#eab308", button: "#2563eb", setpoint: "#8b5cf6", tank: "#0ea5e9", trend: "#f59e0b", historyLog: "#64748b",
   multiState: "#ec4899", alarmBanner: "#ef4444", image: "#78716c", symbol: "#a78bfa", pipe: "#38bdf8", shape: "#94a3b8",
-  table: "#94a3b8", customWidget: "#14b8a6", pageList: "#a1a1aa", clock: "#a1a1aa", driverStatus: "#a1a1aa", userMenu: "#a1a1aa", recipes: "#f97316",
+  table: "#94a3b8", customWidget: "#14b8a6", pageList: "#a1a1aa", clock: "#a1a1aa", driverStatus: "#a1a1aa", userMenu: "#a1a1aa", alarmIndicator: "#ef4444", pageTitle: "#a1a1aa", recipes: "#f97316",
 };
 
 /** The layout of a page drawn as boxes, to scale. */

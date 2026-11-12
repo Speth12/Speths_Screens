@@ -45,6 +45,9 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
   const viewOnly = !!project?.viewOnly;
   const images = project?.images;
   const customWidgets = project?.customWidgets;
+  // The built-in header and navigation are built from the project's choices for them.
+  const projectShell = project?.shell;
+  const security = project?.security;
   const languages = project?.languages;
   const translations = project?.translations;
   const { pageName, pageId, projectName } = app;
@@ -79,7 +82,7 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
       apiFetch,
       useAlarms: useOperatorAlarms,
       useImage: (id: string) => (id ? images?.find((img) => img.id === id)?.dataUrl : undefined),
-      useCustomWidget: (id: string | undefined) => findCustomWidget({ customWidgets }, id),
+      useCustomWidget: (id: string | undefined) => findCustomWidget({ customWidgets, shell: projectShell, security }, id),
       useTranslate: () => translate,
       useDevice: useOperatorDevice,
       usePages: () => ({ pages: settings ? [...(pages ?? NO_PAGES), SETTINGS_PAGE] : pages ?? NO_PAGES, activeId: pageId }),
@@ -90,5 +93,5 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
         return { name: user?.name, role: user?.role, loginRequired, logout: user ? onLogout : undefined };
       },
     };
-  }, [viewOnly, images, customWidgets, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipeSets, drivers, token, loginRequired, onLogout, settings]);
+  }, [viewOnly, images, customWidgets, projectShell, security, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipeSets, drivers, token, loginRequired, onLogout, settings]);
 }

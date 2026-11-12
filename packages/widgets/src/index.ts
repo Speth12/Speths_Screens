@@ -5,11 +5,14 @@ export {
   WidgetHostProvider, useHost, useTag, useTags, inertHost, EMPTY_TAG,
   type WidgetHost, type TagState, type Quality, type WriteRequest, type AlarmView, type PageInfo, type DriverInfo, type UserInfo,
 } from "./host";
-export { formatClock, groupPages, driverSummary } from "./shell";
+export { formatClock, groupPages, driverSummary, alarmSummary, listedPages, SETTINGS_PAGE_ID } from "./shell";
 export { recipeSetsOf, mayEditRecipes } from "./recipeSets";
 export { parseCell } from "./recipes";
 export { ChromeFrame } from "./ChromeFrame";
-export { DEFAULT_IDS, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget, type ChromeNav } from "./chrome";
+export {
+  DEFAULT_IDS, SIDE_NAV_ICONS_ID, HEADER_HEIGHT, SIDEBAR_WIDTH, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget,
+  chromeStyles, shellStyleVars, contrastRatio, type ChromeNav, type ChromeProject, type SlotStyle,
+} from "./chrome";
 export { SymbolSVG } from "./SymbolSVG";
 export { APP_PREFIX, APP_NAMES, appTag, isAppPath, splitApp, type AppValues } from "./app";
 export * from "./symbols";

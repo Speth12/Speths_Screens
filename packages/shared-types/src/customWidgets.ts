@@ -26,6 +26,14 @@ export function customWidgetProblems(p: Project): string[] {
     seenSlots.add(slot.id);
     missing(`frame slot ${JSON.stringify(slot.id)}`, slot.customWidgetId);
   }
+  // What the built-in header names has to exist: the page its alarm count opens, and its logo.
+  const header = p.shell?.header;
+  if (header?.alarmsPage && !(p.pages ?? []).some((pg) => pg.id === header.alarmsPage)) {
+    out.push(`header: the alarm count opens page ${JSON.stringify(header.alarmsPage)}, which does not exist`);
+  }
+  if (header?.logoImage && !(p.images ?? []).some((img) => img.id === header.logoImage)) {
+    out.push(`header: the logo is image ${JSON.stringify(header.logoImage)}, which does not exist`);
+  }
   // A custom widget that can reach itself: follow the custom widgets its parts name.
   const walk = (cw: CustomWidget, target: string, path: string[], seen: Set<string>): string[] | undefined => {
     for (const w of cw.widgets ?? []) {

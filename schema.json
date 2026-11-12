@@ -480,7 +480,8 @@
         "backgroundColor": { "type": "string", "description": "CSS color for the page background" },
         "script":          { "type": "string", "description": "Page script (JavaScript source)" },
         "icon":            { "$ref": "#/$defs/PageIcon", "description": "Shown beside the page's name in the navigation; missing shows the name's first letter" },
-        "group":           { "type": "string", "description": "Pages with the same group are listed together under that heading in the sidebar" }
+        "group":           { "type": "string", "description": "Pages with the same group are listed together under that heading in the sidebar" },
+        "hideInNav":       { "type": "boolean", "description": "Leave the page out of the navigation; it is reached by a button or a script" }
       }
     },
     "PageIcon": {
@@ -496,7 +497,61 @@
       "properties": {
         "nav": { "$ref": "#/$defs/ShellNav" },
         "chrome": { "type": "string", "enum": ["builtin", "custom"], "description": "builtin (the default) draws the operator's own top bar and navigation; custom draws the frame slots instead" },
-        "frame": { "type": "array", "items": { "$ref": "#/$defs/FrameSlot" }, "description": "With chrome custom: custom widgets pinned to the edges of every page, drawn around the page" }
+        "frame": { "type": "array", "items": { "$ref": "#/$defs/FrameSlot" }, "description": "With chrome custom: custom widgets pinned to the edges of every page, drawn around the page" },
+        "header": { "$ref": "#/$defs/ShellHeader" },
+        "navOptions": { "$ref": "#/$defs/ShellNavOptions" }
+      }
+    },
+    "ShellHeader": {
+      "title": "ShellHeader",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "With chrome builtin: what the built-in header shows and how it looks. Everything is optional; missing means the header as it always was",
+      "properties": {
+        "logo": { "type": "string", "enum": ["mark", "image", "none"], "description": "mark (the default): a letter on the theme's color; image: a picture from the project's images; none: no logo" },
+        "logoText": { "type": "string", "description": "The letters of the mark; missing means S" },
+        "logoImage": { "type": "string", "description": "With logo image: the id of a project image" },
+        "showProjectName": { "type": "boolean", "description": "Show the project's name (default true)" },
+        "showPageName": { "type": "boolean", "description": "Show the name of the page being shown (default true)" },
+        "pageIcon": { "type": "boolean", "description": "Show the page's icon beside its name (default false)" },
+        "titleAlign": { "type": "string", "enum": ["left", "center"], "description": "Where the project and page names sit; missing means left" },
+        "drivers": { "type": "string", "enum": ["full", "summary", "none"], "description": "The datasource connections: a chip each (the default), one summary such as 2/3, or not shown" },
+        "clock": { "type": "string", "enum": ["none", "time", "timeSeconds", "dateTime", "date"], "description": "What the clock shows, or none for no clock; missing means timeSeconds" },
+        "clockWeekday": { "type": "boolean", "description": "Put the weekday before the clock (default true)" },
+        "showUser": { "type": "boolean", "description": "Show the user menu (default true). A project with security mode login always shows it, so there is a way to log out" },
+        "alarms": { "type": "boolean", "description": "Show how many alarms are active, colored by the worst (default false)" },
+        "alarmsPage": { "type": "string", "description": "The id of the page a click on the alarm count opens" },
+        "height": { "type": "integer", "minimum": 32, "maximum": 200, "description": "Pixels high on a desktop and a tablet; missing means 60" },
+        "style": { "$ref": "#/$defs/ShellStyle" }
+      }
+    },
+    "ShellNavOptions": {
+      "title": "ShellNavOptions",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "With chrome builtin: how the built-in navigation looks. Everything is optional",
+      "properties": {
+        "width": { "type": "integer", "minimum": 48, "maximum": 480, "description": "The sidebar's width in pixels; missing means 208" },
+        "tabletIcons": { "type": "boolean", "description": "On a tablet the sidebar shows icons only (default false)" },
+        "showIcons": { "type": "boolean", "description": "Show each page's icon (default true)" },
+        "showSettings": { "type": "boolean", "description": "List the built-in Settings screen (language, light or dark, lock screen) after the pages (default true)" },
+        "style": { "$ref": "#/$defs/ShellStyle" }
+      }
+    },
+    "ShellStyle": {
+      "title": "ShellStyle",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The look of the built-in header or navigation where it differs from the theme. A color is a CSS color or a token such as token:alarm-critical",
+      "properties": {
+        "background": { "type": "string" },
+        "textColor": { "type": "string" },
+        "borderColor": { "type": "string" },
+        "font": { "$ref": "#/$defs/ThemeFont" },
+        "fontSize": { "type": "string", "enum": ["small", "normal", "large"], "description": "Text size against the theme's; missing means normal" },
+        "bold": { "type": "boolean" },
+        "activeBackground": { "type": "string", "description": "Navigation: the background of the page being shown" },
+        "activeTextColor": { "type": "string", "description": "Navigation: the text of the page being shown" }
       }
     },
     "FrameSlot": {
@@ -534,8 +589,8 @@
     "ShellNav": {
       "title": "ShellNav",
       "type": "string",
-      "enum": ["sidebar", "toolbar", "tabs"],
-      "description": "How a person moves between pages: a list on the left, a row of large icon buttons, or tabs. A phone always gets a bar along the bottom. Missing means tabs"
+      "enum": ["sidebar", "toolbar", "tabs", "none"],
+      "description": "How a person moves between pages: a list on the left, a row of large icon buttons, tabs, or none (pages are reached by buttons). A phone gets a bar along the bottom unless it is none. Missing means tabs"
     },
     "WidgetType": {
       "title": "WidgetType",
@@ -564,7 +619,9 @@
         "driverStatus",
         "userMenu",
         "recipes",
-        "shape"
+        "shape",
+        "alarmIndicator",
+        "pageTitle"
       ]
     },
     "ShapeKind": {
@@ -1484,7 +1541,10 @@
       "allOf": [{ "$ref": "#/$defs/FrameProps" }],
       "properties": {
         "style": { "type": "string", "enum": ["list", "tabs", "icons", "bar"], "description": "list: icon and name down the side, grouped; tabs: names in a row; icons: large icon buttons in a row; bar: icon over name, sharing the width" },
-        "showGroups": { "type": "boolean", "description": "list: show each page group's heading (default true)" }
+        "showGroups": { "type": "boolean", "description": "list: show each page group's heading (default true)" },
+        "showIcons": { "type": "boolean", "description": "Show each page's icon (default true); tabs never show one" },
+        "showLabels": { "type": "boolean", "description": "list: show each page's name (default true); false leaves the icons" },
+        "showSettings": { "type": "boolean", "description": "List the built-in Settings screen after the pages (default true)" }
       },
       "unevaluatedProperties": false
     },
@@ -1529,6 +1589,26 @@
         "recipeSetId": { "type": "string", "description": "The recipe set the table shows; missing shows the first set of the project" },
         "recipeId": { "type": "string", "description": "Older projects: the recipe (shown as a set of its own) the widget shows" },
         "showEntries": { "type": "boolean", "description": "Older projects: list the tags and values" }
+      },
+      "unevaluatedProperties": false
+    },
+    "AlarmIndicatorProps": {
+      "title": "AlarmIndicatorProps",
+      "type": "object",
+      "description": "Settings of an alarm indicator widget: how many alarms are active, colored by the worst",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "page": { "type": "string", "description": "The id of the page a click opens; missing means a click does nothing" }
+      },
+      "unevaluatedProperties": false
+    },
+    "PageTitleProps": {
+      "title": "PageTitleProps",
+      "type": "object",
+      "description": "Settings of a page title widget: the name of the page being shown, with its icon",
+      "allOf": [{ "$ref": "#/$defs/FrameProps" }],
+      "properties": {
+        "showIcon": { "type": "boolean", "description": "Show the page's icon before its name (default true)" }
       },
       "unevaluatedProperties": false
     },
@@ -2133,6 +2213,62 @@
                   "color",
                   "flow",
                   "reverse"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "alarmIndicator"
+            },
+            "props": {
+              "$ref": "#/$defs/AlarmIndicatorProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "pageTitle"
+            },
+            "props": {
+              "$ref": "#/$defs/PageTitleProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "disabled",
+                  "opacity",
+                  "label",
+                  "bgColor",
+                  "borderColor",
+                  "textColor",
+                  "blink",
+                  "rotate"
                 ]
               }
             }

@@ -794,6 +794,92 @@ export interface PipeProps {
   cycleSeconds?: number;
 }
 
+/** Settings of a alarmIndicator widget. */
+export interface AlarmIndicatorProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
+  fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** The id of the page a click opens; missing means a click does nothing */
+  page?: string;
+}
+
+/** Settings of a pageTitle widget. */
+export interface PageTitleProps {
+  label?: string;
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  noPadding?: boolean;
+  /** mono | sans | serif; empty means the theme font */
+  fontFamily?: string;
+  /** xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size */
+  fontSize?: string;
+  /** Exact text size in pixels; overrides fontSize */
+  fontPx?: number;
+  /** Space inside the card in pixels; overrides noPadding and the theme */
+  padding?: number;
+  /** Corner radius in pixels; missing means the theme's */
+  radius?: number;
+  /** Border width in pixels; missing means the theme's */
+  borderWidth?: number;
+  /** false removes the card's shadow; missing means the theme's */
+  shadow?: boolean;
+  /** false hides the label above the value; missing means shown */
+  showLabel?: boolean;
+  /** false hides the unit beside the value; missing means shown */
+  showUnit?: boolean;
+  /** top | center | bottom: where the value sits in the card; missing means center */
+  valign?: string;
+  fontBold?: boolean;
+  fontItalic?: boolean;
+  fontUnderline?: boolean;
+  textAlign?: TextAlign;
+  /** Show the tag quality indicator */
+  showQuality?: boolean;
+  /** Frame border color rules, applied to the color tag (bindings.color, else the value tag) */
+  colorThresholds?: Threshold[];
+  /** Blink period in milliseconds while dynamics.blink is on; missing means 800 */
+  blinkPeriodMs?: number;
+  /** Color the frame flashes while blinking; missing means the widget fades in and out */
+  blinkColor?: string;
+  /** Show the page's icon before its name (default true) */
+  showIcon?: boolean;
+}
+
 /** Settings of a shape widget. */
 export interface ShapeProps {
   label?: string;
@@ -941,6 +1027,12 @@ export interface PageListProps {
   style?: string;
   /** list: show each page group's heading (default true) */
   showGroups?: boolean;
+  /** Show each page's icon (default true); tabs never show one */
+  showIcons?: boolean;
+  /** list: show each page's name (default true); false leaves the icons */
+  showLabels?: boolean;
+  /** List the built-in Settings screen after the pages (default true) */
+  showSettings?: boolean;
 }
 
 /** Settings of a clock widget. */
@@ -1184,6 +1276,8 @@ export interface PropsByType {
   image: ImageProps;
   symbol: SymbolProps;
   pipe: PipeProps;
+  alarmIndicator: AlarmIndicatorProps;
+  pageTitle: PageTitleProps;
   shape: ShapeProps;
   customWidget: CustomWidgetProps;
   pageList: PageListProps;
@@ -1218,9 +1312,11 @@ export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByTy
   image: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"],
   symbol: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"],
   pipe: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"],
+  alarmIndicator: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"],
+  pageTitle: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"],
   shape: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"],
   customWidget: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"],
-  pageList: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups"],
+  pageList: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"],
   clock: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"],
   driverStatus: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"],
   userMenu: ["label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"],
@@ -1246,6 +1342,8 @@ export const DRIVEN_PROPS: { readonly [K in WidgetType]: readonly string[] } = {
   image: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "src"],
   symbol: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate", "stroke", "animate"],
   pipe: ["visible", "opacity", "color", "flow", "reverse"],
+  alarmIndicator: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
+  pageTitle: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
   shape: ["visible", "opacity", "rotate", "blink", "fill", "stroke"],
   customWidget: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],
   pageList: ["visible", "disabled", "opacity", "label", "bgColor", "borderColor", "textColor", "blink", "rotate"],

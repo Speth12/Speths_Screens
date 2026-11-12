@@ -65,6 +65,8 @@ const SAMPLES: Record<WidgetType, GallerySample> = {
   userMenu:       { props: {} },
   recipes:        { props: { label: "Recipes" } },
   shape:          { props: { kind: "rectangle", weight: 2, cornerRadius: 6 } },
+  alarmIndicator: { props: {} },
+  pageTitle:      { props: {} },
 };
 
 function widget(type: WidgetType, label: string, w: number, h: number, settings: Field[], opts: Partial<WidgetManifest> = {}): WidgetManifest {
@@ -215,12 +217,21 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "arrowStart", label: "Arrow at the start", kind: "boolean", default: false, half: true, showIf: (c) => c.kind === "line" },
     { key: "arrowEnd", label: "Arrow at the end", kind: "boolean", default: false, half: true, showIf: (c) => c.kind === "line" },
   ], { bindings: [], palette: true }),
+  widget("alarmIndicator", "Alarm count", 1, 1, [
+    { key: "page", label: "Page a click opens", kind: "text", placeholder: "a page id, e.g. p2", note: "Shows how many alarms are active, in the color of the worst." },
+  ], { bindings: [], events: [] }),
+  widget("pageTitle", "Page title", 3, 1, [
+    { key: "showIcon", label: "Show the page's icon", kind: "boolean", default: true },
+  ], { bindings: [], events: [] }),
   widget("pageList", "Page list", 3, 6, [
     { key: "style", label: "Style", kind: "choice", default: "list", display: "select", options: [
       { value: "list", label: "List (icon and name, grouped)" }, { value: "tabs", label: "Tabs (names in a row)" },
       { value: "icons", label: "Large icons in a row" }, { value: "bar", label: "Bar (icon over name)" },
     ] },
     { key: "showGroups", label: "Show group headings", kind: "boolean", default: true, showIf: (c) => (c.style ?? "list") === "list" },
+    { key: "showIcons", label: "Show the pages' icons", kind: "boolean", default: true, showIf: (c) => c.style !== "tabs" },
+    { key: "showLabels", label: "Show the pages' names", kind: "boolean", default: true, showIf: (c) => (c.style ?? "list") === "list", note: "Off leaves the icons, for a narrow sidebar." },
+    { key: "showSettings", label: "List the Settings screen", kind: "boolean", default: true },
   ], { bindings: [], events: [] }),
   widget("clock", "Clock", 3, 1, [
     { key: "format", label: "Show", kind: "choice", default: "timeSeconds", display: "select", options: [

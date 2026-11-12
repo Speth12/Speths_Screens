@@ -4,6 +4,7 @@ import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, FONTS, resolveTheme } from "@s
 import type { PageIcon, ShellNav, Theme, ThemePreset } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { CloseIcon } from "../ui/icons";
+import { withNav } from "../store/chromeOptions";
 
 type Element = Exclude<keyof Theme, "preset" | "accent">;
 
@@ -22,6 +23,7 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
   const spec = useProject((s) => s.project.theme);
   const setTheme = useProject((s) => s.setTheme);
   const nav = useProject((s) => s.project.shell?.nav);
+  const shell = useProject((s) => s.project.shell);
   const setShell = useProject((s) => s.setShell);
   const pages = useProject((s) => s.project.pages);
   const updatePage = useProject((s) => s.updatePage);
@@ -85,12 +87,13 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
         <section>
           <h3 className="text-[11px] font-semibold text-zinc-400 mb-1.5">Navigation</h3>
           <label className="flex items-center justify-between gap-2 text-[11px] text-zinc-400 mb-2">How people move between pages (a phone always gets a bar along the bottom)
-            <select aria-label="Navigation style" value={nav ?? ""} onChange={(e) => setShell(e.target.value ? { nav: e.target.value as ShellNav } : undefined)}
+            <select aria-label="Navigation style" value={nav ?? ""} onChange={(e) => setShell(withNav(shell, (e.target.value || undefined) as ShellNav | undefined))}
               className="text-[11px] bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 text-zinc-200 w-40">
               <option value="">Tabs (default)</option>
               <option value="sidebar">Sidebar</option>
               <option value="toolbar">Large icon toolbar</option>
               <option value="tabs">Tabs</option>
+              <option value="none">None (buttons on the pages)</option>
             </select>
           </label>
           <div className="flex flex-col gap-1">
