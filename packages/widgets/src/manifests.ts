@@ -64,6 +64,7 @@ const SAMPLES: Record<WidgetType, GallerySample> = {
   driverStatus:   { props: {} },
   userMenu:       { props: {} },
   recipes:        { props: { label: "Recipes" } },
+  shape:          { props: { kind: "rectangle", weight: 2, cornerRadius: 6 } },
 };
 
 function widget(type: WidgetType, label: string, w: number, h: number, settings: Field[], opts: Partial<WidgetManifest> = {}): WidgetManifest {
@@ -200,6 +201,19 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "flowColor", label: "Flow color", kind: "color", optional: true },
     { key: "flow", label: "Flowing now", kind: "boolean", default: false, note: "Drive this from a tag (Drives) so it flows while the line runs." },
     { key: "reverse", label: "Flows from the last corner to the first", kind: "boolean", default: false },
+  ], { bindings: [], palette: true }),
+  widget("shape", "Shape", 3, 2, [
+    { key: "kind", label: "Shape", kind: "choice", display: "buttons", default: "rectangle",
+      options: [{ value: "rectangle", label: "Rectangle" }, { value: "ellipse", label: "Ellipse" }, { value: "line", label: "Line" }] },
+    { key: "fill", label: "Fill", kind: "color", optional: true, showIf: (c) => c.kind !== "line" },
+    { key: "stroke", label: "Line or outline color", kind: "color", optional: true },
+    { key: "weight", label: "Width (px)", kind: "number", default: 2, min: 0, step: 1, half: true },
+    { key: "cornerRadius", label: "Corner radius (px)", kind: "number", default: 0, min: 0, step: 1, half: true, showIf: (c) => (c.kind ?? "rectangle") === "rectangle" },
+    { key: "dashed", label: "Dashed", kind: "boolean", default: false },
+    { key: "direction", label: "Direction", kind: "choice", display: "select", default: "horizontal", showIf: (c) => c.kind === "line",
+      options: [{ value: "horizontal", label: "Level" }, { value: "vertical", label: "Upright" }, { value: "down", label: "Top left to bottom right" }, { value: "up", label: "Bottom left to top right" }] },
+    { key: "arrowStart", label: "Arrow at the start", kind: "boolean", default: false, half: true, showIf: (c) => c.kind === "line" },
+    { key: "arrowEnd", label: "Arrow at the end", kind: "boolean", default: false, half: true, showIf: (c) => c.kind === "line" },
   ], { bindings: [], palette: true }),
   widget("pageList", "Page list", 3, 6, [
     { key: "style", label: "Style", kind: "choice", default: "list", display: "select", options: [

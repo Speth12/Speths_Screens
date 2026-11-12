@@ -470,6 +470,8 @@ export type HiddenOn = "tablet" | "phone";
  *
  * Settings of a pipe widget: a line through points with an animated flow
  *
+ * Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
+ *
  * Settings of a custom widget placement
  *
  * Settings of a page list widget: the project's pages as navigation, the open one
@@ -675,6 +677,9 @@ export interface CustomWidgetPartProps {
     motion?: SymbolMotion;
     /**
      * Symbol: stroke color
+     *
+     * Shape: the color of the outline or the line, a CSS color or a token; missing means the
+     * theme's text color
      */
     stroke?: string;
     /**
@@ -703,8 +708,40 @@ export interface CustomWidgetPartProps {
     reverse?: boolean;
     /**
      * Pipe: line width in pixels; missing means 8
+     *
+     * Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
+     * outline
      */
     weight?: number;
+    /**
+     * Shape: a line has an arrow head where it ends
+     */
+    arrowEnd?: boolean;
+    /**
+     * Shape: a line has an arrow head where it starts (left, or the top for an upright line)
+     */
+    arrowStart?: boolean;
+    /**
+     * Shape: a rectangle's corner radius in pixels; missing means 0
+     */
+    cornerRadius?: number;
+    /**
+     * Shape: the outline or the line is dashed
+     */
+    dashed?: boolean;
+    /**
+     * Shape: how a line crosses its box; missing means horizontal
+     */
+    direction?: ShapeLineDirection;
+    /**
+     * Shape: the color inside a rectangle or ellipse, a CSS color or a token such as
+     * token:process-running; missing means none
+     */
+    fill?: string;
+    /**
+     * Shape: rectangle (missing means this), ellipse or line
+     */
+    kind?: ShapeKind;
     /**
      * Custom widget: id of the custom widget to show
      */
@@ -781,6 +818,14 @@ export interface Threshold {
 }
 
 /**
+ * Shape: how a line crosses its box; missing means horizontal
+ *
+ * How a line shape crosses its box: level, upright, from the top left down, or from the
+ * bottom left up
+ */
+export type ShapeLineDirection = "horizontal" | "vertical" | "down" | "up";
+
+/**
  * Image object-fit, as set by the properties panel
  */
 export type ImageFit = "contain" | "cover" | "fill";
@@ -789,6 +834,13 @@ export type ImageFit = "contain" | "cover" | "fill";
  * What to show; missing means timeSeconds
  */
 export type Format = "time" | "timeSeconds" | "dateTime" | "date";
+
+/**
+ * Shape: rectangle (missing means this), ellipse or line
+ *
+ * What a shape widget draws
+ */
+export type ShapeKind = "rectangle" | "ellipse" | "line";
 
 /**
  * Symbol: what it does while animate is true
@@ -855,7 +907,7 @@ export type TextAlign = "left" | "center" | "right";
  */
 export type TrendXFormat = "time" | "time-short" | "relative" | "datetime";
 
-export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "customWidget" | "table" | "pipe" | "pageList" | "clock" | "driverStatus" | "userMenu" | "recipes";
+export type WidgetType = "gauge" | "trend" | "led" | "button" | "numericInput" | "numericDisplay" | "textInput" | "textDisplay" | "historyLog" | "tank" | "setpoint" | "multiState" | "alarmBanner" | "image" | "symbol" | "customWidget" | "table" | "pipe" | "pageList" | "clock" | "driverStatus" | "userMenu" | "recipes" | "shape";
 
 export interface Datasource {
     config: DatasourceConfig;
@@ -1197,6 +1249,8 @@ export interface WidgetPlacement {
  *
  * Settings of a pipe widget: a line through points with an animated flow
  *
+ * Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
+ *
  * Settings of a custom widget placement
  *
  * Settings of a page list widget: the project's pages as navigation, the open one
@@ -1402,6 +1456,9 @@ export interface WidgetProps {
     motion?: SymbolMotion;
     /**
      * Symbol: stroke color
+     *
+     * Shape: the color of the outline or the line, a CSS color or a token; missing means the
+     * theme's text color
      */
     stroke?: string;
     /**
@@ -1430,8 +1487,40 @@ export interface WidgetProps {
     reverse?: boolean;
     /**
      * Pipe: line width in pixels; missing means 8
+     *
+     * Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
+     * outline
      */
     weight?: number;
+    /**
+     * Shape: a line has an arrow head where it ends
+     */
+    arrowEnd?: boolean;
+    /**
+     * Shape: a line has an arrow head where it starts (left, or the top for an upright line)
+     */
+    arrowStart?: boolean;
+    /**
+     * Shape: a rectangle's corner radius in pixels; missing means 0
+     */
+    cornerRadius?: number;
+    /**
+     * Shape: the outline or the line is dashed
+     */
+    dashed?: boolean;
+    /**
+     * Shape: how a line crosses its box; missing means horizontal
+     */
+    direction?: ShapeLineDirection;
+    /**
+     * Shape: the color inside a rectangle or ellipse, a CSS color or a token such as
+     * token:process-running; missing means none
+     */
+    fill?: string;
+    /**
+     * Shape: rectangle (missing means this), ellipse or line
+     */
+    kind?: ShapeKind;
     /**
      * Custom widget: id of the custom widget to show
      */

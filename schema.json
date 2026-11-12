@@ -563,8 +563,21 @@
         "clock",
         "driverStatus",
         "userMenu",
-        "recipes"
+        "recipes",
+        "shape"
       ]
+    },
+    "ShapeKind": {
+      "title": "ShapeKind",
+      "type": "string",
+      "enum": ["rectangle", "ellipse", "line"],
+      "description": "What a shape widget draws"
+    },
+    "ShapeLineDirection": {
+      "title": "ShapeLineDirection",
+      "type": "string",
+      "enum": ["horizontal", "vertical", "down", "up"],
+      "description": "How a line shape crosses its box: level, upright, from the top left down, or from the bottom left up"
     },
     "TrendXFormat": {
       "title": "TrendXFormat",
@@ -1519,6 +1532,55 @@
       },
       "unevaluatedProperties": false
     },
+    "ShapeProps": {
+      "title": "ShapeProps",
+      "type": "object",
+      "description": "Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page",
+      "allOf": [
+        {
+          "$ref": "#/$defs/FrameProps"
+        }
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ShapeKind",
+          "description": "Shape: rectangle (missing means this), ellipse or line"
+        },
+        "fill": {
+          "type": "string",
+          "description": "Shape: the color inside a rectangle or ellipse, a CSS color or a token such as token:process-running; missing means none"
+        },
+        "stroke": {
+          "type": "string",
+          "description": "Shape: the color of the outline or the line, a CSS color or a token; missing means the theme's text color"
+        },
+        "weight": {
+          "type": "number",
+          "description": "Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no outline"
+        },
+        "cornerRadius": {
+          "type": "number",
+          "description": "Shape: a rectangle's corner radius in pixels; missing means 0"
+        },
+        "direction": {
+          "$ref": "#/$defs/ShapeLineDirection",
+          "description": "Shape: how a line crosses its box; missing means horizontal"
+        },
+        "dashed": {
+          "type": "boolean",
+          "description": "Shape: the outline or the line is dashed"
+        },
+        "arrowStart": {
+          "type": "boolean",
+          "description": "Shape: a line has an arrow head where it starts (left, or the top for an upright line)"
+        },
+        "arrowEnd": {
+          "type": "boolean",
+          "description": "Shape: a line has an arrow head where it ends"
+        }
+      },
+      "unevaluatedProperties": false
+    },
     "PipeProps": {
       "title": "PipeProps",
       "type": "object",
@@ -2071,6 +2133,31 @@
                   "color",
                   "flow",
                   "reverse"
+                ]
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "shape"
+            },
+            "props": {
+              "$ref": "#/$defs/ShapeProps"
+            },
+            "dynamics": {
+              "propertyNames": {
+                "enum": [
+                  "visible",
+                  "opacity",
+                  "rotate",
+                  "blink",
+                  "fill",
+                  "stroke"
                 ]
               }
             }

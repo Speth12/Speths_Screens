@@ -13,6 +13,7 @@ import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./ho
 import { translateWidget } from "./translate";
 import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
+import { tokenColor } from "./tokens";
 import { SymbolSVG } from "./SymbolSVG";
 import { partStyle, stackFor, stackStyle } from "./layout";
 import { RecipesWidget } from "./recipes";
@@ -206,7 +207,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   // no shadow or corners either, but it keeps its label.
   const noBorder = borderColor === "none" || borderColor === "transparent";
   const cardless = isTransparent && noBorder;
-  const bare = w.type === "pipe" || ((w.type === "symbol" || SHELL_TYPES.has(w.type)) && !bgColor && !borderColor);
+  const bare = w.type === "pipe" || w.type === "shape" || ((w.type === "symbol" || SHELL_TYPES.has(w.type)) && !bgColor && !borderColor);
   if (bare || cardless) {
     style.background = "transparent";
     style.border = "none";
@@ -886,6 +887,61 @@ function PipeWidget({ w }: WP<"pipe">) {
   );
 }
 
+// ── Shape ────────────────────────────────────────────────────
+
+/** A color setting as CSS: a token such as token:alarm-critical, or the color as written. */
+const paintOf = (v: string | undefined, missing: string) => (v ? tokenColor(v) ?? v : missing);
+
+/** A line's ends as percentages across and down its box. */
+export function shapeLineEnds(direction: string | undefined): { x1: number; y1: number; x2: number; y2: number } {
+  switch (direction) {
+    case "vertical": return { x1: 50, y1: 0, x2: 50, y2: 100 };
+    case "down": return { x1: 0, y1: 0, x2: 100, y2: 100 };
+    case "up": return { x1: 0, y1: 100, x2: 100, y2: 0 };
+    default: return { x1: 0, y1: 50, x2: 100, y2: 50 };
+  }
+}
+
+/** A rectangle, an ellipse or a line: a drawing on the page, with no card of its own. */
+function ShapeWidget({ w }: WP<"shape">) {
+  const p = w.props ?? {};
+  const kind = p.kind ?? "rectangle";
+  const stroke = paintOf(p.stroke, "var(--foreground)");
+  const weight = Math.max(0, p.weight ?? 2);
+  if (kind === "line") {
+    const e = shapeLineEnds(p.direction);
+    const width = Math.max(1, weight);
+    // No viewBox: the ends are percentages of the box and the width is in pixels, so neither the
+    // line nor its arrow heads stretch with the widget. The head's color is set here because the
+    // panel's browser has no context-stroke.
+    const head = `shape-head-${w.id}`;
+    return (
+      <svg className="w-full h-full" role="img" aria-label={p.label ?? "Line"} data-shape="line" style={{ overflow: "visible", display: "block" }}>
+        {(p.arrowStart || p.arrowEnd) && (
+          <defs>
+            <marker id={head} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" style={{ fill: stroke }} />
+            </marker>
+          </defs>
+        )}
+        <line x1={`${e.x1}%`} y1={`${e.y1}%`} x2={`${e.x2}%`} y2={`${e.y2}%`}
+          strokeDasharray={p.dashed ? `${width * 3} ${width * 2}` : undefined}
+          markerStart={p.arrowStart ? `url(#${head})` : undefined} markerEnd={p.arrowEnd ? `url(#${head})` : undefined}
+          style={{ stroke, strokeWidth: width }} />
+      </svg>
+    );
+  }
+  return (
+    <div role="img" aria-label={p.label ?? (kind === "ellipse" ? "Ellipse" : "Rectangle")} data-shape={kind} className="w-full h-full"
+      style={{
+        boxSizing: "border-box",
+        background: paintOf(p.fill, "transparent"),
+        border: weight ? `${weight}px ${p.dashed ? "dashed" : "solid"} ${stroke}` : "none",
+        borderRadius: kind === "ellipse" ? "50%" : Math.max(0, p.cornerRadius ?? 0),
+      }} />
+  );
+}
+
 // ── Alarm banner ───────────────────────────────────────────────────────────
 
 const sevColor: Record<string, string> = {
@@ -946,6 +1002,7 @@ const renderers: { [K in WidgetType]: React.ComponentType<WP<K>> } = {
   symbol:         SymbolWidget,
   alarmBanner:    AlarmBannerWidget,
   pipe:           PipeWidget,
+  shape:          ShapeWidget,
   customWidget:   CustomWidgetView,
   pageList:       PageListWidget,
   clock:          ClockWidget,

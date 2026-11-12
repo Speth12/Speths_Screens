@@ -302,6 +302,8 @@ type PartFlexOverride struct {
 //
 // Settings of a pipe widget: a line through points with an animated flow
 //
+// Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
+//
 // # Settings of a custom widget placement
 //
 // Settings of a page list widget: the project's pages as navigation, the open one
@@ -423,6 +425,9 @@ type CustomWidgetPartProps struct {
 	// Symbol: what it does while animate is true
 	Motion *SymbolMotion `json:"motion,omitempty"`
 	// Symbol: stroke color
+	//
+	// Shape: the color of the outline or the line, a CSS color or a token; missing means the
+	// theme's text color
 	Stroke *string `json:"stroke,omitempty"`
 	// Symbol: id from a symbol pack
 	SymbolID *string `json:"symbolId,omitempty"`
@@ -437,7 +442,25 @@ type CustomWidgetPartProps struct {
 	// Pipe: flow runs from the last point to the first
 	Reverse *bool `json:"reverse,omitempty"`
 	// Pipe: line width in pixels; missing means 8
+	//
+	// Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
+	// outline
 	Weight *float64 `json:"weight,omitempty"`
+	// Shape: a line has an arrow head where it ends
+	ArrowEnd *bool `json:"arrowEnd,omitempty"`
+	// Shape: a line has an arrow head where it starts (left, or the top for an upright line)
+	ArrowStart *bool `json:"arrowStart,omitempty"`
+	// Shape: a rectangle's corner radius in pixels; missing means 0
+	CornerRadius *float64 `json:"cornerRadius,omitempty"`
+	// Shape: the outline or the line is dashed
+	Dashed *bool `json:"dashed,omitempty"`
+	// Shape: how a line crosses its box; missing means horizontal
+	Direction *ShapeLineDirection `json:"direction,omitempty"`
+	// Shape: the color inside a rectangle or ellipse, a CSS color or a token such as
+	// token:process-running; missing means none
+	Fill *string `json:"fill,omitempty"`
+	// Shape: rectangle (missing means this), ellipse or line
+	Kind *ShapeKind `json:"kind,omitempty"`
 	// Custom widget: id of the custom widget to show
 	CustomWidgetID *string `json:"customWidgetId,omitempty"`
 	// Custom widget: parameter name → binding
@@ -721,6 +744,8 @@ type WidgetPlacement struct {
 //
 // Settings of a pipe widget: a line through points with an animated flow
 //
+// Settings of a shape widget: a rectangle, an ellipse or a line drawn on the page
+//
 // # Settings of a custom widget placement
 //
 // Settings of a page list widget: the project's pages as navigation, the open one
@@ -842,6 +867,9 @@ type WidgetProps struct {
 	// Symbol: what it does while animate is true
 	Motion *SymbolMotion `json:"motion,omitempty"`
 	// Symbol: stroke color
+	//
+	// Shape: the color of the outline or the line, a CSS color or a token; missing means the
+	// theme's text color
 	Stroke *string `json:"stroke,omitempty"`
 	// Symbol: id from a symbol pack
 	SymbolID *string `json:"symbolId,omitempty"`
@@ -856,7 +884,25 @@ type WidgetProps struct {
 	// Pipe: flow runs from the last point to the first
 	Reverse *bool `json:"reverse,omitempty"`
 	// Pipe: line width in pixels; missing means 8
+	//
+	// Shape: the width of the outline or the line in pixels; missing means 2, and 0 draws no
+	// outline
 	Weight *float64 `json:"weight,omitempty"`
+	// Shape: a line has an arrow head where it ends
+	ArrowEnd *bool `json:"arrowEnd,omitempty"`
+	// Shape: a line has an arrow head where it starts (left, or the top for an upright line)
+	ArrowStart *bool `json:"arrowStart,omitempty"`
+	// Shape: a rectangle's corner radius in pixels; missing means 0
+	CornerRadius *float64 `json:"cornerRadius,omitempty"`
+	// Shape: the outline or the line is dashed
+	Dashed *bool `json:"dashed,omitempty"`
+	// Shape: how a line crosses its box; missing means horizontal
+	Direction *ShapeLineDirection `json:"direction,omitempty"`
+	// Shape: the color inside a rectangle or ellipse, a CSS color or a token such as
+	// token:process-running; missing means none
+	Fill *string `json:"fill,omitempty"`
+	// Shape: rectangle (missing means this), ellipse or line
+	Kind *ShapeKind `json:"kind,omitempty"`
 	// Custom widget: id of the custom widget to show
 	CustomWidgetID *string `json:"customWidgetId,omitempty"`
 	// Custom widget: parameter name → binding
@@ -1173,6 +1219,19 @@ const (
 	Outlined          ButtonVariant = "outlined"
 )
 
+// Shape: how a line crosses its box; missing means horizontal
+//
+// How a line shape crosses its box: level, upright, from the top left down, or from the
+// bottom left up
+type ShapeLineDirection string
+
+const (
+	Down       ShapeLineDirection = "down"
+	Horizontal ShapeLineDirection = "horizontal"
+	Up         ShapeLineDirection = "up"
+	Vertical   ShapeLineDirection = "vertical"
+)
+
 // Image object-fit, as set by the properties panel
 type ImageFit string
 
@@ -1190,6 +1249,17 @@ const (
 	DateTime    Format = "dateTime"
 	FormatTime  Format = "time"
 	TimeSeconds Format = "timeSeconds"
+)
+
+// Shape: rectangle (missing means this), ellipse or line
+//
+// What a shape widget draws
+type ShapeKind string
+
+const (
+	Ellipse   ShapeKind = "ellipse"
+	Line      ShapeKind = "line"
+	Rectangle ShapeKind = "rectangle"
 )
 
 // Symbol: what it does while animate is true
@@ -1252,6 +1322,7 @@ const (
 	Pipe           WidgetType = "pipe"
 	Recipes        WidgetType = "recipes"
 	Setpoint       WidgetType = "setpoint"
+	Shape          WidgetType = "shape"
 	Symbol         WidgetType = "symbol"
 	Table          WidgetType = "table"
 	Tank           WidgetType = "tank"

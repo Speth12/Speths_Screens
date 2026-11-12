@@ -9,7 +9,7 @@ import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter,
   ArrowDown, ArrowUp, ArrowUpRight, Bell, Braces, ChartLine, Check, ChevronDown, ChevronLeft, ChevronRight,
-  CircleDot, CirclePlus, CircleX, Clock, Component, Cylinder, Delete, Download, FlaskConical, Folder, FolderOpen,
+  CircleDot, CirclePlus, CircleX, Clock, Component, Cylinder, Delete, Download, Diamond, FlaskConical, Folder, FolderOpen,
   Gauge, Hash, History, Image, Layers, List, Lock, LockOpen, Moon, Pencil, Play, Plug, Redo2, RefreshCw, RotateCcw,
   Settings, Shapes, SlidersHorizontal, Spline, Square, Sun, Table, Tag, TextCursorInput, Trash2, TriangleAlert,
   Type, Undo2, Upload, User, X,
@@ -103,6 +103,7 @@ export const WIDGET_ICONS: Record<WidgetType, Icon> = {
   driverStatus: ui(Plug),
   userMenu: ui(User),
   recipes: ui(FlaskConical),
+  shape: ui(Diamond),
 };
 
 /** The icon of a widget type. */

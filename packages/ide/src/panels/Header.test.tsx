@@ -87,7 +87,7 @@ describe("the menu bar", () => {
 
   it.each([
     ["File", ["New project…", "Open project file…", "SaveCtrl+S", "Pull from Local (dev)", "Deploy to Local (dev)", "Export HTML snapshot…", "Export Git files…"]],
-    ["Edit", ["UndoCtrl+Z", "RedoCtrl+Y", "CopyCtrl+C", "PasteCtrl+V", "DuplicateCtrl+D", "DeleteDel", "Select allCtrl+A"]],
+    ["Edit", ["UndoCtrl+Z", "RedoCtrl+Y", "CopyCtrl+C", "PasteCtrl+V", "DuplicateCtrl+D", "DeleteDel", "Select allCtrl+A", "Bring to frontCtrl+Shift+]", "Bring forwardCtrl+]", "Send backwardCtrl+[", "Send to backCtrl+Shift+["]],
     ["View", ["PreviewF5", "Desktop layout", "Tablet layout", "Phone layout", "Live values", "Demo values", "Project JSON", "Dark look", "Widget gallery…"]],
     ["Project", ["Theme…", "Languages…", "MCP setup…"]],
     ["Help", ["Keyboard shortcuts?"]],
