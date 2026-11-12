@@ -25,7 +25,7 @@ export function CustomWidgetCanvasBar() {
   const uses = customWidgetUsage(project, cw.id).total;
   return (
     <div data-testid="custom-widget-bar" className="flex items-center gap-3 px-3 py-1.5 bg-purple-500/15 border-b border-purple-500/40 shrink-0">
-      <span className="text-ui-label uppercase tracking-wide text-purple-300">Custom widget</span>
+      <span className="text-ui-label uppercase tracking-wide text-zinc-300">Custom widget</span>
       <span className="text-ui font-medium text-zinc-100 truncate">{cw.name || "Unnamed"}</span>
       <span className="text-ui-label text-zinc-400 tabular-nums">{cw.width} × {cw.height} px</span>
       <span className="text-ui-label text-zinc-500 hidden md:inline">

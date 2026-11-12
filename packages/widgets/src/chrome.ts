@@ -264,3 +264,75 @@ export function contrastRatio(a: string | undefined, b: string | undefined): num
   if (la === undefined || lb === undefined) return undefined;
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
+
+// ── The built-in header and navigation as designed custom widgets ──────────
+// "Edit as custom widgets" turns the built-in ones, with the project's choices, into custom widgets
+// with a designed size, laid out as the stack draws them on a desktop: the parts before the one that
+// takes the room left stay left, those after it stay right, and that one stretches. They are then
+// edited on the canvas like any custom widget.
+
+const PAD = 8, GAP_X = 12;
+const NAV_LENGTH = 720;
+
+type DesignedSizes = { header: number; sideWidth: number };
+
+function anchoredHeader(stackHeader: CustomWidget, titles: CustomWidget, height: number): CustomWidget {
+  const width = DESKTOP_WIDTH;
+  const inner = height - 2 * PAD;
+  const growIndex = stackHeader.widgets.findIndex((w) => w.flex?.grow);
+  const sizeOf = (p: CustomWidgetPart) => (p.localId === "logo" && p.type === "textDisplay" ? inner : p.flex?.basis ?? 120);
+  const out: CustomWidgetPart[] = [];
+  const place = (p: CustomWidgetPart, x: number, w: number, anchorX: CustomWidgetPart["anchorX"]) => {
+    const { flex: _flex, ...rest } = p;
+    // The names are the titles custom widget's two lines, put in the header itself so each can be moved.
+    if (p.localId === "titles") {
+      const lines = titles.widgets;
+      const lineH = Math.round(inner / Math.max(1, lines.length));
+      lines.forEach((t, i) => {
+        const { flex: _f, ...line } = t;
+        out.push({ ...line, x, y: PAD + i * lineH, w, h: i === lines.length - 1 ? inner - i * lineH : lineH, anchorX, ...(lines.length > 1 ? { anchorY: i === 0 ? "top" : "bottom" } : { anchorY: "center" }) });
+      });
+      return;
+    }
+    out.push({ ...rest, x, y: PAD, w, h: inner, anchorX, anchorY: "stretch" });
+  };
+  const parts = stackHeader.widgets;
+  const left = growIndex < 0 ? parts : parts.slice(0, growIndex);
+  const right = growIndex < 0 ? [] : parts.slice(growIndex + 1);
+  let x = PAD;
+  for (const p of left) { const w = sizeOf(p); place(p, x, w, "left"); x += w + GAP_X; }
+  let end = width - PAD;
+  const placedRight: [CustomWidgetPart, number, number][] = [];
+  for (const p of [...right].reverse()) { const w = sizeOf(p); end -= w; placedRight.unshift([p, end, w]); end -= GAP_X; }
+  if (growIndex >= 0) place(parts[growIndex]!, x, Math.max(40, end - x), "stretch");
+  for (const [p, px, w] of placedRight) place(p, px, w, "right");
+  // A spacer only pushed the others apart; anchors do that now.
+  return { ...stackHeader, layout: undefined, width, height, widgets: out.filter((p) => !(p.localId === "spacer" && p.type === "textDisplay")) };
+}
+
+const DESKTOP_WIDTH = 1280, PHONE_WIDTH = 390;
+
+/** A navigation custom widget as one page list filling a designed box. */
+function filledNav(nav: CustomWidget, width: number, height: number): CustomWidget {
+  const list = nav.widgets[0]!;
+  const { flex: _flex, ...rest } = list;
+  return { ...nav, layout: undefined, width, height, widgets: [{ ...rest, x: 0, y: 0, w: width, h: height, anchorX: "stretch", anchorY: "stretch" }] };
+}
+
+/** The built-in header and navigation, with the project's choices, as custom widgets with a designed
+ *  size, and the frame that pins them. The header's two lines of names become parts of the header. */
+export function builtinAsDesigned(project: ChromeProject): { customWidgets: CustomWidget[]; frame: FrameSlot[] } {
+  const shell = project.shell ?? {};
+  const sizes: DesignedSizes = { header: shell.header?.height ?? HEADER_HEIGHT, sideWidth: shell.navOptions?.width ?? SIDEBAR_WIDTH };
+  const built = defaultCustomWidgets(project);
+  const byId = new Map(built.map((c) => [c.id, c]));
+  const titles = byId.get(DEFAULT_IDS.titles)!;
+  const out: CustomWidget[] = [anchoredHeader(byId.get(DEFAULT_IDS.header)!, titles, sizes.header)];
+  out.push(filledNav(byId.get(DEFAULT_IDS.sideNav)!, sizes.sideWidth, NAV_LENGTH));
+  out.push(filledNav(byId.get(DEFAULT_IDS.tabNav)!, DESKTOP_WIDTH, 48));
+  out.push(filledNav(byId.get(DEFAULT_IDS.iconNav)!, DESKTOP_WIDTH, 92));
+  out.push(filledNav(byId.get(DEFAULT_IDS.bottomNav)!, PHONE_WIDTH, 64));
+  const icons = byId.get(SIDE_NAV_ICONS_ID);
+  if (icons) out.push(filledNav(icons, SIDEBAR_ICONS_WIDTH, NAV_LENGTH));
+  return { customWidgets: out, frame: defaultFrame(shell.nav ?? "tabs", shell) };
+}

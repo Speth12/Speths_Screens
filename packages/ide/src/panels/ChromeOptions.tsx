@@ -4,7 +4,8 @@ import { FONTS, HEADER_HEIGHT, SIDEBAR_WIDTH, contrastRatio } from "@speths-scre
 import type { Shell, ShellHeader, ShellNav, ShellNavOptions, ShellStyle } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { chromeWarnings, patchHeader, patchHeaderStyle, patchNavOptions, patchNavStyle, withNav } from "../store/chromeOptions";
-import { Checkbox, Field, Input, Select } from "../ui";
+import { Button, Checkbox, Field, Input, Select } from "../ui";
+import { SCREEN_TAB, useWorkspace } from "../store/workspace";
 
 const title = "text-ui-label font-semibold uppercase tracking-wide text-zinc-400";
 
@@ -62,6 +63,8 @@ export function ChromeOptions() {
   const images = useProject((s) => s.project.images) ?? [];
   const pages = useProject((s) => s.project.pages);
   const securityMode = useProject((s) => s.project.security?.mode);
+  const editAsCustom = useProject((s) => s.editChromeAsCustom);
+  const activate = useWorkspace((s) => s.activate);
   const h: ShellHeader = shell?.header ?? {};
   const n: ShellNavOptions = shell?.navOptions ?? {};
   const nav: ShellNav = shell?.nav ?? "tabs";
@@ -77,6 +80,14 @@ export function ChromeOptions() {
 
   return (
     <div data-testid="chrome-options" className="space-y-4 pt-1">
+      <div className="rounded border border-zinc-800 p-2 space-y-1.5">
+        <Button size="sm" variant="primary" onClick={() => { editAsCustom(); activate(SCREEN_TAB.id); }}>Edit as custom widgets on the canvas</Button>
+        <p className="text-ui-label text-zinc-500 leading-relaxed">
+          Turns this header and navigation, with the choices below, into custom widgets you build freely on the canvas: move, add or
+          remove anything (buttons that go to pages, pictures, text). Each part keeps its place from the left or right edge, so the
+          header still spans any screen width.
+        </p>
+      </div>
       <section aria-label="Header" className="space-y-2">
         <h3 className={title}>Header</h3>
         <div className="grid grid-cols-2 gap-2">

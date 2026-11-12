@@ -1,9 +1,9 @@
 import { useProject } from "../store/projectStore";
 import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
 import { PresetList } from "./Presets";
-import { PALETTE_DRAG, newWidget, placeNew, visibleCanvasRect } from "../store/newWidget";
+import { PALETTE_DRAG, fitNewWidget, newWidget, placeNew, visibleCanvasRect } from "../store/newWidget";
 import { useSelection } from "../store/selection";
-import { surfaceOf, surfaceSnap } from "../store/surface";
+import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { WidgetIcon } from "../ui/icons";
 
 /** The palette: every widget type except symbols, which the symbol library adds. */
@@ -17,7 +17,7 @@ function useAddWidget() {
     const page = surfaceOf(project, activePageId);
     if (!page) return;
     const pixel = surfaceSnap(project, activePageId) === "pixel";
-    const w = newWidget(m, pixel);
+    const w = fitNewWidget(newWidget(m, pixel), surfaceCustomWidget(project, activePageId));
     const at = placeNew(visibleCanvasRect(), w, page.widgets, pixel);
     addWidget(page.id, { ...w, ...at });
     useSelection.getState().set([w.id]);

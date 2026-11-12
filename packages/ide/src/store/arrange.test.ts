@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { arrange, restack } from "./arrange";
-import { placeNew } from "./newWidget";
+import { fitNewWidget, placeNew } from "./newWidget";
 
 const a = { id: "a", x: 10, y: 20, w: 100, h: 40 };
 const b = { id: "b", x: 200, y: 60, w: 50, h: 80 };
@@ -64,5 +64,16 @@ describe("where a new widget goes", () => {
   });
   it("with no view known, under the lowest widget at the left", () => {
     expect(placeNew(null, { w: 10, h: 10 }, [{ x: 50, y: 30, w: 10, h: 70 }], true)).toEqual({ x: 0, y: 100 });
+  });
+});
+
+describe("a new widget inside a custom widget", () => {
+  it("is held inside the custom widget's box", () => {
+    expect(fitNewWidget({ w: 256, h: 136 }, { width: 1280, height: 60 })).toEqual({ w: 256, h: 60 });
+    expect(fitNewWidget({ w: 256, h: 136 }, { width: 100, height: 400 })).toEqual({ w: 100, h: 136 });
+  });
+  it("on a page, or a custom widget with no size, keeps its own size", () => {
+    expect(fitNewWidget({ w: 256, h: 136 }, undefined)).toEqual({ w: 256, h: 136 });
+    expect(fitNewWidget({ w: 256, h: 136 }, {})).toEqual({ w: 256, h: 136 });
   });
 });

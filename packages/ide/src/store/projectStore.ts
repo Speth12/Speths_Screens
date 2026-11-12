@@ -14,7 +14,7 @@ import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
 import { moveNsNode } from "./namespaceOps";
 import { addMemoryVariable as addMemoryVariableTo, type MemoryVariable } from "./memoryVars";
-import { defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
+import { DEFAULT_IDS, builtinAsDesigned, defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
 import { restack } from "./arrange";
 import { customWidgetIdOf, mapSurface, surfaceId, surfaceOf, withDesignedSize } from "./surface";
 
@@ -48,6 +48,9 @@ type State = {
   openCustomWidgetOnCanvas: (id: string) => void;
   /** Goes back from a custom widget on the canvas to the page it was opened from. */
   closeCustomWidgetCanvas: () => void;
+  /** Turns the built-in header and navigation, as the project's choices make them, into custom widgets
+   *  with a designed size (custom chrome), and opens the header on the canvas. */
+  editChromeAsCustom: () => void;
   selectWidget: (id: string | null) => void;
 
   addPage: (name?: string) => void;
@@ -406,6 +409,20 @@ export const useProject = create<State>((set, get) => {
         activePageId: surfaceId(id), selectedWidgetId: null,
         returnPageId: customWidgetIdOf(st.activePageId) === null ? st.activePageId : st.returnPageId,
       }));
+    },
+
+    editChromeAsCustom: () => {
+      pushHistory();
+      set((s) => {
+        const add = builtinAsDesigned(s.project);
+        const ids = new Set(add.customWidgets.map((c) => c.id));
+        return { project: {
+          ...s.project,
+          customWidgets: [...(s.project.customWidgets ?? []).filter((c) => !ids.has(c.id)), ...add.customWidgets],
+          shell: { ...s.project.shell, chrome: "custom", frame: add.frame },
+        } };
+      });
+      get().openCustomWidgetOnCanvas(DEFAULT_IDS.header);
     },
 
     closeCustomWidgetCanvas: () => {

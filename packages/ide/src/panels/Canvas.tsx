@@ -14,7 +14,7 @@ import { useSelection } from "../store/selection";
 import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { CustomWidgetCanvasBar } from "./CustomWidgetCanvas";
 import { arrange, type ArrangeAction } from "../store/arrange";
-import { PALETTE_DRAG, newWidget } from "../store/newWidget";
+import { PALETTE_DRAG, fitNewWidget, newWidget } from "../store/newWidget";
 import { manifestFor } from "@speths-screens/widgets";
 import { CloseIcon, ResetIcon, LockIcon, UnlockIcon, AlignLeftIcon, AlignCenterXIcon, AlignRightIcon, AlignTopIcon, AlignCenterYIcon, AlignBottomIcon, DistributeXIcon, DistributeYIcon, type Icon } from "../ui/icons";
 
@@ -428,7 +428,7 @@ export function Canvas() {
     const paletteType = e.dataTransfer.getData(PALETTE_DRAG);
     const dropped = paletteType ? manifestFor(paletteType) : undefined;
     if (dropped) {
-      const w = newWidget(dropped, isPixel);
+      const w = fitNewWidget(newWidget(dropped, isPixel), editingCw);
       const at = isPixel
         ? { x: Math.max(0, Math.round(pxX / SNAP_STEP) * SNAP_STEP), y: Math.max(0, Math.round(pxY / SNAP_STEP) * SNAP_STEP) }
         : { x: Math.max(0, Math.min(COLS - w.w, col)), y: Math.max(0, row) };
