@@ -16,7 +16,7 @@ runtime, and operate them from any browser, including the panel's own screen.
 | I want to | Go to |
 | --- | --- |
 | Run it on my PC and look at a demo | [Install guide, section 2](docs/install.md#2-run-the-runtime-on-a-pc) |
-| Design screens | [Install guide, section 3](docs/install.md#3-run-the-ide) |
+| Design screens (the IDE is built into the Windows and Linux runtime: open `/ide/`) | [Install guide, section 3](docs/install.md#3-run-the-ide) |
 | Put it on a WP 6000 panel | [Install guide, section 4](docs/install.md#4-install-on-a-wp-6000-panel) |
 | Connect it to a PLCnext controller | [Install guide, section 6](docs/install.md#6-connect-to-a-plc) |
 | Fix something that does not work | [Troubleshooting](docs/install.md#9-troubleshooting) |

@@ -7,8 +7,8 @@ import { useEditorView } from "../store/editorView";
 import { useEditorStatus } from "../store/editorStatus";
 import { useReach } from "../store/runtimeReach";
 import { tagStoreClient } from "../store/tagStoreClient";
-import { addTarget, getActiveTarget, removeTarget, setActiveTarget } from "../store/targetsStore";
-import { clearToken } from "../store/runtimeAuth";
+import { addTarget, getActiveTarget, loadTargets, resetTargetsForTest, setActiveTarget } from "../store/targetsStore";
+import { setToken, clearToken } from "../store/runtimeAuth";
 
 const handlers = { onHelp: vi.fn(), onGallery: vi.fn(), onTheme: vi.fn(), onLanguages: vi.fn(), onToggleJSON: vi.fn(), onPreview: vi.fn() };
 const renderHeader = (showJSON = false) => render(<Header {...handlers} showJSON={showJSON} />);
@@ -36,12 +36,41 @@ beforeEach(() => {
     downloads.push({ name: this.download, blob: last! });
   });
   useEditorStatus.setState({ message: "" });
-  useReach.setState({ reachable: true, streaming: false });
+  useReach.setState({ reachable: true, streaming: false, targetFormat: null });
   useEditorView.setState({ device: "desktop", data: "live" });
   useProject.getState().newProject();
   useProject.getState().loadProject({ ...useProject.getState().project, name: "Pump Station" });
-  setActiveTarget("local");
+  resetTargetsForTest();
+  localStorage.clear();
+  clearToken("");
 });
+
+/** The program that serves the editor, as far as targets go: it keeps them and answers through its relay. */
+function fakeProgram(relayed: (path: string, init?: RequestInit) => Response | undefined = () => undefined) {
+  const saved: { id: string; name: string; url: string }[] = [];
+  const calls: { url: string; init?: RequestInit }[] = [];
+  let n = 0;
+  const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { status, headers });
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+    const u = String(url);
+    calls.push({ url: u, init });
+    const method = init?.method ?? "GET";
+    const relay = /^\/api\/v1\/targets\/([^/]+)\/relay(\/.*)$/.exec(u);
+    if (relay) return relayed(relay[2]!, init) ?? json([], 200, { "X-Speths-Relayed": "1" });
+    if (u === "/api/v1/targets" && method === "GET") return json(saved);
+    if (u === "/api/v1/targets" && method === "POST") {
+      const body = JSON.parse(String(init!.body)) as { name: string; url: string };
+      if (!/^https?:\/\//.test(body.url)) return json({ error: "the address must start with http:// or https://" }, 400);
+      const t = { id: `id${++n}`, name: body.name, url: body.url.replace(/\/$/, "") };
+      saved.push(t);
+      return json(t, 201);
+    }
+    const one = /^\/api\/v1\/targets\/([^/]+)$/.exec(u);
+    if (one && method === "DELETE") { saved.splice(saved.findIndex((t) => t.id === one[1]), 1); return json({ ok: true }); }
+    return json([]);
+  }));
+  return { saved, calls };
+}
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -271,18 +300,19 @@ describe("deploying and pulling", () => {
 });
 
 describe("targets", () => {
-  it("the target is chosen from the toolbar, and the File menu names it", () => {
-    const t = addTarget("Plant A", "http://10.0.0.210:8080");
+  it("the target is chosen from the toolbar, and the File menu names it", async () => {
+    fakeProgram();
+    const t = await addTarget("Plant A", "http://10.0.0.210:8080");
     renderHeader();
     fireEvent.change(screen.getByRole("combobox", { name: "Target" }), { target: { value: t.id } });
     expect(getActiveTarget().name).toBe("Plant A");
     open("File");
     expect(items()).toContain("Pull from Plant A");
     expect(items()).toContain("Deploy to Plant A");
-    removeTarget(t.id);
   });
 
-  it("the dialog adds a target, makes it active and can remove it", () => {
+  it("the dialog adds a target, makes it active and can remove it; the program keeps the list", async () => {
+    const { saved } = fakeProgram();
     renderHeader();
     fireEvent.click(screen.getByRole("button", { name: "Manage targets" }));
     const dialog = screen.getByRole("dialog", { name: "Deploy targets" });
@@ -291,11 +321,115 @@ describe("targets", () => {
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Plant B" } });
     fireEvent.change(within(dialog).getByLabelText("Address"), { target: { value: "http://10.0.0.5:8080/" } });
     fireEvent.click(add);
-    expect(getActiveTarget()).toMatchObject({ name: "Plant B", url: "http://10.0.0.5:8080" });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Remove Plant B" }));
+    await waitFor(() => expect(getActiveTarget()).toMatchObject({ name: "Plant B", url: "http://10.0.0.5:8080" }));
+    expect(saved).toHaveLength(1);
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Remove Plant B" }));
+    await waitFor(() => expect(getActiveTarget().id).toBe("local"));
+    expect(saved).toHaveLength(0);
+  });
+
+  it("an address the program refuses is shown as it says it, and nothing is added", async () => {
+    const { saved } = fakeProgram();
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Manage targets" }));
+    const dialog = screen.getByRole("dialog", { name: "Deploy targets" });
+    fireEvent.change(within(dialog).getByLabelText("Address"), { target: { value: "10.0.0.5:8080" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+    expect((await within(dialog).findByRole("alert")).textContent).toBe("the address must start with http:// or https://");
+    expect(saved).toHaveLength(0);
     expect(getActiveTarget().id).toBe("local");
   });
 
+  it("a program with no relay (an older runtime) offers only itself and says why", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (String(url) === "/api/v1/targets" ? new Response("{}", { status: 404 }) : new Response("[]"))));
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Manage targets" }));
+    const dialog = screen.getByRole("dialog", { name: "Deploy targets" });
+    expect((await within(dialog).findByRole("note")).textContent).toMatch(/cannot pass requests on/);
+    expect(within(dialog).queryByRole("button", { name: "Add" })).toBeNull();
+  });
+
+  it("targets an earlier version kept in the browser are handed to the program once, and the active one follows", async () => {
+    const { saved } = fakeProgram();
+    localStorage.setItem("speths-screens-targets-v1", JSON.stringify([{ id: "t-old1", name: "Panel", url: "http://10.0.0.118:8090" }]));
+    setActiveTarget("t-old1");
+    await loadTargets();
+    expect(saved).toEqual([{ id: "id1", name: "Panel", url: "http://10.0.0.118:8090" }]);
+    expect(getActiveTarget()).toMatchObject({ id: "id1", name: "Panel" });
+    expect(localStorage.getItem("speths-screens-targets-v1")).toBeNull();
+    await loadTargets(); // a second load adds nothing
+    expect(saved).toHaveLength(1);
+  });
+});
+
+describe("another runtime is reached through the program that serves the editor", () => {
+  const useTarget = async () => {
+    const t = await addTarget("Panel", "http://10.0.0.120:8090");
+    setActiveTarget(t.id);
+    return t;
+  };
+
+  it("Deploy goes to the relay for the target, never to the target's own address", async () => {
+    const program = fakeProgram((path, init) => (path === "/api/v1/project" && init?.method === "POST" ? new Response(JSON.stringify({ ok: true, datasources: 1, pages: 2 }), { headers: { "X-Speths-Relayed": "1" } }) : undefined));
+    const t = await useTarget();
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    await waitFor(() => expect(screen.getByText("deployed → Panel (1 ds, 2 pg)")).toBeTruthy());
+    expect(program.calls.some((c) => c.url === `/api/v1/targets/${t.id}/relay/api/v1/project` && c.init?.method === "POST")).toBe(true);
+    expect(program.calls.some((c) => c.url.includes("10.0.0.120"))).toBe(false);
+  });
+
+  it("the target's login goes in its own header, beside this program's", async () => {
+    const program = fakeProgram((path) => (path === "/api/v1/project" ? new Response(JSON.stringify({ ok: true, datasources: 0, pages: 1 }), { headers: { "X-Speths-Relayed": "1" } }) : undefined));
+    const t = await useTarget();
+    setToken("", "OWN");
+    setToken(`/api/v1/targets/${t.id}/relay`, "PANEL");
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    await waitFor(() => expect(screen.getByText(/deployed → Panel/)).toBeTruthy());
+    const sent = program.calls.find((c) => c.url.endsWith("/relay/api/v1/project") && c.init?.method === "POST")!.init!.headers as Record<string, string>;
+    expect(sent.Authorization).toBe("Bearer OWN");
+    expect(sent["X-Target-Authorization"]).toBe("Bearer PANEL");
+  });
+
+  it("says why the target did not answer, in the program's words", async () => {
+    fakeProgram((path) => (path === "/api/v1/project" ? new Response(JSON.stringify({ error: "no answer from 10.0.0.120:8090 (timed out)" }), { status: 502 }) : undefined));
+    await useTarget();
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    await waitFor(() => expect(screen.getByText("error: no answer from 10.0.0.120:8090 (timed out)")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Pull" }));
+    await waitFor(() => expect(screen.getByText("pull failed: no answer from 10.0.0.120:8090 (timed out)")).toBeTruthy());
+  });
+
+  it("a 401 from the target asks for the target's login; one from this program asks for its own", async () => {
+    let fromTarget = true;
+    fakeProgram((path) => (path === "/api/v1/project" ? new Response("{}", { status: 401, headers: fromTarget ? { "X-Speths-Relayed": "1" } : {} }) : undefined));
+    await useTarget();
+    renderHeader();
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    let dialog = await screen.findByRole("dialog", { name: "Runtime login" });
+    expect(dialog.textContent).toContain("Panel (http://10.0.0.120:8090)");
+    fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
+    fromTarget = false;
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    dialog = await screen.findByRole("dialog", { name: "Runtime login" });
+    expect(dialog.textContent).toContain("the runtime that serves this editor");
+  });
+
+  it("does not send a project to a runtime that says it reads an older format", async () => {
+    const program = fakeProgram((path) => (path === "/api/v1/alive" ? new Response(JSON.stringify({ ok: true, version: "v0.7.0", schemaVersion: 5 }), { headers: { "X-Speths-Relayed": "1" } }) : undefined));
+    await useTarget();
+    renderHeader();
+    await waitFor(() => expect(useReach.getState().targetFormat).toBe(5)); // the header asked the target
+    fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
+    await waitFor(() => expect(screen.getByText(/not deployed: Panel runs an older Speth's Screens \(it reads project format 5 and this project is format 6\)/)).toBeTruthy());
+    expect(program.calls.some((c) => c.url.endsWith("/api/v1/project") && c.init?.method === "POST")).toBe(false);
+  });
+
+});
+
+describe("the local target", () => {
   it("the local target cannot be edited or removed", () => {
     renderHeader();
     fireEvent.click(screen.getByRole("button", { name: "Manage targets" }));

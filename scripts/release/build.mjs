@@ -3,11 +3,13 @@
 //
 //   node scripts/release/build.mjs [--version=v0.8.0] [--targets=windows/amd64,linux/arm64,linux/amd64]
 //
-// The operator screen is embedded in each binary when it is built, so the operator is built first. The version
+// The operator screen is embedded in each binary when it is built, so the operator is built first. The IDE is
+// embedded too (built with -tags ide and served at /ide/) in the programs for a PC; the panel program has none,
+// because the panel runs screens and you design on a PC. --no-ide leaves it out of every program. The version
 // defaults to `git describe`. Needs Go and Node (the repository's own), and `tar` (Windows 10 and later have one).
 import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,11 +29,21 @@ mkdirSync(dist, { recursive: true });
 console.log(`\n== speths-screens ${version} (${commit || "no commit"})\n`);
 execSync("npm run build --workspace=packages/operator", { cwd: root, stdio: "inherit" });
 
+// The IDE build, copied where `go build -tags ide` embeds it from (git-ignored).
+const wantIDE = args["no-ide"] !== "true";
+const ideEmbed = join(root, "cmd/speths-screens/ide");
+rmSync(ideEmbed, { recursive: true, force: true });
+if (wantIDE) {
+  execSync("npm run build --workspace=packages/ide", { cwd: root, stdio: "inherit" });
+  cpSync(join(root, "packages/ide/dist"), ideEmbed, { recursive: true });
+}
+
 const files = [];
 for (const [goos, goarch] of targets) {
   const name = `speths-screens-${version}-${goos}-${goarch}${goos === "windows" ? ".exe" : ""}`;
-  console.log(`\n== ${goos}/${goarch}`);
-  run("go", ["build", "-trimpath", "-ldflags", `-s -w -X main.version=${version} -X main.commit=${commit}`, "-o", join(dist, name), "./cmd/speths-screens"],
+  const withIDE = wantIDE && !(goos === "linux" && goarch === "arm64"); // the panel package is the runtime only
+  console.log(`\n== ${goos}/${goarch}${withIDE ? " with the IDE" : ""}`);
+  run("go", ["build", "-trimpath", ...(withIDE ? ["-tags", "ide"] : []), "-ldflags", `-s -w -X main.version=${version} -X main.commit=${commit}`, "-o", join(dist, name), "./cmd/speths-screens"],
     { env: { ...process.env, CGO_ENABLED: "0", GOOS: goos, GOARCH: goarch } });
   files.push(name);
   if (goos === "linux" && goarch === "arm64") {
@@ -48,6 +60,8 @@ for (const [goos, goarch] of targets) {
     files.push(tgz);
   }
 }
+
+rmSync(ideEmbed, { recursive: true, force: true }); // only the release build needs it
 
 // The sample projects, as plain files next to the binaries.
 for (const f of ["demo.screens.json", "samples/design-directions.screens.json", "samples/feature-tour.screens.json", "samples/plc-demo.screens.json"]) {

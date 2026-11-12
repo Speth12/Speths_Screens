@@ -36,6 +36,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/runtime"
 	"github.com/Speth12/Speths_Screens/internal/security"
 	"github.com/Speth12/Speths_Screens/internal/tagstore"
+	"github.com/Speth12/Speths_Screens/internal/targets"
 	"github.com/Speth12/Speths_Screens/internal/versionstore"
 )
 
@@ -49,20 +50,7 @@ func spaHandler() http.Handler {
 	if err != nil {
 		log.Fatalf("[Speth's Screens] embed sub: %v", err)
 	}
-	fileServer := http.FileServer(http.FS(sub))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Try to open the exact file. If missing, serve index.html.
-		f, err := sub.Open(r.URL.Path[1:]) // strip leading /
-		if err == nil {
-			f.Close()
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-		// fall back to SPA index
-		data, _ := fs.ReadFile(sub, "index.html")
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(data)
-	})
+	return spaFS(sub)
 }
 
 func main() {
@@ -72,6 +60,8 @@ func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe own /api/v1/alive and exit 0/1")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	mode := flag.String("mode", "dev", "dev | runtime")
+	targetsFile := flag.String("targets-file", "targets.json", "where the IDE's deploy targets are saved (only the program that serves the IDE uses it)")
+	noIDE := flag.Bool("no-ide", false, "runtime mode: do not serve the IDE at /ide/ (only in programs built with it)")
 	addr := flag.String("addr", "", "listen address (default 127.0.0.1:3001 dev, which accepts loopback only / :8080 runtime)")
 	projectPath := flag.String("project", "", "path to project.json (optional in dev)")
 	historyDB := flag.String("history", "history.db", "SQLite WAL file (use ':memory:' to disable persistence)")
@@ -84,7 +74,12 @@ func main() {
 	memoryDB := flag.String("memory-db", "memory.db", "SQLite file for retained memory-tag values")
 	corsOrigins := flag.String("cors-origins", "", "comma-separated extra web origins (scheme://host:port) allowed to call the API")
 	jwtSecret := flag.String("jwt-secret", "", "JWT signing secret (random 32+ bytes); auto-generated if empty")
+	desktopFlag := flag.Bool("desktop", false, "run for this computer only: keep files in the data folder, pick a free port and open the IDE (the default when a program with the IDE is started with no arguments)")
+	dataDir := flag.String("data-dir", "", "folder for the databases and settings; relative file flags are placed inside it (desktop mode defaults to a per-user folder)")
+	noBrowser := flag.Bool("no-browser", false, "desktop mode: do not open the browser")
 	flag.Parse()
+
+	desktop := isDesktopStart(os.Args[1:], *desktopFlag, ideFS() != nil)
 
 	if *showVersion {
 		fmt.Println(versionString())
@@ -118,6 +113,45 @@ func main() {
 
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 	log.Printf("[Speth's Screens] %s", versionString())
+
+	if desktop {
+		*mode = "runtime"
+		if *dataDir == "" {
+			d, err := defaultDataDir()
+			if err != nil {
+				log.Fatalf("[Speth's Screens] %v", err)
+			}
+			*dataDir = d
+		}
+		if *addr == "" {
+			if running, ok := runningInstance(); ok {
+				log.Printf("[Speth's Screens] already running on %s; opening it", running)
+				if !*noBrowser {
+					_ = openBrowser("http://" + running + "/ide/")
+				}
+				return
+			}
+			a, err := pickDesktopAddr()
+			if err != nil {
+				log.Fatalf("[Speth's Screens] %v", err)
+			}
+			*addr = a
+		}
+	}
+	if *dataDir != "" {
+		if err := os.MkdirAll(*dataDir, 0o755); err != nil {
+			log.Fatalf("[Speth's Screens] data folder: %v", err)
+		}
+		for _, f := range []*string{historyDB, alarmDB, versionDB, securityDB, auditDB, recipeDB, memoryDB, targetsFile} {
+			*f = inDataDir(*dataDir, *f)
+		}
+		log.Printf("[Speth's Screens] data folder: %s", *dataDir)
+		if *projectPath == "" {
+			if p := filepath.Join(*dataDir, "project.screens.json"); fileExists(p) {
+				*projectPath = p
+			}
+		}
+	}
 
 	if *addr == "" {
 		switch *mode {
@@ -235,11 +269,30 @@ func main() {
 
 	// Serve operator UI for runtime mode; nil assets (IDE proxies its own) for dev.
 	var assets http.Handler
+	ideOn := false
 	if *mode == "runtime" {
-		assets = spaHandler()
+		var ide fs.FS
+		if !*noIDE {
+			ide = ideFS() // nil unless the program was built with the IDE
+		}
+		assets = uiHandler(spaHandler(), ide)
+		ideOn = ide != nil
+		if ide != nil {
+			log.Printf("[Speth's Screens] the IDE is at /ide/ on this address")
+		}
 	}
 	srv := api.New(rt, assets, versionSt)
 	srv.DevMode = *mode == "dev"
+	srv.Version = version
+	// The program that serves the IDE (dev mode, or a runtime built with it) relays the IDE's requests to the
+	// saved deploy targets; a runtime without the IDE, such as the panel's, has no relay.
+	if *mode == "dev" || ideOn {
+		ts, err := targets.Open(*targetsFile)
+		if err != nil {
+			log.Fatalf("[Speth's Screens] deploy targets: %v", err)
+		}
+		srv.Targets = ts
+	}
 	srv.AllowedOrigins = append(append([]string(nil), api.DefaultAllowedOrigins...), splitList(*corsOrigins)...)
 
 	httpSrv := &http.Server{
@@ -248,12 +301,25 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
+	ln, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatalf("[Speth's Screens] HTTP: %v", err)
+	}
 	go func() {
 		log.Printf("[Speth's Screens] HTTP serving on %s", *addr)
-		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := httpSrv.Serve(ln); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("[Speth's Screens] HTTP: %v", err)
 		}
 	}()
+	if desktop {
+		url := "http://" + *addr + "/ide/"
+		log.Printf("[Speth's Screens] open %s  (close this window to stop)", url)
+		if !*noBrowser {
+			if err := openBrowser(url); err != nil {
+				log.Printf("[Speth's Screens] could not open the browser: %v", err)
+			}
+		}
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -289,6 +355,11 @@ func checkDevAddr(addr string) error {
 		return nil
 	}
 	return fmt.Errorf("dev mode skips logins, so it listens on this machine only; use --addr=127.0.0.1:<port> (got %q), or --mode=runtime", addr)
+}
+
+func fileExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && !st.IsDir()
 }
 
 // splitList splits a comma-separated flag value, dropping empty items.

@@ -117,7 +117,9 @@ func writeErr(w http.ResponseWriter, code int, msg string) {
 }
 
 func (s *Server) handleAlive(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, 200, map[string]any{"ok": true})
+	// version and schemaVersion (the newest project format this runtime reads) let an IDE say "that runtime is
+	// older" before a deploy is refused.
+	writeJSON(w, 200, map[string]any{"ok": true, "version": s.Version, "schemaVersion": project.CurrentSchemaVersion})
 }
 
 func (s *Server) handleGetProject(w http.ResponseWriter, r *http.Request) {

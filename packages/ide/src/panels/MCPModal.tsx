@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useProject } from "../store/projectStore";
-import { apiBase } from "../store/runtimeTarget";
+import { getActiveTarget } from "../store/targetsStore";
 import { CloseIcon } from "../ui/icons";
 
 function curlCmd(url: string, id: number, method: string, params?: string): string {
@@ -16,7 +16,8 @@ function curlCmd(url: string, id: number, method: string, params?: string): stri
 
 export function MCPModal({ onClose }: { onClose: () => void }) {
   const { project } = useProject();
-  const base = apiBase.replace(/\/$/, "");
+  // An MCP client connects to the runtime itself, so this is the runtime's own address, not the relay.
+  const base = getActiveTarget().url || location.origin;
   const mcpUrl = `${base}/mcp`;
 
   const claudeConfig = JSON.stringify(

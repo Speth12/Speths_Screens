@@ -18,6 +18,7 @@ import (
 // handler ever sees it change, and with an admin and an operator account.
 type secureServer struct {
 	hs                  *httptest.Server
+	srv                 *Server
 	rt                  *runtime.Runtime
 	adminToken, opToken string
 }
@@ -53,9 +54,10 @@ func newSecureServer(t *testing.T) *secureServer {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = vs.Close() })
-	hs := httptest.NewServer(New(rt, nil, vs).Handler())
+	srv := New(rt, nil, vs)
+	hs := httptest.NewServer(srv.Handler())
 	t.Cleanup(hs.Close)
-	s := &secureServer{hs: hs, rt: rt, adminToken: tokens["admin"], opToken: tokens["op"]}
+	s := &secureServer{hs: hs, srv: srv, rt: rt, adminToken: tokens["admin"], opToken: tokens["op"]}
 	// A fresh runtime has no project, so no login yet: the first deploy is
 	// open. It turns logins on.
 	if code, body := s.do(t, "POST", "/api/v1/project", "", loginProject(writeTestProject)); code != 200 {
