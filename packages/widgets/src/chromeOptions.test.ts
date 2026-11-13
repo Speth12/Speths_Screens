@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CustomWidget, Shell, ShellHeader, ShellNavOptions } from "@speths-screens/shared-types";
 import {
-  DEFAULT_IDS, SIDE_NAV_ICONS_ID, chromeStyles, contrastRatio, defaultCustomWidgets, defaultFrame, effectiveFrame, findCustomWidget, missingDefaults, shellStyleVars,
+  DEFAULT_IDS, SIDE_NAV_ICONS_ID, builtinAsDesigned, chromeStyles, contrastRatio, defaultCustomWidgets, defaultFrame, effectiveFrame, findCustomWidget, missingDefaults, shellStyleVars,
 } from "./chrome";
 import { slotsByEdge } from "./layout";
 
@@ -218,5 +218,63 @@ describe("the tab navigation", () => {
   it("stretches its page list to the row, so the tabs do not stick out above it", () => {
     const tabs = defaultCustomWidgets().find((c) => c.id === DEFAULT_IDS.tabNav)!;
     expect(tabs.layout).toMatchObject({ direction: "row", align: "stretch" });
+  });
+});
+
+describe("the built-in header and navigation as designed custom widgets", () => {
+  const designed = (shell: Shell = {}) => builtinAsDesigned({ shell });
+  const head = (shell?: Shell) => designed(shell).customWidgets.find((c) => c.id === DEFAULT_IDS.header)!;
+  const at = (c: CustomWidget, id: string) => c.widgets.find((w) => w.localId === id)!;
+
+  it("the header is designed at a desktop's width and the header's height, with no stack", () => {
+    const h = head({ header: { height: 72 } });
+    expect([h.width, h.height, h.layout]).toEqual([1280, 72, undefined]);
+  });
+
+  it("the parts before the one that takes the room stay left, those after it stay right, and it stretches", () => {
+    const h = head();
+    expect(h.widgets.map((w) => [w.localId, w.anchorX])).toEqual([
+      ["logo", "left"], ["project", "left"], ["page", "left"], ["drivers", "stretch"], ["clock", "right"], ["user", "right"],
+    ]);
+    expect(at(h, "logo").anchorX).toBe("left");
+    expect(at(h, "user").anchorX).toBe("right");
+    expect(at(h, "clock").anchorX).toBe("right");
+    expect(at(h, "drivers").anchorX).toBe("stretch");
+    // The user menu sits against the right edge, the clock before it.
+    expect(at(h, "user").x + at(h, "user").w).toBe(1280 - 8);
+    expect(at(h, "clock").x + at(h, "clock").w).toBe(at(h, "user").x - 12);
+  });
+
+  it("the names become two lines of the header itself, one at the top and one at the bottom", () => {
+    const h = head();
+    expect(h.widgets.some((w) => w.type === "customWidget")).toBe(false);
+    expect(at(h, "project")).toMatchObject({ type: "textDisplay", bindings: { value: "app:projectName" }, anchorY: "top" });
+    expect(at(h, "page")).toMatchObject({ bindings: { value: "app:pageName" }, anchorY: "bottom" });
+    expect(at(h, "project").y + at(h, "project").h).toBe(at(h, "page").y);
+  });
+
+  it("centered names take the room in the middle", () => {
+    const h = head({ header: { titleAlign: "center" } });
+    expect(at(h, "project").anchorX).toBe("stretch");
+    expect(at(h, "drivers").anchorX).toBe("right");
+  });
+
+  it("the choices carry over: no clock, a picture logo, the alarm count", () => {
+    const h = head({ header: { clock: "none", logo: "image", logoImage: "img1", alarms: true, alarmsPage: "p2" } });
+    expect(h.widgets.map((w) => w.localId)).not.toContain("clock");
+    expect(at(h, "logo")).toMatchObject({ type: "image", props: { src: "lib:img1" } });
+    expect(at(h, "alarms")).toMatchObject({ type: "alarmIndicator", props: { page: "p2" }, anchorX: "right" });
+  });
+
+  it("parts hidden on a phone stay hidden there", () => {
+    expect(at(head(), "clock").hiddenOn).toEqual(["phone"]);
+  });
+
+  it("each navigation is a page list filling its box, stretching both ways", () => {
+    const d = designed({ nav: "sidebar", navOptions: { width: 240 } });
+    const side = d.customWidgets.find((c) => c.id === DEFAULT_IDS.sideNav)!;
+    expect([side.width, side.height]).toEqual([240, 720]);
+    expect(side.widgets).toEqual([expect.objectContaining({ type: "pageList", x: 0, y: 0, w: 240, h: 720, anchorX: "stretch", anchorY: "stretch" })]);
+    expect(d.frame.map((s) => s.id)).toEqual(["header", "nav", "bottom-nav"]);
   });
 });

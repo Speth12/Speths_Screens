@@ -1,6 +1,7 @@
 // The widget gallery in the IDE: every widget type in every state under a
 // theme, with a slider for the simulated value. Click a cell to add that widget
 // to the page, or drag it onto the canvas (Phase 3, step 7).
+import { surfaceOf, surfaceSnap } from "../store/surface";
 import { useState } from "react";
 import { Gallery, MANIFESTS, THEMES, galleryInsert, type WidgetManifest } from "@speths-screens/widgets";
 import { useProject, newWidgetId, type Widget } from "../store/projectStore";
@@ -15,11 +16,11 @@ export const GALLERY_DRAG = "text/x-gallery-type";
 export function insertGalleryWidget(type: string, at?: { x: number; y: number }): Widget[] {
   const m = MANIFESTS.find((x) => x.type === type);
   const { project, activePageId, addWidgets } = useProject.getState();
-  const page = project.pages.find((p) => p.id === activePageId);
+  const page = surfaceOf(project, activePageId);
   if (!m || !page) return [];
   const where = at ?? { x: 0, y: page.widgets.reduce((max, w) => Math.max(max, w.y + w.h), 0) };
   const preset = { id: "gallery", name: m.label, widgets: [{ ...galleryInsert(m), id: "gallery", x: 0, y: 0 } as Widget] };
-  const ws = instantiatePreset(preset, where, { from: "grid", to: project.canvasSnap ?? "grid" }, newWidgetId);
+  const ws = instantiatePreset(preset, where, { from: "grid", to: surfaceSnap(project, activePageId) }, newWidgetId);
   addWidgets(page.id, ws);
   return ws;
 }

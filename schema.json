@@ -568,7 +568,8 @@
         "size": { "type": "integer", "minimum": 1, "description": "Pixels high for a top or bottom edge, wide for a left or right edge" },
         "devices": { "type": "array", "items": { "type": "string", "enum": ["desktop", "tablet", "phone"] }, "description": "Screen sizes it is drawn on; missing means all" },
         "tablet": { "$ref": "#/$defs/FrameSlotOverride" },
-        "phone": { "$ref": "#/$defs/FrameSlotOverride" }
+        "phone": { "$ref": "#/$defs/FrameSlotOverride" },
+        "overlay": { "type": "boolean", "description": "Drawn over the page along its edge instead of taking room from it (default false)" }
       }
     },
     "FrameSlotOverride": {
@@ -895,8 +896,23 @@
         "description": { "type": "string" },
         "params":      { "type": "array", "items": { "$ref": "#/$defs/CustomWidgetParam" } },
         "widgets":     { "type": "array", "items": { "$ref": "#/$defs/CustomWidgetPart" } },
-        "layout":      { "$ref": "#/$defs/CustomWidgetLayout", "description": "How the parts are placed; missing means free (each at its own x, y, w, h)" }
-      }
+        "layout":      { "$ref": "#/$defs/CustomWidgetLayout", "description": "How the parts are placed; missing means free (each at its own x, y, w, h)" },
+        "width":       { "type": "integer", "minimum": 1, "maximum": 8000, "description": "The size it is designed at, in pixels. With width and height the parts' x, y, w and h are pixels in that box: placed on a page it is scaled to fit the place it is given, keeping its proportions; pinned to a screen edge its parts follow their anchors and are not scaled. Missing means the parts are placed as fractions of the place it is given" },
+        "height":      { "type": "integer", "minimum": 1, "maximum": 8000, "description": "See width" }
+      },
+      "dependentRequired": { "width": ["height"], "height": ["width"] }
+    },
+    "AnchorX": {
+      "title": "AnchorX",
+      "type": "string",
+      "enum": ["left", "right", "center", "stretch"],
+      "description": "Where a part of a custom widget pinned to a screen edge stays when the edge is wider than the custom widget's width: at its distance from the left (the default), from the right, from the middle, or both, stretching"
+    },
+    "AnchorY": {
+      "title": "AnchorY",
+      "type": "string",
+      "enum": ["top", "bottom", "center", "stretch"],
+      "description": "The same as AnchorX, down: at its distance from the top (the default), from the bottom, from the middle, or both, stretching"
     },
     "CustomWidgetParam": {
       "title": "CustomWidgetParam",
@@ -2915,6 +2931,8 @@
           "description": "IDE-only: widgets with the same groupId move together"
         },
         "flex": { "$ref": "#/$defs/PartFlex" },
+        "anchorX": { "$ref": "#/$defs/AnchorX" },
+        "anchorY": { "$ref": "#/$defs/AnchorY" },
         "hiddenOn": {
           "type": "array",
           "items": { "type": "string", "enum": ["tablet", "phone"] },

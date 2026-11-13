@@ -1,5 +1,6 @@
 // Widget presets in the palette (click to insert, drag onto the canvas), and
 // the dialog that saves widgets as a preset.
+import { surfaceOf, surfaceSnap } from "../store/surface";
 import { useState } from "react";
 import { newWidgetId, useProject, type Widget } from "../store/projectStore";
 import { allPresets, instantiatePreset, presetFromWidgets, type PresetEntry } from "../store/presets";
@@ -11,11 +12,11 @@ export const PRESET_DRAG = "text/x-preset-id";
 /** Inserts a preset on the active page with its top-left at `at` (default: below everything). */
 export function insertPreset(id: string, at?: { x: number; y: number }): Widget[] {
   const { project, activePageId, addWidgets } = useProject.getState();
-  const page = project.pages.find((p) => p.id === activePageId);
+  const page = surfaceOf(project, activePageId);
   const entry = allPresets(project).find((e) => e.preset.id === id);
   if (!page || !entry) return [];
   const where = at ?? { x: 0, y: page.widgets.reduce((max, w) => Math.max(max, w.y + w.h), 0) };
-  const ws = instantiatePreset(entry.preset, where, { from: entry.units, to: project.canvasSnap ?? "grid" }, newWidgetId);
+  const ws = instantiatePreset(entry.preset, where, { from: entry.units, to: surfaceSnap(project, activePageId) }, newWidgetId);
   addWidgets(page.id, ws);
   return ws;
 }

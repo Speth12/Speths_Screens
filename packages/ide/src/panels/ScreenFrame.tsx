@@ -5,7 +5,9 @@ import type { FrameSlot } from "@speths-screens/shared-types";
 import { ChromeFrame, DEVICE_WIDTH, WidgetHostProvider, type Device, type SlotStyle } from "@speths-screens/widgets";
 import { ideHost } from "../widgets";
 
-export function ScreenFrame({ frame, device, theme, styles, children }: {
+export function ScreenFrame({ frame, device, theme, styles, exact, children }: {
+  /** A custom widget on the canvas: as wide as its own box, not at least a desktop's width. */
+  exact?: boolean;
   frame: readonly FrameSlot[];
   /** The look of the header and navigation slots (chromeStyles). */
   styles?: Record<string, SlotStyle>;
@@ -18,8 +20,8 @@ export function ScreenFrame({ frame, device, theme, styles, children }: {
       style={{
         ...theme,
         // The desktop is as wide as its page; a tablet and a phone are as wide as the device.
-        width: device === "desktop" ? "max-content" : DEVICE_WIDTH[device],
-        minWidth: device === "desktop" ? DEVICE_WIDTH.desktop : undefined,
+        width: exact || device === "desktop" ? "max-content" : DEVICE_WIDTH[device],
+        minWidth: !exact && device === "desktop" ? DEVICE_WIDTH.desktop : undefined,
         border: "1px solid var(--border)", boxShadow: "0 4px 24px rgba(0,0,0,.15)",
         background: "var(--background)", color: "var(--foreground)",
         fontFamily: "var(--font-sans, inherit)",

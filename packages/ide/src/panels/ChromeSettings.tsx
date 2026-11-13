@@ -6,6 +6,7 @@ import type { FrameSlot, FrameSlotOverride, Shell } from "@speths-screens/shared
 import { useProject } from "../store/projectStore";
 import { CloseIcon } from "../ui/icons";
 import { ChromeOptions } from "./ChromeOptions";
+import { SCREEN_TAB, useWorkspace } from "../store/workspace";
 
 const field = "bg-zinc-900 border border-zinc-700 rounded px-1.5 py-0.5 text-[11px] text-zinc-200 focus:outline-none focus:border-zinc-500";
 const EDGES = ["top", "right", "bottom", "left"] as const;
@@ -38,6 +39,8 @@ export function ChromeSettings() {
   const customWidgets = useProject((s) => s.project.customWidgets) ?? [];
   const setShell = useProject((s) => s.setShell);
   const addDefaultChrome = useProject((s) => s.addDefaultChrome);
+  const openOnCanvas = useProject((s) => s.openCustomWidgetOnCanvas);
+  const activate = useWorkspace((s) => s.activate);
   const custom = shell?.chrome === "custom";
   const slots = shell?.frame ?? [];
 
@@ -74,6 +77,11 @@ export function ChromeSettings() {
                   {!customWidgets.some((c) => c.id === slot.customWidgetId) && <option value={slot.customWidgetId}>{slot.customWidgetId} (missing)</option>}
                   {customWidgets.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+                {customWidgets.find((c) => c.id === slot.customWidgetId)?.layout?.mode !== "stack" && customWidgets.some((c) => c.id === slot.customWidgetId) && (
+                  <button aria-label={`Edit ${slot.id} on the canvas`} title="Edit this custom widget on the canvas"
+                    onClick={() => { openOnCanvas(slot.customWidgetId); activate(SCREEN_TAB.id); }}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">Edit</button>
+                )}
                 <button aria-label={`Remove ${slot.id}`} title="Remove this slot" onClick={() => put({ frame: slots.filter((_, j) => j !== i) })}
                   className="text-zinc-600 hover:text-red-400 px-1"><CloseIcon size={14} /></button>
               </div>
@@ -88,6 +96,11 @@ export function ChromeSettings() {
                     onChange={(e) => setSlot(i, { ...slot, size: Math.max(1, Math.round(Number(e.target.value) || 1)) })} />
                 </label>
               </div>
+              <label className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+                <input type="checkbox" aria-label={`${slot.id} over the page`} checked={!!slot.overlay}
+                  onChange={(e) => setSlot(i, e.target.checked ? { ...slot, overlay: true } : (({ overlay: _o, ...rest }) => rest)(slot))} />
+                Over the page (takes no room from it)
+              </label>
               <div className="flex items-center gap-3 text-[10px] text-zinc-500">
                 Shown on
                 {DEVICES.map((d) => (

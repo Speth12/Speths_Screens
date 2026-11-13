@@ -9,9 +9,10 @@ export { formatClock, groupPages, driverSummary, alarmSummary, listedPages, SETT
 export { recipeSetsOf, mayEditRecipes } from "./recipeSets";
 export { parseCell } from "./recipes";
 export { ChromeFrame } from "./ChromeFrame";
+export { FrameSlotContext } from "./widgets";
 export {
   DEFAULT_IDS, SIDE_NAV_ICONS_ID, HEADER_HEIGHT, SIDEBAR_WIDTH, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget,
-  chromeStyles, shellStyleVars, contrastRatio, type ChromeNav, type ChromeProject, type SlotStyle,
+  chromeStyles, shellStyleVars, contrastRatio, builtinAsDesigned, type ChromeNav, type ChromeProject, type SlotStyle,
 } from "./chrome";
 export { SymbolSVG } from "./SymbolSVG";
 export { APP_PREFIX, APP_NAMES, appTag, isAppPath, splitApp, type AppValues } from "./app";

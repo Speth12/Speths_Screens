@@ -15,7 +15,7 @@ import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { tokenColor } from "./tokens";
 import { SymbolSVG } from "./SymbolSVG";
-import { partStyle, stackFor, stackStyle } from "./layout";
+import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
 import { RecipesWidget } from "./recipes";
 import { TrendWidget } from "./trend";
 import { AlarmIndicatorWidget, ClockWidget, DriverStatusWidget, PageListWidget, PageTitleWidget, UserMenuWidget } from "./shell";
@@ -683,6 +683,53 @@ function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Wid
 const NESTING_LIMIT = 6;
 const NestingContext = createContext(0);
 
+/** True for the custom widget a frame slot draws (pinned to a screen edge): its parts follow their
+ *  anchors instead of scaling. Custom widgets inside it are placed, so they scale. */
+export const FrameSlotContext = createContext(false);
+
+/** The size of an element, kept up to date; zero until it is measured (and where nothing measures). */
+function useBoxSize(): [React.RefCallback<HTMLDivElement>, Size] {
+  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
+  const observer = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const take = () => setSize((s) => (s.width === el.clientWidth && s.height === el.clientHeight ? s : { width: el.clientWidth, height: el.clientHeight }));
+    take();
+    observer.current = new ResizeObserver(take);
+    observer.current.observe(el);
+  }, []);
+  return [ref, size];
+}
+
+/** A custom widget with a designed size. Pinned to an edge its parts follow their anchors and keep
+ *  their size; placed anywhere else the whole design is scaled to fit, keeping its proportions. */
+function DesignedCustomWidget({ parts, design, params }: { parts: CustomWidgetPart[]; design: Size; params: Record<string, string> }) {
+  const pinned = useContext(FrameSlotContext);
+  const [ref, box] = useBoxSize();
+  const inner = (
+    <FrameSlotContext.Provider value={false}>
+      {parts.map((fw) => (
+        <div key={fw.localId} data-part={fw.localId}
+          style={pinned ? anchoredStyle(fw, design) : { position: "absolute", left: fw.x, top: fw.y, width: fw.w, height: fw.h }}>
+          <WidgetRenderer w={resolveInner(fw, params)} />
+        </div>
+      ))}
+    </FrameSlotContext.Provider>
+  );
+  if (pinned) return <div className="h-full w-full relative overflow-hidden" data-designed="anchored">{inner}</div>;
+  const fit = fitInBox(design, box);
+  return (
+    <div ref={ref} className="h-full w-full relative overflow-hidden" data-designed="scaled">
+      <div style={{
+        position: "absolute", left: 0, top: 0, width: design.width, height: design.height,
+        transformOrigin: "0 0", transform: `translate(${fit.left}px, ${fit.top}px) scale(${fit.scale})`,
+      }}>{inner}</div>
+    </div>
+  );
+}
+
 function CustomWidgetView({ w }: WP<"customWidget">) {
   const cwId = w.props?.customWidgetId;
   const params = w.props?.params ?? {};
@@ -701,6 +748,14 @@ function CustomWidgetView({ w }: WP<"customWidget">) {
   }
 
   const stack = stackFor(cw.layout, device);
+  if (!stack && cw.width && cw.height) {
+    return (
+      <NestingContext.Provider value={depth + 1}>
+        <DesignedCustomWidget parts={cw.widgets.filter((fw) => !(device !== "desktop" && fw.hiddenOn?.includes(device)))}
+          design={{ width: cw.width, height: cw.height }} params={params} />
+      </NestingContext.Provider>
+    );
+  }
   return (
     <NestingContext.Provider value={depth + 1}>
       <div className="h-full relative overflow-hidden" style={stack ? stackStyle(stack) : undefined}>

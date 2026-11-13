@@ -11,8 +11,10 @@ import { WidgetRenderer } from "../widgets";
 import { setClipboard } from "../hooks/useKeyboardShortcuts";
 import { boundsOf, resizeCells, snapMove, snapResize, SNAP_STEP, type Corner, type Guides, type Rect } from "../store/canvasSnapping";
 import { useSelection } from "../store/selection";
+import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
+import { CustomWidgetCanvasBar } from "./CustomWidgetCanvas";
 import { arrange, type ArrangeAction } from "../store/arrange";
-import { PALETTE_DRAG, newWidget } from "../store/newWidget";
+import { PALETTE_DRAG, fitNewWidget, newWidget } from "../store/newWidget";
 import { manifestFor } from "@speths-screens/widgets";
 import { CloseIcon, ResetIcon, LockIcon, UnlockIcon, AlignLeftIcon, AlignCenterXIcon, AlignRightIcon, AlignTopIcon, AlignCenterYIcon, AlignBottomIcon, DistributeXIcon, DistributeYIcon, type Icon } from "../ui/icons";
 
@@ -25,6 +27,9 @@ const COL_W = 80;
 type Drag =
   | { kind: "move"; sx: number; sy: number; starts: Record<string, Rect>; moved: boolean }
   | { kind: "resize"; sx: number; sy: number; id: string; start: Rect; corner: Corner; moved: boolean };
+/** A custom widget on the canvas is drawn on its own. */
+const NO_FRAME: never[] = [];
+
 /** How far the pointer travels before a press becomes a drag, so a click still selects. */
 const DRAG_START = 3;
 /** Where the dragged widgets are drawn until the pointer is let go, and the lines they sit on. */
@@ -89,7 +94,7 @@ function ContextMenu({ menu, onClose, onAction, multiCount }: {
   );
 
   const { project, activePageId } = useProject.getState();
-  const page = project.pages.find(p => p.id === activePageId);
+  const page = surfaceOf(project, activePageId);
   const w = page?.widgets.find(x => x.id === menu.widgetId);
   const isLocked = w?.locked ?? false;
   const multi = multiCount > 1;
@@ -149,15 +154,21 @@ export function Canvas() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const draggedRef = useRef(false);
 
-  const rawPage = project.pages.find((p) => p.id === activePageId);
+  const rawPage = surfaceOf(project, activePageId);
+  // A custom widget on the canvas: drawn in its designed box, on its own (no header or navigation),
+  // in pixels, and at one size only (its parts have no tablet or phone layouts).
+  const editingCw = surfaceCustomWidget(project, activePageId);
   // The page as it sits on the screen size being edited; a hidden widget stays, faded, to be shown again.
-  const device = useEditorView((s) => s.device);
+  const editorDevice = useEditorView((s) => s.device);
+  const device = editingCw ? "desktop" : editorDevice;
   const page = useMemo(
     () => (rawPage && device !== "desktop" ? { ...rawPage, widgets: forDevice(rawPage.widgets, device, true) } : rawPage),
     [rawPage, device],
   );
-  const snapMode   = project.canvasSnap ?? "grid";
-  const resolution = project.canvasResolution ?? { type: "dynamic" };
+  const snapMode   = surfaceSnap(project, activePageId);
+  const resolution = editingCw?.width && editingCw.height
+    ? { type: "fixed" as const, width: editingCw.width, height: editingCw.height }
+    : project.canvasResolution ?? { type: "dynamic" as const };
 
   // Hooks stay above the early return below: React needs the same hooks in
   // every render, with or without a page.
@@ -417,7 +428,7 @@ export function Canvas() {
     const paletteType = e.dataTransfer.getData(PALETTE_DRAG);
     const dropped = paletteType ? manifestFor(paletteType) : undefined;
     if (dropped) {
-      const w = newWidget(dropped, isPixel);
+      const w = fitNewWidget(newWidget(dropped, isPixel), editingCw);
       const at = isPixel
         ? { x: Math.max(0, Math.round(pxX / SNAP_STEP) * SNAP_STEP), y: Math.max(0, Math.round(pxY / SNAP_STEP) * SNAP_STEP) }
         : { x: Math.max(0, Math.min(COLS - w.w, col)), y: Math.max(0, row) };
@@ -544,6 +555,7 @@ export function Canvas() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      <CustomWidgetCanvasBar />
       {/* Align toolbar */}
       {selectedIds.length >= 2 && (
         <div className="flex items-center gap-0.5 px-3 py-1 bg-zinc-900 border-b border-zinc-800 shrink-0">
@@ -607,7 +619,7 @@ export function Canvas() {
           />
         )}
 
-        <ScreenFrame frame={effectiveFrame(project)} device={device} theme={screenTheme} styles={chromeStyles(project)}>
+        <ScreenFrame exact={!!editingCw} frame={editingCw ? NO_FRAME : effectiveFrame(project)} device={device} theme={screenTheme} styles={editingCw ? undefined : chromeStyles(project)}>
         <div
           ref={gridRef}
           data-canvas-page="" data-zoom={zoom}
@@ -828,7 +840,7 @@ export function Canvas() {
 export function PositionEditor({ pageId, widgetId }: { pageId: string; widgetId: string }) {
   const { project, updateWidget, setWidgetHidden, resetWidgetLayout } = useProject();
   const device = useEditorView((s) => s.device);
-  const page = project.pages.find((p) => p.id === pageId);
+  const page = surfaceOf(project, pageId);
   const own = page?.widgets.find((x) => x.id === widgetId);
   if (!own) return null;
   // On a tablet or phone the fields show where the widget sits there, inherited or its own.

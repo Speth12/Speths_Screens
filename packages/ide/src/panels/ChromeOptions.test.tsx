@@ -160,3 +160,33 @@ describe("a page kept out of the navigation", () => {
     expect(useProject.getState().project.pages[0]!.hideInNav).toBeUndefined();
   });
 });
+
+describe("editing the built-in header and navigation as custom widgets", () => {
+  it("turns them into designed custom widgets with the choices, switches to custom, and opens the header on the canvas", () => {
+    render(<ChromeSettings />);
+    choose("Clock", "none");
+    fireEvent.click(screen.getByRole("button", { name: "Edit as custom widgets on the canvas" }));
+    const p = useProject.getState().project;
+    expect(p.shell?.chrome).toBe("custom");
+    expect(p.shell?.frame?.map((s) => s.id)).toEqual(["header", "nav", "bottom-nav"]);
+    const header = p.customWidgets!.find((c) => c.id === DEFAULT_IDS.header)!;
+    expect([header.width, header.height]).toEqual([1280, 60]);
+    expect(header.widgets.map((w) => w.localId)).not.toContain("clock");
+    expect(useProject.getState().activePageId).toBe(`cw:${DEFAULT_IDS.header}`);
+    // One step back undoes it.
+    useProject.getState().undo();
+    expect(useProject.getState().project.shell?.chrome).toBeUndefined();
+  });
+
+  it("each slot of custom chrome can be edited on the canvas and laid over the page", () => {
+    useProject.getState().editChromeAsCustom();
+    useProject.getState().closeCustomWidgetCanvas();
+    render(<ChromeSettings />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "header over the page" }));
+    expect(useProject.getState().project.shell?.frame?.find((s) => s.id === "header")?.overlay).toBe(true);
+    fireEvent.click(screen.getByRole("checkbox", { name: "header over the page" }));
+    expect(useProject.getState().project.shell?.frame?.find((s) => s.id === "header")).not.toHaveProperty("overlay");
+    fireEvent.click(screen.getByRole("button", { name: "Edit nav on the canvas" }));
+    expect(useProject.getState().activePageId).toBe(`cw:${DEFAULT_IDS.tabNav}`);
+  });
+});

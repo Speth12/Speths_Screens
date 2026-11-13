@@ -231,3 +231,36 @@ export function slotsByEdge<S extends SlotLike>(slots: readonly S[], device: Dev
   }
   return out;
 }
+
+// ── Custom widgets with a designed size ─────────────────────────────────────
+// A custom widget given a width and a height is drawn in that box, its parts in pixels. Placed on a
+// page it is scaled to fit the place it is given (fitInBox); pinned to a screen edge its parts keep
+// their size and follow their anchors (anchoredStyle), so a header spans any width.
+
+/** The uniform scale that fits a design into a box, and where the scaled design sits so that it is
+ *  centered. A box with no size yet gives scale 1. */
+export function fitInBox(design: Size, box: Size): { scale: number; left: number; top: number } {
+  if (!(box.width > 0 && box.height > 0) || !(design.width > 0 && design.height > 0)) return { scale: 1, left: 0, top: 0 };
+  const scale = Math.min(box.width / design.width, box.height / design.height);
+  return { scale, left: (box.width - design.width * scale) / 2, top: (box.height - design.height * scale) / 2 };
+}
+
+export type AnchorXLike = "left" | "right" | "center" | "stretch";
+export type AnchorYLike = "top" | "bottom" | "center" | "stretch";
+export type AnchoredPart = { x: number; y: number; w: number; h: number; anchorX?: AnchorXLike; anchorY?: AnchorYLike };
+
+/** CSS that places a part inside a box of any size, measured from the designed box: it keeps its
+ *  distance from the edge or the middle its anchor names, and its size, unless it stretches, when it
+ *  keeps its distance from both edges. */
+export function anchoredStyle(p: AnchoredPart, design: Size): Record<string, string> {
+  const css: Record<string, string> = { position: "absolute" };
+  const axis = (anchor: string, pos: number, size: number, total: number, start: "left" | "top", end: "right" | "bottom", dim: "width" | "height") => {
+    if (anchor === end) { css[end] = `${total - pos - size}px`; css[dim] = `${size}px`; }
+    else if (anchor === "center") { css[start] = `calc(50% + ${pos - total / 2}px)`; css[dim] = `${size}px`; }
+    else if (anchor === "stretch") { css[start] = `${pos}px`; css[end] = `${total - pos - size}px`; }
+    else { css[start] = `${pos}px`; css[dim] = `${size}px`; }
+  };
+  axis(p.anchorX ?? "left", p.x, p.w, design.width, "left", "right", "width");
+  axis(p.anchorY ?? "top", p.y, p.h, design.height, "top", "bottom", "height");
+  return css;
+}

@@ -23,6 +23,13 @@ export function newWidget(m: WidgetManifest, pixel: boolean): Widget {
   return { ...sized, ...structuredClone(m.defaults) } as Widget;
 }
 
+/** A new widget's size held inside a custom widget's designed box (a header 60 px high gets a button
+ *  no taller than that); on a page, or a custom widget with no size, it is left as it is. */
+export function fitNewWidget<W extends { w: number; h: number }>(w: W, box: { width?: number; height?: number } | undefined): W {
+  if (!box?.width || !box.height) return w;
+  return { ...w, w: Math.max(1, Math.min(w.w, box.width)), h: Math.max(1, Math.min(w.h, box.height)) };
+}
+
 /** The part of the page in view, in canvas pixels at full size, or null when it cannot be told
  *  (no canvas on screen). The canvas marks its page and its scrolling area for this. */
 export function visibleCanvasRect(doc: Document = document): Rect | null {

@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import type { CustomWidget } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
-import { useWorkspace } from "../store/workspace";
+import { SCREEN_TAB, useWorkspace } from "../store/workspace";
 import { isDirty, useDraft, useDrafts } from "../store/drafts";
 import { customWidgetUsage } from "../store/usage";
 import { CustomWidgetEditor, type CustomWidgetDraft } from "./CustomWidgetEditor";
@@ -25,15 +25,18 @@ export function CustomWidgetsTab() {
   const project = useProject((s) => s.project);
   const { addCustomWidget, updateCustomWidget, removeCustomWidget } = useProject.getState();
   const chosen = useWorkspace((s) => s.selection.customWidgets);
+  const openOnCanvas = useOpenOnCanvas();
   const select = useWorkspace((s) => s.select);
   const drafts = useDrafts((s) => s.entries);
 
   const cw = customWidgets.find((c) => c.id === chosen) ?? customWidgets[0];
 
+  // A new custom widget has a designed size and opens on the canvas, with every tool a page has.
   const add = () => {
     const id = `fp-${Math.random().toString(36).slice(2, 8)}`;
-    addCustomWidget({ id, name: `Custom widget ${customWidgets.length + 1}`, params: [{ name: "prefix", description: "Tag prefix" }], widgets: [] });
+    addCustomWidget({ id, name: `Custom widget ${customWidgets.length + 1}`, params: [], widgets: [], width: 480, height: 120 });
     select("customWidgets", id);
+    openOnCanvas(id);
   };
 
   return (
@@ -90,11 +93,20 @@ export function CustomWidgetsTab() {
   );
 }
 
+/** Opens a custom widget on the canvas (the Screen tab), with every tool a page has. */
+export function useOpenOnCanvas() {
+  const activate = useWorkspace((s) => s.activate);
+  const open = useProject((s) => s.openCustomWidgetOnCanvas);
+  return (id: string) => { open(id); activate(SCREEN_TAB.id); };
+}
+
 function Pane({ cw, onSave, onDelete }: { cw: CustomWidget; onSave: (patch: CustomWidgetDraft) => void; onDelete: () => void }) {
   const { value: draft, dirty, set, revert } = useDraft(`cw:${cw.id}`, draftOf(cw));
   const project = useProject((s) => s.project);
   const usage = useMemo(() => customWidgetUsage(project, cw.id), [project, cw.id]);
   const [confirm, setConfirm] = useState(false);
+  const openOnCanvas = useOpenOnCanvas();
+  const stack = cw.layout?.mode === "stack";
 
   const places = [
     ...usage.pages.map((p) => `${p.name}${p.count > 1 ? ` (${p.count})` : ""}`),
@@ -129,7 +141,23 @@ function Pane({ cw, onSave, onDelete }: { cw: CustomWidget; onSave: (patch: Cust
           {dirty && " Your changes are not saved."}
         </div>
       </div>
-      <CustomWidgetEditor id={cw.id} draft={draft} update={set} />
+      {stack || draft.layout?.mode === "stack" ? <CustomWidgetEditor id={cw.id} draft={draft} update={set} /> : (
+        <div className="flex-1 min-h-0 overflow-auto p-6 flex flex-col items-start gap-3">
+          <div className="text-ui text-zinc-200">
+            {cw.width && cw.height ? `Designed at ${cw.width} × ${cw.height} px, ` : "No designed size yet (it gets one when opened), "}
+            {plural(cw.widgets.length, "part")}, {plural(cw.params.length, "parameter")}.
+          </div>
+          <div className="text-ui-label text-zinc-400 max-w-xl leading-relaxed">
+            Build it on the canvas like a page, with every widget and tool: place parts freely, give buttons actions such as Go to page, and set
+            each part's anchors. Placed on a page it is scaled to fit the place you give it; pinned to a screen edge its parts follow their anchors.
+          </div>
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={() => openOnCanvas(cw.id)}>Edit on the canvas</Button>
+            <Button title="Its parts in a row or a column that adapts to the screen size, as the built-in header is"
+              onClick={() => set((d) => ({ ...d, layout: { mode: "stack", direction: "row", gap: 8, padding: 8, align: "stretch" } }))}>Lay it out as a stack instead</Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
