@@ -31,6 +31,9 @@ type Server struct {
 	Targets *targets.Store
 	// Version is what /api/v1/alive reports, so an IDE can tell an older runtime before deploying to it.
 	Version string
+	// ProjectFile is the project the runtime was started with. A deploy or a restore is written back
+	// to it, so a restart loads what was last deployed. Empty: nothing is kept.
+	ProjectFile string
 
 	relayOnce sync.Once
 	relayRT   http.RoundTripper

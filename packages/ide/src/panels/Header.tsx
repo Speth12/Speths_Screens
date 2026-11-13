@@ -98,8 +98,9 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         body: exportJSON(),
       });
       if (r.status === 401) { askLogin(r); return; } // token missing or expired: a login deploys again
-      const body = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number };
-      say(r.ok ? `deployed → ${activeTarget.name} (${body.datasources} ds, ${body.pages} pg)` : `error: ${body.error}`);
+      const body = (await r.json()) as { ok?: boolean; error?: string; datasources?: number; pages?: number; warning?: string };
+      // A deploy the runtime could not keep across a restart says so.
+      say(r.ok ? `deployed → ${activeTarget.name} (${body.datasources} ds, ${body.pages} pg)${body.warning ? `; ${body.warning}` : ""}` : `error: ${body.error}`);
     } catch (e) {
       say(`error: ${describeFailure(e)}`);
     } finally { setBusy("none"); }

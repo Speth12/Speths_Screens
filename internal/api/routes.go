@@ -88,7 +88,12 @@ func (s *Server) handleRestoreVersion(w http.ResponseWriter, r *http.Request) {
 	// Save the restore itself as a new version so the log stays append-only.
 	label := fmt.Sprintf("restore of version %d", id)
 	newID, _ := s.versions.Save(r.Context(), project.RedactSecretsJSON(v.Project), label)
-	writeJSON(w, 200, map[string]any{"ok": true, "restoredFrom": id, "newVersionId": newID})
+	saved, warning := s.keepDeployed(p)
+	out := map[string]any{"ok": true, "restoredFrom": id, "newVersionId": newID, "saved": saved}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	writeJSON(w, 200, out)
 }
 
 func (s *Server) handleTestDatasource(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +161,12 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 		versionID, _ = s.versions.Save(r.Context(), project.RedactSecretsJSON(raw), label)
 	}
 	s.recordAudit(r, audit.ActionProjectDeploy, "", nil, nil, fmt.Sprintf("pages=%d datasources=%d", len(p.Pages), len(p.Datasources)))
-	writeJSON(w, 200, map[string]any{"ok": true, "datasources": len(p.Datasources), "pages": len(p.Pages), "versionId": versionID})
+	saved, warning := s.keepDeployed(p)
+	out := map[string]any{"ok": true, "datasources": len(p.Datasources), "pages": len(p.Pages), "versionId": versionID, "saved": saved}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	writeJSON(w, 200, out)
 }
 
 func (s *Server) handleListDatasources(w http.ResponseWriter, r *http.Request) {

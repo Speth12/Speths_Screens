@@ -166,6 +166,9 @@ A fixed address for the panel (a DHCP reservation in your router) saves you from
   `--history=/home/admin/panel-test/history.db`, then `systemctl --user daemon-reload` and
   `systemctl --user restart speths-screens`. Watch the write load on the panel's storage first.
 - **Another project at start-up:** copy it to `panel-test` and run `sh install-service.sh <file>.screens.json`.
+- **A deploy is kept.** The runtime writes each deploy into the project file it was started with, so a restart or
+  a power cut brings back what was last deployed. When you update the panel, do not unpack the package over that
+  file (section 8 copies only the program).
 - **Logs:** `journalctl --user -u speths-screens -n 50 --no-pager`
 - **Remove it:** `sh uninstall-service.sh`
 - **Trying it by hand:** `sh run-test.sh [project]` runs it in the foreground; Ctrl+C stops it. Stop the service
@@ -286,7 +289,7 @@ Switching a project from `login` to `none` needs a logged-in deploy. The develop
 | --- | --- | --- |
 | `--mode` | `dev` | `dev` (this PC only, no login) or `runtime` |
 | `--addr` | `127.0.0.1:3001` dev, `:8080` runtime | Address to listen on. `:8090` listens on every network interface. |
-| `--project` | none | The project file to load. A deploy from the IDE replaces it. |
+| `--project` | none | The project file to load. Each deploy from the IDE is written into it (owner-readable only: it holds the datasources' passwords), so a restart loads what was last deployed. In desktop mode it is `project.screens.json` in the data folder. |
 | `--history`, `--history-retention` | `history.db`, 7 days | Trend database (`:memory:` keeps none) and how long to keep it |
 | `--alarm-db`, `--security-db`, `--recipe-db`, `--memory-db`, `--version-db`, `--audit-db` | files in the working folder (the audit log is off unless `--audit-db` is set) | Where each store lives |
 | `--cors-origins` | none | Extra web origins allowed to call the API from a browser page served somewhere else. The IDE does not need it: it reaches other runtimes through its own program |

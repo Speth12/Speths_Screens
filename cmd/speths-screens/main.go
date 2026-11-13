@@ -138,6 +138,8 @@ func main() {
 			*addr = a
 		}
 	}
+	// A project named on the command line must exist; the data folder's own may not yet.
+	explicitProject := *projectPath != ""
 	if *dataDir != "" {
 		if err := os.MkdirAll(*dataDir, 0o755); err != nil {
 			log.Fatalf("[Speth's Screens] data folder: %v", err)
@@ -146,10 +148,9 @@ func main() {
 			*f = inDataDir(*dataDir, *f)
 		}
 		log.Printf("[Speth's Screens] data folder: %s", *dataDir)
+		// The data folder's project: loaded when it is there, and where a deploy is kept.
 		if *projectPath == "" {
-			if p := filepath.Join(*dataDir, "project.screens.json"); fileExists(p) {
-				*projectPath = p
-			}
+			*projectPath = filepath.Join(*dataDir, "project.screens.json")
 		}
 	}
 
@@ -256,7 +257,7 @@ func main() {
 	rt.Start(ctx)
 	defer rt.Stop()
 
-	if *projectPath != "" {
+	if *projectPath != "" && (explicitProject || fileExists(*projectPath)) {
 		p, err := project.Load(*projectPath)
 		if err != nil {
 			log.Fatalf("[Speth's Screens] load project: %v", err)
@@ -284,6 +285,7 @@ func main() {
 	srv := api.New(rt, assets, versionSt)
 	srv.DevMode = *mode == "dev"
 	srv.Version = version
+	srv.ProjectFile = *projectPath
 	// The program that serves the IDE (dev mode, or a runtime built with it) relays the IDE's requests to the
 	// saved deploy targets; a runtime without the IDE, such as the panel's, has no relay.
 	if *mode == "dev" || ideOn {
