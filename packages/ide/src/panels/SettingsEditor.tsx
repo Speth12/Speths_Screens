@@ -1,7 +1,7 @@
 // Draws the settings a widget manifest declares (@speths-screens/widgets),
 // one control per field kind. Replaces the hand-written editor per widget.
 import { useRef } from "react";
-import { SYMBOLS, SymbolSVG, recipeSetsOf, type Field } from "@speths-screens/widgets";
+import { FONTS, SYMBOLS, SymbolSVG, fontStack, recipeSetsOf, type Field, type FontKind } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
 import { useProject } from "../store/projectStore";
 import { BindingInput } from "./BindingInput";
@@ -74,7 +74,19 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
           {note}
         </div>
       );
+    case "font":
+      return <FontPicker f={f} value={v as string | undefined} put={put} />;
     case "text":
+      if (f.multiline) {
+        return (
+          <div>
+            <Label text={f.label} />
+            <textarea aria-label={f.label} rows={2} value={(v as string | undefined) ?? f.default ?? ""} placeholder={f.placeholder}
+              onChange={(e) => put(e.target.value === "" ? undefined : e.target.value)} className={`${inp} resize-y`} />
+            {note}
+          </div>
+        );
+      }
       return (
         <div>
           <Label text={f.label} />
@@ -142,12 +154,14 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
       );
     }
     case "choice": {
-      const cur = (v as string | undefined) ?? f.default ?? "";
+      const cur = v !== undefined ? String(v) : f.default ?? "";
+      // "" is the default, which is not stored; a numeric choice is stored as a number.
+      const store = (value: string) => put(value === "" ? undefined : f.numeric ? Number(value) : value);
       if (f.display === "select") {
         return (
           <div>
             <Label text={f.label} />
-            <select aria-label={f.label} value={cur} onChange={(e) => put(e.target.value)} className={inp}>
+            <select aria-label={f.label} value={cur} onChange={(e) => store(e.target.value)} className={inp}>
               {f.options.map((o) => <option key={o.value} value={o.value}>{o.label ?? o.value}</option>)}
             </select>
             {note}
@@ -174,7 +188,7 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
           <Label text={f.label} />
           <div className="flex gap-1 flex-wrap">
             {f.options.map((o) => (
-              <button key={o.value} onClick={() => put(o.value === "" ? undefined : o.value)} className={pick(cur === o.value)}>
+              <button key={o.value} onClick={() => store(o.value)} className={pick(cur === o.value)}>
                 {o.label ?? o.value}
               </button>
             ))}
@@ -312,6 +326,35 @@ function CustomWidgetParams({ f, customWidgetId, value, put }: {
             onChange={(s) => put(withKey(value, p.name, s || undefined))} className={`${inp} font-mono w-full`} />
         </div>
       ))}
+    </div>
+  );
+}
+
+const FONT_KINDS: [FontKind, string][] = [["sans", "Sans"], ["condensed", "Condensed"], ["mono", "Monospace (numbers line up)"], ["serif", "Serif"], ["display", "Display"]];
+
+/** Every font there is: the theme's, the bundled ones by kind, the project's own, and the device's. */
+export function FontPicker({ f, value, put }: { f: { label: string }; value: string | undefined; put: (v: unknown) => void }) {
+  const own = useProject((s) => s.project.fonts) ?? [];
+  const known = value === undefined || value in FONTS || ["mono", "sans", "serif"].includes(value) || own.some((x) => x.id === value);
+  return (
+    <div>
+      <Label text={f.label} />
+      <select aria-label={f.label} value={value ?? ""} onChange={(e) => put(e.target.value || undefined)} className={inp} style={{ fontFamily: fontStack(value) }}>
+        <option value="">The theme's font</option>
+        {!known && <option value={value}>{value} (missing)</option>}
+        {own.length > 0 && <optgroup label="This project's fonts">{own.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</optgroup>}
+        {FONT_KINDS.map(([kind, label]) => (
+          <optgroup key={kind} label={label}>
+            {Object.entries(FONTS).filter(([id, x]) => x.kind === kind && id !== "system").map(([id, x]) => <option key={id} value={id}>{x.name}</option>)}
+          </optgroup>
+        ))}
+        <optgroup label="The device's own">
+          <option value="system">System</option>
+          <option value="sans">Sans</option>
+          <option value="serif">Serif</option>
+          <option value="mono">Monospace</option>
+        </optgroup>
+      </select>
     </div>
   );
 }

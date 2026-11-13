@@ -11,6 +11,8 @@ type Types struct {
 	Datasources      []Datasource          `json:"datasources"`
 	// Symbol pack ids shown in the IDE symbol library. Missing means all packs
 	EnabledSymbolPacks []string `json:"enabledSymbolPacks,omitempty"`
+	// The project's own fonts, used by their id wherever a font is chosen
+	Fonts []FontAsset `json:"fonts,omitempty"`
 	// What the historian stores and for how long. Missing means every change, plus one sample
 	// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 	Historian *HistorianSettings `json:"historian,omitempty"`
@@ -378,7 +380,9 @@ type CustomWidgetPartProps struct {
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+	// the project's own fonts), or mono | sans | serif for the device's own; empty means the
+	// theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -387,8 +391,24 @@ type CustomWidgetPartProps struct {
 	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
-	Label         *string `json:"label,omitempty"`
-	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+	// draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64  `json:"fontWeight,omitempty"`
+	Label      *string `json:"label,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor *string `json:"labelColor,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *LabelPosition `json:"labelPosition,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize      *string   `json:"labelSize,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight *float64 `json:"lineHeight,omitempty"`
+	NoPadding  *bool    `json:"noPadding,omitempty"`
 	// Space inside the card in pixels; overrides noPadding and the theme
 	Padding *float64 `json:"padding,omitempty"`
 	// Corner radius in pixels; missing means the theme's
@@ -400,12 +420,22 @@ type CustomWidgetPartProps struct {
 	// Show the tag quality indicator
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// false hides the unit beside the value; missing means shown
-	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// A line through the text
+	Strike    *bool      `json:"strike,omitempty"`
 	TextAlign *TextAlign `json:"textAlign,omitempty"`
 	TextColor *string    `json:"textColor,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow    *TextShadow `json:"textShadow,omitempty"`
+	TextTransform *TextCase   `json:"textTransform,omitempty"`
 	// top | center | bottom: where the value sits in the card; missing means center
 	Valign *string `json:"valign,omitempty"`
-	// TextDisplay: fixed text shown instead of a tag value
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+	// ellipsis; missing means the widget's own way
+	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+	Rotation *int64 `json:"rotation,omitempty"`
+	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
 	FalseColor *string `json:"falseColor,omitempty"`
@@ -649,6 +679,18 @@ type CalculatedTag struct {
 	Path string `json:"path"`
 }
 
+// A font file kept in the project (TTF, OTF, WOFF or WOFF2)
+type FontAsset struct {
+	// base64 data URL of the font file
+	DataURL string `json:"dataUrl"`
+	// What a font setting names it by
+	ID string `json:"id"`
+	// The name shown in the editor's font lists
+	Name string `json:"name"`
+	// Original file size in bytes
+	Size *int64 `json:"size,omitempty"`
+}
+
 // What the historian stores and for how long. Missing means every change, plus one sample
 // per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 type HistorianSettings struct {
@@ -839,7 +881,9 @@ type WidgetProps struct {
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+	// the project's own fonts), or mono | sans | serif for the device's own; empty means the
+	// theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -848,8 +892,24 @@ type WidgetProps struct {
 	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
-	Label         *string `json:"label,omitempty"`
-	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+	// draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64  `json:"fontWeight,omitempty"`
+	Label      *string `json:"label,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor *string `json:"labelColor,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *LabelPosition `json:"labelPosition,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize      *string   `json:"labelSize,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight *float64 `json:"lineHeight,omitempty"`
+	NoPadding  *bool    `json:"noPadding,omitempty"`
 	// Space inside the card in pixels; overrides noPadding and the theme
 	Padding *float64 `json:"padding,omitempty"`
 	// Corner radius in pixels; missing means the theme's
@@ -861,12 +921,22 @@ type WidgetProps struct {
 	// Show the tag quality indicator
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// false hides the unit beside the value; missing means shown
-	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// A line through the text
+	Strike    *bool      `json:"strike,omitempty"`
 	TextAlign *TextAlign `json:"textAlign,omitempty"`
 	TextColor *string    `json:"textColor,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow    *TextShadow `json:"textShadow,omitempty"`
+	TextTransform *TextCase   `json:"textTransform,omitempty"`
 	// top | center | bottom: where the value sits in the card; missing means center
 	Valign *string `json:"valign,omitempty"`
-	// TextDisplay: fixed text shown instead of a tag value
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+	// ellipsis; missing means the widget's own way
+	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+	Rotation *int64 `json:"rotation,omitempty"`
+	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
 	FalseColor *string `json:"falseColor,omitempty"`
@@ -1181,11 +1251,11 @@ type ShellStyle struct {
 	// Navigation: the background of the page being shown
 	ActiveBackground *string `json:"activeBackground,omitempty"`
 	// Navigation: the text of the page being shown
-	ActiveTextColor *string    `json:"activeTextColor,omitempty"`
-	Background      *string    `json:"background,omitempty"`
-	Bold            *bool      `json:"bold,omitempty"`
-	BorderColor     *string    `json:"borderColor,omitempty"`
-	Font            *ThemeFont `json:"font,omitempty"`
+	ActiveTextColor *string `json:"activeTextColor,omitempty"`
+	Background      *string `json:"background,omitempty"`
+	Bold            *bool   `json:"bold,omitempty"`
+	BorderColor     *string `json:"borderColor,omitempty"`
+	Font            *string `json:"font,omitempty"`
 	// Text size against the theme's; missing means normal
 	FontSize  *FontSize `json:"fontSize,omitempty"`
 	TextColor *string   `json:"textColor,omitempty"`
@@ -1217,7 +1287,7 @@ type Theme struct {
 	Corners *ThemeCorners `json:"corners,omitempty"`
 	Density *ThemeDensity `json:"density,omitempty"`
 	Depth   *ThemeDepth   `json:"depth,omitempty"`
-	Font    *ThemeFont    `json:"font,omitempty"`
+	Font    *string       `json:"font,omitempty"`
 	Mode    *ThemeMode    `json:"mode,omitempty"`
 	Palette *ThemePalette `json:"palette,omitempty"`
 	Preset  *ThemePreset  `json:"preset,omitempty"`
@@ -1455,6 +1525,25 @@ const (
 	Rectangle ShapeKind = "rectangle"
 )
 
+// Where the label sits: above the value (the default), below it, or to its left
+type LabelPosition string
+
+const (
+	LabelPositionBottom LabelPosition = "bottom"
+	LabelPositionLeft   LabelPosition = "left"
+	LabelPositionTop    LabelPosition = "top"
+)
+
+// Letters as written, ALL CAPITALS, all small, or Each Word Capitalized
+type TextCase string
+
+const (
+	Capitalize   TextCase = "capitalize"
+	Lowercase    TextCase = "lowercase"
+	TextCaseNone TextCase = "none"
+	Uppercase    TextCase = "uppercase"
+)
+
 // Symbol: what it does while animate is true
 //
 // still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
@@ -1484,6 +1573,25 @@ const (
 	TextAlignCenter TextAlign = "center"
 	TextAlignLeft   TextAlign = "left"
 	TextAlignRight  TextAlign = "right"
+)
+
+// A shadow or an outline behind the text, for text over a picture or a color
+type TextShadow string
+
+const (
+	Outline        TextShadow = "outline"
+	Strong         TextShadow = "strong"
+	TextShadowSoft TextShadow = "soft"
+)
+
+// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+// ellipsis; missing means the widget's own way
+type WrapEnum string
+
+const (
+	Ellipsis WrapEnum = "ellipsis"
+	Nowrap   WrapEnum = "nowrap"
+	Wrap     WrapEnum = "wrap"
 )
 
 // Trend X-axis label format
@@ -1674,17 +1782,6 @@ const (
 	Mark      Logo = "mark"
 )
 
-// The text font. All but system are bundled, so a PLC with no internet shows the same text
-type ThemeFont string
-
-const (
-	Inter    ThemeFont = "inter"
-	NotoSans ThemeFont = "noto-sans"
-	OpenSans ThemeFont = "open-sans"
-	Roboto   ThemeFont = "roboto"
-	System   ThemeFont = "system"
-)
-
 // Text size against the theme's; missing means normal
 type FontSize string
 
@@ -1718,9 +1815,9 @@ const (
 type ThemeCorners string
 
 const (
-	Round  ThemeCorners = "round"
-	Soft   ThemeCorners = "soft"
-	Square ThemeCorners = "square"
+	Round            ThemeCorners = "round"
+	Square           ThemeCorners = "square"
+	ThemeCornersSoft ThemeCorners = "soft"
 )
 
 // Padding and text size. touch is larger, with controls at least 44 px tall, for tablets

@@ -1,19 +1,21 @@
 # Bundled fonts
 
-Inter, Roboto, Open Sans and Noto Sans, so a screen looks the same on a PLC with no internet.
-`fonts.css` declares them; the operator and the IDE import it.
+Twenty-one font families ship with the widget library, so a screen looks the same on a PLC or a panel
+with no internet. `fonts.css` declares them; the operator and the IDE import it, and a browser loads
+only the files a screen uses.
 
-- Subsets: Latin and Latin Extended (Western and Central European languages). Cyrillic, Greek and
-  others are not bundled yet; add them the same way when a project needs them.
-- Variable fonts, weights 400 to 700, WOFF2, downloaded from Google Fonts.
-- Each family is licensed under the SIL Open Font License 1.1; the license texts are in `licenses/`
-  (copied from github.com/google/fonts), and must stay with the font files.
+- Everything here except this file is written by `node scripts/fonts/fetch.mjs`, which takes the files
+  from the Fontsource packages on npm (the Google Fonts files). To add a family, add it to the list in
+  that script and run it; it also writes `packages/widgets/src/fontList.ts`. The files are committed,
+  so a build needs no network.
+- Subsets: Latin and Latin Extended (Western and Central European languages). Orbitron has Latin only.
+  Cyrillic, Greek and others are not bundled.
+- A family with a variable font has one file per subset for its whole weight range; Lato, Poppins,
+  Barlow, Barlow Condensed and IBM Plex Mono have a file per weight (300 to 700 of what they have).
+  Upright only: a browser slants the text for italic.
+- Each family's license is in `licenses/` and must stay with the font files: the SIL Open Font
+  License 1.1, except Roboto Slab (Apache License 2.0). `FAMILIES.md` lists each family's license and
+  copyright holder.
 
-| Family | Copyright holder |
-| --- | --- |
-| Inter | The Inter Project Authors (github.com/rsms/inter) |
-| Roboto | The Roboto Project Authors (github.com/googlefonts/roboto-classic) |
-| Open Sans | The Open Sans Project Authors (github.com/googlefonts/opensans) |
-| Noto Sans | The Noto Project Authors (github.com/notofonts/latin-greek-cyrillic) |
-
-"System" (Segoe UI, SF, Roboto on Android) needs no file but differs per device.
+"System" (Segoe UI, SF, Roboto on Android) needs no file but differs per device. A project can also
+hold its own fonts (Project properties, Fonts); those are in the project file, not here.

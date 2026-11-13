@@ -24,7 +24,7 @@ function settingNode(type: string, key: string): SchemaNode | undefined {
 
 /** Which schema types a field kind may edit. */
 const KIND_TYPES: Record<Field["kind"], string[] | "any"> = {
-  number: ["number", "integer"], text: ["string"], color: ["string"], choice: ["string"],
+  number: ["number", "integer"], text: ["string"], font: ["string"], color: ["string"], choice: ["string", "integer"],
   page: ["string"], binding: ["string"], recipe: ["string"], image: ["string"], symbol: ["string"], customWidget: ["string"],
   boolean: ["boolean"], list: ["array"], numbers: ["array"], customWidgetParams: ["object"], value: "any",
 };
@@ -38,7 +38,7 @@ function checkField(where: string, f: Field, node: SchemaNode | undefined) {
     expect(types.some((t) => t && want.includes(t)), `${where}.${f.key}: ${f.kind} field on schema type ${String(n.type)}`).toBe(true);
   }
   if (f.kind === "choice" && n.enum) {
-    expect(f.options.map((o) => o.value).filter((v) => v !== "").sort(), `${where}.${f.key} options`).toEqual([...n.enum].sort());
+    expect(f.options.map((o) => o.value).filter((v) => v !== "").sort(), `${where}.${f.key} options`).toEqual([...n.enum].map(String).sort());
   }
   if (f.kind === "number" && f.default !== undefined) {
     if (f.min !== undefined) expect(f.default).toBeGreaterThanOrEqual(f.min);

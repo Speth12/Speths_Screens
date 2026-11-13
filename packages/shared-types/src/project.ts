@@ -14,6 +14,10 @@ export interface Project {
      */
     enabledSymbolPacks?: string[];
     /**
+     * The project's own fonts, used by their id wherever a font is chosen
+     */
+    fonts?: FontAsset[];
+    /**
      * What the historian stores and for how long. Missing means every change, plus one sample
      * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
      */
@@ -608,7 +612,9 @@ export interface CustomWidgetPartProps {
     colorThresholds?: Threshold[];
     fontBold?:        boolean;
     /**
-     * mono | sans | serif; empty means the theme font
+     * A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+     * the project's own fonts), or mono | sans | serif for the device's own; empty means the
+     * theme font
      */
     fontFamily?: string;
     fontItalic?: boolean;
@@ -622,8 +628,38 @@ export interface CustomWidgetPartProps {
      */
     fontSize?:      string;
     fontUnderline?: boolean;
-    label?:         string;
-    noPadding?:     boolean;
+    /**
+     * How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+     * draws the nearest weight it has. Overrides fontBold
+     */
+    fontWeight?: number;
+    label?:      string;
+    /**
+     * The label's color; missing means the text color, faded
+     */
+    labelColor?: string;
+    /**
+     * Where the label sits: above the value (the default), below it, or to its left
+     */
+    labelPosition?: LabelPosition;
+    /**
+     * The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+     */
+    labelSize?:      string;
+    labelTransform?: TextCase;
+    /**
+     * How heavy the label's text is, as fontWeight
+     */
+    labelWeight?: number;
+    /**
+     * Space added between letters, in ems (0.05 is a little wider); negative is tighter
+     */
+    letterSpacing?: number;
+    /**
+     * The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+     */
+    lineHeight?: number;
+    noPadding?:  boolean;
     /**
      * Space inside the card in pixels; overrides noPadding and the theme
      */
@@ -647,15 +683,33 @@ export interface CustomWidgetPartProps {
     /**
      * false hides the unit beside the value; missing means shown
      */
-    showUnit?:  boolean;
+    showUnit?: boolean;
+    /**
+     * A line through the text
+     */
+    strike?:    boolean;
     textAlign?: TextAlign;
     textColor?: string;
+    /**
+     * A shadow or an outline behind the text, for text over a picture or a color
+     */
+    textShadow?:    TextShadow;
+    textTransform?: TextCase;
     /**
      * top | center | bottom: where the value sits in the card; missing means center
      */
     valign?: string;
     /**
-     * TextDisplay: fixed text shown instead of a tag value
+     * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+     * ellipsis; missing means the widget's own way
+     */
+    wrap?: Wrap;
+    /**
+     * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+     */
+    rotation?: number;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
      */
     staticText?: string;
     /**
@@ -958,6 +1012,16 @@ export type Format = "time" | "timeSeconds" | "dateTime" | "date";
 export type ShapeKind = "rectangle" | "ellipse" | "line";
 
 /**
+ * Where the label sits: above the value (the default), below it, or to its left
+ */
+export type LabelPosition = "top" | "bottom" | "left";
+
+/**
+ * Letters as written, ALL CAPITALS, all small, or Each Word Capitalized
+ */
+export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
+
+/**
  * Symbol: what it does while animate is true
  *
  * still: never moves. spin: turns round. pulse: fades in and out. A person who asks the
@@ -1016,6 +1080,17 @@ export interface TrendSeries {
 }
 
 export type TextAlign = "left" | "center" | "right";
+
+/**
+ * A shadow or an outline behind the text, for text over a picture or a color
+ */
+export type TextShadow = "soft" | "strong" | "outline";
+
+/**
+ * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+ * ellipsis; missing means the widget's own way
+ */
+export type Wrap = "wrap" | "nowrap" | "ellipsis";
 
 /**
  * Trend X-axis label format
@@ -1141,6 +1216,28 @@ export interface CalculatedTag {
 }
 
 export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual" | "memory";
+
+/**
+ * A font file kept in the project (TTF, OTF, WOFF or WOFF2)
+ */
+export interface FontAsset {
+    /**
+     * base64 data URL of the font file
+     */
+    dataUrl: string;
+    /**
+     * What a font setting names it by
+     */
+    id: string;
+    /**
+     * The name shown in the editor's font lists
+     */
+    name: string;
+    /**
+     * Original file size in bytes
+     */
+    size?: number;
+}
 
 /**
  * What the historian stores and for how long. Missing means every change, plus one sample
@@ -1420,7 +1517,9 @@ export interface WidgetProps {
     colorThresholds?: Threshold[];
     fontBold?:        boolean;
     /**
-     * mono | sans | serif; empty means the theme font
+     * A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+     * the project's own fonts), or mono | sans | serif for the device's own; empty means the
+     * theme font
      */
     fontFamily?: string;
     fontItalic?: boolean;
@@ -1434,8 +1533,38 @@ export interface WidgetProps {
      */
     fontSize?:      string;
     fontUnderline?: boolean;
-    label?:         string;
-    noPadding?:     boolean;
+    /**
+     * How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+     * draws the nearest weight it has. Overrides fontBold
+     */
+    fontWeight?: number;
+    label?:      string;
+    /**
+     * The label's color; missing means the text color, faded
+     */
+    labelColor?: string;
+    /**
+     * Where the label sits: above the value (the default), below it, or to its left
+     */
+    labelPosition?: LabelPosition;
+    /**
+     * The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+     */
+    labelSize?:      string;
+    labelTransform?: TextCase;
+    /**
+     * How heavy the label's text is, as fontWeight
+     */
+    labelWeight?: number;
+    /**
+     * Space added between letters, in ems (0.05 is a little wider); negative is tighter
+     */
+    letterSpacing?: number;
+    /**
+     * The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+     */
+    lineHeight?: number;
+    noPadding?:  boolean;
     /**
      * Space inside the card in pixels; overrides noPadding and the theme
      */
@@ -1459,15 +1588,33 @@ export interface WidgetProps {
     /**
      * false hides the unit beside the value; missing means shown
      */
-    showUnit?:  boolean;
+    showUnit?: boolean;
+    /**
+     * A line through the text
+     */
+    strike?:    boolean;
     textAlign?: TextAlign;
     textColor?: string;
+    /**
+     * A shadow or an outline behind the text, for text over a picture or a color
+     */
+    textShadow?:    TextShadow;
+    textTransform?: TextCase;
     /**
      * top | center | bottom: where the value sits in the card; missing means center
      */
     valign?: string;
     /**
-     * TextDisplay: fixed text shown instead of a tag value
+     * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+     * ellipsis; missing means the widget's own way
+     */
+    wrap?: Wrap;
+    /**
+     * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+     */
+    rotation?: number;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
      */
     staticText?: string;
     /**
@@ -2039,18 +2186,13 @@ export interface ShellStyle {
     background?:      string;
     bold?:            boolean;
     borderColor?:     string;
-    font?:            ThemeFont;
+    font?:            string;
     /**
      * Text size against the theme's; missing means normal
      */
     fontSize?:  FontSize;
     textColor?: string;
 }
-
-/**
- * The text font. All but system are bundled, so a PLC with no internet shows the same text
- */
-export type ThemeFont = "inter" | "roboto" | "open-sans" | "noto-sans" | "system";
 
 /**
  * Text size against the theme's; missing means normal
@@ -2109,7 +2251,7 @@ export interface Theme {
     corners?: ThemeCorners;
     density?: ThemeDensity;
     depth?:   ThemeDepth;
-    font?:    ThemeFont;
+    font?:    string;
     mode?:    ThemeMode;
     palette?: ThemePalette;
     preset?:  ThemePreset;

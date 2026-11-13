@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { applyProjectFonts } from "@speths-screens/widgets";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Canvas } from "./panels/Canvas";
 import { Workspace } from "./panels/Workspace";
@@ -107,6 +108,9 @@ export function App() {
 
   const selectedWidgetId = useProject(useShallow((s) => s.selectedWidgetId));
   useKeyboardShortcuts();
+  // The project's own fonts, so the canvas and the font lists draw them.
+  const projectFonts = useProject((st) => st.project.fonts);
+  useEffect(() => { applyProjectFonts(projectFonts); }, [projectFonts]);
 
   useEffect(() => {
     const toggle = () => setShowHelp((v) => !v);

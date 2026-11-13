@@ -12,7 +12,7 @@ import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
 import { applyAlarmMessage } from "./alarmMessages";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
-import { applyTheme, deviceFor, pickLanguage, resolveTheme, translator } from "@speths-screens/widgets";
+import { applyProjectFonts, applyTheme, deviceFor, pickLanguage, resolveTheme, translator } from "@speths-screens/widgets";
 
 // A browser's own theme choice, kept on this device only.
 const THEME_KEY = "speths-screens-theme";
@@ -70,6 +70,9 @@ export function App() {
   useEffect(() => {
     applyTheme(resolveTheme(projectTheme, chosenMode));
   }, [projectTheme, chosenMode]);
+  // The project's own fonts, so text set in one is drawn in it.
+  const projectFonts = project?.fonts;
+  useEffect(() => { applyProjectFonts(projectFonts); }, [projectFonts]);
 
   // Kiosk swipe — touch start X ref
   const touchStartX = useRef(0);

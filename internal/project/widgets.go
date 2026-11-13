@@ -9,8 +9,30 @@ type GaugeProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -54,8 +76,30 @@ type NumericDisplayProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -98,8 +142,30 @@ type TextDisplayProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -130,8 +196,10 @@ type TextDisplayProps struct {
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
-	// TextDisplay: fixed text shown instead of a tag value
+	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
 	StaticText *string `json:"staticText,omitempty"`
+	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+	Rotation *int64 `json:"rotation,omitempty"`
 }
 
 // LedProps holds the settings of a led widget.
@@ -141,8 +209,30 @@ type LedProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -190,8 +280,30 @@ type TankProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -235,8 +347,30 @@ type ButtonProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -285,8 +419,30 @@ type SetpointProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -331,8 +487,30 @@ type MultiStateProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -374,8 +552,30 @@ type TrendProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -436,8 +636,30 @@ type NumericInputProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -480,8 +702,30 @@ type TextInputProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -521,8 +765,30 @@ type HistoryLogProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -564,8 +830,30 @@ type AlarmBannerProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -609,8 +897,30 @@ type ImageProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -654,8 +964,30 @@ type SymbolProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -705,8 +1037,30 @@ type PipeProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -760,8 +1114,30 @@ type AlarmIndicatorProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -803,8 +1179,30 @@ type PageTitleProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -846,8 +1244,30 @@ type ShapeProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -905,8 +1325,30 @@ type CustomWidgetProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -950,8 +1392,30 @@ type PageListProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1001,8 +1465,30 @@ type ClockProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1048,8 +1534,30 @@ type DriverStatusProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1091,8 +1599,30 @@ type UserMenuProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1134,8 +1664,30 @@ type RecipesProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1181,8 +1733,30 @@ type TableProps struct {
 	BorderColor *string `json:"borderColor,omitempty"`
 	TextColor   *string `json:"textColor,omitempty"`
 	NoPadding   *bool   `json:"noPadding,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
 	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
 	FontSize *string `json:"fontSize,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -1401,30 +1975,30 @@ func (w Widget) AsTable() (TableProps, error) {
 
 // PropsKeys lists each widget type's settings, frame settings first.
 var PropsKeys = map[WidgetType][]string{
-	Gauge:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	NumericDisplay:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextDisplay:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText"},
-	LED:             {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
-	Tank:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
-	Button:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
-	Setpoint:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
-	MultiState:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
-	Trend:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
-	NumericInput:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextInput:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
-	HistoryLog:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
-	AlarmBanner:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
-	WidgetTypeImage: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
-	Symbol:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
-	Pipe:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
-	AlarmIndicator:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"},
-	PageTitle:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"},
-	Shape:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
-	CustomWidget:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
-	PageList:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"},
-	Clock:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
-	DriverStatus:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
-	UserMenu:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
-	Recipes:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"},
-	Table:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
+	Gauge:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	NumericDisplay:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextDisplay:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText", "rotation"},
+	LED:             {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "trueColor", "falseColor", "trueLabel", "falseLabel"},
+	Tank:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "thresholds"},
+	Button:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
+	Setpoint:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
+	MultiState:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
+	Trend:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
+	NumericInput:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextInput:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
+	HistoryLog:      {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
+	AlarmBanner:     {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
+	WidgetTypeImage: {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
+	Symbol:          {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
+	Pipe:            {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
+	AlarmIndicator:  {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"},
+	PageTitle:       {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"},
+	Shape:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
+	CustomWidget:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
+	PageList:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"},
+	Clock:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
+	DriverStatus:    {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
+	UserMenu:        {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
+	Recipes:         {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"},
+	Table:           {"label", "bgColor", "borderColor", "textColor", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
 }

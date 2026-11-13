@@ -11,8 +11,9 @@
 //            color property can name one as "token:alarm-critical"
 // plus shape, type, spacing and shadow, so a theme can change the feel too.
 import type {
-  Theme as ThemeSpec, ThemeCorners, ThemeDensity, ThemeDepth, ThemeFont, ThemeMode, ThemePalette, ThemePreset,
+  FontAsset, Theme as ThemeSpec, ThemeCorners, ThemeDensity, ThemeDepth, ThemeMode, ThemePalette, ThemePreset,
 } from "@speths-screens/shared-types";
+import { FONT_LIST } from "./fontList";
 
 /** The text sizes widgets draw with, smallest to largest, as CSS lengths. Tailwind's text-xs to
  *  text-3xl read them (--type-xs to --type-3xl), so a theme changes every widget's text at once. */
@@ -22,16 +23,62 @@ export const TYPE_SCALE: TypeScale = {
   xs: "0.75rem", sm: "0.875rem", base: "1rem", lg: "1.125rem", xl: "1.25rem", "2xl": "1.5rem", "3xl": "1.875rem",
 };
 
-/** The fonts a project can choose from. Inter, Roboto, Open Sans and Noto Sans ship with the widget
- *  library (fonts/fonts.css); "system" is whatever the device has. Each stack ends in a generic family. */
-export const FONTS = {
-  inter: { name: "Inter", stack: "Inter, 'Segoe UI', system-ui, sans-serif" },
-  roboto: { name: "Roboto", stack: "Roboto, 'Segoe UI', system-ui, sans-serif" },
-  "open-sans": { name: "Open Sans", stack: "'Open Sans', 'Segoe UI', system-ui, sans-serif" },
-  "noto-sans": { name: "Noto Sans", stack: "'Noto Sans', 'Segoe UI', system-ui, sans-serif" },
-  system: { name: "System", stack: "system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" },
-} as const;
-export type FontId = keyof typeof FONTS;
+export type FontKind = "sans" | "condensed" | "mono" | "serif" | "display";
+export type FontId = (typeof FONT_LIST)[number]["id"] | "system";
+export interface FontInfo {
+  name: string;
+  /** The CSS font-family list: the font, then what a device has that is like it, then a generic family. */
+  stack: string;
+  kind: FontKind;
+  /** The weights it draws: every weight from the first to the second (a variable font), or just these. */
+  weights: readonly number[];
+  variable: boolean;
+}
+
+/** What a device draws when a font is missing, by the kind of font. Each ends in a generic family. */
+const FALLBACK: Record<FontKind, string> = {
+  sans: "'Segoe UI', system-ui, sans-serif",
+  condensed: "'Arial Narrow', 'Segoe UI', system-ui, sans-serif",
+  mono: "Consolas, 'DejaVu Sans Mono', monospace",
+  serif: "Georgia, 'Times New Roman', serif",
+  display: "'Segoe UI', system-ui, sans-serif",
+};
+const quoted = (name: string) => (/^[A-Za-z]+$/.test(name) ? name : `'${name}'`);
+
+/** The fonts a project can choose from. All but "system" (whatever the device has) ship with the widget
+ *  library (fonts/fonts.css, written by scripts/fonts/fetch.mjs), so a PLC with no internet shows them. */
+export const FONTS: Record<FontId, FontInfo> = {
+  ...(Object.fromEntries(FONT_LIST.map((f) => [f.id, { name: f.name, stack: `${quoted(f.name)}, ${FALLBACK[f.kind]}`, kind: f.kind, weights: f.weights, variable: f.variable }])) as unknown as Record<Exclude<FontId, "system">, FontInfo>),
+  system: { name: "System", stack: "system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", kind: "sans", weights: [100, 900], variable: true },
+};
+
+/** The CSS family name a project's own font is declared under. */
+export const projectFontFamily = (id: string) => `pf-${id}`;
+
+/** The CSS font-family list for a font id: a bundled font, or else one of the project's own. */
+export function fontStack(id: string | undefined): string | undefined {
+  if (!id) return undefined;
+  const bundled = (FONTS as Record<string, FontInfo | undefined>)[id];
+  return bundled ? bundled.stack : `'${projectFontFamily(id)}', ${FALLBACK.sans}`;
+}
+
+/** The @font-face rules that make a project's own fonts available under their ids. */
+export function projectFontsCss(fonts: readonly FontAsset[] | undefined): string {
+  return (fonts ?? [])
+    .filter((f) => /^[a-z0-9][a-z0-9-]*$/.test(f.id) && f.dataUrl.startsWith("data:"))
+    .map((f) => `@font-face{font-family:'${projectFontFamily(f.id)}';font-display:swap;src:url("${f.dataUrl.replace(/["\\\n\r]/g, "")}")}`)
+    .join("\n");
+}
+
+/** Puts the project's own fonts into the page (one style element, replaced when the fonts change). */
+export function applyProjectFonts(fonts: readonly FontAsset[] | undefined, doc: Document | undefined = typeof document === "undefined" ? undefined : document): void {
+  if (!doc) return;
+  const css = projectFontsCss(fonts);
+  let el = doc.getElementById("project-fonts");
+  if (!css) { el?.remove(); return; }
+  if (!el) { el = doc.createElement("style"); el.id = "project-fonts"; doc.head.appendChild(el); }
+  if (el.textContent !== css) el.textContent = css;
+}
 
 /** The colors of a theme, by token. */
 export interface ThemeColors {
@@ -141,7 +188,7 @@ const DENSITY: Record<ThemeDensity, { pad: string; size: string; control: string
 
 interface Preset {
   name: string; tagline: string; mode: ThemeMode; palette: ThemePalette;
-  corners: ThemeCorners; depth: ThemeDepth; density: ThemeDensity; font: ThemeFont;
+  corners: ThemeCorners; depth: ThemeDepth; density: ThemeDensity; font: FontId;
 }
 
 /** The ready-made starting points. An element in a project's theme replaces the preset's. */
@@ -183,7 +230,7 @@ export function resolveTheme(spec?: ThemeSpec | null, mode?: ThemeMode | null): 
     id, name: p.name, tagline: p.tagline, mode: m,
     gray: palette.gray, colors,
     shape: { radius: CORNERS[spec?.corners ?? p.corners], lineWidth: depth.line },
-    type: { fontSans: FONTS[spec?.font ?? p.font].stack, fontMono: "Consolas, 'DejaVu Sans Mono', monospace", fontSize: density.size, scale: TYPE_SCALE },
+    type: { fontSans: fontStack(spec?.font) ?? FONTS[p.font].stack, fontMono: "Consolas, 'DejaVu Sans Mono', monospace", fontSize: density.size, scale: TYPE_SCALE },
     space: { pad: density.pad, control: density.control },
     shadow: depth.shadow,
   };

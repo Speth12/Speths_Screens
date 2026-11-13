@@ -34,8 +34,8 @@ export {
 } from "./layout";
 export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
 export {
-  THEMES, PRESETS, resolveTheme, COLOR_TOKENS, FONTS, TYPE_SCALE, themeVars, themeStyle, applyTheme, tokenColor,
-  type Theme, type ThemeColors, type FontId, type TypeScale,
+  THEMES, PRESETS, resolveTheme, COLOR_TOKENS, FONTS, fontStack, projectFontsCss, applyProjectFonts, projectFontFamily, TYPE_SCALE, themeVars, themeStyle, applyTheme, tokenColor,
+  type Theme, type ThemeColors, type FontId, type FontInfo, type FontKind, type TypeScale,
 } from "./tokens";
 export { Gallery, GALLERY_STATES, galleryCell, galleryInsert, type GalleryState } from "./gallery";
 export type { GallerySample } from "./manifest";

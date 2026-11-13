@@ -2,12 +2,13 @@
 // from the default, and the canvas redraws the header as it changes. In a project that holds its
 // header and navigation as custom widgets, a choice changes those custom widgets and leaves what was
 // edited by hand alone (mergeChrome).
-import { FONTS, HEADER_HEIGHT, HEADER_PRESETS, SIDEBAR_WIDTH, contrastRatio, headerPresetOf, withHeaderPreset } from "@speths-screens/widgets";
+import { HEADER_HEIGHT, HEADER_PRESETS, SIDEBAR_WIDTH, contrastRatio, headerPresetOf, withHeaderPreset } from "@speths-screens/widgets";
 import type { Shell, ShellHeader, ShellNav, ShellNavOptions, ShellStyle } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { chromeWarnings, patchHeader, patchHeaderStyle, patchNavOptions, patchNavStyle, withNav } from "../store/chromeOptions";
 import { Button, Checkbox, Field, Input, Select } from "../ui";
 import { SCREEN_TAB, useWorkspace } from "../store/workspace";
+import { FontPicker } from "./SettingsEditor";
 
 const title = "text-ui-label font-semibold uppercase tracking-wide text-zinc-400";
 
@@ -39,12 +40,7 @@ function StyleFields({ what, style, nav, onChange }: { what: string; style: Shel
       <ColorField label="Background" value={s.background} onChange={(background) => onChange({ background })} />
       <ColorField label="Text" value={s.textColor} onChange={(textColor) => onChange({ textColor })} />
       <ColorField label="Border" value={s.borderColor} onChange={(borderColor) => onChange({ borderColor })} />
-      <Field label="Font">
-        <Select value={s.font ?? ""} onChange={(e) => onChange({ font: (e.target.value || undefined) as ShellStyle["font"] })}>
-          <option value="">The theme's</option>
-          {Object.entries(FONTS).map(([id, f]) => <option key={id} value={id}>{f.name}</option>)}
-        </Select>
-      </Field>
+      <FontPicker f={{ label: "Font" }} value={s.font} put={(v) => onChange({ font: v as string | undefined })} />
       {nav && <ColorField label="Current page background" value={s.activeBackground} onChange={(activeBackground) => onChange({ activeBackground })} />}
       {nav && <ColorField label="Current page text" value={s.activeTextColor} onChange={(activeTextColor) => onChange({ activeTextColor })} />}
       <Field label="Text size">

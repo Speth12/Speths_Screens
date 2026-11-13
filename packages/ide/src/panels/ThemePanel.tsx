@@ -1,8 +1,9 @@
 // The screens' look: take a preset whole, or change any element of it. The project holds only the
 // elements changed, so a project with just a preset follows the preset if it later improves.
-import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, FONTS, resolveTheme } from "@speths-screens/widgets";
+import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, resolveTheme } from "@speths-screens/widgets";
 import type { PageIcon, ShellNav, Theme, ThemePreset } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
+import { FontPicker } from "./SettingsEditor";
 import { CloseIcon } from "../ui/icons";
 import { withNav } from "../store/chromeOptions";
 
@@ -14,7 +15,6 @@ const ELEMENTS: { key: Element; label: string; options: readonly (readonly [stri
   { key: "corners", label: "Corners", options: [["square", "Square"], ["soft", "Soft"], ["round", "Round"]] },
   { key: "depth", label: "Depth", options: [["flat", "Flat, bordered"], ["raised", "Raised, shadow"], ["borderless", "Borderless"]] },
   { key: "density", label: "Density", options: [["compact", "Compact"], ["comfortable", "Comfortable"], ["touch", "Touch (large)"]] },
-  { key: "font", label: "Font", options: Object.entries(FONTS).map(([id, f]) => [id, f.name] as const) },
 ];
 
 const SHOWN = MANIFESTS.filter((m) => ["gauge", "button", "numericDisplay"].includes(m.type));
@@ -75,6 +75,7 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
                 </select>
               </label>
             ))}
+            <div data-testid="theme-font"><FontPicker f={{ label: "Font" }} value={spec?.font} put={(v) => set("font", (v as string | undefined) ?? "")} /></div>
             <label className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">Accent color
               <span className="flex items-center gap-1">
                 <input aria-label="Accent color" type="color" value={spec?.accent ?? resolved.colors.primary} onChange={(ev) => setAccent(ev.target.value)} />

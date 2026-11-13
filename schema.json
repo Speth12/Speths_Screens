@@ -115,6 +115,11 @@
       "type": "array",
       "items": { "$ref": "#/$defs/ImageAsset" }
     },
+    "fonts": {
+      "type": "array",
+      "description": "The project's own fonts, used by their id wherever a font is chosen",
+      "items": { "$ref": "#/$defs/FontAsset" }
+    },
     "udts": {
       "type": "array",
       "items": { "$ref": "#/$defs/UDT" }
@@ -191,8 +196,7 @@
     "ThemeFont": {
       "title": "ThemeFont",
       "type": "string",
-      "enum": ["inter", "roboto", "open-sans", "noto-sans", "system"],
-      "description": "The text font. All but system are bundled, so a PLC with no internet shows the same text"
+      "description": "The text font: the id of a bundled font (inter, roboto, open-sans, noto-sans, lato, jetbrains-mono and the others in packages/widgets/src/fontList.ts), system, or the id of one of the project's own fonts. Bundled and project fonts need no internet"
     },
     "Security": {
       "title": "Security",
@@ -988,6 +992,25 @@
         "basis": { "type": "integer", "minimum": 0 }
       }
     },
+    "FontAsset": {
+      "title": "FontAsset",
+      "type": "object",
+      "description": "A font file kept in the project (TTF, OTF, WOFF or WOFF2)",
+      "required": ["id", "name", "dataUrl"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "What a font setting names it by" },
+        "name": { "type": "string", "description": "The name shown in the editor's font lists" },
+        "dataUrl": { "type": "string", "description": "base64 data URL of the font file" },
+        "size": { "type": "integer", "description": "Original file size in bytes" }
+      }
+    },
+    "TextCase": {
+      "title": "TextCase",
+      "type": "string",
+      "enum": ["none", "uppercase", "lowercase", "capitalize"],
+      "description": "Letters as written, ALL CAPITALS, all small, or Each Word Capitalized"
+    },
     "ImageAsset": {
       "title": "ImageAsset",
       "type": "object",
@@ -1096,7 +1119,64 @@
         },
         "fontFamily": {
           "type": "string",
-          "description": "mono | sans | serif; empty means the theme font"
+          "description": "A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font"
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold"
+        },
+        "letterSpacing": {
+          "type": "number",
+          "minimum": -0.2,
+          "maximum": 2,
+          "description": "Space added between letters, in ems (0.05 is a little wider); negative is tighter"
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 4,
+          "description": "The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)"
+        },
+        "textTransform": {
+          "$ref": "#/$defs/TextCase"
+        },
+        "strike": {
+          "type": "boolean",
+          "description": "A line through the text"
+        },
+        "textShadow": {
+          "type": "string",
+          "enum": ["soft", "strong", "outline"],
+          "description": "A shadow or an outline behind the text, for text over a picture or a color"
+        },
+        "wrap": {
+          "type": "string",
+          "enum": ["wrap", "nowrap", "ellipsis"],
+          "description": "Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way"
+        },
+        "labelSize": {
+          "type": "string",
+          "description": "The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs"
+        },
+        "labelWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "How heavy the label's text is, as fontWeight"
+        },
+        "labelColor": {
+          "type": "string",
+          "description": "The label's color; missing means the text color, faded"
+        },
+        "labelTransform": {
+          "$ref": "#/$defs/TextCase"
+        },
+        "labelPosition": {
+          "type": "string",
+          "enum": ["top", "bottom", "left"],
+          "description": "Where the label sits: above the value (the default), below it, or to its left"
         },
         "fontSize": {
           "type": "string",
@@ -1234,7 +1314,14 @@
       "properties": {
         "staticText": {
           "type": "string",
-          "description": "TextDisplay: fixed text shown instead of a tag value"
+          "description": "TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line"
+        },
+        "rotation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 270,
+          "multipleOf": 90,
+          "description": "The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)"
         }
       },
       "unevaluatedProperties": false

@@ -102,6 +102,8 @@ type State = {
   setTheme: (theme: Theme | undefined) => void;
   /** The frame around the pages; an empty shell removes it, which means tabs. */
   setShell: (shell: Shell | undefined) => void;
+  /** The project's own fonts; none removes the list. */
+  setFonts: (fonts: import("@speths-screens/shared-types").FontAsset[]) => void;
   /** Shows or hides a widget on the screen size being edited (not the desktop). */
   setWidgetHidden: (pageId: string, id: string, hidden: boolean) => void;
   /** Takes a widget's layout for the screen size being edited back to what it inherits. */
@@ -587,6 +589,14 @@ export const useProject = create<State>((set, get) => {
           recipes: (s.project.recipes ?? []).filter((r) => r.id !== id),
         },
       }));
+    },
+
+    setFonts: (fonts) => {
+      pushHistory();
+      set((s) => {
+        const { fonts: _old, ...rest } = s.project;
+        return { project: fonts.length ? { ...rest, fonts } : rest };
+      });
     },
 
     importImage: (asset) => {

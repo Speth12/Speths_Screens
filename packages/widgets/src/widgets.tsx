@@ -15,7 +15,7 @@ import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { AccessGate } from "./access";
 import { usePopups } from "./popup";
-import { tokenColor } from "./tokens";
+import { fontStack, tokenColor } from "./tokens";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
 import { RecipesWidget } from "./recipes";
@@ -122,15 +122,46 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   serif: "ui-serif, Georgia, serif",
 };
 
-function fontStyle(p: FrameProps): React.CSSProperties {
+const TEXT_SHADOW: Record<string, string> = {
+  soft: "0 1px 2px rgba(0,0,0,.45)",
+  strong: "0 2px 6px rgba(0,0,0,.7), 0 0 2px rgba(0,0,0,.6)",
+  // Four shadows a pixel out make an outline in the page's color, which every browser draws.
+  outline: "-1px -1px 0 var(--background, #000), 1px -1px 0 var(--background, #000), -1px 1px 0 var(--background, #000), 1px 1px 0 var(--background, #000)",
+};
+const WRAP: Record<string, React.CSSProperties> = {
+  wrap: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
+  nowrap: { whiteSpace: "nowrap" },
+  ellipsis: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+};
+const textCase = (c: string | undefined) => (c && c !== "none" ? (c as React.CSSProperties["textTransform"]) : undefined);
+
+export function fontStyle(p: FrameProps): React.CSSProperties {
+  const lines = [p.fontUnderline && "underline", p.strike && "line-through"].filter(Boolean).join(" ");
   return {
-    fontFamily: FONT_FAMILY_MAP[p.fontFamily ?? ""] ?? undefined,
+    fontFamily: p.fontFamily ? FONT_FAMILY_MAP[p.fontFamily] ?? fontStack(p.fontFamily) : undefined,
     fontSize:   p.fontPx ? `${p.fontPx}px` : FONT_SIZE_MAP[p.fontSize ?? ""] ?? undefined,
-    fontWeight: p.fontBold    ? "bold"   : undefined,
+    fontWeight: p.fontWeight ?? (p.fontBold ? "bold" : undefined),
     fontStyle:  p.fontItalic  ? "italic" : undefined,
-    textDecoration: p.fontUnderline ? "underline" : undefined,
+    textDecoration: lines || undefined,
     textAlign:  p.textAlign ?? undefined,
     color:      p.textColor || undefined,
+    letterSpacing: p.letterSpacing !== undefined ? `${p.letterSpacing}em` : undefined,
+    lineHeight: p.lineHeight,
+    textTransform: textCase(p.textTransform),
+    textShadow: TEXT_SHADOW[p.textShadow ?? ""],
+    ...(WRAP[p.wrap ?? ""] ?? {}),
+  };
+}
+
+/** The label's own text settings; what is not set is the small, spaced, upper-case label it always was. */
+export function labelStyle(p: FrameProps, color: string): React.CSSProperties {
+  return {
+    color: p.labelColor || color,
+    opacity: p.labelColor ? undefined : 0.6,
+    fontSize: FONT_SIZE_MAP[p.labelSize ?? ""],
+    fontWeight: p.labelWeight,
+    textTransform: p.labelTransform ? (p.labelTransform === "none" ? "none" : p.labelTransform) : undefined,
+    letterSpacing: p.labelTransform && p.labelTransform !== "uppercase" ? "normal" : undefined,
   };
 }
 
@@ -218,23 +249,26 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     style.padding = 0;
   }
 
+  const labelAt = p.labelPosition ?? "top";
+  const label = p.label && !bare && p.showLabel !== false && w.type !== "button" && ( // a button says its own label
+    <div
+      className={labelAt === "left" ? "text-xs uppercase tracking-wider truncate shrink-0 self-center" : "text-xs uppercase tracking-wider truncate shrink-0"}
+      style={labelStyle(p, dynColor ?? (textColor ?? "var(--card-foreground)"))}
+    >
+      {p.label}
+    </div>
+  );
   return (
     <div
-      className="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden"
+      className={`h-full w-full flex ${labelAt === "left" ? "flex-row gap-2" : "flex-col gap-1"} select-none transition-colors overflow-hidden`}
       style={style}
     >
-      {p.label && !bare && p.showLabel !== false && w.type !== "button" && ( // a button says its own label
-        <div
-          className="text-xs uppercase tracking-wider truncate shrink-0"
-          style={{ color: dynColor ?? (textColor ?? "var(--card-foreground)"), opacity: 0.6 }}
-        >
-          {p.label}
-        </div>
-      )}
+      {labelAt !== "bottom" && label}
       {/* "fit" sizes the text in container units, which count from the nearest container: this box, not the page. */}
       <div className="flex-1 min-h-0 flex flex-col" style={p.fontSize === "fit" && !p.fontPx ? { containerType: "size" } : undefined}>
         <div className="flex-1 min-h-0 flex flex-col" style={fontStyle(p)}>{children}</div>
       </div>
+      {labelAt === "bottom" && label}
     </div>
   );
 }
@@ -352,9 +386,15 @@ function TextDisplayWidget({ w }: WP<"textDisplay">) {
   const t = useTag(p.staticText === undefined ? w.bindings?.value : undefined);
   const align = p.textAlign ?? "left";
   const justifyCls = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  const text = p.staticText ?? fmt(t.value);
+  // Cut off with an ellipsis needs a block to cut, not a flex row; a turned text is written sideways.
+  const turned: React.CSSProperties =
+    p.rotation === 90 ? { writingMode: "vertical-rl" }
+    : p.rotation === 270 ? { writingMode: "vertical-rl", transform: "rotate(180deg)" }
+    : p.rotation === 180 ? { transform: "rotate(180deg)" } : {};
   return (
-    <div className={`break-words h-full flex ${justifyCls} ${mainText(p, "text-lg").className}`} style={{ alignItems: VALIGN[p.valign ?? ""] ?? "center" }}>
-      {p.staticText ?? fmt(t.value)}
+    <div className={`break-words h-full w-full flex ${justifyCls} ${mainText(p, "text-lg").className}`} style={{ alignItems: VALIGN[p.valign ?? ""] ?? "center" }}>
+      <span className="min-w-0 max-w-full max-h-full" style={{ whiteSpace: p.wrap ? undefined : "pre-line", lineHeight: p.lineHeight /* the size class has its own */, ...(p.wrap === "ellipsis" ? { overflow: "hidden", textOverflow: "ellipsis" } : {}), ...turned }}>{text}</span>
     </div>
   );
 }
