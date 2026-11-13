@@ -1905,7 +1905,7 @@
       "name": "Maintenance Mode"
     }
   ],
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "shell": {
     "nav": "sidebar"
   },

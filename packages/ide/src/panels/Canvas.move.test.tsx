@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const load = (widgets: unknown[], canvasSnap: "pixel" | "grid") => useProject.getState().loadProject({
-  schemaVersion: 6, version: "1", canvasSnap, datasources: [],
+  schemaVersion: 7, version: "1", canvasSnap, datasources: [],
   pages: [{ id: "p1", name: "Main", widgets }],
 } as unknown as Project);
 

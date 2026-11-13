@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-const valid = (name: string) => ({ schemaVersion: 6, version: "1.0.0", name, datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
+const valid = (name: string) => ({ schemaVersion: 7, version: "1.0.0", name, datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
 
 describe("fileStem", () => {
   it.each<[string | undefined, string]>([

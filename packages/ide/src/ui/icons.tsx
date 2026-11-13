@@ -9,7 +9,7 @@ import {
   AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical,
   AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter,
   ArrowDown, ArrowUp, ArrowUpRight, Bell, BellRing, Braces, BringToFront, Group, SendToBack, Ungroup, ChartLine, Check, ChevronDown, ChevronLeft, ChevronRight,
-  CircleDot, CirclePlus, CircleX, Clock, Component, Cylinder, Delete, Download, Diamond, FlaskConical, Folder, FolderOpen,
+  CircleDot, CirclePlus, CircleX, Clock, Component, Cylinder, Download, Diamond, FlaskConical, Folder, FolderOpen,
   Gauge, Hash, Heading, History, Image, Layers, List, Lock, LockOpen, Moon, Pencil, Play, Plug, Redo2, RefreshCw, RotateCcw,
   Settings, Shapes, SlidersHorizontal, Spline, Square, Sun, Table, Tag, TextCursorInput, Trash2, TriangleAlert,
   Type, Undo2, Upload, User, X,
@@ -60,7 +60,6 @@ export const RefreshIcon = ui(RefreshCw);
 export const ResetIcon = ui(RotateCcw);
 export const LockIcon = ui(Lock);
 export const UnlockIcon = ui(LockOpen);
-export const BackspaceIcon = ui(Delete);
 
 // Project and editor actions
 export const SaveIcon = ui(Download);

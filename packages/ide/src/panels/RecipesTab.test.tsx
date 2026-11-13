@@ -11,7 +11,7 @@ const recipes = [
   { id: "hot", name: "Hot batch", description: "", entries: [{ binding: "plc:Temp", value: 85 }] },
 ];
 const project = (r: unknown[] = recipes): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], recipes: r,
+  schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], recipes: r,
 } as unknown as Project);
 
 const stored = () => useProject.getState().project.recipes ?? [];

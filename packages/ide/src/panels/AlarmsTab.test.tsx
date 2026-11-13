@@ -27,7 +27,7 @@ const rules = [
 ] as const;
 
 const project = (alarmRules: readonly unknown[] = rules): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], alarmRules,
+  schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], alarmRules,
 } as unknown as Project);
 
 const stored = () => useProject.getState().project.alarmRules ?? [];

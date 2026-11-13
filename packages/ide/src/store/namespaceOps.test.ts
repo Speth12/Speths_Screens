@@ -3,7 +3,7 @@ import type { NamespaceNode, Project } from "@speths-screens/shared-types";
 import { addrSegments, commonPrefixLen, countNsRefs, importPlan, moveNsNode, nsName, nsTree, rewriteNsRefs, uniquePath } from "./namespaceOps";
 
 const project = (namespace: NamespaceNode[], extra: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], namespace, ...extra,
+  schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], namespace, ...extra,
 });
 
 describe("names", () => {

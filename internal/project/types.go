@@ -25,8 +25,6 @@ type Types struct {
 	// are bound to a live datasource
 	Namespace []NamespaceNode `json:"namespace,omitempty"`
 	Pages     []Page          `json:"pages"`
-	// Operator PIN — operator panel locks behind this if set
-	Pin *string `json:"pin,omitempty"`
 	// Widget presets: set-up widgets saved for reuse. Inserting one copies its widgets onto a
 	// page with new ids; nothing links back to the preset. The runtime ignores presets.
 	Presets []Preset `json:"presets,omitempty"`
@@ -152,6 +150,7 @@ type CustomWidgetParam struct {
 // A widget inside a custom widget. Same as Widget, but identified by localId, and it may
 // say how it is laid out in a stack (flex, hiddenOn)
 type CustomWidgetPart struct {
+	Access   *Access         `json:"access,omitempty"`
 	AnchorX  *AnchorX        `json:"anchorX,omitempty"`
 	AnchorY  *AnchorY        `json:"anchorY,omitempty"`
 	Bindings *WidgetBindings `json:"bindings,omitempty"`
@@ -177,6 +176,20 @@ type CustomWidgetPart struct {
 	X int64 `json:"x"`
 	// Grid row
 	Y int64 `json:"y"`
+}
+
+// With security mode login: the lowest role that may see this (view) and operate it
+// (operate). A page's access applies to every widget on it, and a custom widget's to its
+// parts. With security off everyone is an administrator, so access does nothing
+//
+// Who may see this page and operate the widgets on it
+type Access struct {
+	// Below this role it is shown but cannot be used, and the runtime refuses a write it would
+	// make. Missing means everyone who can see it
+	Operate *Role `json:"operate,omitempty"`
+	// Below this role it is not shown; a page is also left out of the navigation. Missing means
+	// everyone
+	View *Role `json:"view,omitempty"`
 }
 
 // The tags a widget reads, by slot. Values are ds:path or ns:path (widgets inside a custom
@@ -671,6 +684,8 @@ type NamespaceNode struct {
 }
 
 type Page struct {
+	// Who may see this page and operate the widgets on it
+	Access *Access `json:"access,omitempty"`
 	// CSS color for the page background
 	BackgroundColor *string `json:"backgroundColor,omitempty"`
 	// Pages with the same group are listed together under that heading in the sidebar
@@ -687,6 +702,7 @@ type Page struct {
 }
 
 type Widget struct {
+	Access   *Access         `json:"access,omitempty"`
 	Bindings *WidgetBindings `json:"bindings,omitempty"`
 	// Driven properties, by property name; which names a widget type has is listed in TypedProps
 	Dynamics map[string]Drive `json:"dynamics,omitempty"`
@@ -1271,6 +1287,23 @@ const (
 	Stack Mode = "stack"
 )
 
+// Below this role it is shown but cannot be used, and the runtime refuses a write it would
+// make. Missing means everyone who can see it
+//
+// Below this role it is not shown; a page is also left out of the navigation. Missing means
+// everyone
+//
+// The role runtime scripts write as (roles and limits apply, and the audit names the
+// script); missing means operator
+type Role string
+
+const (
+	Admin      Role = "admin"
+	Engineer   Role = "engineer"
+	Operator   Role = "operator"
+	Supervisor Role = "supervisor"
+)
+
 // Where a part of a custom widget pinned to a screen edge stays when the edge is wider than
 // the custom widget's width: at its distance from the left (the default), from the right,
 // from the middle, or both, stretching
@@ -1546,17 +1579,6 @@ const (
 	User         PageIcon = "user"
 	Valve        PageIcon = "valve"
 	Vessel       PageIcon = "vessel"
-)
-
-// The role runtime scripts write as (roles and limits apply, and the audit names the
-// script); missing means operator
-type Role string
-
-const (
-	Admin      Role = "admin"
-	Engineer   Role = "engineer"
-	Operator   Role = "operator"
-	Supervisor Role = "supervisor"
 )
 
 // none: no login, anyone who reaches the runtime can read and write. login: every user must

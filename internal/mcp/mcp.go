@@ -433,7 +433,8 @@ func (h *Handler) callTool(ctx context.Context, name string, args map[string]any
 			return "", true, fmt.Errorf("binding is required")
 		}
 		// Through the write pipeline, like every other write.
-		res := h.rt.WriteTag(ctx, runtime.WriteRequest{Binding: binding, Value: value})
+		// The MCP route needs project.deploy, so a write here is at least an engineer's.
+		res := h.rt.WriteTag(ctx, runtime.WriteRequest{Binding: binding, Value: value, Role: project.Engineer})
 		switch res.Status {
 		case runtime.WriteConfirmed, runtime.WriteSent:
 			return fmt.Sprintf("wrote %v to %s (%s)", value, binding, res.Status), false, nil

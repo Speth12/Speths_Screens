@@ -8,7 +8,7 @@ import {
 type Rect = { x: number; y: number; w: number; h: number };
 const use = (id: string, w: number, h: number) => ({ id: `i${w}${h}${Math.random()}`, type: "customWidget", x: 0, y: 0, w, h, props: { customWidgetId: id } });
 const project = (over: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...over,
+  schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...over,
 } as Project);
 const pump: Rect[] = [{ x: 12, y: 8, w: 80, h: 72 }, { x: 104, y: 8, w: 184, h: 72 }, { x: 12, y: 90, w: 276, h: 58 }];
 

@@ -303,7 +303,7 @@ page("alarms", "Alarms", "alarm", [
 ]);
 
 const project = {
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "1.1.0",
   name: rehearse ? "PLC Demo (rehearsal)" : "PLC Demo",
   theme: { preset: "clean" },

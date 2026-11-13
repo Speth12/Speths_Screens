@@ -270,7 +270,7 @@ describe("deploying and pulling", () => {
   });
 
   it("Pull replaces the project with the runtime's", async () => {
-    answer(200, { schemaVersion: 6, version: "1.0.0", name: "From the PLC", datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
+    answer(200, { schemaVersion: 7, version: "1.0.0", name: "From the PLC", datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }] });
     renderHeader();
     fireEvent.click(screen.getByRole("button", { name: "Pull" }));
     await waitFor(() => expect(useProject.getState().project.name).toBe("From the PLC"));
@@ -423,7 +423,7 @@ describe("another runtime is reached through the program that serves the editor"
     renderHeader();
     await waitFor(() => expect(useReach.getState().targetFormat).toBe(5)); // the header asked the target
     fireEvent.click(screen.getByRole("button", { name: "Deploy" }));
-    await waitFor(() => expect(screen.getByText(/not deployed: Panel runs an older Speth's Screens \(it reads project format 5 and this project is format 6\)/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/not deployed: Panel runs an older Speth's Screens \(it reads project format 5 and this project is format 7\)/)).toBeTruthy());
     expect(program.calls.some((c) => c.url.endsWith("/api/v1/project") && c.init?.method === "POST")).toBe(false);
   });
 

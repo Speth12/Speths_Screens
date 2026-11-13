@@ -16,7 +16,7 @@ afterEach(() => {
 beforeEach(() => useWorkspace.setState({ tabs: [SCREEN_TAB], activeId: SCREEN_TAB.id }));
 
 const base = (dsIds: string[] = ["plc"]): Project => ({
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "0.1.0",
   datasources: dsIds.map((id) => ({ id, label: id.toUpperCase(), type: "rest", config: {} }) as unknown as Project["datasources"][number]),
   pages: [{ id: "p1", name: "Main", widgets: [{ id: "g1", type: "gauge", x: 0, y: 0, w: 2, h: 2 }] }],

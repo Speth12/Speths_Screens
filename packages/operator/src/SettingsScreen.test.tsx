@@ -35,15 +35,16 @@ describe("SettingsScreen", () => {
     expect(toggle).toHaveBeenCalled();
   });
 
-  it("recipes are not here (the recipes widget has them); Lock screen only with a PIN", () => {
+  it("recipes are not here (the recipes widget has them); Log out only when the project asks for logins", () => {
     render(<SettingsScreen {...props()} />);
     expect(screen.queryByText("Recipes")).toBeNull();
-    expect(screen.queryByText("Lock screen")).toBeNull();
+    expect(screen.queryByText("Log out")).toBeNull();
+    expect(screen.queryByText("Lock screen")).toBeNull(); // the PIN lock is gone (format 7)
     cleanup();
-    const onLock = vi.fn();
-    render(<SettingsScreen {...props({ onLock })} />);
-    fireEvent.click(screen.getByText("Lock screen"));
-    expect(onLock).toHaveBeenCalled();
+    const onLogout = vi.fn();
+    render(<SettingsScreen {...props({ onLogout })} />);
+    fireEvent.click(screen.getByText("Log out"));
+    expect(onLogout).toHaveBeenCalled();
   });
 
   it("writes its text in the language being shown", () => {

@@ -14,7 +14,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
   useSelection.getState().set([]);
   useProject.getState().loadProject({
-    schemaVersion: 6, version: "1", canvasSnap: "pixel", datasources: [],
+    schemaVersion: 7, version: "1", canvasSnap: "pixel", datasources: [],
     pages: [{ id: "p1", name: "Main", widgets: [
       { id: "a", type: "textDisplay", x: 10, y: 20, w: 100, h: 40, props: { label: "Tank level" } },
       { id: "b", type: "shape", x: 200, y: 60, w: 50, h: 80 },

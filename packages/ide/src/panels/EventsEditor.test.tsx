@@ -47,7 +47,7 @@ describe("EventsEditor", () => {
 
 describe("palette", () => {
   it("a new button writes 1 while pressed", () => {
-    useProject.getState().loadProject({ schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }] });
+    useProject.getState().loadProject({ schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }] });
     render(<WidgetPalette />);
     fireEvent.click(screen.getByText("Button"));
     expect(useProject.getState().project.pages[0]!.widgets[0]).toMatchObject({

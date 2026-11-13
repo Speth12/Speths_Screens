@@ -17,7 +17,6 @@ import { applyTheme, deviceFor, pickLanguage, resolveTheme, translator } from "@
 const THEME_KEY = "speths-screens-theme";
 const LANGUAGE_KEY = "speths-screens-language";
 const SCALE_KEY = "speths-screens-scale";
-const AUTHED_KEY = "speths-screens-authed";
 type Mode = "light" | "dark";
 /** The browser's own light or dark choice; anything else saved (an old theme id) means none. */
 const storedMode = (): Mode | null => {
@@ -42,10 +41,6 @@ export function App() {
   const [dsStatus, setDsStatus] = useState<Array<{ id: string; connected: boolean; tagCount: number; lastError?: string }>>([]);
   const wsAlarmRef = useRef<WebSocket | null>(null);
 
-  // PIN auth
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTHED_KEY) === "1");
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState(false);
 
   // Scale-to-fit: a page with a dynamic resolution is scaled to the window's width when on
   // (a fixed resolution always fits the window); the room is the canvas area without its padding.
@@ -163,17 +158,6 @@ export function App() {
     catch { /* ignore */ }
   };
 
-  const tryPin = useCallback(() => {
-    if (pinInput === (project?.pin ?? "")) {
-      setAuthed(true);
-      sessionStorage.setItem(AUTHED_KEY, "1");
-    } else {
-      setPinError(true);
-      setTimeout(() => setPinError(false), 800);
-    }
-    setPinInput("");
-  }, [pinInput, project]);
-
   const navigateToPage = useCallback((pageId: string) => {
     if (!project) return;
     if (pageId === SETTINGS_PAGE_ID) { setActivePage(project.pages.length); return; }
@@ -227,33 +211,6 @@ export function App() {
 
   if (!project) {
     return <div className="h-screen flex items-center justify-center bg-zinc-950 text-zinc-500">Loading…</div>;
-  }
-
-  // PIN gate — show lock screen if project has a PIN and user hasn't authenticated
-  if (project.pin && !authed) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-zinc-950">
-        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-80 space-y-4 shadow-2xl text-center">
-          <div className="text-2xl font-bold text-zinc-100">{project.name ?? "Speth's Screens"}</div>
-          <div className="text-sm text-zinc-500">Enter PIN to continue</div>
-          <input
-            type="password"
-            value={pinInput}
-            onChange={(e) => setPinInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && tryPin()}
-            placeholder="••••"
-            autoFocus
-            className={`w-full text-center text-xl tracking-[0.5em] bg-zinc-800 border rounded-lg px-4 py-3 outline-none transition-colors ${
-              pinError ? "border-red-500 text-red-400 animate-pulse" : "border-zinc-600 focus:border-blue-500 text-zinc-100"
-            }`}
-          />
-          <button onClick={tryPin}
-            className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors">
-            Unlock
-          </button>
-        </div>
-      </div>
-    );
   }
 
   const page = project.pages[activePage] ?? project.pages[0];
@@ -324,7 +281,7 @@ export function App() {
               language={language}
               onLanguage={chooseLanguage}
               fit={project.canvasResolution?.type !== "fixed" && !phone ? { on: scaleToFit, toggle: toggleScale } : undefined}
-              onLock={project.pin ? () => { setAuthed(false); sessionStorage.removeItem(AUTHED_KEY); } : undefined}
+              onLogout={project.security?.mode === "login" && getToken() ? () => setToken(null) : undefined}
             />
           ) : page.widgets.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-zinc-600 italic">No widgets on this page.</div>

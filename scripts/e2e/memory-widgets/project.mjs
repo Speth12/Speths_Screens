@@ -86,7 +86,7 @@ export function buildProject() {
   ];
 
   return {
-    schemaVersion: 6, version: "1", name: "Memory E2E",
+    schemaVersion: 7, version: "1", name: "Memory E2E",
     datasources: [{ id: "mem", label: "Script state", type: "memory", config: {
       memoryTags: VARS.map(([path, type]) => ({ path, type })),
     } }],

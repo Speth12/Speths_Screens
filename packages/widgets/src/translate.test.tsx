@@ -8,7 +8,7 @@ import { WidgetHostProvider, inertHost } from "./host";
 afterEach(cleanup);
 
 const p = (more: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "1", datasources: [], pages: [], languages: ["en", "de"],
+  schemaVersion: 7, version: "1", datasources: [], pages: [], languages: ["en", "de"],
   translations: { de: { Pressure: "Druck", Start: "Starten", "Pump 1": "Pumpe 1", RUNNING: "LÄUFT" } }, ...more,
 });
 const w = (props: Record<string, unknown>, type = "numericDisplay") => ({ id: "w", type, x: 0, y: 0, w: 2, h: 2, props }) as unknown as Widget;

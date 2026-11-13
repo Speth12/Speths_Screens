@@ -29,7 +29,7 @@ func TestFormat4Problems(t *testing.T) {
 			if err := json.Unmarshal(c.Project, &doc); err != nil {
 				t.Fatal(err)
 			}
-			doc["schemaVersion"], doc["version"] = 6, "1"
+			doc["schemaVersion"], doc["version"] = CurrentSchemaVersion, "1"
 			if doc["datasources"] == nil {
 				doc["datasources"] = []any{}
 			}

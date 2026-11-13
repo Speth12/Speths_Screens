@@ -9,7 +9,7 @@ import { Properties } from "./Properties";
 
 afterEach(cleanup);
 beforeEach(() => useProject.getState().loadProject({
-  schemaVersion: 6, version: "1", datasources: [],
+  schemaVersion: 7, version: "1", datasources: [],
   images: [{ id: "img1", name: "Company logo", mimeType: "image/png", width: 1, height: 1, size: 3, dataUrl: "data:image/png;base64,AAAA" }],
   pages: [{ id: "p1", name: "Main", widgets: [] }, { id: "p2", name: "Alarms", widgets: [] }],
 } as unknown as Project));

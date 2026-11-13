@@ -92,7 +92,7 @@ const full = { x: 0, y: 0, w: WIDTH.desktop };
 const other = (id, name, icon, widgets) => ({ id: `p-${id}`, name, icon, widgets: widgets.map((w) => ({ x: 0, y: 0, ...w })) });
 
 const project = {
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "1.0.0",
   name: "Pump Station 2",
   theme: { preset },

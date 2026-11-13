@@ -34,6 +34,10 @@ type WriteRequest struct {
 	WidgetID string // optional: the widget writing; its min/max apply
 	Recipe   bool   // a recipe write: the recipe itself names the tag
 	Script   bool   // a runtime script's write, which its writes list has already allowed: no writable widget is needed
+	// Role is the writing user's role. A tag written by widgets that ask for a role (their page's,
+	// custom widget's or own access) may be written only by a role one of them allows; an empty
+	// role counts as the lowest, operator. Recipe and script writes have their own checks.
+	Role project.Role
 }
 
 // WriteResult says what happened. Code is the HTTP status to answer with.
@@ -67,6 +71,9 @@ func (r *Runtime) WriteTag(ctx context.Context, req WriteRequest) WriteResult {
 	writers, nsTag := writableBy(p, key, r.resolveBinding)
 	if len(writers) == 0 && !nsTag && !req.Recipe && !req.Script && !inRecipe(p, key, r.resolveBinding) {
 		return writeFailed(404, "%s is not writable in this project", req.Binding)
+	}
+	if res, refused := accessCheck(writers, req); refused {
+		return res
 	}
 	if err := limitsFor(writers, req.WidgetID).check(req.Value); err != nil {
 		return writeFailed(400, "%v", err)
@@ -143,10 +150,43 @@ func writeError(err error) WriteResult {
 	return writeFailed(502, "%v", err)
 }
 
-// writer is a widget that writes a tag, with its limits.
+// writer is a widget that writes a tag, with its limits and the lowest role rank that may operate it.
 type writer struct {
 	widgetID string
 	min, max *float64
+	need     int
+}
+
+// accessCheck refuses a write the user's role may not make. When the request names a widget that
+// writes the tag, that widget decides; otherwise one widget that writes the tag must allow the role,
+// so a role cannot get past a protected widget by naming none or another. A tag no widget asks a role
+// for (or written only as a namespace tag or by a recipe) is left to the role's own permissions.
+func accessCheck(writers []writer, req WriteRequest) (WriteResult, bool) {
+	if req.Recipe || req.Script || len(writers) == 0 {
+		return WriteResult{}, false
+	}
+	rank := project.RoleRank(req.Role)
+	if rank == 0 {
+		rank = project.RoleRank(project.Operator)
+	}
+	if req.WidgetID != "" {
+		for _, w := range writers {
+			if w.widgetID == req.WidgetID {
+				if rank < w.need {
+					return writeFailed(403, "widget %s may be operated by %s and above", w.widgetID, project.RoleOfRank(w.need)), true
+				}
+				return WriteResult{}, false
+			}
+		}
+	}
+	lowest := writers[0].need
+	for _, w := range writers[1:] {
+		lowest = min(lowest, w.need)
+	}
+	if rank < lowest {
+		return writeFailed(403, "%s may be written by %s and above", req.Binding, project.RoleOfRank(lowest)), true
+	}
+	return WriteResult{}, false
 }
 
 // writableBy returns the widgets that write key (a resolved "ds:path"),
@@ -161,25 +201,48 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 		ds, path, ok := resolve(b)
 		return ok && ds+":"+path == key
 	}
-	add := func(v project.WidgetView) {
-		w := writer{widgetID: v.ID}
+	add := func(v project.WidgetView, need int) {
+		w := writer{widgetID: v.ID, need: need}
 		w.min, w.max = v.Limits()
 		ws = append(ws, w)
 	}
 
-	// Custom widget parameters written by a widget inside the custom widget.
-	writtenParams := map[string]map[string]project.WidgetView{} // custom widget id → param → inner widget
+	// What the widgets inside each custom widget write: a parameter ({name}), filled in where the
+	// custom widget is placed, or a tag of its own.
+	type inner struct {
+		view   project.WidgetView
+		access *project.Access
+	}
+	writtenParams := map[string]map[string]inner{} // custom widget id → param → inner widget
+	writtenTags := map[string][]inner{}             // custom widget id → inner widgets writing a tag of their own
 	for _, fp := range p.CustomWidgets {
 		for _, fw := range fp.Widgets {
 			v := fw.View()
 			for _, b := range v.WriteTargets() {
 				if param, ok := strings.CutPrefix(b, "{"); ok && strings.HasSuffix(param, "}") {
 					if writtenParams[fp.ID] == nil {
-						writtenParams[fp.ID] = map[string]project.WidgetView{}
+						writtenParams[fp.ID] = map[string]inner{}
 					}
-					writtenParams[fp.ID][strings.TrimSuffix(param, "}")] = v
+					writtenParams[fp.ID][strings.TrimSuffix(param, "}")] = inner{v, fw.Access}
+				} else if is(b) {
+					writtenTags[fp.ID] = append(writtenTags[fp.ID], inner{v, fw.Access})
 				}
 			}
+		}
+	}
+	// A custom widget placed somewhere (id) writes what its parts write, with the parts' limits.
+	placed := func(id, cwID string, params map[string]string, outer ...*project.Access) {
+		for param, in := range writtenParams[cwID] {
+			if b, ok := params[param]; ok && is(b) {
+				v := in.view
+				v.ID = id // the instance writes, with the inner widget's limits
+				add(v, project.Need(append(outer, in.access)...))
+			}
+		}
+		for _, in := range writtenTags[cwID] {
+			v := in.view
+			v.ID = id
+			add(v, project.Need(append(outer, in.access)...))
 		}
 	}
 
@@ -188,17 +251,18 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 			v := w.View()
 			for _, b := range v.WriteTargets() {
 				if is(b) {
-					add(v)
+					add(v, project.Need(pg.Access, w.Access))
 				}
 			}
 			if w.Type == project.CustomWidget && w.Props != nil && w.Props.CustomWidgetID != nil {
-				for param, inner := range writtenParams[*w.Props.CustomWidgetID] {
-					if b, ok := w.Props.Params[param]; ok && is(b) {
-						inner.ID = w.ID // the instance writes, with the inner widget's limits
-						add(inner)
-					}
-				}
+				placed(w.ID, *w.Props.CustomWidgetID, w.Props.Params, pg.Access, w.Access)
 			}
+		}
+	}
+	// Custom widgets pinned to the screen edges (a header's buttons) write too.
+	if p.Shell != nil {
+		for _, slot := range p.Shell.Frame {
+			placed(slot.ID, slot.CustomWidgetID, slot.Params)
 		}
 	}
 	for _, n := range p.Namespace {

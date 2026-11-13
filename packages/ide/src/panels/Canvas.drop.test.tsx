@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 const load = (widgets: unknown[], canvasSnap?: "pixel") => useProject.getState().loadProject({
-  schemaVersion: 6, version: "1", canvasSnap, datasources: [{ id: "mem", label: "Script state", type: "memory", config: { memoryTags: [{ path: "Counter", type: "int" }] } }],
+  schemaVersion: 7, version: "1", canvasSnap, datasources: [{ id: "mem", label: "Script state", type: "memory", config: { memoryTags: [{ path: "Counter", type: "int" }] } }],
   namespace: [{ path: "Counter", type: "tag", driverId: "mem", driverAddr: "Counter" }],
   pages: [{ id: "p1", name: "Main", widgets }],
 } as unknown as Project);
@@ -68,7 +68,7 @@ describe("a drop that is not on a widget", () => {
 
   it("is a drag the list makes only for variables, not folders", () => {
     useProject.getState().loadProject({
-      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
       namespace: [{ path: "Plant", type: "folder" }, { path: "Plant.Level", type: "tag", driverId: "mem", driverAddr: "Level" }],
     } as unknown as Project);
     render(<NamespaceList onOpenVariables={() => {}} />);

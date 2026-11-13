@@ -157,7 +157,7 @@ function forDevice(w: Widget, patch: Partial<Widget>): Partial<Widget> {
 }
 
 const blankProject = (): Project => ({
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "0.1.0",
   datasources: [],
   // A new project places widgets freely, in pixels; the cell grid stays a project setting.

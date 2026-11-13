@@ -36,10 +36,6 @@ export interface Project {
     namespace?: NamespaceNode[];
     pages:      Page[];
     /**
-     * Operator PIN — operator panel locks behind this if set
-     */
-    pin?: string;
-    /**
      * Widget presets: set-up widgets saved for reuse. Inserting one copies its widgets onto a
      * page with new ids; nothing links back to the preset. The runtime ignores presets.
      */
@@ -245,6 +241,7 @@ export interface CustomWidgetParam {
  * say how it is laid out in a stack (flex, hiddenOn)
  */
 export interface CustomWidgetPart {
+    access?:   Access;
     anchorX?:  AnchorX;
     anchorY?:  AnchorY;
     bindings?: WidgetBindings;
@@ -289,6 +286,38 @@ export interface CustomWidgetPart {
      */
     y: number;
 }
+
+/**
+ * With security mode login: the lowest role that may see this (view) and operate it
+ * (operate). A page's access applies to every widget on it, and a custom widget's to its
+ * parts. With security off everyone is an administrator, so access does nothing
+ *
+ * Who may see this page and operate the widgets on it
+ */
+export interface Access {
+    /**
+     * Below this role it is shown but cannot be used, and the runtime refuses a write it would
+     * make. Missing means everyone who can see it
+     */
+    operate?: Role;
+    /**
+     * Below this role it is not shown; a page is also left out of the navigation. Missing means
+     * everyone
+     */
+    view?: Role;
+}
+
+/**
+ * Below this role it is shown but cannot be used, and the runtime refuses a write it would
+ * make. Missing means everyone who can see it
+ *
+ * Below this role it is not shown; a page is also left out of the navigation. Missing means
+ * everyone
+ *
+ * The role runtime scripts write as (roles and limits apply, and the audit names the
+ * script); missing means operator
+ */
+export type Role = "operator" | "supervisor" | "engineer" | "admin";
 
 /**
  * Where a part of a custom widget pinned to a screen edge stays when the edge is wider than
@@ -1160,6 +1189,10 @@ export type NamespaceNodeType = "folder" | "asset" | "tag" | "virtual";
 
 export interface Page {
     /**
+     * Who may see this page and operate the widgets on it
+     */
+    access?: Access;
+    /**
      * CSS color for the page background
      */
     backgroundColor?: string;
@@ -1190,6 +1223,7 @@ export interface Page {
 export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask";
 
 export interface Widget {
+    access?:   Access;
     bindings?: WidgetBindings;
     /**
      * Driven properties, by property name; which names a widget type has is listed in TypedProps
@@ -1732,12 +1766,6 @@ export interface RecipeEntry {
     binding: string;
     value:   any;
 }
-
-/**
- * The role runtime scripts write as (roles and limits apply, and the audit names the
- * script); missing means operator
- */
-export type Role = "operator" | "supervisor" | "engineer" | "admin";
 
 /**
  * JavaScript the runtime runs in its own sandbox, writing through the write pipeline as

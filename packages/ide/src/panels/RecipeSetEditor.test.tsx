@@ -7,7 +7,7 @@ import { useProject } from "../store/projectStore";
 import { useWorkspace } from "../store/workspace";
 
 const base = (extra: Record<string, unknown>): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra,
+  schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...extra,
 } as unknown as Project);
 
 const sets = () => useProject.getState().project.recipeSets ?? [];

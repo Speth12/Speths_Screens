@@ -13,7 +13,7 @@ import (
 
 // setsProject has a memory datasource with three variables and a recipe set of the two shipped recipes.
 const setsProject = `{
-	"schemaVersion": 6, "version":"0.1.0",
+	"schemaVersion": 7, "version":"0.1.0",
 	"datasources":[{"id":"mem","label":"Mem","type":"memory","config":{"memoryTags":[
 		{"path":"Speed","type":"real"},{"path":"Count","type":"int"},{"path":"Mode","type":"string"}]}}],
 	"pages":[{"id":"p1","name":"Main","widgets":[]}],

@@ -5,7 +5,7 @@ import { openProject, openSummary } from "./openProject";
 import { validateProject } from "./validateProject";
 
 const widgetDoc = (widget: object, extra: object = {}) => ({
-  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [widget] }], ...extra,
+  schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [widget] }], ...extra,
 });
 const w = (type: string, more: object = {}) => ({ id: "w1", type, x: 0, y: 0, w: 2, h: 2, ...more });
 
@@ -41,7 +41,7 @@ describe("validateProject", () => {
     ["v1 field in a v2 file", widgetDoc(w("led", { binding: "plc:B" })),
       [`page "Main", widget w1 (led): unknown field binding`]],
     ["custom widget widget", {
-      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
       customWidgets: [{ id: "fp", name: "Pump", params: [], widgets: [{ localId: "s", type: "tank", x: 0, y: 0, w: 1, h: 1, props: { step: 1 } }] }],
     }, [`custom widget "Pump", widget s (tank): unknown setting step`]],
     ["preset widget", widgetDoc(w("led"), {
@@ -49,11 +49,11 @@ describe("validateProject", () => {
     }), [`preset "Start/Stop", widget b (button): unknown setting min`]],
     // The same cases as in internal/project/validate_test.go.
     ["a custom widget given a width and no height", {
-      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
       customWidgets: [{ id: "a", name: "A", params: [], width: 300, widgets: [] }],
     }, ["/customWidgets/0: properties 'height' required, if 'width' exists"]],
     ["anchors that do not exist", {
-      schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
       customWidgets: [{ id: "a", name: "A", params: [], width: 300, height: 50, widgets: [{ localId: "x", type: "textDisplay", x: 0, y: 0, w: 10, h: 10, anchorX: "middle" }] }],
     }, [`custom widget "A", widget x (textDisplay): anchorX: value must be one of 'left', 'right', 'center', 'stretch'`]],
     ["empty preset", widgetDoc(w("led"), { presets: [{ id: "ps", name: "Empty", widgets: [] }] }),
@@ -70,7 +70,7 @@ describe("openProject", () => {
     ] }] };
     const o = openProject(v1);
     if (!o.ok) throw new Error(o.problems.join("; "));
-    expect(o.project.schemaVersion).toBe(6);
+    expect(o.project.schemaVersion).toBe(7);
     expect(o.project.pages[0]!.widgets[0]).toMatchObject({ bindings: { value: "plc:T" }, props: { min: 0 } });
     expect(o.notes).toEqual([`page "Main", widget g (gauge): dropped setting decimals, which no widget reads`]);
     expect(openSummary("plant.json", o)).toContain("opened plant.json, upgraded (1 note:");
@@ -84,7 +84,7 @@ describe("openProject", () => {
 
   it("refuses a file from a newer version", () => {
     const o = openProject({ schemaVersion: 9, version: "1", datasources: [], pages: [] });
-    expect(o).toEqual({ ok: false, problems: ["the project is format 9; this version of Speth's Screens reads up to 6"] });
+    expect(o).toEqual({ ok: false, problems: ["the project is format 9; this version of Speth's Screens reads up to 7"] });
   });
 
   it.each(["demo", "example", "dan-project", "all-rules"])("opens the %s golden file", (name) => {
@@ -102,8 +102,8 @@ const GOLDEN_EXPRESSION_PROBLEMS: Record<string, string[]> = {
 };
 
 describe("expression problems", () => {
-  it.each(Object.entries(GOLDEN_EXPRESSION_PROBLEMS))("%s.v6.json", (name, want) => {
-    const doc = JSON.parse(readFileSync(resolve(__dirname, `../../../../testdata/upgrade/${name}.v6.json`), "utf8"));
+  it.each(Object.entries(GOLDEN_EXPRESSION_PROBLEMS))("%s.v7.json", (name, want) => {
+    const doc = JSON.parse(readFileSync(resolve(__dirname, `../../../../testdata/upgrade/${name}.v7.json`), "utf8"));
     const o = openProject(doc);
     if (!o.ok) throw new Error(o.problems.join("; "));
     expect(o.problems).toEqual(want);

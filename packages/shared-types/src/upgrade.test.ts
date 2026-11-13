@@ -56,12 +56,15 @@ const V2_TO_V3: Record<string, string[]> = {
 // Notes for upgrading <name>.v<N>.json, as in internal/project/upgrade_test.go.
 const NOTES: Record<string, string[]> = {};
 for (const [name, n] of Object.entries(V2_TO_V3)) {
+  NOTES[`${name}.v6`] = []; // v6 to v7 drops a PIN (only all-rules.v6 has one, below)
   NOTES[`${name}.v5`] = []; // v5 to v6 renames faceplates to custom widgets (no note)
   NOTES[`${name}.v4`] = []; // v4 to v5 only changes the theme from an id to an object (no note)
   NOTES[`${name}.v3`] = []; // v3 to v4 only moves the version
   NOTES[`${name}.v2`] = n;
   if (V1_TO_V2[name]) NOTES[`${name}.v1`] = [...V1_TO_V2[name], ...n];
 }
+
+NOTES["all-rules.v6"] = ["dropped the operator PIN: it was checked only in the browser; use logins (security mode login) and roles on pages and widgets instead"];
 
 describe("golden files", () => {
   const current = `.v${CURRENT_SCHEMA_VERSION}.json`;
@@ -115,11 +118,11 @@ describe("versions", () => {
     ["3", { schemaVersion: 3, pages: [] }],
     ["4", { schemaVersion: 4, pages: [] }],
     ["5", { schemaVersion: 5, pages: [] }],
-    ["current", { schemaVersion: 6, pages: [] }],
-  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(6));
+    ["current", { schemaVersion: 7, pages: [] }],
+  ])("%s", (_, doc) => expect(upgradeProject(doc).project.schemaVersion).toBe(7));
 
   it.each([
-    ["newer", { schemaVersion: 7 }, "the project is format 7; this version of Speth's Screens reads up to 6"],
+    ["newer", { schemaVersion: 8 }, "the project is format 8; this version of Speth's Screens reads up to 7"],
     ["not a version", { schemaVersion: 0 }, "is not a format version"],
     ["not an object", [1, 2], "not a JSON object"],
   ])("%s is refused", (_, doc, msg) => {

@@ -24,7 +24,7 @@ type Part = { x: number; y: number; w: number; h: number };
 
 /** A project with one free-layout custom widget, the feature tour's pump card. */
 const project = (snap: "pixel" | "grid", parts: Part[], placed?: { w: number; h: number }, extra: Partial<Project> = {}): Project => ({
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "0.1.0",
   canvasSnap: snap,
   datasources: [],

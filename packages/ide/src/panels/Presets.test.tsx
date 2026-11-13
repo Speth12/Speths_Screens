@@ -11,7 +11,7 @@ const start: Widget = {
   bindings: { value: "ns:plant.start" }, events: { onPress: [{ type: "write", value: 1 }] },
 };
 const project = (more: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [start] }], ...more,
+  schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [start] }], ...more,
 });
 const widgets = () => useProject.getState().project.pages[0]!.widgets;
 

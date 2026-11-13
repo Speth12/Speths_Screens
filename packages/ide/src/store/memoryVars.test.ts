@@ -4,7 +4,7 @@ import { addMemoryVariable, isMemoryDatasource, memoryTagsOf, NS_DATA_TYPE } fro
 import { projectTags, withProjectTags } from "./variables";
 
 const project = (over: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "1", pages: [{ id: "p", name: "Main", widgets: [] }],
+  schemaVersion: 7, version: "1", pages: [{ id: "p", name: "Main", widgets: [] }],
   datasources: [
     { id: "mem", label: "Script state", type: "memory", config: { memoryTags: [{ path: "Counter", type: "int" }] } },
     { id: "plc", label: "PLC", type: "rest", config: {} },
