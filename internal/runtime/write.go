@@ -265,12 +265,69 @@ func writableBy(p *project.Project, key string, resolve func(string) (string, st
 			placed(slot.ID, slot.CustomWidgetID, slot.Params)
 		}
 	}
+
+	// A popup is a custom widget too: what it writes is written by the widget that opens it, with
+	// that widget's access. A part that opens one passes on what its own placement was given.
+	byID := map[string]*project.CustomWidgetElement{}
+	for i := range p.CustomWidgets {
+		byID[p.CustomWidgets[i].ID] = &p.CustomWidgets[i]
+	}
+	opens := func(id string, e *project.WidgetEvents, given map[string]string, outer ...*project.Access) {
+		if e == nil {
+			return
+		}
+		for _, list := range [][]project.Action{e.OnClick, e.OnPress, e.OnRelease} {
+			for _, a := range list {
+				if a.Type != project.OpenPopup || a.CustomWidgetID == nil {
+					continue
+				}
+				params := map[string]string{}
+				for name, v := range a.Params {
+					params[name] = fillParams(v, given)
+				}
+				placed(id, *a.CustomWidgetID, params, outer...)
+			}
+		}
+	}
+	partsOpen := func(id, cwID string, given map[string]string, outer ...*project.Access) {
+		cw := byID[cwID]
+		if cw == nil {
+			return
+		}
+		for _, part := range cw.Widgets {
+			opens(id, part.Events, given, append(outer, part.Access)...)
+		}
+	}
+	for _, pg := range p.Pages {
+		for _, w := range pg.Widgets {
+			opens(w.ID, w.Events, nil, pg.Access, w.Access)
+			if w.Type == project.CustomWidget && w.Props != nil && w.Props.CustomWidgetID != nil {
+				partsOpen(w.ID, *w.Props.CustomWidgetID, w.Props.Params, pg.Access, w.Access)
+			}
+		}
+	}
+	if p.Shell != nil {
+		for _, slot := range p.Shell.Frame {
+			partsOpen(slot.ID, slot.CustomWidgetID, slot.Params)
+		}
+	}
 	for _, n := range p.Namespace {
 		if n.Type == project.Tag && n.DriverID != nil && n.DriverAddr != nil && *n.DriverID+":"+*n.DriverAddr == key {
 			nsTag = true
 		}
 	}
 	return ws, nsTag
+}
+
+// fillParams turns "{name}" into what a custom widget's placement gave for name; anything else is
+// returned as it is.
+func fillParams(v string, given map[string]string) string {
+	if name, ok := strings.CutPrefix(v, "{"); ok && strings.HasSuffix(name, "}") {
+		if got, ok := given[strings.TrimSuffix(name, "}")]; ok {
+			return got
+		}
+	}
+	return v
 }
 
 // inRecipe reports whether a project recipe names key.

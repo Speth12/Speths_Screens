@@ -1,6 +1,6 @@
 import { tokenUser } from "./user";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChromeFrame, PageAccess, WidgetHostProvider, canView, chromeStyles, effectiveFrame } from "@speths-screens/widgets";
+import { ChromeFrame, PageAccess, PopupLayer, WidgetHostProvider, WidgetRenderer, canView, chromeStyles, effectiveFrame } from "@speths-screens/widgets";
 import { SETTINGS_PAGE_ID, useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
@@ -227,6 +227,7 @@ export function App() {
   return (
     <AlarmContext.Provider value={{ alarms, ack }}>
     <WidgetHostProvider value={widgetHost}>
+    <PopupLayer render={(w) => <WidgetRenderer w={w} />}>
       {isKiosk && project.security?.mode !== "login" && (
         <div className="fixed top-1 right-1 z-50 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
           Security off
@@ -313,6 +314,7 @@ export function App() {
 
 
 
+    </PopupLayer>
     </WidgetHostProvider>
     </AlarmContext.Provider>
   );

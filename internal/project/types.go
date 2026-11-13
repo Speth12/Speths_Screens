@@ -252,21 +252,34 @@ type WidgetEvents struct {
 
 // One thing a widget does when an event happens
 type Action struct {
+	// openPopup: the custom widget shown in a window over the page
+	CustomWidgetID *string `json:"customWidgetId,omitempty"`
+	// openPopup: the window's height in pixels; missing means the custom widget's designed
+	// height
+	Height *int64 `json:"height,omitempty"`
 	// toggle: the value written when the tag is on; missing means 0 (false for a bool tag)
 	Off interface{} `json:"off,omitempty"`
 	// toggle: the value written when the tag is off; missing means 1 (true for a bool tag)
 	On interface{} `json:"on,omitempty"`
 	// navigate: target page id
 	Page *string `json:"page,omitempty"`
+	// openPopup: the custom widget's parameters for this use, by name (a tag path or a value)
+	Params map[string]string `json:"params,omitempty"`
+	// openPopup: in the middle of the screen (the default) or next to the widget that opened it
+	Position *Position `json:"position,omitempty"`
 	// increment: the amount added; missing means 1
 	Step *float64 `json:"step,omitempty"`
 	// write, toggle, increment: the tag; missing means the widget's value tag
-	Tag  *string    `json:"tag,omitempty"`
-	Type ActionType `json:"type"`
+	Tag *string `json:"tag,omitempty"`
+	// openPopup: the window's title; missing means the custom widget's name
+	Title *string    `json:"title,omitempty"`
+	Type  ActionType `json:"type"`
 	// openUrl: the URL
 	URL *string `json:"url,omitempty"`
 	// write: the value
 	Value interface{} `json:"value,omitempty"`
+	// openPopup: the window's width in pixels; missing means the custom widget's designed width
+	Width *int64 `json:"width,omitempty"`
 }
 
 // How a part takes room in a stack; a part with no flex keeps the size it has in the layout
@@ -1335,14 +1348,24 @@ const (
 	TransformKindMap TransformKind = "map"
 )
 
+// openPopup: in the middle of the screen (the default) or next to the widget that opened it
+type Position string
+
+const (
+	PositionCenter Position = "center"
+	PositionWidget Position = "widget"
+)
+
 type ActionType string
 
 const (
-	Increment ActionType = "increment"
-	Navigate  ActionType = "navigate"
-	OpenURL   ActionType = "openUrl"
-	Toggle    ActionType = "toggle"
-	Write     ActionType = "write"
+	ClosePopup ActionType = "closePopup"
+	Increment  ActionType = "increment"
+	Navigate   ActionType = "navigate"
+	OpenPopup  ActionType = "openPopup"
+	OpenURL    ActionType = "openUrl"
+	Toggle     ActionType = "toggle"
+	Write      ActionType = "write"
 )
 
 type HiddenOn string

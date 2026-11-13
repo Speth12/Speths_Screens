@@ -19,18 +19,35 @@ func customWidgetProblems(p *Project) []string {
 			out = append(out, fmt.Sprintf("%s: no custom widget with id %q", where, *id))
 		}
 	}
+	// A popup an action opens is a custom widget too.
+	popups := func(where string, e *WidgetEvents) {
+		if e == nil {
+			return
+		}
+		for _, list := range [][]Action{e.OnClick, e.OnPress, e.OnRelease} {
+			for _, a := range list {
+				if a.Type == OpenPopup {
+					missing(where+", popup", a.CustomWidgetID)
+				}
+			}
+		}
+	}
 	for _, pg := range p.Pages {
 		for _, w := range pg.Widgets {
+			where := fmt.Sprintf("page %q, widget %s (%s)", pg.Name, w.ID, w.Type)
 			if w.Type == CustomWidget && w.Props != nil {
-				missing(fmt.Sprintf("page %q, widget %s (%s)", pg.Name, w.ID, w.Type), w.Props.CustomWidgetID)
+				missing(where, w.Props.CustomWidgetID)
 			}
+			popups(where, w.Events)
 		}
 	}
 	for _, cw := range p.CustomWidgets {
 		for _, w := range cw.Widgets {
+			where := fmt.Sprintf("custom widget %q, widget %s (%s)", cw.Name, w.LocalID, w.Type)
 			if w.Type == CustomWidget && w.Props != nil {
-				missing(fmt.Sprintf("custom widget %q, widget %s (%s)", cw.Name, w.LocalID, w.Type), w.Props.CustomWidgetID)
+				missing(where, w.Props.CustomWidgetID)
 			}
+			popups(where, w.Events)
 		}
 	}
 	if p.Shell != nil {
