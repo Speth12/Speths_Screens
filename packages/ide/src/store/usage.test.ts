@@ -4,7 +4,7 @@ import { customWidgetUsage, datasourceOfTag, datasourceUsage, pageSummary, tagsI
 
 const w = (id: string, type: string, extra: Partial<Widget> = {}): Widget => ({ id, type, x: 0, y: 0, w: 2, h: 2, ...extra }) as Widget;
 const project = (pages: Page[], extra: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "0.1.0", pages,
+  schemaVersion: 7, version: "0.1.0", pages,
   datasources: [{ id: "plc", label: "PLC", type: "rest", config: {} }, { id: "opc", label: "OPC", type: "opcua", config: {} }, { id: "calc", label: "Calc", type: "virtual", config: { tags: [{ path: "x", expr: "{plc:Temp} * 2" }] } }] as Project["datasources"],
   namespace: [{ path: "plant.temp", type: "tag", driverId: "opc", driverAddr: "Temp" }],
   ...extra,
@@ -75,7 +75,7 @@ describe("datasource usage", () => {
 
 describe("custom widget usage", () => {
   const use = (id: string) => ({ id: `w${Math.random()}`, type: "customWidget", x: 0, y: 0, w: 2, h: 2, props: { customWidgetId: id } }) as unknown as Widget;
-  const base = (over: Partial<Project>): Project => ({ schemaVersion: 6, version: "1", datasources: [], pages: [], ...over }) as Project;
+  const base = (over: Partial<Project>): Project => ({ schemaVersion: 7, version: "1", datasources: [], pages: [], ...over }) as Project;
 
   it("is nothing for a custom widget nothing uses", () => {
     expect(customWidgetUsage(base({ pages: [{ id: "p", name: "Main", widgets: [use("other")] }] }), "cw")).toEqual({ pages: [], customWidgets: [], frame: 0, total: 0 });

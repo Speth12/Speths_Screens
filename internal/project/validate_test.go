@@ -9,7 +9,7 @@ import (
 
 // widgetDoc is a current-format project with one page holding the given widgets (JSON).
 func widgetDoc(widgets string) []byte {
-	return []byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[` + widgets + `]}]}`)
+	return []byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[` + widgets + `]}]}`)
 }
 
 func TestValidateJSON(t *testing.T) {
@@ -47,10 +47,10 @@ func TestValidateJSON(t *testing.T) {
 			widgetDoc(`{"id":"w1","type":"shape","x":0,"y":0,"w":2,"h":2,"dynamics":{"flow":{"expr":"1"}}}`),
 			[]string{`page "Main", widget w1 (shape): dynamics: cannot drive flow`}},
 		{"a custom widget given a width and no height",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],"customWidgets":[{"id":"a","name":"A","params":[],"width":300,"widgets":[]}]}`),
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],"customWidgets":[{"id":"a","name":"A","params":[],"width":300,"widgets":[]}]}`),
 			[]string{`/customWidgets/0: properties 'height' required, if 'width' exists`}},
 		{"anchors that do not exist",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],"customWidgets":[{"id":"a","name":"A","params":[],"width":300,"height":50,"widgets":[{"localId":"x","type":"textDisplay","x":0,"y":0,"w":10,"h":10,"anchorX":"middle"}]}]}`),
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],"customWidgets":[{"id":"a","name":"A","params":[],"width":300,"height":50,"widgets":[{"localId":"x","type":"textDisplay","x":0,"y":0,"w":10,"h":10,"anchorX":"middle"}]}]}`),
 			[]string{`custom widget "A", widget x (textDisplay): anchorX: value must be one of 'left', 'right', 'center', 'stretch'`}},
 		{"a property the widget type cannot drive",
 			widgetDoc(`{"id":"w1","type":"led","x":0,"y":0,"w":1,"h":1,"dynamics":{"min":{"expr":"1"},"bgColor":{"expr":"2"}}}`),
@@ -71,31 +71,31 @@ func TestValidateJSON(t *testing.T) {
 			widgetDoc(`{"id":"w1","type":"led","x":0,"y":0,"w":2,"h":2,"binding":"plc:B"}`),
 			[]string{`page "Main", widget w1 (led): unknown field binding`}},
 		{"custom widget part",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "customWidgets":[{"id":"fp","name":"Pump","params":[],"widgets":[{"localId":"s","type":"tank","x":0,"y":0,"w":1,"h":1,"props":{"step":1}}]}]}`),
 			[]string{`custom widget "Pump", widget s (tank): unknown setting step`}},
 		{"preset widget",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "presets":[{"id":"ps","name":"Start/Stop","widgets":[{"id":"b","type":"button","x":0,"y":0,"w":1,"h":1,"props":{"min":1}}]}]}`),
 			[]string{`preset "Start/Stop", widget b (button): unknown setting min`}},
 		{"empty preset",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "presets":[{"id":"ps","name":"Empty","widgets":[]}]}`),
 			[]string{`/presets/0/widgets: minItems: got 0, want 1`}},
 		{"calculated tags as a list",
-			[]byte(`{"schemaVersion":6,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "datasources":[{"id":"sim","type":"virtual","label":"Sim","config":{"tags":[{"path":"t","expr":"1 + 2"}]}}]}`),
 			nil},
 		{"calculated tags still as a JSON string",
-			[]byte(`{"schemaVersion":6,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "datasources":[{"id":"sim","type":"virtual","label":"Sim","config":{"tags":"[]"}}]}`),
 			[]string{`/datasources/0/config/tags: got string, want array`}},
 		{"calculated tag with the old formula field",
-			[]byte(`{"schemaVersion":6,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
+			[]byte(`{"schemaVersion":7,"version":"1","pages":[{"id":"p1","name":"Main","widgets":[]}],
 			  "datasources":[{"id":"sim","type":"virtual","label":"Sim","config":{"tags":[{"path":"t","formula":"1"}]}}]}`),
 			[]string{`/datasources/0/config/tags/0: missing property 'expr'`, `/datasources/0/config/tags/0: unknown field formula`}},
 		{"outside a widget",
-			[]byte(`{"schemaVersion":6,"version":"1","datasources":[],"pages":[]}`),
+			[]byte(`{"schemaVersion":7,"version":"1","datasources":[],"pages":[]}`),
 			[]string{`/pages: minItems: got 0, want 1`}},
 	}
 	for _, tc := range tests {

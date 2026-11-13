@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/Speth12/Speths_Screens/internal/project"
 	"context"
 	"encoding/json"
 	"io"
@@ -341,7 +342,7 @@ func TestAliveReportsVersionAndFormat(t *testing.T) {
 	_, body, _ := relaySend(t, "GET", hs.URL+"/api/v1/alive", "", nil)
 	var got map[string]any
 	_ = json.Unmarshal([]byte(body), &got)
-	if got["ok"] != true || got["version"] != "v9.9.9" || got["schemaVersion"] != 6.0 {
+	if got["ok"] != true || got["version"] != "v9.9.9" || got["schemaVersion"] != float64(project.CurrentSchemaVersion) {
 		t.Errorf("alive = %v", got)
 	}
 }

@@ -5,9 +5,10 @@ import schema from "../../../schema.json";
 import { v2ToV3 } from "./upgradeV3";
 import { v4ToV5 } from "./upgradeV5";
 import { v5ToV6 } from "./upgradeV6";
+import { v6ToV7 } from "./upgradeV7";
 
 /** The project format this build writes. A file without schemaVersion is 1. */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 type Obj = Record<string, unknown>;
 
@@ -44,6 +45,7 @@ export function upgradeProject(input: unknown): UpgradeResult {
   // changes nothing that exists: only the version moves.
   if (version < 5) v4ToV5(doc);
   if (version < 6) v5ToV6(doc);
+  if (version < 7) v6ToV7(doc, (text) => notes.push(text));
   doc.schemaVersion = CURRENT_SCHEMA_VERSION;
   return { project: doc, notes };
 }

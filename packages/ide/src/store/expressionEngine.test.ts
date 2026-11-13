@@ -5,7 +5,7 @@ import { EVAL_INTERVAL_MS, bootExpressionEngine } from "./expressionEngine";
 import { virtualTagStore } from "./virtualTagStore";
 
 const project = (tags: CalculatedTag[]): Project => ({
-  schemaVersion: 6, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
+  schemaVersion: 7, version: "1", pages: [{ id: "p1", name: "Main", widgets: [] }],
   datasources: [{ id: "sim", type: "virtual", label: "Sim", config: { tags } }],
 });
 

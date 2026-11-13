@@ -14,7 +14,7 @@ afterEach(() => {
 beforeEach(() => useWorkspace.setState({ tabs: [SCREEN_TAB], activeId: SCREEN_TAB.id, variablesDs: "" }));
 
 const project = (config: Record<string, unknown> = {}, type = "rest"): Project => ({
-  schemaVersion: 6, version: "0.1.0",
+  schemaVersion: 7, version: "0.1.0",
   datasources: [{ id: "plc", label: "Lab PLC", type, config }] as Project["datasources"],
   pages: [{ id: "p1", name: "Overview", widgets: [{ id: "g", type: "gauge", x: 0, y: 0, w: 2, h: 2, bindings: { value: "plc:Arp.T" } }] }],
 });

@@ -318,7 +318,7 @@
       "widgets": []
     }
   ],
-  "schemaVersion": 6,
+  "schemaVersion": 6, "pin": "1234",
   "theme": {
     "mode": "light",
     "preset": "calm"

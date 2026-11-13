@@ -11,7 +11,8 @@ export type SettingsProps = {
   onLanguage: (v: string) => void;
   /** Offered for a page that can be fitted to the window's width. */
   fit?: { on: boolean; toggle: () => void };
-  onLock?: () => void;
+  /** Signs out, so another person can sign in (only when the project asks for logins). */
+  onLogout?: () => void;
   /** The text of a label in the language being shown. */
   t?: (text: string) => string;
 };
@@ -61,10 +62,10 @@ export function SettingsScreen(p: SettingsProps) {
           </Row>
         )}
       </Card>
-      {p.onLock && (
-        <Card title={t("Tools")}>
+      {p.onLogout && (
+        <Card title={t("Sign in")}>
           <div className="flex flex-wrap gap-2">
-            <button onClick={p.onLock} className="px-3 py-1.5 text-sm font-medium" style={field}>{t("Lock screen")}</button>
+            <button onClick={p.onLogout} className="px-3 py-1.5 text-sm font-medium" style={field}>{t("Log out")}</button>
           </div>
         </Card>
       )}

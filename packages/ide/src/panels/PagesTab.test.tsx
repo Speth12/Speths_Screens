@@ -9,7 +9,7 @@ afterEach(cleanup);
 beforeEach(() => useWorkspace.setState({ tabs: [SCREEN_TAB, PAGES_TAB], activeId: PAGES_TAB.id }));
 
 const project = (): Project => ({
-  schemaVersion: 6, version: "0.1.0", datasources: [],
+  schemaVersion: 7, version: "0.1.0", datasources: [],
   pages: [
     { id: "a", name: "Overview", group: "Plant", widgets: [{ id: "w1", type: "gauge", x: 0, y: 0, w: 2, h: 2, bindings: { value: "plc:A" }, groupId: "g1" }, { id: "w2", type: "led", x: 2, y: 0, w: 1, h: 1, groupId: "g1" }] },
     { id: "b", name: "Trends", widgets: [] },

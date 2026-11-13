@@ -214,3 +214,35 @@ func TestSecurityModeDecidesLogin(t *testing.T) {
 		t.Errorf("security.mode none: GET /project without a token: %d %s", code, body)
 	}
 }
+
+// A widget that asks for a role: the role in the user's login token decides, over HTTP and the
+// WebSocket alike (both go through writeTag).
+func TestWriteNeedsTheWidgetsRole(t *testing.T) {
+	s := newSecureServer(t)
+	doc := `{"schemaVersion": 7, "version": "0.1.0", "security": {"mode": "login"},
+	  "datasources": [{"id": "mem", "label": "mem", "type": "memory", "config": {"memoryTags": [{"path": "sp", "type": "real"}]}}],
+	  "pages": [{"id": "p1", "name": "Main", "widgets": [
+	    {"id": "in", "type": "numericInput", "x": 0, "y": 0, "w": 1, "h": 1, "bindings": {"value": "mem:sp"}, "access": {"operate": "supervisor"}}
+	  ]}]}`
+	if code, body := s.do(t, "POST", "/api/v1/project", s.adminToken, doc); code != 200 {
+		t.Fatalf("deploy: %d %s", code, body)
+	}
+	tests := []struct {
+		name, token string
+		wantCode    int
+	}{
+		{"an operator is refused", s.opToken, 403},
+		{"an admin writes", s.adminToken, 200},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			code, body := s.do(t, "POST", "/api/v1/tag/sp", tc.token, `{"datasource":"mem","value":5,"widgetId":"in"}`)
+			if code != tc.wantCode {
+				t.Errorf("HTTP %d %s, want %d", code, body, tc.wantCode)
+			}
+			if tc.wantCode == 403 && !strings.Contains(body, "supervisor and above") {
+				t.Errorf("reason %s does not name the role", body)
+			}
+		})
+	}
+}

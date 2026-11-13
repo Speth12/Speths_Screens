@@ -122,7 +122,8 @@ function useIdeRecipeSets() {
 
 function useIdeUser(): UserInfo {
   const loginRequired = useProject((s) => s.project.security?.mode === "login");
-  return useMemo(() => ({ loginRequired }), [loginRequired]);
+  // The designer sees and can use every widget, whatever roles they ask for.
+  return useMemo(() => ({ loginRequired, role: "admin" }), [loginRequired]);
 }
 
 export const ideHost: WidgetHost = {

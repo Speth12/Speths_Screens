@@ -6,13 +6,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TypedWidget,
+  Access, Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TypedWidget,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
 import { translateWidget } from "./translate";
 import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
+import { AccessGate } from "./access";
 import { tokenColor } from "./tokens";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
@@ -1216,10 +1217,12 @@ export function WidgetRenderer({ w }: { w: Widget }) {
     <div className="flex items-center justify-center h-full text-zinc-500 text-xs">{w.type}</div>
   ));
   return (
-    <VisibilityGate w={w}>
-      <DriveApplicator w={w}>
-        {(shown) => <Translated w={shown}>{(t) => <Frame w={t}><R w={t} /></Frame>}</Translated>}
-      </DriveApplicator>
-    </VisibilityGate>
+    <AccessGate access={(w as { access?: Access }).access}>
+      <VisibilityGate w={w}>
+        <DriveApplicator w={w}>
+          {(shown) => <Translated w={shown}>{(t) => <Frame w={t}><R w={t} /></Frame>}</Translated>}
+        </DriveApplicator>
+      </VisibilityGate>
+    </AccessGate>
   );
 }

@@ -8,8 +8,8 @@
   "properties": {
 "schemaVersion": {
       "type": "integer",
-      "minimum": 6,
-      "maximum": 6,
+      "minimum": 7,
+      "maximum": 7,
       "description": "Project file format. A file without it is format 1 and is upgraded when opened"
     },
     "version": {
@@ -19,10 +19,6 @@
     "name": {
       "type": "string",
       "description": "Human-readable project name"
-    },
-    "pin": {
-      "type": "string",
-      "description": "Operator PIN — operator panel locks behind this if set"
     },
     "viewOnly": {
       "type": "boolean",
@@ -320,6 +316,16 @@
         "expr": { "type": "string", "description": "Expression giving its value, e.g. clamp({mb:AI0} / 4095 * 100, 0, 100). A Bad or missing input makes the tag Bad" }
       }
     },
+    "Access": {
+      "title": "Access",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "With security mode login: the lowest role that may see this (view) and operate it (operate). A page's access applies to every widget on it, and a custom widget's to its parts. With security off everyone is an administrator, so access does nothing",
+      "properties": {
+        "view": { "$ref": "#/$defs/Role", "description": "Below this role it is not shown; a page is also left out of the navigation. Missing means everyone" },
+        "operate": { "$ref": "#/$defs/Role", "description": "Below this role it is shown but cannot be used, and the runtime refuses a write it would make. Missing means everyone who can see it" }
+      }
+    },
     "Role": {
       "title": "Role",
       "type": "string",
@@ -481,7 +487,8 @@
         "script":          { "type": "string", "description": "Page script (JavaScript source)" },
         "icon":            { "$ref": "#/$defs/PageIcon", "description": "Shown beside the page's name in the navigation; missing shows the name's first letter" },
         "group":           { "type": "string", "description": "Pages with the same group are listed together under that heading in the sidebar" },
-        "hideInNav":       { "type": "boolean", "description": "Leave the page out of the navigation; it is reached by a button or a script" }
+        "hideInNav":       { "type": "boolean", "description": "Leave the page out of the navigation; it is reached by a button or a script" },
+        "access":          { "$ref": "#/$defs/Access", "description": "Who may see this page and operate the widgets on it" }
       }
     },
     "PageIcon": {
@@ -2832,6 +2839,7 @@
           "type": "string",
           "description": "IDE-only: widgets with the same groupId move together"
         },
+        "access": { "$ref": "#/$defs/Access" },
         "layout": {
           "$ref": "#/$defs/WidgetLayouts"
         },
@@ -2930,6 +2938,7 @@
           "type": "string",
           "description": "IDE-only: widgets with the same groupId move together"
         },
+        "access": { "$ref": "#/$defs/Access" },
         "flex": { "$ref": "#/$defs/PartFlex" },
         "anchorX": { "$ref": "#/$defs/AnchorX" },
         "anchorY": { "$ref": "#/$defs/AnchorY" },

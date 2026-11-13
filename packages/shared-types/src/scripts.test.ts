@@ -12,7 +12,7 @@ const cases = JSON.parse(readFileSync(resolve(__dirname, "../../../testdata/form
 
 describe("format 4 problems", () => {
   it.each(cases.map((c) => [c.name, c] as const))("%s", (_name, c) => {
-    const p = { schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...c.project } as Project;
+    const p = { schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...c.project } as Project;
     expect(expressionProblems(p)).toEqual(c.want);
   });
 });

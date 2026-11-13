@@ -6,7 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer } from "../widgets";
 import { wsEventsUrl } from "../store/runtimeTarget";
 import type { CanvasResolution } from "@speths-screens/shared-types";
-import { CloseIcon, BackspaceIcon } from "../ui/icons";
+import { CloseIcon } from "../ui/icons";
 
 const DYNAMIC: CanvasResolution = { type: "dynamic" };
 
@@ -24,27 +24,6 @@ export function PreviewMode({ onExit }: Props) {
   const page = project.pages.find((p) => p.id === activePageId) ?? project.pages[0];
   const resolution = project.canvasResolution ?? DYNAMIC;
   const pixel = project.canvasSnap === "pixel";
-
-  // ── PIN gate ──────────────────────────────────────────────────────────────
-  const [pinOk, setPinOk] = useState(!project.pin);
-  const [pinDraft, setPinDraft] = useState("");
-  const [pinErr, setPinErr] = useState(false);
-
-  const submitPin = (draft = pinDraft) => {
-    if (draft === project.pin) { setPinOk(true); }
-    else { setPinErr(true); setPinDraft(""); setTimeout(() => setPinErr(false), 800); }
-  };
-
-  const pinAppend = (d: string) => {
-    setPinDraft((prev) => {
-      const next = prev + d;
-      if (project.pin && next.length >= project.pin.length) {
-        setTimeout(() => submitPin(next), 50);
-      }
-      return next;
-    });
-  };
-  const pinBackspace = () => setPinDraft((p) => p.slice(0, -1));
 
   // ── Runtime events WS (navigate_page from MCP / scripts) ─────────────────
   useEffect(() => {
@@ -125,39 +104,6 @@ export function PreviewMode({ onExit }: Props) {
     showToolbar();
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, []);
-
-  // ── PIN screen ────────────────────────────────────────────────────────────
-  if (!pinOk) {
-    const dots = Array.from({ length: Math.max(4, pinDraft.length) }, (_, i) =>
-      i < pinDraft.length ? "●" : "○"
-    );
-    return (
-      <div className="fixed inset-0 z-50 bg-zinc-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-zinc-900 border border-zinc-700 w-64 shadow-2xl">
-          <div className="text-sm font-semibold text-zinc-200">Operator Login</div>
-          <div className={`flex gap-3 text-2xl tracking-widest transition-colors ${pinErr ? "text-red-400" : "text-zinc-100"}`}>
-            {dots.map((d, i) => <span key={i}>{d}</span>)}
-          </div>
-          <div className="grid grid-cols-3 gap-2 w-full">
-            {["1","2","3","4","5","6","7","8","9","","0","back"].map((k, i) => (
-              k === "" ? <div key={i} /> :
-              <button
-                key={i}
-                aria-label={k === "back" ? "Backspace" : undefined}
-                onClick={() => k === "back" ? pinBackspace() : pinAppend(k)}
-                className="py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-lg font-medium transition-all"
-              >
-                {k === "back" ? <BackspaceIcon size={20} /> : k}
-              </button>
-            ))}
-          </div>
-          <button onClick={onExit} className="w-full py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-xs text-zinc-400">
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Runtime view ──────────────────────────────────────────────────────────
   return (

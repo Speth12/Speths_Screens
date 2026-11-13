@@ -6,7 +6,7 @@ import { ThemePanel } from "./ThemePanel";
 afterEach(cleanup);
 
 const project = (more: Partial<Project> = {}): Project => ({
-  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...more,
+  schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }], ...more,
 });
 const theme = () => useProject.getState().project.theme;
 

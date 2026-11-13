@@ -54,6 +54,7 @@ var upgradeNotes = func() map[string][]string {
 	}
 	all := map[string][]string{}
 	for name, n := range v2ToV3 {
+		all[name+".v6"] = nil // v6 to v7 drops a PIN (only all-rules.v6 has one, below)
 		all[name+".v5"] = nil // v5 to v6 renames faceplates to custom widgets (no note)
 		all[name+".v4"] = nil // v4 to v5 only changes the theme from an id to an object (no note)
 		all[name+".v3"] = nil // v3 to v4 only moves the version
@@ -62,12 +63,13 @@ var upgradeNotes = func() map[string][]string {
 			all[name+".v1"] = append(append([]string{}, first...), n...)
 		}
 	}
+	all["all-rules.v6"] = []string{`dropped the operator PIN: it was checked only in the browser; use logins (security mode login) and roles on pages and widgets instead`}
 	return all
 }()
 
 // The golden files in testdata/upgrade are shared with the TypeScript
 // upgrader's tests: every <name>.v<N>.json must upgrade to exactly the
-// newest file of that name, <name>.v6.json.
+// newest file of that name, <name>.v<CurrentSchemaVersion>.json.
 func TestUpgradeGolden(t *testing.T) {
 	newest, _ := filepath.Glob(fmt.Sprintf("../../testdata/upgrade/*.v%d.json", CurrentSchemaVersion))
 	if len(newest) != 7 {
@@ -143,8 +145,9 @@ func TestUpgradeVersions(t *testing.T) {
 		{"3", `{"schemaVersion":3,"pages":[]}`, ""},
 		{"4", `{"schemaVersion":4,"pages":[]}`, ""},
 		{"5", `{"schemaVersion":5,"pages":[]}`, ""},
-		{"current", `{"schemaVersion":6,"pages":[]}`, ""},
-		{"newer", `{"schemaVersion":7,"pages":[]}`, "the project is format 7; this version of Speth's Screens reads up to 6"},
+		{"6", `{"schemaVersion":6,"pages":[]}`, ""},
+		{"current", `{"schemaVersion":7,"pages":[]}`, ""},
+		{"newer", `{"schemaVersion":8,"pages":[]}`, "the project is format 8; this version of Speth's Screens reads up to 7"},
 		{"not a version", `{"schemaVersion":0}`, "is not a format version"},
 		{"not JSON", `{`, "unmarshal project"},
 	}
@@ -161,8 +164,8 @@ func TestUpgradeVersions(t *testing.T) {
 				t.Fatal(err)
 			}
 			var doc map[string]any
-			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(6) {
-				t.Errorf("got %s, want schemaVersion 6", out)
+			if err := json.Unmarshal(out, &doc); err != nil || doc["schemaVersion"] != float64(7) {
+				t.Errorf("got %s, want schemaVersion 7", out)
 			}
 		})
 	}

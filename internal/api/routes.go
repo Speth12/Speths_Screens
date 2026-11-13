@@ -256,6 +256,7 @@ func (s *Server) handleWriteTag(w http.ResponseWriter, r *http.Request) {
 // writeTag runs one write and records it in the audit trail and, when it
 // went through, in the historian.
 func (s *Server) writeTag(r *http.Request, req runtime.WriteRequest) runtime.WriteResult {
+	req.Role = project.Role(claimedRole(r))
 	res := s.rt.WriteTag(r.Context(), req)
 	if s.rt.Historian != nil && (res.Status == runtime.WriteConfirmed || res.Status == runtime.WriteSent) {
 		_ = s.rt.Historian.RecordWrite(req.Binding, req.Value)

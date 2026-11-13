@@ -100,7 +100,7 @@ func TestRunningInstanceFindsOurProgramOnly(t *testing.T) {
 	}
 	stop()
 
-	stop = serve(`{"ok":true,"version":"dev","schemaVersion":6}`)
+	stop = serve(`{"ok":true,"version":"dev","schemaVersion":7}`)
 	defer stop()
 	// Another program of ours on a lower port may answer first; any answer proves the check works.
 	if got, ok := runningInstance(); !ok {

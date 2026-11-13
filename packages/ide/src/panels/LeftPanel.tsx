@@ -298,16 +298,6 @@ export function LeftPanel({ width }: { width?: number }) {
             <div>
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1.5">Security</div>
               <div className="space-y-2">
-                <div>
-                  <div className="text-[10px] text-zinc-500 mb-0.5">Operator PIN (blank = no lock)</div>
-                  <input
-                    type="password"
-                    value={project.pin ?? ""}
-                    onChange={(e) => setProp({ pin: e.target.value || undefined })}
-                    placeholder="e.g. 1234"
-                    className={`w-full ${inp}`}
-                  />
-                </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={project.viewOnly ?? false}
                     onChange={(e) => setProp({ viewOnly: e.target.checked || undefined })}

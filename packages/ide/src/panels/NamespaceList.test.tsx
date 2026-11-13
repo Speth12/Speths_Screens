@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const load = (namespace: unknown[]) => useProject.getState().loadProject({
-  schemaVersion: 6, version: "1", datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }], namespace,
+  schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p", name: "Main", widgets: [] }], namespace,
 } as unknown as Project);
 
 const NS = [

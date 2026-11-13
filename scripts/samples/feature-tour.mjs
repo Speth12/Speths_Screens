@@ -382,7 +382,7 @@ page("recipes", "Recipes", "flask", [
 }
 
 const project = {
-  schemaVersion: 6,
+  schemaVersion: 7,
   version: "1.0.0",
   name: "Feature Tour",
   theme: { preset },

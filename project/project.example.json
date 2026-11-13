@@ -278,7 +278,7 @@
       ]
     }
   ],
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "theme": {
     "mode": "light",
     "preset": "calm"

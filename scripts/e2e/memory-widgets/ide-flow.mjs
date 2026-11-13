@@ -15,7 +15,7 @@ const setField = (labelStart, value, scope = "document") => ev(`(() => { const r
 const clickButton = (text, scope = "document") => ev(`(() => { const b = [...${scope}.querySelectorAll('button')].find(e => e.textContent.trim() === ${JSON.stringify(text)}); b?.click(); return !!b })()`);
 
 // A project with a memory datasource and a page, as the IDE keeps it.
-const seed = { schemaVersion: 6, version: "0.1.0", name: "IDE flow", datasources: [{ id: "mem", label: "Script state", type: "memory", config: { memoryTags: [] } }], pages: [{ id: "main", name: "Main", widgets: [] }] };
+const seed = { schemaVersion: 7, version: "0.1.0", name: "IDE flow", datasources: [{ id: "mem", label: "Script state", type: "memory", config: { memoryTags: [] } }], pages: [{ id: "main", name: "Main", widgets: [] }] };
 // Set before the IDE starts, so its own autosave cannot overwrite it.
 await page.send("Page.addScriptToEvaluateOnNewDocument", { source: `localStorage.setItem('speths-screens-project-v1', ${JSON.stringify(JSON.stringify(seed))});` });
 await page.goto(IDE, 3000);
