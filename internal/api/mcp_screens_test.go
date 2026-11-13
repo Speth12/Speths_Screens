@@ -142,6 +142,51 @@ func TestMCPBuildsScreens(t *testing.T) {
 		}
 	})
 
+	t.Run("a type's settings in detail: values and formats", func(t *testing.T) {
+		got, isErr := callMCP(t, hs.URL, "list_widget_types", map[string]any{"type": "symbol"})
+		if isErr || !strings.Contains(got, "centrifugal-pump") || !strings.Contains(got, `"frameSettings"`) {
+			t.Errorf("symbol: %.300s", got)
+		}
+		got, _ = callMCP(t, hs.URL, "list_widget_types", map[string]any{"type": "pipe"})
+		if !strings.Contains(got, "x,y pairs") {
+			t.Errorf("pipe: %.300s", got)
+		}
+		got, isErr = callMCP(t, hs.URL, "list_widget_types", map[string]any{"type": "sparkle"})
+		if !isErr || !strings.Contains(got, `no widget type "sparkle"`) {
+			t.Errorf("got %s", got)
+		}
+	})
+
+	t.Run("a symbol that does not exist is refused, with the ones it may mean", func(t *testing.T) {
+		got, isErr := callMCP(t, hs.URL, "add_widget", map[string]any{"page": "Main", "type": "symbol", "x": 0, "y": 0, "w": 100, "h": 100, "props": map[string]any{"symbolId": "pump"}})
+		if !isErr || !strings.Contains(got, `there is no symbol "pump"`) || !strings.Contains(got, "centrifugal-pump") {
+			t.Errorf("got %s", got)
+		}
+		got, isErr = callMCP(t, hs.URL, "add_widget", map[string]any{"page": "Main", "type": "symbol", "x": 0, "y": 0, "w": 100, "h": 100, "props": map[string]any{"symbolId": "centrifugal-pump"}})
+		if isErr {
+			t.Errorf("a real symbol: %s", got)
+		}
+	})
+
+	t.Run("a widget can be drawn behind the others, and moved in the order", func(t *testing.T) {
+		got, isErr := callMCP(t, hs.URL, "add_widget", map[string]any{"page": "Main", "type": "pipe", "x": 0, "y": 40, "w": 400, "h": 20, "order": "back"})
+		if isErr {
+			t.Fatalf("add_widget: %s", got)
+		}
+		ws := rt.Project().Pages[0].Widgets
+		if ws[0].Type != "pipe" {
+			t.Fatalf("the pipe is not drawn first: %v", ws[0].Type)
+		}
+		pipe := ws[0].ID
+		if got, isErr := callMCP(t, hs.URL, "update_widget", map[string]any{"page": "Main", "id": pipe, "order": "front"}); isErr {
+			t.Fatalf("update_widget: %s", got)
+		}
+		ws = rt.Project().Pages[0].Widgets
+		if ws[len(ws)-1].ID != pipe {
+			t.Error("the pipe did not move to the front")
+		}
+	})
+
 	t.Run("each change is a version that says what it was", func(t *testing.T) {
 		resp, _ := http.Get(hs.URL + "/api/v1/versions")
 		raw, _ := io.ReadAll(resp.Body)

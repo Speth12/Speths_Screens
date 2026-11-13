@@ -119,6 +119,53 @@ func mergeInto(target, patch map[string]any) {
 	}
 }
 
+// checkSymbol refuses a symbol widget whose symbol does not exist: the screen would show an empty box.
+func checkSymbol(w map[string]any) error {
+	if text(w["type"]) != "symbol" {
+		return nil
+	}
+	id := text(obj(w["props"])["symbolId"])
+	if id == "" || project.IsSymbol(id) {
+		return nil
+	}
+	var near []string
+	for _, s := range project.SymbolIDs {
+		if strings.Contains(s, id) || strings.Contains(id, s) {
+			near = append(near, s)
+		}
+	}
+	hint := "list_widget_types with type symbol lists them"
+	if len(near) > 0 {
+		hint = "did you mean " + strings.Join(near, ", ") + "? (" + hint + ")"
+	}
+	return fmt.Errorf("there is no symbol %q; %s", id, hint)
+}
+
+// reorder moves the widget at index at in the page's drawing order (the last is drawn on top).
+func reorder(pg map[string]any, at int, how string) error {
+	ws := list(pg["widgets"])
+	w := ws[at]
+	rest := append(append([]any{}, ws[:at]...), ws[at+1:]...)
+	switch how {
+	case "front":
+		pg["widgets"] = append(rest, w)
+	case "back":
+		pg["widgets"] = append([]any{w}, rest...)
+	case "forward", "backward":
+		to := at + 1
+		if how == "backward" {
+			to = at - 1
+		}
+		if to < 0 || to >= len(ws) {
+			return nil
+		}
+		ws[at], ws[to] = ws[to], ws[at]
+	default:
+		return fmt.Errorf("order is front, back, forward or backward, not %q", how)
+	}
+	return nil
+}
+
 func (h *Handler) screenTools() []tool {
 	str := func(desc string) map[string]any { return map[string]any{"type": "string", "description": desc} }
 	num := func(desc string) map[string]any { return map[string]any{"type": "number", "description": desc} }
@@ -142,8 +189,8 @@ func (h *Handler) screenTools() []tool {
 			InputSchema: map[string]any{"type": "object", "properties": map[string]any{}}},
 		{Name: "get_page", Description: "Read one page with all its widgets (type, place, settings, tags, events, dynamics, access).",
 			InputSchema: map[string]any{"type": "object", "properties": map[string]any{"page": str("Page id or name")}, "required": []string{"page"}}},
-		{Name: "list_widget_types", Description: "List the widget types and the settings (props keys) each accepts.",
-			InputSchema: map[string]any{"type": "object", "properties": map[string]any{}}},
+		{Name: "list_widget_types", Description: "List the widget types and their settings. Without a type: every type with its setting names, and the frame settings every widget has (label, colors, padding, text). With a type: each of its settings with its JSON type, the values it may take (for a symbol, the symbol ids) and what it does.",
+			InputSchema: map[string]any{"type": "object", "properties": map[string]any{"type": str("Optional: one widget type, for its settings in detail")}}},
 		{Name: "add_page", Description: "Add a page; returns its id.",
 			InputSchema: map[string]any{"type": "object", "properties": map[string]any{
 				"name": str("Page name"), "icon": str("Optional icon: home, graph, alarm, settings, pump, vessel, valve, motor, dial, list, chart, map, user, tools, bolt, flask"),
@@ -156,12 +203,14 @@ func (h *Handler) screenTools() []tool {
 				"props":    anyObj("Settings, e.g. {\"label\": \"Pump 1\", \"unit\": \"rpm\"}"),
 				"bindings": anyObj("{\"value\": tag, \"visible\": tag, \"color\": tag}"),
 				"events":   anyObj("What it does when touched"),
+				"order":    map[string]any{"type": "string", "enum": []string{"front", "back"}, "description": "Drawn over the others (front, the default) or behind them (back: a background, a pipe under symbols)"},
 			}), "required": []string{"page", "type", "x", "y", "w", "h"}}},
 		{Name: "update_widget", Description: "Change a widget: its place, settings (merged; null removes one), tags, events, dynamics or access. Only what is given changes.",
 			InputSchema: map[string]any{"type": "object", "properties": with(geometry, map[string]any{
 				"page": str("Page id or name"), "id": str("Widget id"),
 				"props": anyObj("Settings to set; null removes one"), "bindings": anyObj("Tags"), "events": anyObj("Events (replaces them)"),
 				"dynamics": anyObj("Driven properties (replaces them)"), "access": anyObj("{\"view\": role, \"operate\": role}"),
+				"order": map[string]any{"type": "string", "enum": []string{"front", "back", "forward", "backward"}, "description": "Where it is drawn among the others: over all, under all, or one step"},
 			}), "required": []string{"page", "id"}}},
 		{Name: "delete_widget", Description: "Delete a widget from a page.",
 			InputSchema: map[string]any{"type": "object", "properties": map[string]any{"page": str("Page id or name"), "id": str("Widget id")}, "required": []string{"page", "id"}}},
@@ -208,20 +257,33 @@ func (h *Handler) callScreenTool(ctx context.Context, name string, args map[stri
 		return out(pg)
 
 	case "list_widget_types":
-		keys, err := project.WidgetSettings()
+		types, frame, err := project.WidgetSettingsInfo()
 		if err != nil {
 			return "", true, err, true
 		}
-		names := make([]string, 0, len(keys))
-		for t := range keys {
-			names = append(names, t)
+		if want := text(args["type"]); want != "" {
+			for _, w := range types {
+				if w.Type == want {
+					return out(map[string]any{"type": w.Type, "settings": w.Settings, "frameSettings": frame})
+				}
+			}
+			return "", true, fmt.Errorf("no widget type %q", want), true
 		}
-		sort.Strings(names)
-		types := make([]map[string]any, 0, len(names))
-		for _, t := range names {
-			types = append(types, map[string]any{"type": t, "settings": keys[t]})
+		list := make([]map[string]any, 0, len(types))
+		for _, w := range types {
+			names := make([]string, 0, len(w.Settings))
+			for k := range w.Settings {
+				names = append(names, k)
+			}
+			sort.Strings(names)
+			list = append(list, map[string]any{"type": w.Type, "settings": names})
 		}
-		return out(types)
+		frameNames := make([]string, 0, len(frame))
+		for k := range frame {
+			frameNames = append(frameNames, k)
+		}
+		sort.Strings(frameNames)
+		return out(map[string]any{"types": list, "frameSettings": frameNames, "more": "call list_widget_types with a type for each setting's values and meaning"})
 
 	case "add_page":
 		nm := strings.TrimSpace(text(args["name"]))
@@ -274,7 +336,14 @@ func (h *Handler) callScreenTool(ctx context.Context, name string, args map[stri
 					w[k] = o
 				}
 			}
-			pg["widgets"] = append(list(pg["widgets"]), w)
+			if err := checkSymbol(w); err != nil {
+				return "", err
+			}
+			if text(args["order"]) == "back" {
+				pg["widgets"] = append([]any{w}, list(pg["widgets"])...)
+			} else {
+				pg["widgets"] = append(list(pg["widgets"]), w)
+			}
 			return fmt.Sprintf("added a %s (id %s) to page %q", text(args["type"]), id, text(pg["name"])), nil
 		})
 		return s, isErr, err, true
@@ -285,9 +354,14 @@ func (h *Handler) callScreenTool(ctx context.Context, name string, args map[stri
 			if err != nil {
 				return "", err
 			}
-			w, _, err := findWidget(pg, text(args["id"]))
+			w, at, err := findWidget(pg, text(args["id"]))
 			if err != nil {
 				return "", err
+			}
+			if o := text(args["order"]); o != "" {
+				if err := reorder(pg, at, o); err != nil {
+					return "", err
+				}
 			}
 			patch := map[string]any{}
 			for _, k := range []string{"x", "y", "w", "h", "props", "bindings", "events", "dynamics", "access"} {
@@ -295,10 +369,13 @@ func (h *Handler) callScreenTool(ctx context.Context, name string, args map[stri
 					patch[k] = v
 				}
 			}
-			if len(patch) == 0 {
+			if len(patch) == 0 && text(args["order"]) == "" {
 				return "", fmt.Errorf("nothing to change")
 			}
 			mergeInto(w, patch)
+			if err := checkSymbol(w); err != nil {
+				return "", err
+			}
 			return fmt.Sprintf("changed widget %s", text(args["id"])), nil
 		})
 		return s, isErr, err, true
