@@ -10,14 +10,14 @@ afterEach(cleanup);
 beforeEach(() => useProject.getState().newProject());
 
 describe("new project dialog", () => {
-  it("offers built-in first and creates what is chosen", () => {
+  it("offers editable widgets first and creates what is chosen", () => {
     const onCreate = vi.fn();
     render(<NewProjectDialog onCreate={onCreate} onCancel={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
-    expect(onCreate).toHaveBeenLastCalledWith("builtin");
-    fireEvent.click(screen.getByLabelText(/Custom, from widgets/));
-    fireEvent.click(screen.getByRole("button", { name: "Create" }));
     expect(onCreate).toHaveBeenLastCalledWith("custom");
+    fireEvent.click(screen.getByLabelText(/^Built-in/));
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect(onCreate).toHaveBeenLastCalledWith("builtin");
   });
 });
 

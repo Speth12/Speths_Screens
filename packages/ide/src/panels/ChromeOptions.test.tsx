@@ -19,11 +19,28 @@ const check = (name: string) => screen.getByRole("checkbox", { name }) as HTMLIn
 const choose = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
 describe("the built-in header's choices", () => {
-  it("shows them for a built-in project and not for custom chrome", () => {
+  it("shows them for a built-in project and for custom chrome alike", () => {
     render(<ChromeSettings />);
     expect(screen.getByTestId("chrome-options")).toBeTruthy();
     fireEvent.click(screen.getByRole("radio", { name: /Custom/ }));
-    expect(screen.queryByTestId("chrome-options")).toBeNull();
+    expect(screen.getByTestId("chrome-options")).toBeTruthy();
+  });
+
+  it("on a header held as custom widgets, a choice changes them and keeps what was added by hand", () => {
+    useProject.getState().newProject({ chrome: "custom" });
+    const headerOf = () => useProject.getState().project.customWidgets!.find((c) => c.id === "cw-header")!;
+    const mine = { localId: "my-logo", type: "image", x: 500, y: 8, w: 96, h: 44, props: {} } as (ReturnType<typeof headerOf>)["widgets"][number];
+    useProject.setState((s) => ({ project: { ...s.project, customWidgets: s.project.customWidgets!.map((c) => (c.id === "cw-header" ? { ...c, widgets: [...c.widgets, mine] } : c)) } }));
+    render(<ChromeSettings />);
+    expect(screen.getByRole("button", { name: "Edit the header on the canvas" })).toBeTruthy();
+    choose("Clock", "none");
+    fireEvent.click(check("Active alarm count"));
+    const ids = headerOf().widgets.map((w) => w.localId);
+    expect(ids).not.toContain("clock");
+    expect(ids).toContain("alarms");
+    expect(headerOf().widgets.find((w) => w.localId === "my-logo")).toEqual(mine);
+    choose("Header preset", "minimal");
+    expect(headerOf().widgets.map((w) => w.localId).sort()).toEqual(["my-logo", "page", "user"]);
   });
 
   it("starts as the header always was, and stores nothing until something changes", () => {

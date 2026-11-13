@@ -64,10 +64,11 @@ export function ChromeSettings() {
         </label>
       </div>
 
-      {!custom && <ChromeOptions />}
+      <ChromeOptions />
 
       {custom && (
         <>
+          <h3 className="text-ui-label font-semibold uppercase tracking-wide text-zinc-400 pt-1">Screen edges</h3>
           {slots.length === 0 && <div className="text-[11px] text-zinc-500 italic">No slots yet: the screen shows only the page.</div>}
           {slots.map((slot, i) => (
             <div key={slot.id} data-testid={`slot-${slot.id}`} className="rounded border border-zinc-800 p-2 space-y-1.5">

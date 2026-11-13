@@ -7,7 +7,7 @@
 // A project can say what the built-in ones show and how they look (shell.header, shell.navOptions):
 // the same custom widgets are then built with those choices, so the choices are a starting point a
 // project can still turn into custom chrome.
-import type { CustomWidget, CustomWidgetPart, FrameSlot, Shell, ShellStyle } from "@speths-screens/shared-types";
+import type { CustomWidget, CustomWidgetPart, FrameSlot, Shell, ShellHeader, ShellStyle } from "@speths-screens/shared-types";
 import { FONTS, TYPE_SCALE, tokenColor } from "./tokens";
 
 const bare = { noPadding: true, bgColor: "transparent", borderColor: "none" } as const;
@@ -335,4 +335,109 @@ export function builtinAsDesigned(project: ChromeProject): { customWidgets: Cust
   const icons = byId.get(SIDE_NAV_ICONS_ID);
   if (icons) out.push(filledNav(icons, SIDEBAR_ICONS_WIDTH, NAV_LENGTH));
   return { customWidgets: out, frame: defaultFrame(shell.nav ?? "tabs", shell) };
+}
+
+// ── Settings that keep working on a header a person has edited ─────────────
+// A project with custom chrome holds its header and navigation as custom widgets a person edits
+// freely. The header and navigation settings still apply to them: a change of a setting is worked out
+// as the difference between what the settings made before and what they make now, and only that
+// difference is put into the stored custom widgets. A part or a value the person changed by hand is
+// kept; what they never touched follows the setting. A part a setting turns off is removed, and one it
+// turns on is added where the settings would put it.
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** `mine` with every field the settings changed (base to next), unless `mine` changed that field itself. */
+function mergeFields<T extends object>(mine: T, base: T, next: T, skip: readonly string[] = []): T {
+  const out = { ...mine } as Record<string, unknown>;
+  const b = base as Record<string, unknown>, n = next as Record<string, unknown>;
+  for (const k of new Set([...Object.keys(b), ...Object.keys(n)])) {
+    if (skip.includes(k) || same(b[k], n[k]) || !same(out[k], b[k])) continue;
+    if (n[k] === undefined) delete out[k]; else out[k] = n[k];
+  }
+  return out as T;
+}
+
+function mergePart(mine: CustomWidgetPart, base: CustomWidgetPart, next: CustomWidgetPart): CustomWidgetPart {
+  const out = mergeFields(mine, base, next, ["props"]);
+  const props = mergeFields((mine.props ?? {}) as object, (base.props ?? {}) as object, (next.props ?? {}) as object);
+  return { ...out, props } as CustomWidgetPart;
+}
+
+function mergeCustomWidget(mine: CustomWidget, base: CustomWidget, next: CustomWidget): CustomWidget {
+  const out = mergeFields(mine, base, next, ["widgets"]);
+  const baseParts = new Map(base.widgets.map((p) => [p.localId, p]));
+  const nextParts = new Map(next.widgets.map((p) => [p.localId, p]));
+  const widgets: CustomWidgetPart[] = [];
+  for (const p of mine.widgets) {
+    const b = baseParts.get(p.localId), n = nextParts.get(p.localId);
+    if (b && !n) continue;                      // a setting turned it off
+    widgets.push(b && n ? mergePart(p, b, n) : p);
+  }
+  const have = new Set(widgets.map((p) => p.localId));
+  for (const n of next.widgets) if (!baseParts.has(n.localId) && !have.has(n.localId)) widgets.push(n);
+  return { ...out, widgets };
+}
+
+/** By id: what both have merged, what only `next` has added, what `next` dropped removed. */
+function mergeById<T extends { id: string }>(mine: readonly T[], base: readonly T[], next: readonly T[], merge: (m: T, b: T, n: T) => T, dropEdited: boolean): T[] {
+  const b = new Map(base.map((x) => [x.id, x])), n = new Map(next.map((x) => [x.id, x]));
+  const out: T[] = [];
+  for (const m of mine) {
+    const bb = b.get(m.id), nn = n.get(m.id);
+    if (bb && !nn && (dropEdited || same(m, bb))) continue;
+    out.push(bb && nn ? merge(m, bb, nn) : m);
+  }
+  const have = new Set(out.map((x) => x.id));
+  for (const x of next) if (!b.has(x.id) && !have.has(x.id)) out.push(x);
+  return out;
+}
+
+type MergeProject = ChromeProject & { customWidgets?: readonly CustomWidget[] };
+
+/** Whether two shells make the same built-in header and navigation. */
+export function sameChromeSettings(a: Shell | undefined, b: Shell | undefined): boolean {
+  return same(a?.header, b?.header) && same(a?.navOptions, b?.navOptions) && (a?.nav ?? "tabs") === (b?.nav ?? "tabs");
+}
+
+/** A project with custom chrome whose header or navigation settings change from its shell to `nextShell`:
+ *  its custom widgets and frame with that change put in, hand edits kept. `nextShell.frame` is the
+ *  frame as the person has it. */
+export function mergeChrome(project: MergeProject, nextShell: Shell): { customWidgets: CustomWidget[]; shell: Shell } {
+  const mine = [...(project.customWidgets ?? [])];
+  if (sameChromeSettings(project.shell, nextShell)) return { customWidgets: mine, shell: nextShell };
+  const base = builtinAsDesigned(project);
+  const next = builtinAsDesigned({ ...project, shell: nextShell });
+  return {
+    // A custom widget the settings no longer make (the tablet's icon sidebar) goes only if untouched.
+    customWidgets: mergeById(mine, base.customWidgets, next.customWidgets, mergeCustomWidget, false),
+    shell: { ...nextShell, frame: mergeById(nextShell.frame ?? [], base.frame, next.frame, (m, b, n) => mergeFields(m, b, n), true) },
+  };
+}
+
+// ── Header presets ─────────────────────────────────────────────────────────
+
+export type HeaderPreset = { id: string; name: string; about: string; header: ShellHeader };
+
+/** Starting points for the header: each is a set of the header's settings (the look is left alone). */
+export const HEADER_PRESETS: HeaderPreset[] = [
+  { id: "standard", name: "Standard", about: "Logo, project and page, each datasource, clock, user", header: {} },
+  { id: "compact", name: "Compact", about: "A low bar: logo, page, a datasource summary, the time, user", header: { height: 44, showProjectName: false, drivers: "summary", clock: "time", clockWeekday: false } },
+  { id: "centered", name: "Centered title", about: "Names in the middle, alarm count, clock, user", header: { titleAlign: "center", drivers: "summary", alarms: true } },
+  { id: "minimal", name: "Minimal", about: "Only the page's name with its icon, and the user", header: { logo: "none", showProjectName: false, pageIcon: true, drivers: "none", clock: "none" } },
+  { id: "status", name: "Status bar", about: "No logo: project, page, datasources, alarm count, date and time", header: { logo: "none", alarms: true, clock: "dateTime" } },
+];
+
+/** The shell with a preset's header settings; the header's look (colors, font) stays. */
+export function withHeaderPreset(shell: Shell | undefined, preset: HeaderPreset): Shell {
+  const style = shell?.header?.style;
+  const header = { ...preset.header, ...(style ? { style } : {}) };
+  const { header: _old, ...rest } = shell ?? {};
+  return Object.keys(header).length ? { ...rest, header } : rest;
+}
+
+/** The preset whose settings the header has now, if any. */
+export function headerPresetOf(shell: Shell | undefined): HeaderPreset | undefined {
+  const { style: _s, ...h } = shell?.header ?? {};
+  return HEADER_PRESETS.find((p) => same(p.header, h));
 }

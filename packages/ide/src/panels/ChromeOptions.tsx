@@ -1,6 +1,8 @@
-// What the built-in header and navigation show and how they look. Each choice is stored only when it
-// differs from the default, and the canvas redraws the header as it changes.
-import { FONTS, HEADER_HEIGHT, SIDEBAR_WIDTH, contrastRatio } from "@speths-screens/widgets";
+// What the header and navigation show and how they look. Each choice is stored only when it differs
+// from the default, and the canvas redraws the header as it changes. In a project that holds its
+// header and navigation as custom widgets, a choice changes those custom widgets and leaves what was
+// edited by hand alone (mergeChrome).
+import { FONTS, HEADER_HEIGHT, HEADER_PRESETS, SIDEBAR_WIDTH, contrastRatio, headerPresetOf, withHeaderPreset } from "@speths-screens/widgets";
 import type { Shell, ShellHeader, ShellNav, ShellNavOptions, ShellStyle } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { chromeWarnings, patchHeader, patchHeaderStyle, patchNavOptions, patchNavStyle, withNav } from "../store/chromeOptions";
@@ -64,6 +66,16 @@ export function ChromeOptions() {
   const pages = useProject((s) => s.project.pages);
   const securityMode = useProject((s) => s.project.security?.mode);
   const editAsCustom = useProject((s) => s.editChromeAsCustom);
+  const openOnCanvas = useProject((s) => s.openCustomWidgetOnCanvas);
+  const customWidgets = useProject((s) => s.project.customWidgets) ?? [];
+  const custom = shell?.chrome === "custom";
+  const slotWidget = (slot: string) => {
+    const id = shell?.frame?.find((f) => f.id === slot)?.customWidgetId;
+    const cw = customWidgets.find((c) => c.id === id);
+    return cw && cw.layout?.mode !== "stack" ? cw.id : undefined;
+  };
+  const headerId = slotWidget("header"), navId = slotWidget("nav");
+  const preset = headerPresetOf(shell);
   const activate = useWorkspace((s) => s.activate);
   const h: ShellHeader = shell?.header ?? {};
   const n: ShellNavOptions = shell?.navOptions ?? {};
@@ -80,16 +92,38 @@ export function ChromeOptions() {
 
   return (
     <div data-testid="chrome-options" className="space-y-4 pt-1">
-      <div className="rounded border border-zinc-800 p-2 space-y-1.5">
-        <Button size="sm" variant="primary" onClick={() => { editAsCustom(); activate(SCREEN_TAB.id); }}>Edit as custom widgets on the canvas</Button>
-        <p className="text-ui-label text-zinc-500 leading-relaxed">
-          Turns this header and navigation, with the choices below, into custom widgets you build freely on the canvas: move, add or
-          remove anything (buttons that go to pages, pictures, text). Each part keeps its place from the left or right edge, so the
-          header still spans any screen width.
-        </p>
-      </div>
+      {custom ? (
+        <div className="rounded border border-zinc-800 p-2 space-y-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            {headerId && <Button size="sm" variant="primary" onClick={() => { openOnCanvas(headerId); activate(SCREEN_TAB.id); }}>Edit the header on the canvas</Button>}
+            {navId && <Button size="sm" onClick={() => { openOnCanvas(navId); activate(SCREEN_TAB.id); }}>Edit the navigation on the canvas</Button>}
+          </div>
+          <p className="text-ui-label text-zinc-500 leading-relaxed">
+            The header and navigation are custom widgets: move, add or remove anything on the canvas (a picture, a button, text).
+            The choices below still work on them. They change only what you have not changed by hand; turning a part off removes it,
+            and turning it on puts it where the choices would.
+          </p>
+          <Button size="sm" title="Builds the header and navigation again from the choices below. What was added or moved by hand is lost (Undo brings it back)."
+            onClick={() => { editAsCustom(); activate(SCREEN_TAB.id); }}>Rebuild from these choices</Button>
+        </div>
+      ) : (
+        <div className="rounded border border-zinc-800 p-2 space-y-1.5">
+          <Button size="sm" variant="primary" onClick={() => { editAsCustom(); activate(SCREEN_TAB.id); }}>Edit as custom widgets on the canvas</Button>
+          <p className="text-ui-label text-zinc-500 leading-relaxed">
+            Turns this header and navigation, with the choices below, into custom widgets you build freely on the canvas: move, add or
+            remove anything (buttons that go to pages, pictures, text). Each part keeps its place from the left or right edge, so the
+            header still spans any screen width. The choices below keep working afterwards.
+          </p>
+        </div>
+      )}
       <section aria-label="Header" className="space-y-2">
         <h3 className={title}>Header</h3>
+        <Field label="Preset" hint={preset?.about}>
+          <Select aria-label="Header preset" value={preset?.id ?? ""} onChange={(e) => { const p = HEADER_PRESETS.find((x) => x.id === e.target.value); if (p) set(withHeaderPreset(shell, p)); }}>
+            {!preset && <option value="">Your own choices</option>}
+            {HEADER_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+        </Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Logo">
             <Select value={logo} onChange={(e) => header({ logo: e.target.value === "mark" ? undefined : (e.target.value as ShellHeader["logo"]) })}>
