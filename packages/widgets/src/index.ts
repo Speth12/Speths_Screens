@@ -14,7 +14,8 @@ export { AccessContext, AccessGate, PageAccess, canView, needInside, roleName, r
 export { FrameSlotContext } from "./widgets";
 export {
   DEFAULT_IDS, SIDE_NAV_ICONS_ID, HEADER_HEIGHT, SIDEBAR_WIDTH, defaultCustomWidgets, defaultFrame, missingDefaults, effectiveFrame, findCustomWidget,
-  chromeStyles, shellStyleVars, contrastRatio, builtinAsDesigned, type ChromeNav, type ChromeProject, type SlotStyle,
+  chromeStyles, shellStyleVars, contrastRatio, builtinAsDesigned, mergeChrome, sameChromeSettings,
+  HEADER_PRESETS, withHeaderPreset, headerPresetOf, type HeaderPreset, type ChromeNav, type ChromeProject, type SlotStyle,
 } from "./chrome";
 export { SymbolSVG } from "./SymbolSVG";
 export { APP_PREFIX, APP_NAMES, appTag, isAppPath, splitApp, type AppValues } from "./app";

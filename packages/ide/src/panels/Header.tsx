@@ -1,6 +1,7 @@
 // The top of the editor: a menu bar (File, Edit, View, Project, Help) and a toolbar under it with the
-// things used all the time: undo and redo, save, the screen size and data source being edited, Preview,
-// and the deploy target with Pull and Deploy. Everything in the toolbar is also in a menu.
+// things used all the time: undo and redo, save, the screen size and data source being edited, and the
+// deploy target with Pull and Deploy. Everything in the toolbar is also in a menu. Preview is in the View
+// menu only (F5).
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useProject } from "../store/projectStore";
@@ -220,7 +221,6 @@ export function Header({ onHelp, onGallery, onTheme, onLanguages, showJSON, onTo
         <Divider />
         <DeviceSwitch />
         <DataSwitch />
-        <Button icon={<PreviewIcon size={14} />} title="Full-screen operator view (F5)" onClick={onPreview}>Preview</Button>
 
         <div className="flex-1 min-w-0 flex justify-end">
           {message && <StatusMessage text={message} className="max-w-[24rem] text-ui-label text-zinc-300" />}

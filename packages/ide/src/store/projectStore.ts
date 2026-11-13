@@ -14,7 +14,7 @@ import { readStored } from "./storage";
 import { useEditorView } from "./editorView";
 import { moveNsNode } from "./namespaceOps";
 import { addMemoryVariable as addMemoryVariableTo, type MemoryVariable } from "./memoryVars";
-import { DEFAULT_IDS, builtinAsDesigned, defaultCustomWidgets, defaultFrame, missingDefaults } from "@speths-screens/widgets";
+import { DEFAULT_IDS, builtinAsDesigned, mergeChrome, missingDefaults } from "@speths-screens/widgets";
 import { restack } from "./arrange";
 import { customWidgetIdOf, mapSurface, surfaceId, surfaceOf, withDesignedSize } from "./surface";
 
@@ -533,8 +533,14 @@ export const useProject = create<State>((set, get) => {
     setShell: (shell) => {
       pushHistory();
       set((s) => {
-        const { shell: _old, ...rest } = s.project;
-        return { project: shell && Object.keys(shell).length ? { ...rest, shell } : rest };
+        const { shell: old, ...rest } = s.project;
+        if (!shell || !Object.keys(shell).length) return { project: rest };
+        // A header the project holds as custom widgets takes a changed setting as a change to them.
+        if (old?.chrome === "custom" && shell.chrome === "custom") {
+          const merged = mergeChrome(s.project, shell);
+          return { project: { ...rest, customWidgets: merged.customWidgets, shell: merged.shell } };
+        }
+        return { project: { ...rest, shell } };
       });
     },
 
@@ -709,7 +715,10 @@ export const useProject = create<State>((set, get) => {
     newProject: (opts) =>
       set({
         project: opts?.chrome === "custom"
-          ? { ...blankProject(), customWidgets: defaultCustomWidgets(), shell: { chrome: "custom", frame: defaultFrame() } }
+          ? (() => {
+              const made = builtinAsDesigned({ shell: { nav: "sidebar" } });
+              return { ...blankProject(), customWidgets: made.customWidgets, shell: { nav: "sidebar" as const, chrome: "custom" as const, frame: made.frame } };
+            })()
           : blankProject(),
         activePageId: "p1",
         selectedWidgetId: null,
