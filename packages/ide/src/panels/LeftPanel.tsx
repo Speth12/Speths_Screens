@@ -304,6 +304,15 @@ export function LeftPanel({ width }: { width?: number }) {
                     className="accent-blue-500" />
                   <span className="text-xs text-zinc-300">View-only (disable all writes)</span>
                 </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" aria-label="Simulate datasource values" checked={project.simulation ?? false}
+                    onChange={(e) => setProp({ simulation: e.target.checked || undefined })}
+                    className="accent-violet-500 mt-0.5" />
+                  <span className="text-xs text-zinc-300">Simulate datasource values (demonstrations only)
+                    <span className="block text-[10px] text-zinc-500">Every PLC datasource shows made-up values and nothing reaches a PLC; the screen says so.
+                      Only the desktop program (or a runtime started with --allow-simulation) runs it; a production runtime refuses the deploy.</span>
+                  </span>
+                </label>
               </div>
             </div>
             <HistorySettings value={project.historian} onChange={(historian) => setProp({ historian })} />

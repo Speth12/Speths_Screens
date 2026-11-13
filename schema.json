@@ -20,6 +20,10 @@
       "type": "string",
       "description": "Human-readable project name"
     },
+    "simulation": {
+      "type": "boolean",
+      "description": "Demonstrations only: every PLC datasource (REST, OPC UA, Modbus, MQTT) shows made-up values and nothing reaches a PLC. Only a runtime started with --allow-simulation (the desktop program) runs it; any other refuses the project"
+    },
     "viewOnly": {
       "type": "boolean",
       "description": "Disable all write widgets in the operator panel"

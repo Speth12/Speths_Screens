@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/Speth12/Speths_Screens/internal/audit"
 	"github.com/Speth12/Speths_Screens/internal/drivers"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/memory"
+	"github.com/Speth12/Speths_Screens/internal/drivers/sim"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/modbus"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/mqtt"
 	_ "github.com/Speth12/Speths_Screens/internal/drivers/opcua"
@@ -62,6 +64,11 @@ type Runtime struct {
 
 	// demand is the subscription manager (see demand.go).
 	demand demand
+	// AllowSimulation lets a project's simulation setting replace its PLC datasources with made-up
+	// values. Only a runtime for demonstrations sets it (--allow-simulation, the desktop program);
+	// any other refuses such a project, so made-up values cannot reach production by a deploy.
+	AllowSimulation bool
+
 	// newDriver builds a driver for a datasource type; tests replace it.
 	newDriver func(typ project.DatasourceType) (drivers.ProtocolDriver, error)
 	cancel    context.CancelFunc
@@ -163,10 +170,28 @@ type dsSignature struct {
 	cfg string
 }
 
-func signatureOf(ds project.Datasource) dsSignature {
+func signatureOf(ds project.Datasource, simulate bool) dsSignature {
 	b, _ := json.Marshal(buildConfig(ds)) // a map and strings: it cannot fail
 	sum := sha256.Sum256(b)
-	return dsSignature{typ: ds.Type, cfg: hex.EncodeToString(sum[:])}
+	return dsSignature{typ: driverType(ds.Type, simulate), cfg: hex.EncodeToString(sum[:])}
+}
+
+// ErrSimulationNotAllowed refuses a project with simulation on in a runtime not started for demonstrations.
+var ErrSimulationNotAllowed = errors.New("the project's simulation setting is on, and this runtime is not for demonstrations: it runs only real values. Turn simulation off in the project, or use a runtime started with --allow-simulation (the desktop program)")
+
+// simulated reports whether a project's PLC datasources show made-up values.
+func simulated(p *project.Project) bool { return p != nil && p.Simulation != nil && *p.Simulation }
+
+// driverType is the driver a datasource gets: the simulated one in place of a PLC protocol while
+// the project simulates; memory and calculated tags are left as they are.
+func driverType(t project.DatasourceType, simulate bool) project.DatasourceType {
+	if simulate {
+		switch t {
+		case project.REST, project.Opcua, project.Mbtcp, project.Mqtt:
+			return project.DatasourceType(sim.Type)
+		}
+	}
+	return t
 }
 
 // LoadProject reconfigures drivers based on a project file.
@@ -177,6 +202,15 @@ func signatureOf(ds project.Datasource) dsSignature {
 // Existing drivers not in the new project are disconnected.
 // Safe to call any number of times; Start must have been called first.
 func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
+	// Refused before anything changes, so the project running now keeps running.
+	if simulated(p) && !r.AllowSimulation {
+		return ErrSimulationNotAllowed
+	}
+	simulate := simulated(p)
+	if simulate {
+		log.Printf("[RUNTIME] SIMULATION: the project's PLC datasources show made-up values; nothing reaches a PLC")
+	}
+
 	// Update alarm rules.
 	rules := make([]alarms.Rule, 0, len(p.AlarmRules))
 	for _, ar := range p.AlarmRules {
@@ -250,14 +284,14 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	// disconnect and build again (the loop below builds a datasource the runtime does not have).
 	changed := map[string]project.Datasource{}
 	for _, ds := range p.Datasources {
-		if _, have := r.drivers[ds.ID]; have && r.dsBuilt[ds.ID] != signatureOf(ds) {
+		if _, have := r.drivers[ds.ID]; have && r.dsBuilt[ds.ID] != signatureOf(ds, simulate) {
 			changed[ds.ID] = ds
 		}
 	}
 	for id, d := range r.drivers {
 		ds, isChanged := changed[id]
 		_, inPlace := d.(drivers.Reconfigurer)
-		if desired[id] && !(isChanged && (!inPlace || r.dsBuilt[id].typ != ds.Type)) {
+		if desired[id] && !(isChanged && (!inPlace || r.dsBuilt[id].typ != driverType(ds.Type, simulate))) {
 			continue
 		}
 		_ = d.Disconnect() // removed, or changed in a way this driver cannot take while running
@@ -282,7 +316,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 			log.Printf("[RUNTIME] %s: new settings not applied: %v", id, err)
 			continue
 		}
-		r.dsBuilt[id] = signatureOf(ds)
+		r.dsBuilt[id] = signatureOf(ds, simulate)
 		log.Printf("[RUNTIME] updated datasource %s (%s) without reconnecting", id, ds.Type)
 	}
 	r.mu.Unlock()
@@ -290,7 +324,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 	// connect new datasources, then give every driver its tag set
 	for _, ds := range p.Datasources {
 		if !r.has(ds.ID) {
-			drv, err := r.buildDriver(ds.Type)
+			drv, err := r.buildDriver(driverType(ds.Type, simulate))
 			if err != nil {
 				log.Printf("[RUNTIME] %s: %v — skipped", ds.ID, err)
 				continue
@@ -299,7 +333,7 @@ func (r *Runtime) LoadProject(ctx context.Context, p *project.Project) error {
 			// Register driver before connecting so status endpoint always exists.
 			r.mu.Lock()
 			r.drivers[ds.ID] = drv
-			r.dsBuilt[ds.ID] = signatureOf(ds)
+			r.dsBuilt[ds.ID] = signatureOf(ds, simulate)
 			r.mu.Unlock()
 			cfg := buildConfig(ds)
 			if err := drv.Connect(ctx, cfg, fanCh); err != nil {

@@ -71,6 +71,12 @@ export interface Project {
     sessionVars?: SessionVar[];
     shell?:       Shell;
     /**
+     * Demonstrations only: every PLC datasource (REST, OPC UA, Modbus, MQTT) shows made-up
+     * values and nothing reaches a PLC. Only a runtime started with --allow-simulation (the
+     * desktop program) runs it; any other refuses the project
+     */
+    simulation?: boolean;
+    /**
      * The look of every screen: a preset, light or dark, and any element changed from the
      * preset. A browser can still pick light or dark for itself; that choice is not saved in
      * the project
