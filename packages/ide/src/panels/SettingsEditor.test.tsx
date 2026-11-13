@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MANIFESTS, FRAME_SETTINGS, type Field } from "@speths-screens/widgets";
 import type { Project, Widget } from "@speths-screens/shared-types";
 import { SettingsFields, fieldValue, parseValue } from "./SettingsEditor";
-import { Properties } from "./Properties";
+import { Properties, usePropertyTab } from "./Properties";
 import { useProject } from "../store/projectStore";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); usePropertyTab.setState({ tab: "settings" }); });
+const openTab = (name: string) => fireEvent.click(screen.getByRole("tab", { name: new RegExp(`^${name}`) }));
 
 const w = { id: "w1", type: "gauge", x: 0, y: 0, w: 4, h: 3 } as Widget;
 
@@ -112,9 +113,10 @@ describe("properties panel", () => {
       useProject.getState().loadProject(project([wid]));
       useProject.getState().selectWidget("x");
       render(<Properties />);
-      for (const g of FRAME_SETTINGS) expect(screen.getByText(g.title)).toBeTruthy();
       if (m.settings.length) expect(screen.getByText(`${m.label} settings`)).toBeTruthy();
       expect(!!screen.queryByText("Drag tag from browser → widget")).toBe(m.bindings.length > 0);
+      openTab("Look");
+      for (const g of FRAME_SETTINGS) expect(screen.getByText(g.title)).toBeTruthy();
     });
   }
 
@@ -135,6 +137,7 @@ describe("properties panel", () => {
     useProject.getState().loadProject(project([wid]));
     useProject.getState().selectWidget("x");
     render(<Properties />);
+    openTab("Look");
     const props = () => useProject.getState().project.pages[0]!.widgets[0]!.props;
     expect(screen.getByRole("button", { name: "Card" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Plain" }));
@@ -149,5 +152,46 @@ describe("properties panel", () => {
     useProject.getState().selectWidget("x");
     render(<Properties />);
     expect(screen.queryByRole("button", { name: "Plain" })).toBeNull();
+  });
+});
+
+describe("the properties' tabs", () => {
+  const project = (widgets: Widget[]): Project => ({
+    schemaVersion: 7, version: "0.1.0", datasources: [], pages: [{ id: "p1", name: "Main", widgets }],
+  });
+  const two = [
+    { id: "a", type: "button", x: 0, y: 0, w: 2, h: 1, events: { onClick: [{ type: "write", value: 1 }, { type: "navigate", page: "p1" }] } },
+    { id: "b", type: "numericDisplay", x: 3, y: 0, w: 2, h: 1, dynamics: { bgColor: { expr: "1" } }, access: { view: "admin" } },
+  ] as unknown as Widget[];
+
+  it("splits the widget into Settings, Actions, Dynamics, Look and Access, Settings first", () => {
+    useProject.getState().loadProject(project(two));
+    useProject.getState().selectWidget("a");
+    render(<Properties />);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Settings", "Actions 2", "Dynamics", "Look", "Access"]);
+    expect(screen.getByRole("tab", { name: "Settings" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.queryByText("On click")).toBeNull();
+    openTab("Actions");
+    expect(screen.getByText("On click")).toBeTruthy();
+  });
+
+  it("each tab shows only its own part, and its count says what is set there", () => {
+    useProject.getState().loadProject(project(two));
+    useProject.getState().selectWidget("b");
+    render(<Properties />);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Settings", "Actions", "Dynamics 1", "Look", "Access 1"]);
+    openTab("Access");
+    expect(screen.getByRole("group", { name: "Who can use this widget" })).toBeTruthy();
+    expect(screen.queryByText("Appearance")).toBeNull();
+  });
+
+  it("the tab in front stays while another widget is selected", () => {
+    useProject.getState().loadProject(project(two));
+    useProject.getState().selectWidget("a");
+    render(<Properties />);
+    openTab("Look");
+    act(() => useProject.getState().selectWidget("b"));
+    expect(screen.getByRole("tab", { name: "Look" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("Appearance")).toBeTruthy();
   });
 });

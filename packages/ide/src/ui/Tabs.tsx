@@ -20,10 +20,12 @@ type TabsProps = {
   onClose?: (id: string) => void;
   /** `fill` shares the width equally (a narrow side panel); `fit` sizes each tab to its label. */
   layout?: "fit" | "fill";
+  /** `sm`: small, single-line labels for a narrow panel; the row scrolls if they still do not fit. */
+  size?: "md" | "sm";
   className?: string;
 };
 
-export function Tabs({ label, tabs, active, onSelect, onClose, layout = "fit", className = "" }: TabsProps) {
+export function Tabs({ label, tabs, active, onSelect, onClose, layout = "fit", size = "md", className = "" }: TabsProps) {
   const row = useRef<HTMLDivElement>(null);
 
   const move = (to: number) => {
@@ -43,14 +45,14 @@ export function Tabs({ label, tabs, active, onSelect, onClose, layout = "fit", c
   };
 
   return (
-    <div ref={row} role="tablist" aria-label={label} className={`flex items-stretch border-b border-zinc-700 ${className}`}>
+    <div ref={row} role="tablist" aria-label={label} className={`flex items-stretch border-b border-zinc-700 ${size === "sm" ? "overflow-x-auto" : ""} ${className}`}>
       {tabs.map((t, i) => {
         const on = t.id === active;
         return (
           <div key={t.id} className={`relative flex items-center ${layout === "fill" ? "flex-1 justify-center" : ""} ${on ? "text-zinc-100" : "text-zinc-400 hover:text-zinc-100"}`}>
             <button type="button" role="tab" aria-selected={on} tabIndex={on ? 0 : -1}
               onClick={() => onSelect(t.id)} onKeyDown={(e) => onKeyDown(e, i, t)}
-              className={`h-8 inline-flex items-center gap-1.5 text-ui ${on ? "font-medium" : ""} ${t.closable ? "pl-3 pr-1" : "px-3"} ${layout === "fill" ? "flex-1 justify-center" : ""} ${FOCUS_RING}`}>
+              className={`h-8 inline-flex items-center gap-1.5 whitespace-nowrap ${size === "sm" ? "text-ui-label" : "text-ui"} ${on ? "font-medium" : ""} ${t.closable ? "pl-3 pr-1" : size === "sm" ? "px-1.5" : "px-3"} ${layout === "fill" ? "flex-1 justify-center" : ""} ${FOCUS_RING}`}>
               {t.icon}
               {t.label}
             </button>
