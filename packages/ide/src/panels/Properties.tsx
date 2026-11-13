@@ -11,6 +11,25 @@ import { lookOf, withLook, type Look } from "../store/widgetLook";
 import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { AnchorFields, CustomWidgetProperties } from "./CustomWidgetCanvas";
 import { AccessFields } from "./AccessFields";
+import { Tabs } from "../ui";
+import { create } from "zustand";
+
+/** The parts of a widget's properties, one tab each. */
+export const PROPERTY_TABS = [
+  { id: "settings", label: "Settings" },
+  { id: "actions", label: "Actions" },
+  { id: "dynamics", label: "Dynamics" },
+  { id: "look", label: "Look" },
+  { id: "access", label: "Access" },
+] as const;
+export type PropertyTab = (typeof PROPERTY_TABS)[number]["id"];
+
+/** The tab in front, kept while other widgets are selected, so editing the look of several widgets
+ *  one after another does not mean finding the look again each time. */
+export const usePropertyTab = create<{ tab: PropertyTab; set: (t: PropertyTab) => void }>((set) => ({
+  tab: "settings",
+  set: (tab) => set({ tab }),
+}));
 import type { Access } from "@speths-screens/shared-types";
 
 
@@ -74,6 +93,8 @@ function PageProperties({ page }: { page: { id: string; name: string; background
 
 export function Properties() {
   const { project, activePageId, selectedWidgetId, updateWidget, setWidgetTag } = useProject();
+  const tab = usePropertyTab((s) => s.tab);
+  const setTab = usePropertyTab((s) => s.set);
   const page = surfaceOf(project, activePageId);
   const w = page?.widgets.find((x) => x.id === selectedWidgetId);
 
@@ -109,87 +130,115 @@ export function Properties() {
     />
   );
 
+  const counts: Partial<Record<PropertyTab, number>> = {
+    actions: Object.values(w.events ?? {}).reduce((n, list) => n + (list?.length ?? 0), 0),
+    dynamics: Object.keys(w.dynamics ?? {}).length,
+    access: Object.keys((w as { access?: Access }).access ?? {}).length,
+  };
   return (
-    <div className="p-3 space-y-4 overflow-auto">
+    <div className="flex flex-col min-h-0 h-full">
       {/* Widget meta */}
-      <div>
+      <div className="px-3 pt-3 pb-2 shrink-0">
         <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Widget</div>
         <div className="text-sm font-medium">{manifest?.label ?? w.type}</div>
         <div className="text-[10px] text-zinc-600 font-mono">{w.id}</div>
       </div>
-
-      {/* Binding + live value */}
-      {readsTag && (
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{manifest?.bindings[0]?.label ?? "Binding"}</div>
-          {tagInput("value")}
-          <div className="text-[10px] text-zinc-600 mt-0.5">Drag tag from browser → widget</div>
-          <LiveTagPreview binding={w.bindings?.value} />
-        </div>
-      )}
-
-      {/* Settings from the widget's manifest */}
-      {manifest && manifest.settings.length > 0 && (
-        <SettingsGroupBox title={`${manifest.label} settings`}>
-          <SettingsFields fields={manifest.settings} config={props} set={setProp} w={w} />
-        </SettingsGroupBox>
-      )}
-
-      {/* Events: what the widget does when touched */}
-      <EventsEditor w={w} onChange={(events) => updateWidget(page.id, w.id, { events })} />
-
-      {/* Driven properties: looks and settings that follow tags */}
-      <DrivesEditor w={w} onChange={(dynamics) => updateWidget(page.id, w.id, { dynamics })} />
-
-      {/* Layout */}
-      <div>
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Layout</div>
-        <PositionEditor pageId={page.id} widgetId={w.id} />
-        {placedDesign && pixel && (placedDesign.width !== w.w || placedDesign.height !== w.h) && (
-          <div className="mt-1.5 flex items-center gap-2 text-[11px] text-zinc-400">
-            <span>Designed at {placedDesign.width} × {placedDesign.height}; scaled to fit here.</span>
-            <button onClick={() => updateWidget(page.id, w.id, { w: placedDesign.width, h: placedDesign.height })}
-              className="text-blue-400 hover:text-blue-300">Use its designed size</button>
-          </div>
-        )}
-        <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
-        {tagInput("visible", "blank: always visible")}
-      </div>
-
-      {/* Who can see and use it (with logins on) */}
-      <AccessFields what="widget" access={(w as { access?: Access }).access}
-        onChange={(access) => updateWidget(page.id, w.id, { access } as never)} />
-
-      {/* A custom widget's part: where it stays when the custom widget is pinned to a wider edge */}
-      {editingCw && (() => {
-        const a = w as typeof w & { anchorX?: Parameters<typeof AnchorFields>[0]["anchorX"]; anchorY?: Parameters<typeof AnchorFields>[0]["anchorY"] };
-        return <AnchorFields anchorX={a.anchorX} anchorY={a.anchorY} onChange={(patch) => updateWidget(page.id, w.id, patch as never)} />;
-      })()}
-
-      {/* Card or plain: one switch for the settings that take the card away (a pipe and a shape are always drawings) */}
-      {w.type !== "pipe" && w.type !== "shape" && (
-        <SettingsGroupBox title="Look">
-          <Segmented<Look> label="Look" value={lookOf(props)}
-            options={[
-              { id: "card", label: "Card", title: "A card with a background, a border and a label" },
-              { id: "plain", label: "Plain", title: "No card: the widget sits on whatever is behind it, like a number on a drawing" },
-            ]}
-            onChange={(look) => updateWidget(page.id, w.id, { props: withLook(props, look) })} />
-        </SettingsGroupBox>
-      )}
-
-      {/* Frame settings every widget has */}
-      {FRAME_SETTINGS.map((g) => (
-        <SettingsGroupBox key={g.title} title={g.title}>
-          {g.slots?.map((slot) => (
-            <div key={slot.name} className="mb-2">
-              <div className="text-[10px] text-zinc-500 mb-0.5">{slot.label}</div>
-              {tagInput(slot.name)}
+      <Tabs label="Widget properties" layout="fill" size="sm" className="px-1 shrink-0" active={tab} onSelect={(id) => setTab(id as PropertyTab)}
+        tabs={PROPERTY_TABS.map((t) => ({ id: t.id, label: counts[t.id] ? `${t.label} ${counts[t.id]}` : t.label }))} />
+      <div role="tabpanel" aria-label={PROPERTY_TABS.find((t) => t.id === tab)?.label} className="flex-1 min-h-0 overflow-auto p-3 space-y-4">
+        {tab === "settings" && (
+          <>
+          {/* Binding + live value */}
+          {readsTag && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">{manifest?.bindings[0]?.label ?? "Binding"}</div>
+              {tagInput("value")}
+              <div className="text-[10px] text-zinc-600 mt-0.5">Drag tag from browser → widget</div>
+              <LiveTagPreview binding={w.bindings?.value} />
             </div>
+          )}
+
+          {/* Settings from the widget's manifest */}
+          {manifest && manifest.settings.length > 0 && (
+            <SettingsGroupBox title={`${manifest.label} settings`}>
+              <SettingsFields fields={manifest.settings} config={props} set={setProp} w={w} />
+            </SettingsGroupBox>
+          )}
+
+          {/* Layout */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Layout</div>
+            <PositionEditor pageId={page.id} widgetId={w.id} />
+            {placedDesign && pixel && (placedDesign.width !== w.w || placedDesign.height !== w.h) && (
+              <div className="mt-1.5 flex items-center gap-2 text-[11px] text-zinc-400">
+                <span>Designed at {placedDesign.width} × {placedDesign.height}; scaled to fit here.</span>
+                <button onClick={() => updateWidget(page.id, w.id, { w: placedDesign.width, h: placedDesign.height })}
+                  className="text-blue-400 hover:text-blue-300">Use its designed size</button>
+              </div>
+            )}
+            <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
+            {tagInput("visible", "blank: always visible")}
+          </div>
+
+          {/* A custom widget's part: where it stays when the custom widget is pinned to a wider edge */}
+          {editingCw && (() => {
+            const a = w as typeof w & { anchorX?: Parameters<typeof AnchorFields>[0]["anchorX"]; anchorY?: Parameters<typeof AnchorFields>[0]["anchorY"] };
+            return <AnchorFields anchorX={a.anchorX} anchorY={a.anchorY} onChange={(patch) => updateWidget(page.id, w.id, patch as never)} />;
+          })()}
+
+          </>
+        )}
+        {tab === "actions" && (
+          <>
+          {/* Events: what the widget does when touched */}
+          <EventsEditor w={w} onChange={(events) => updateWidget(page.id, w.id, { events })} />
+
+          </>
+        )}
+        {tab === "dynamics" && (
+          <>
+          {/* Driven properties: looks and settings that follow tags */}
+          <DrivesEditor w={w} onChange={(dynamics) => updateWidget(page.id, w.id, { dynamics })} />
+
+          </>
+        )}
+        {tab === "look" && (
+          <>
+          {/* Card or plain: one switch for the settings that take the card away (a pipe and a shape are always drawings) */}
+          {w.type !== "pipe" && w.type !== "shape" && (
+            <SettingsGroupBox title="Look">
+              <Segmented<Look> label="Look" value={lookOf(props)}
+                options={[
+                  { id: "card", label: "Card", title: "A card with a background, a border and a label" },
+                  { id: "plain", label: "Plain", title: "No card: the widget sits on whatever is behind it, like a number on a drawing" },
+                ]}
+                onChange={(look) => updateWidget(page.id, w.id, { props: withLook(props, look) })} />
+            </SettingsGroupBox>
+          )}
+
+          {/* Frame settings every widget has */}
+          {FRAME_SETTINGS.map((g) => (
+            <SettingsGroupBox key={g.title} title={g.title}>
+              {g.slots?.map((slot) => (
+                <div key={slot.name} className="mb-2">
+                  <div className="text-[10px] text-zinc-500 mb-0.5">{slot.label}</div>
+                  {tagInput(slot.name)}
+                </div>
+              ))}
+              <SettingsFields fields={g.fields} config={props} set={setProp} w={w} />
+            </SettingsGroupBox>
           ))}
-          <SettingsFields fields={g.fields} config={props} set={setProp} w={w} />
-        </SettingsGroupBox>
-      ))}
+          </>
+        )}
+        {tab === "access" && (
+          <>
+          {/* Who can see and use it (with logins on) */}
+          <AccessFields what="widget" access={(w as { access?: Access }).access}
+            onChange={(access) => updateWidget(page.id, w.id, { access } as never)} />
+
+          </>
+        )}
+      </div>
     </div>
   );
 }

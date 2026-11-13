@@ -3,14 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { Project } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
-import { Properties } from "./Properties";
+import { Properties, usePropertyTab } from "./Properties";
 import { withRole } from "./AccessFields";
 
 beforeEach(() => {
   vi.stubGlobal("WebSocket", class { readyState = 0; addEventListener() {} send() {} close() {} });
   vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); usePropertyTab.setState({ tab: "settings" }); });
+const openAccess = () => fireEvent.click(screen.getByRole("tab", { name: /^Access/ }));
 
 const load = (mode?: "login") => useProject.getState().loadProject({
   schemaVersion: 7, version: "1", datasources: [], ...(mode ? { security: { mode } } : {}),
@@ -23,6 +24,7 @@ describe("access in the properties", () => {
     load("login");
     useProject.getState().selectWidget("b1");
     render(<Properties />);
+    openAccess();
     const group = within(screen.getByRole("group", { name: "Who can use this widget" }));
     fireEvent.change(group.getByLabelText("Who can use it"), { target: { value: "supervisor" } });
     expect(page().widgets[0]).toMatchObject({ access: { operate: "supervisor" } });
@@ -47,6 +49,7 @@ describe("access in the properties", () => {
     load();
     useProject.getState().selectWidget("b1");
     render(<Properties />);
+    openAccess();
     fireEvent.change(screen.getByLabelText("Who can use it"), { target: { value: "admin" } });
     expect(screen.getByText(/Security is off, so everyone is an administrator/)).toBeTruthy();
   });
