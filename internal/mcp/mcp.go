@@ -94,12 +94,14 @@ type toolResult struct {
 
 // Handler implements http.Handler for the MCP endpoint.
 type Handler struct {
-	rt *runtime.Runtime
+	rt     *runtime.Runtime
+	deploy Deployer // nil: the screen-building tools refuse to change the project
 }
 
-// New returns a new MCP Handler backed by the given runtime.
-func New(rt *runtime.Runtime) *Handler {
-	return &Handler{rt: rt}
+// New returns a new MCP Handler backed by the given runtime. deploy is how the screen-building tools
+// change the project: as a deploy from the IDE does (validated, versioned, kept, audited).
+func New(rt *runtime.Runtime, deploy Deployer) *Handler {
+	return &Handler{rt: rt, deploy: deploy}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -374,6 +376,7 @@ func (h *Handler) handleToolsList() (any, *rpcError) {
 			},
 		},
 	}
+	tools = append(tools, h.screenTools()...)
 	return map[string]any{"tools": tools}, nil
 }
 
@@ -402,6 +405,9 @@ func (h *Handler) handleToolsCall(ctx context.Context, params json.RawMessage) (
 }
 
 func (h *Handler) callTool(ctx context.Context, name string, args map[string]any) (string, bool, error) {
+	if s, isErr, err, ok := h.callScreenTool(ctx, name, args); ok {
+		return s, isErr, err
+	}
 	switch name {
 
 	case "read_tag":

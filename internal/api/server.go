@@ -60,7 +60,7 @@ func New(rt *runtime.Runtime, assets http.Handler, vs ...*versionstore.Store) *S
 
 	// MCP server: it can read the project and write tags, so it needs the
 	// same login as the API, at engineer level (project.deploy).
-	r.With(s.jwtMiddleware, s.requirePerm("project.deploy")).Mount("/mcp", mcp.New(rt))
+	r.With(s.jwtMiddleware, s.requirePerm("project.deploy")).Mount("/mcp", mcp.New(rt, s.mcpDeploy))
 
 	return s
 }
