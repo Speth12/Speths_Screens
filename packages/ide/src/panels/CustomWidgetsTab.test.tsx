@@ -161,12 +161,45 @@ describe("on the canvas, it is edited like a page", () => {
   it("with nothing selected the properties are the custom widget's: its size and parameters", () => {
     onCanvas();
     fireEvent.change(screen.getByLabelText("Width (px)"), { target: { value: "1280" } });
+    expect(cw().width).toBe(300); // kept when the field is left
+    fireEvent.blur(screen.getByLabelText("Width (px)"));
     expect(cw().width).toBe(1280);
     fireEvent.click(screen.getByRole("button", { name: "Add parameter" }));
     fireEvent.change(screen.getByLabelText("Parameter 2 name"), { target: { value: "speed" } });
     expect(cw().params).toEqual([{ name: "run" }, { name: "speed" }]);
     fireEvent.click(screen.getByRole("button", { name: "Remove parameter 1" }));
     expect(cw().params).toEqual([{ name: "speed" }]);
+  });
+
+  it("the width can be cleared and typed again, and only a size in range is kept", () => {
+    onCanvas();
+    const width = screen.getByLabelText("Width (px)") as HTMLInputElement;
+    fireEvent.change(width, { target: { value: "" } });
+    expect(width.value).toBe("");          // it was "stuck at the last digit" before
+    fireEvent.change(width, { target: { value: "1" } });
+    fireEvent.keyDown(width, { key: "Enter" });
+    expect(cw().width).toBe(300);          // 1 px is not a size: refused, the field goes back
+    expect(width.value).toBe("300");
+    fireEvent.change(width, { target: { value: "640" } });
+    fireEvent.keyDown(width, { key: "Enter" });
+    expect(cw().width).toBe(640);
+  });
+
+  it("says when parts lie outside the box, and makes the box fit them", () => {
+    onCanvas();
+    expect(screen.queryByText(/outside the box/)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Height (px)"), { target: { value: "100" } });
+    fireEvent.blur(screen.getByLabelText("Height (px)"));
+    expect(screen.getByText(/1 part lies outside the box/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Make the box fit its parts" }));
+    expect(cw()).toMatchObject({ width: 300, height: 148 }); // the parts reach 288 by 148
+    expect(screen.queryByText(/outside the box/)).toBeNull();
+  });
+
+  it("is drawn on the canvas at its own width, not at least a desktop's", () => {
+    onCanvas();
+    expect(screen.getByTestId("screen-frame").style.minWidth).toBe("");
+    expect(document.querySelector<HTMLElement>("[data-canvas-page]")!.style.width).toBe("300px");
   });
 
   it("a selected part has anchors", () => {
@@ -243,5 +276,22 @@ describe("deleting", () => {
     p.customWidgets!.push({ id: "outer", name: "Outer", params: [], widgets: [{ localId: "a", type: "customWidget", x: 0, y: 0, w: 1, h: 1, props: { customWidgetId: "cw" } }] } as never);
     open(p);
     expect(screen.getByText("Used on: inside Outer, pinned to a screen edge.")).toBeTruthy();
+  });
+});
+
+describe("placing it on a page", () => {
+  it("choosing it gives the placement its designed size, and a resized one can go back to it", () => {
+    const p = project("pixel", PUMP);
+    p.customWidgets![0]!.width = 300; p.customWidgets![0]!.height = 160;
+    p.pages[0]!.widgets = [{ id: "i1", type: "customWidget", x: 10, y: 10, w: 344, h: 136 } as never];
+    useProject.getState().loadProject(p);
+    useProject.getState().selectWidget("i1");
+    render(<Properties />);
+    fireEvent.change(screen.getByLabelText("Custom widget"), { target: { value: "cw" } });
+    const placed = () => useProject.getState().project.pages[0]!.widgets[0]!;
+    expect(placed()).toMatchObject({ x: 10, y: 10, w: 300, h: 160 });
+    act(() => useProject.getState().updateWidget("p1", "i1", { w: 600, h: 320 }));
+    fireEvent.click(screen.getByRole("button", { name: "Use its designed size" }));
+    expect(placed()).toMatchObject({ w: 300, h: 160 });
   });
 });

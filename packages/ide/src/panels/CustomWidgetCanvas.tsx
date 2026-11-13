@@ -1,17 +1,49 @@
 // What the editor shows around a custom widget open on the canvas: a bar above the canvas saying
 // what is being edited and the way back to the page, the custom widget's own properties when no
 // part is selected (name, designed size, parameters), and a part's anchors.
+import { useEffect, useState } from "react";
 import type { AnchorX, AnchorY, CustomWidget, CustomWidgetParam } from "@speths-screens/shared-types";
+import { partsExtent } from "../store/customWidgetCanvas";
 import { useProject } from "../store/projectStore";
 import { surfaceCustomWidget } from "../store/surface";
 import { customWidgetUsage } from "../store/usage";
 import { Button, Field, Input, Select } from "../ui";
 import { AddIcon, CloseIcon } from "../ui/icons";
 
-const NUMBER = (text: string, min: number, max: number) => {
-  const n = Math.round(Number(text));
-  return Number.isFinite(n) && text.trim() !== "" ? Math.max(min, Math.min(max, n)) : undefined;
-};
+/** The smallest and largest designed size. */
+export const MIN_SIZE = 8, MAX_SIZE = 8000;
+
+/** A size typed into a field, or undefined when it is not a whole number in range. */
+export function parseSize(text: string): number | undefined {
+  if (!/^\s*\d+\s*$/.test(text)) return undefined;
+  const n = Number(text);
+  return n >= MIN_SIZE && n <= MAX_SIZE ? n : undefined;
+}
+
+/** A pixel size field that can be typed freely (cleared, retyped) and is kept when the field is left
+ *  or Enter is pressed. A value that is not a size in range goes back to the one kept. */
+function SizeField({ label, value, onCommit }: { label: string; value: number | undefined; onCommit: (v: number) => void }) {
+  const [text, setText] = useState(String(value ?? ""));
+  useEffect(() => setText(String(value ?? "")), [value]);
+  const bad = text.trim() !== "" && parseSize(text) === undefined;
+  const commit = () => {
+    const v = parseSize(text);
+    if (v !== undefined && v !== value) onCommit(v);
+    else setText(String(value ?? ""));
+  };
+  return (
+    <Field label={label} error={bad ? `${MIN_SIZE} to ${MAX_SIZE}` : undefined}>
+      <Input inputMode="numeric" value={text} onChange={(e) => setText(e.target.value)} onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") setText(String(value ?? "")); }} />
+    </Field>
+  );
+}
+
+/** How many parts lie (partly) outside the designed box. */
+export function partsOutside(cw: Pick<CustomWidget, "width" | "height" | "widgets">): number {
+  if (!cw.width || !cw.height) return 0;
+  return cw.widgets.filter((p) => p.x + p.w > cw.width! || p.y + p.h > cw.height!).length;
+}
 
 /** The bar above the canvas while a custom widget is open on it. */
 export function CustomWidgetCanvasBar() {
@@ -48,13 +80,21 @@ export function CustomWidgetProperties({ cw }: { cw: CustomWidget }) {
       <Field label="Name"><Input value={cw.name} onChange={(e) => set({ name: e.target.value })} /></Field>
       <Field label="Description"><Input value={cw.description ?? ""} placeholder="Optional" onChange={(e) => set({ description: e.target.value || undefined })} /></Field>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Width (px)">
-          <Input type="number" min={1} max={8000} value={cw.width ?? ""} onChange={(e) => { const v = NUMBER(e.target.value, 1, 8000); if (v) set({ width: v }); }} />
-        </Field>
-        <Field label="Height (px)">
-          <Input type="number" min={1} max={8000} value={cw.height ?? ""} onChange={(e) => { const v = NUMBER(e.target.value, 1, 8000); if (v) set({ height: v }); }} />
-        </Field>
+        <SizeField label="Width (px)" value={cw.width} onCommit={(width) => set({ width })} />
+        <SizeField label="Height (px)" value={cw.height} onCommit={(height) => set({ height })} />
       </div>
+      {partsOutside(cw) > 0 && (() => {
+        const n = partsOutside(cw);
+        const ext = partsExtent(cw.widgets);
+        return (
+          <div role="status" className="rounded border border-amber-700/60 bg-amber-500/10 p-2 text-ui-label text-amber-300 space-y-1.5">
+            <div>{n === 1 ? "1 part lies" : `${n} parts lie`} outside the box, so {n === 1 ? "it is" : "they are"} cut off where the custom widget is used.</div>
+            <Button size="sm" onClick={() => set({ width: Math.max(cw.width ?? 0, Math.ceil(ext.w)), height: Math.max(cw.height ?? 0, Math.ceil(ext.h)) })}>
+              Make the box fit its parts
+            </Button>
+          </div>
+        );
+      })()}
       <p className="text-ui-label text-zinc-500 leading-relaxed">
         Placed on a page it is scaled to fit the place you give it. Pinned to a screen edge (Project properties, Header and navigation) each part
         keeps its size and follows its anchors, so a header can span any width.

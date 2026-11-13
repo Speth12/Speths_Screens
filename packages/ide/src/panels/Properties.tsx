@@ -8,7 +8,7 @@ import { EventsEditor } from "./EventsEditor";
 import { ScriptEditor } from "./ScriptEditor";
 import { Segmented } from "../ui/Segmented";
 import { lookOf, withLook, type Look } from "../store/widgetLook";
-import { surfaceCustomWidget, surfaceOf } from "../store/surface";
+import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { AnchorFields, CustomWidgetProperties } from "./CustomWidgetCanvas";
 
 
@@ -82,12 +82,18 @@ export function Properties() {
   }
 
   const props: Record<string, unknown> = w.props ?? {};
+  const pixel = surfaceSnap(project, page.id) === "pixel";
+  const designOf = (id: unknown) => project.customWidgets?.find((c) => c.id === id && c.width && c.height);
   const setProp = (k: string, v: unknown) => {
     const next = { ...props };
     if (v === undefined) delete next[k];
     else next[k] = v;
-    updateWidget(page.id, w.id, { props: Object.keys(next).length ? next : undefined });
+    // Choosing a custom widget with a designed size gives the placement that size (in a pixel page),
+    // so it is drawn 1:1 until it is resized on purpose.
+    const design = k === "customWidgetId" && pixel ? designOf(v) : undefined;
+    updateWidget(page.id, w.id, { props: Object.keys(next).length ? next : undefined, ...(design ? { w: design.width, h: design.height } : {}) });
   };
+  const placedDesign = w.type === "customWidget" ? designOf(props.customWidgetId) : undefined;
   const manifest = manifestFor(w.type);
   const readsTag = manifest ? manifest.bindings.some((b) => b.name === "value") : true;
   const tagInput = (slot: "value" | "visible" | "color", placeholder = "ns:plant.tag or datasource:path") => (
@@ -135,6 +141,13 @@ export function Properties() {
       <div>
         <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Layout</div>
         <PositionEditor pageId={page.id} widgetId={w.id} />
+        {placedDesign && pixel && (placedDesign.width !== w.w || placedDesign.height !== w.h) && (
+          <div className="mt-1.5 flex items-center gap-2 text-[11px] text-zinc-400">
+            <span>Designed at {placedDesign.width} × {placedDesign.height}; scaled to fit here.</span>
+            <button onClick={() => updateWidget(page.id, w.id, { w: placedDesign.width, h: placedDesign.height })}
+              className="text-blue-400 hover:text-blue-300">Use its designed size</button>
+          </div>
+        )}
         <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
         {tagInput("visible", "blank: always visible")}
       </div>

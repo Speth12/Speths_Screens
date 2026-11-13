@@ -619,7 +619,7 @@ export function Canvas() {
           />
         )}
 
-        <ScreenFrame frame={editingCw ? NO_FRAME : effectiveFrame(project)} device={device} theme={screenTheme} styles={editingCw ? undefined : chromeStyles(project)}>
+        <ScreenFrame exact={!!editingCw} frame={editingCw ? NO_FRAME : effectiveFrame(project)} device={device} theme={screenTheme} styles={editingCw ? undefined : chromeStyles(project)}>
         <div
           ref={gridRef}
           data-canvas-page="" data-zoom={zoom}
