@@ -1,5 +1,6 @@
+import { tokenUser } from "./user";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChromeFrame, WidgetHostProvider, chromeStyles, effectiveFrame } from "@speths-screens/widgets";
+import { ChromeFrame, PageAccess, WidgetHostProvider, canView, chromeStyles, effectiveFrame } from "@speths-screens/widgets";
 import { SETTINGS_PAGE_ID, useOperatorHost } from "./widgetHost";
 import { usePageScript } from "./pageScript";
 import { createProjectSync } from "./projectSync";
@@ -283,9 +284,12 @@ export function App() {
               fit={project.canvasResolution?.type !== "fixed" && !phone ? { on: scaleToFit, toggle: toggleScale } : undefined}
               onLogout={project.security?.mode === "login" && getToken() ? () => setToken(null) : undefined}
             />
+          ) : !canView({ loginRequired: project.security?.mode === "login", role: tokenUser(getToken())?.role }, page.access) ? (
+            <div data-testid="page-no-access" className="flex items-center justify-center h-48 text-zinc-500">{tr("You do not have access to this page.")}</div>
           ) : page.widgets.length === 0 ? (
             <div className="flex items-center justify-center h-48 text-zinc-600 italic">No widgets on this page.</div>
           ) : (
+            <PageAccess access={page.access}>
             <PageStage
               widgets={page.widgets}
               resolution={project.canvasResolution}
@@ -294,6 +298,7 @@ export function App() {
               device={device}
               viewport={viewport}
             />
+            </PageAccess>
           )}
         </div>
 

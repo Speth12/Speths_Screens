@@ -10,9 +10,11 @@ import { Segmented } from "../ui/Segmented";
 import { lookOf, withLook, type Look } from "../store/widgetLook";
 import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { AnchorFields, CustomWidgetProperties } from "./CustomWidgetCanvas";
+import { AccessFields } from "./AccessFields";
+import type { Access } from "@speths-screens/shared-types";
 
 
-function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string; hideInNav?: boolean } }) {
+function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string; hideInNav?: boolean; access?: Access } }) {
   const { updatePage } = useProject();
   const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
   return (
@@ -29,6 +31,8 @@ function PageProperties({ page }: { page: { id: string; name: string; background
           onChange={(e) => updatePage(page.id, { hideInNav: e.target.checked || undefined })} />
         <span>Leave out of the navigation<span className="block text-[10px] text-zinc-500">The page is reached by a button or a script, not from the page list.</span></span>
       </label>
+
+      <AccessFields what="page" access={page.access} onChange={(access) => updatePage(page.id, { access })} />
 
       <div>
         <div className="text-[10px] text-zinc-500 mb-1">Background color</div>
@@ -151,6 +155,10 @@ export function Properties() {
         <div className="text-[10px] text-zinc-500 mt-2 mb-0.5">Visible only while this tag is on</div>
         {tagInput("visible", "blank: always visible")}
       </div>
+
+      {/* Who can see and use it (with logins on) */}
+      <AccessFields what="widget" access={(w as { access?: Access }).access}
+        onChange={(access) => updateWidget(page.id, w.id, { access } as never)} />
 
       {/* A custom widget's part: where it stays when the custom widget is pinned to a wider edge */}
       {editingCw && (() => {

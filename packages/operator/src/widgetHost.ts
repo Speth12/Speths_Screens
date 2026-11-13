@@ -1,8 +1,9 @@
 // The operator screen's side of the widget library: tag values from the
 // runtime's WebSocket, writes through the write pipeline client, alarms from
 // the runtime with acknowledge, and the project's images and custom widgets.
+import type { Access } from "@speths-screens/shared-types";
 import { useMemo } from "react";
-import { appTag, deviceFor, findCustomWidget, recipeSetsOf, splitApp, translator, type AppValues, type DriverInfo, type AlarmView, type Device, type WidgetHost, type WriteRequest } from "@speths-screens/widgets";
+import { appTag, canView, deviceFor, findCustomWidget, recipeSetsOf, splitApp, translator, type AppValues, type DriverInfo, type AlarmView, type Device, type WidgetHost, type WriteRequest } from "@speths-screens/widgets";
 import type { Project } from "@speths-screens/shared-types";
 import { useTag } from "./hooks/useTag";
 import { useTags } from "./hooks/useTags";
@@ -85,7 +86,12 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
       useCustomWidget: (id: string | undefined) => findCustomWidget({ customWidgets, shell: projectShell, security }, id),
       useTranslate: () => translate,
       useDevice: useOperatorDevice,
-      usePages: () => ({ pages: settings ? [...(pages ?? NO_PAGES), SETTINGS_PAGE] : pages ?? NO_PAGES, activeId: pageId }),
+      // A page the person may not see is left out of the navigation.
+      usePages: () => {
+        const user = { loginRequired, role: tokenUser(token)?.role };
+        const listed = (pages ?? NO_PAGES).map((p) => (canView(user, (p as { access?: Access }).access) ? p : { ...p, hideInNav: true }));
+        return { pages: settings ? [...listed, SETTINGS_PAGE] : listed, activeId: pageId };
+      },
       useDrivers: () => drivers,
       useRecipeSets: () => recipeSets,
       useUser: () => {
