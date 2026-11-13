@@ -21,6 +21,8 @@ export const ACTION_TYPES: { type: ActionType; label: string }[] = [
   { type: "increment", label: "Increment" },
   { type: "navigate", label: "Go to page" },
   { type: "openUrl", label: "Open URL" },
+  { type: "openPopup", label: "Open popup" },
+  { type: "closePopup", label: "Close popup" },
 ];
 
 const writesTag = (t: ActionType) => t === "write" || t === "toggle" || t === "increment";
@@ -83,6 +85,21 @@ function ActionCard({ a, label, onChange, onRemove }: {
   a: Action; label: string; onChange: (a: Action) => void; onRemove: () => void;
 }) {
   const pages = useProject((s) => s.project.pages);
+  const customWidgets = useProject((s) => s.project.customWidgets) ?? [];
+  const popup = customWidgets.find((c) => c.id === a.customWidgetId);
+  const setParam = (name: string, v: string) => {
+    const params = { ...(a.params ?? {}) };
+    if (v) params[name] = v;
+    else delete params[name];
+    set("params", Object.keys(params).length ? params : undefined);
+  };
+  const px = (key: "width" | "height", title: string, placeholder: number | undefined) => (
+    <div>
+      <div className={small}>{title}</div>
+      <input aria-label={`${label} ${title}`} type="number" min={40} max={4000} value={a[key] ?? ""} placeholder={placeholder ? String(placeholder) : "its own"}
+        onChange={(e) => set(key, e.target.value === "" ? undefined : Math.max(40, Math.min(4000, Math.round(Number(e.target.value)) || 40)))} className={numInp} />
+    </div>
+  );
   const set = (key: keyof Action, value: unknown) => onChange(withField(a, key, value));
   const value = (key: "value" | "on" | "off", placeholder: string, title: string) => (
     <div>
@@ -130,6 +147,36 @@ function ActionCard({ a, label, onChange, onRemove }: {
         <input aria-label={`${label} URL`} value={a.url ?? ""} placeholder="https://…"
           onChange={(e) => set("url", e.target.value || undefined)} className={inp} />
       )}
+      {a.type === "openPopup" && (
+        <>
+          <select aria-label={`${label} custom widget`} value={a.customWidgetId ?? ""} onChange={(e) => set("customWidgetId", e.target.value || undefined)} className={inp}>
+            <option value="">— select custom widget —</option>
+            {customWidgets.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          {customWidgets.length === 0 && <div className="text-[10px] text-zinc-500">Make a custom widget first (Custom widgets); it is what the popup shows.</div>}
+          {popup?.params.map((prm) => (
+            <div key={prm.name}>
+              <div className={small}>{`{${prm.name}}`}{prm.description ? ` ${prm.description}` : ""}</div>
+              <BindingInput value={a.params?.[prm.name] ?? ""} onChange={(v) => setParam(prm.name, v)}
+                placeholder="a tag path or a value" className={`${inp} font-mono text-[10px] w-full`} />
+            </div>
+          ))}
+          <div>
+            <div className={small}>Title</div>
+            <input aria-label={`${label} title`} value={a.title ?? ""} placeholder={popup?.name ?? "the custom widget's name"}
+              onChange={(e) => set("title", e.target.value || undefined)} className={inp} />
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {px("width", "Width (px)", popup?.width)}
+            {px("height", "Height (px)", popup?.height)}
+          </div>
+          <select aria-label={`${label} position`} value={a.position ?? "center"} onChange={(e) => set("position", e.target.value === "center" ? undefined : e.target.value)} className={inp}>
+            <option value="center">In the middle of the screen</option>
+            <option value="widget">Next to this widget</option>
+          </select>
+        </>
+      )}
+      {a.type === "closePopup" && <div className="text-[10px] text-zinc-500">Closes the popup this widget is in.</div>}
     </div>
   );
 }

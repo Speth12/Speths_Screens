@@ -21,6 +21,7 @@ func role(r project.Role) *project.Role { return &r }
 //	NSPROT   a namespace tag, also written by an admin-only widget
 //	CWP      written through a custom widget parameter; the part asks for supervisor, the placement for engineer
 //	HDR      written by a button in a header pinned to the screen edge; the button asks for supervisor
+//	POP      written inside a popup (the pump custom widget) a page button opens; the part asks for supervisor
 func accessProject() *project.Project {
 	input := func(id, tag string, a *project.Access) project.Widget {
 		return project.Widget{ID: id, Type: project.NumericInput, W: 1, H: 1, Bindings: &project.WidgetBindings{Value: str("plc:" + tag)}, Access: a}
@@ -35,6 +36,8 @@ func accessProject() *project.Project {
 				input("adm", "TWO", &project.Access{Operate: role(project.Admin)}),
 				input("any", "TWO", nil),
 				input("nsadm", "NSPROT", &project.Access{Operate: role(project.Admin)}),
+				{ID: "opener", Type: project.Button, W: 1, H: 1,
+					Events: &project.WidgetEvents{OnClick: []project.Action{{Type: project.OpenPopup, CustomWidgetID: str("pump"), Params: map[string]string{"sp": "plc:POP"}}}}},
 				{ID: "cw1", Type: project.CustomWidget, W: 1, H: 1, Access: &project.Access{View: role(project.Engineer)},
 					Props: &project.WidgetProps{CustomWidgetID: str("pump"), Params: map[string]string{"sp": "plc:CWP"}}},
 			}},
@@ -94,6 +97,8 @@ func TestWriteAccess(t *testing.T) {
 		{"a custom widget: an engineer writes", WriteRequest{Binding: "plc:CWP", Value: 1.0, Role: eng, WidgetID: "cw1"}, 200, ""},
 		{"a header button's own tag is writable, and asks for its role", WriteRequest{Binding: "plc:HDR", Value: 1.0, Role: op, WidgetID: "top"}, 403, "widget top may be operated by supervisor"},
 		{"a header button: a supervisor writes", WriteRequest{Binding: "plc:HDR", Value: 1.0, Role: sup, WidgetID: "top"}, 200, ""},
+		{"a popup's widget writes, with the role its part asks for", WriteRequest{Binding: "plc:POP", Value: 1.0, Role: op, WidgetID: "opener"}, 403, "widget opener may be operated by supervisor"},
+		{"a popup's widget: a supervisor writes", WriteRequest{Binding: "plc:POP", Value: 1.0, Role: sup, WidgetID: "opener"}, 200, ""},
 		{"a recipe write has its own permission", WriteRequest{Binding: "plc:ENG", Value: 1.0, Role: op, Recipe: true}, 200, ""},
 		{"a script write has its writes list", WriteRequest{Binding: "plc:ENG", Value: 1.0, Script: true}, 200, ""},
 	}

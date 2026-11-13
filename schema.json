@@ -2551,7 +2551,9 @@
         "toggle",
         "increment",
         "navigate",
-        "openUrl"
+        "openUrl",
+        "openPopup",
+        "closePopup"
       ]
     },
     "Action": {
@@ -2590,6 +2592,36 @@
         "url": {
           "type": "string",
           "description": "openUrl: the URL"
+        },
+        "customWidgetId": {
+          "type": "string",
+          "description": "openPopup: the custom widget shown in a window over the page"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "openPopup: the custom widget's parameters for this use, by name (a tag path or a value)"
+        },
+        "title": {
+          "type": "string",
+          "description": "openPopup: the window's title; missing means the custom widget's name"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 4000,
+          "description": "openPopup: the window's width in pixels; missing means the custom widget's designed width"
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 4000,
+          "description": "openPopup: the window's height in pixels; missing means the custom widget's designed height"
+        },
+        "position": {
+          "type": "string",
+          "enum": ["center", "widget"],
+          "description": "openPopup: in the middle of the screen (the default) or next to the widget that opened it"
         }
       }
     },

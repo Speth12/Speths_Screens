@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
-import { PREVIEW_MINIMUM, fitScale, placement, stageSize, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { PREVIEW_MINIMUM, PopupLayer, WidgetHostProvider, fitScale, placement, stageSize, resolveTheme, themeVars } from "@speths-screens/widgets";
 import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
-import { WidgetRenderer } from "../widgets";
+import { WidgetRenderer, ideHost } from "../widgets";
 import { wsEventsUrl } from "../store/runtimeTarget";
 import type { CanvasResolution } from "@speths-screens/shared-types";
 import { CloseIcon } from "../ui/icons";
@@ -107,6 +107,8 @@ export function PreviewMode({ onExit }: Props) {
 
   // ── Runtime view ──────────────────────────────────────────────────────────
   return (
+    <WidgetHostProvider value={ideHost}>
+    <PopupLayer render={(w) => <WidgetRenderer w={w} />} theme={themeVars(resolveTheme(project.theme))}>
     <div
       className="fixed inset-0 z-50 bg-black flex flex-col"
       onMouseMove={showToolbar}
@@ -172,5 +174,7 @@ export function PreviewMode({ onExit }: Props) {
         </div>
       </div>
     </div>
+    </PopupLayer>
+    </WidgetHostProvider>
   );
 }

@@ -168,4 +168,16 @@
       "shell": { "chrome": "custom", "frame": [{ "id": "top", "customWidgetId": "hdr", "edge": "top", "size": 64, "overlay": true }] }
     },
     "want": [] }
+  ,{ "name": "popups: one that exists is accepted, and one that does not is reported",
+    "project": {
+      "datasources": [],
+      "pages": [{ "id": "p1", "name": "Main", "widgets": [
+        { "id": "ok", "type": "button", "x": 0, "y": 0, "w": 2, "h": 1, "events": { "onClick": [{ "type": "openPopup", "customWidgetId": "pump", "params": { "sp": "mem:sp" }, "title": "Pump 1", "width": 400, "height": 240, "position": "widget" }] } },
+        { "id": "gone", "type": "button", "x": 2, "y": 0, "w": 2, "h": 1, "events": { "onClick": [{ "type": "openPopup", "customWidgetId": "nope" }] } }
+      ] }],
+      "customWidgets": [{ "id": "pump", "name": "Pump", "params": [{ "name": "sp" }], "width": 400, "height": 240, "widgets": [
+        { "localId": "done", "type": "button", "x": 0, "y": 0, "w": 80, "h": 40, "events": { "onClick": [{ "type": "closePopup" }] } }
+      ] }]
+    },
+    "want": ["page \"Main\", widget gone (button), popup: no custom widget with id \"nope\""] }
 ]

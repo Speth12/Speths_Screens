@@ -55,3 +55,29 @@ describe("palette", () => {
     });
   });
 });
+
+describe("open popup", () => {
+  it("chooses the custom widget, fills its parameters, and sets the title, size and position", () => {
+    useProject.getState().loadProject({
+      schemaVersion: 7, version: "1", datasources: [], pages: [{ id: "p1", name: "Main", widgets: [] }],
+      customWidgets: [{ id: "pump", name: "Pump", params: [{ name: "speed" }], width: 300, height: 120, widgets: [] }],
+    } as never);
+    let events: unknown;
+    render(<EventsEditor w={button({ onClick: [{ type: "openPopup" }] })} onChange={(e) => { events = e; }} />);
+    fireEvent.change(screen.getByLabelText("On click 1 custom widget"), { target: { value: "pump" } });
+    expect(events).toEqual({ onClick: [{ type: "openPopup", customWidgetId: "pump" }] });
+    cleanup();
+    render(<EventsEditor w={button({ onClick: [{ type: "openPopup", customWidgetId: "pump" }] })} onChange={(e) => { events = e; }} />);
+    expect(screen.getByText("{speed}")).toBeTruthy();
+    expect((screen.getByLabelText("On click 1 Width (px)") as HTMLInputElement).placeholder).toBe("300");
+    fireEvent.change(screen.getByLabelText("On click 1 position"), { target: { value: "widget" } });
+    expect(events).toEqual({ onClick: [{ type: "openPopup", customWidgetId: "pump", position: "widget" }] });
+    fireEvent.change(screen.getByLabelText("On click 1 title"), { target: { value: "Pump 1" } });
+    expect(events).toEqual({ onClick: [{ type: "openPopup", customWidgetId: "pump", title: "Pump 1" }] });
+  });
+
+  it("Close popup has no settings of its own", () => {
+    render(<EventsEditor w={button({ onClick: [{ type: "closePopup" }] })} onChange={() => {}} />);
+    expect(screen.getByText("Closes the popup this widget is in.")).toBeTruthy();
+  });
+});

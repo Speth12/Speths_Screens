@@ -14,6 +14,7 @@ import { translateWidget } from "./translate";
 import { rewriteExpr, useDrives } from "./drive";
 import { SYMBOLS } from "./symbols";
 import { AccessGate } from "./access";
+import { usePopups } from "./popup";
 import { tokenColor } from "./tokens";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
@@ -667,7 +668,10 @@ function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Wid
     value: rb(fw.bindings.value), visible: rb(fw.bindings.visible), color: rb(fw.bindings.color),
   };
   const events: WidgetEvents | undefined = fw.events && Object.fromEntries(
-    Object.entries(fw.events).map(([k, list]) => [k, (list as Action[]).map((a) => (a.tag ? { ...a, tag: rb(a.tag) } : a))]),
+    Object.entries(fw.events).map(([k, list]) => [k, (list as Action[]).map((a) => {
+      const withTag = a.tag ? { ...a, tag: rb(a.tag) } : a;
+      return a.params ? { ...withTag, params: Object.fromEntries(Object.entries(a.params).map(([n, v]) => [n, rb(v) ?? v])) } : withTag;
+    })]),
   );
   const dynamics = fw.dynamics && Object.fromEntries(
     Object.entries(fw.dynamics).map(([k, d]) => [k, { ...d, expr: rewriteExpr(d.expr, params) }]),
@@ -1155,16 +1159,25 @@ function DriveApplicator({ w, children }: { w: Widget; children: (w: Widget) => 
   }, [w, key]); // eslint-disable-line react-hooks/exhaustive-deps -- key stands for driven
 
   const events = w.events;
+  const popups = usePopups();
+  const boxRef = useRef<HTMLDivElement>(null);
   const run = useCallback((actions: Action[] | undefined, momentary: boolean) => {
     for (const a of actions ?? []) {
       if (a.type === "navigate" && a.page) host.navigate(a.page);
       else if (a.type === "openUrl" && a.url) window.open(a.url, "_blank", "noopener");
+      else if (a.type === "openPopup" && a.customWidgetId) {
+        const r = boxRef.current?.getBoundingClientRect();
+        popups?.open({
+          customWidgetId: a.customWidgetId, params: a.params, title: a.title, width: a.width, height: a.height, position: a.position,
+          anchor: r && { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+        });
+      } else if (a.type === "closePopup") popups?.close();
       else {
         const req = actionWrite(a, w, tagVals);
         if (req) (momentary ? host.write : host.requestWrite)(req);
       }
     }
-  }, [w, tagVals, host]);
+  }, [w, tagVals, host, popups]);
   const release = () => {
     if (!pressed.current) return;
     pressed.current = false;
@@ -1183,6 +1196,7 @@ function DriveApplicator({ w, children }: { w: Widget; children: (w: Widget) => 
 
   return (
     <div
+      ref={boxRef}
       className="relative w-full h-full"
       style={{
         transform: rotate ? `rotate(${rotate.toFixed(1)}deg)` : undefined,

@@ -1,6 +1,6 @@
 // Custom widget checks, as internal/project/customwidgets.go does them: the same problems, in the
 // same order, with the same words.
-import type { CustomWidget, Project } from "./project";
+import type { CustomWidget, Project, WidgetEvents } from "./project";
 
 type Placed = { type: string; props?: { customWidgetId?: string } };
 const idOf = (w: Placed): string | undefined => (w.type === "customWidget" ? w.props?.customWidgetId : undefined);
@@ -14,11 +14,25 @@ export function customWidgetProblems(p: Project): string[] {
   const missing = (where: string, id: string | undefined) => {
     if (id && !byId.has(id)) out.push(`${where}: no custom widget with id ${JSON.stringify(id)}`);
   };
+  // A popup an action opens is a custom widget too.
+  const popups = (where: string, e: WidgetEvents | undefined) => {
+    for (const list of [e?.onClick, e?.onPress, e?.onRelease]) {
+      for (const a of list ?? []) if (a.type === "openPopup") missing(`${where}, popup`, a.customWidgetId);
+    }
+  };
   for (const pg of p.pages ?? []) {
-    for (const w of pg.widgets ?? []) missing(`page ${JSON.stringify(pg.name)}, widget ${w.id} (${w.type})`, idOf(w as unknown as Placed));
+    for (const w of pg.widgets ?? []) {
+      const where = `page ${JSON.stringify(pg.name)}, widget ${w.id} (${w.type})`;
+      missing(where, idOf(w as unknown as Placed));
+      popups(where, w.events);
+    }
   }
   for (const cw of p.customWidgets ?? []) {
-    for (const w of cw.widgets ?? []) missing(`custom widget ${JSON.stringify(cw.name)}, widget ${w.localId} (${w.type})`, idOf(w as unknown as Placed));
+    for (const w of cw.widgets ?? []) {
+      const where = `custom widget ${JSON.stringify(cw.name)}, widget ${w.localId} (${w.type})`;
+      missing(where, idOf(w as unknown as Placed));
+      popups(where, w.events);
+    }
   }
   const seenSlots = new Set<string>();
   for (const slot of p.shell?.frame ?? []) {

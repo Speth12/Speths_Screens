@@ -37,7 +37,7 @@ describe("validateProject", () => {
     ["wrong value in a setting", widgetDoc(w("button", { props: { btnColor: "pink" } })),
       [`page "Main", widget w1 (button): props.btnColor: value must be one of 'blue', 'green', 'red', 'amber', 'zinc', 'purple', 'orange', 'white'`]],
     ["unknown action", widgetDoc(w("button", { events: { onClick: [{ type: "jump" }] } })),
-      [`page "Main", widget w1 (button): events.onClick.0.type: value must be one of 'write', 'toggle', 'increment', 'navigate', 'openUrl'`]],
+      [`page "Main", widget w1 (button): events.onClick.0.type: value must be one of 'write', 'toggle', 'increment', 'navigate', 'openUrl', 'openPopup', 'closePopup'`]],
     ["v1 field in a v2 file", widgetDoc(w("led", { binding: "plc:B" })),
       [`page "Main", widget w1 (led): unknown field binding`]],
     ["custom widget widget", {

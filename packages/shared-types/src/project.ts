@@ -427,6 +427,15 @@ export interface WidgetEvents {
  */
 export interface Action {
     /**
+     * openPopup: the custom widget shown in a window over the page
+     */
+    customWidgetId?: string;
+    /**
+     * openPopup: the window's height in pixels; missing means the custom widget's designed
+     * height
+     */
+    height?: number;
+    /**
      * toggle: the value written when the tag is on; missing means 0 (false for a bool tag)
      */
     off?: any;
@@ -439,6 +448,14 @@ export interface Action {
      */
     page?: string;
     /**
+     * openPopup: the custom widget's parameters for this use, by name (a tag path or a value)
+     */
+    params?: { [key: string]: string };
+    /**
+     * openPopup: in the middle of the screen (the default) or next to the widget that opened it
+     */
+    position?: Position;
+    /**
      * increment: the amount added; missing means 1
      */
     step?: number;
@@ -446,7 +463,11 @@ export interface Action {
      * write, toggle, increment: the tag; missing means the widget's value tag
      */
     tag?: string;
-    type: ActionType;
+    /**
+     * openPopup: the window's title; missing means the custom widget's name
+     */
+    title?: string;
+    type:   ActionType;
     /**
      * openUrl: the URL
      */
@@ -455,9 +476,18 @@ export interface Action {
      * write: the value
      */
     value?: any;
+    /**
+     * openPopup: the window's width in pixels; missing means the custom widget's designed width
+     */
+    width?: number;
 }
 
-export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUrl";
+/**
+ * openPopup: in the middle of the screen (the default) or next to the widget that opened it
+ */
+export type Position = "center" | "widget";
+
+export type ActionType = "write" | "toggle" | "increment" | "navigate" | "openUrl" | "openPopup" | "closePopup";
 
 /**
  * How a part takes room in a stack; a part with no flex keeps the size it has in the layout

@@ -66,7 +66,7 @@ func TestValidateJSON(t *testing.T) {
 			[]string{`page "Main", widget b (button): props.btnColor: value must be one of 'blue', 'green', 'red', 'amber', 'zinc', 'purple', 'orange', 'white'`}},
 		{"unknown action",
 			widgetDoc(`{"id":"b","type":"button","x":0,"y":0,"w":2,"h":2,"events":{"onClick":[{"type":"jump"}]}}`),
-			[]string{`page "Main", widget b (button): events.onClick.0.type: value must be one of 'write', 'toggle', 'increment', 'navigate', 'openUrl'`}},
+			[]string{`page "Main", widget b (button): events.onClick.0.type: value must be one of 'write', 'toggle', 'increment', 'navigate', 'openUrl', 'openPopup', 'closePopup'`}},
 		{"v1 field in a current file",
 			widgetDoc(`{"id":"w1","type":"led","x":0,"y":0,"w":2,"h":2,"binding":"plc:B"}`),
 			[]string{`page "Main", widget w1 (led): unknown field binding`}},

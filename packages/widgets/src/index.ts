@@ -9,6 +9,7 @@ export { formatClock, groupPages, driverSummary, alarmSummary, listedPages, SETT
 export { recipeSetsOf, mayEditRecipes } from "./recipeSets";
 export { parseCell } from "./recipes";
 export { ChromeFrame } from "./ChromeFrame";
+export { PopupLayer, popupBox, usePopups, type PopupSpec } from "./popup";
 export { AccessContext, AccessGate, PageAccess, canView, needInside, roleName, roleRank, userRank, type Need } from "./access";
 export { FrameSlotContext } from "./widgets";
 export {
