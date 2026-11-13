@@ -13,7 +13,11 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
-beforeEach(() => useWorkspace.setState({ tabs: [SCREEN_TAB], activeId: SCREEN_TAB.id }));
+beforeEach(() => {
+  useWorkspace.setState({ tabs: [SCREEN_TAB], activeId: SCREEN_TAB.id });
+  // No real socket: a failed one schedules a reconnect that would fire after the test is torn down.
+  vi.stubGlobal("WebSocket", class { readyState = 0; addEventListener() {} send() {} close() {} });
+});
 
 const base = (dsIds: string[] = ["plc"]): Project => ({
   schemaVersion: 7,
