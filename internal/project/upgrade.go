@@ -275,6 +275,24 @@ func (u *upgrader) dynamicAction(d map[string]any, where string) map[string]any 
 	return nil
 }
 
+// WidgetSettings lists, for each widget type, the settings (props keys) it accepts, sorted.
+func WidgetSettings() (map[string][]string, error) {
+	keys, err := propsKeys()
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string][]string, len(keys))
+	for t, set := range keys {
+		l := make([]string, 0, len(set))
+		for k := range set {
+			l = append(l, k)
+		}
+		sort.Strings(l)
+		out[t] = l
+	}
+	return out, nil
+}
+
 // propsKeys reads, from the embedded schema, which settings each widget
 // type has: its settings type's own keys plus those it includes (allOf).
 var propsKeys = sync.OnceValues(func() (map[string]map[string]bool, error) {

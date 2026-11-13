@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -146,23 +147,12 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid json: "+err.Error())
 		return
 	}
-	p, err := project.Parse(raw)
+	d, code, err := s.deploy(r, raw, r.URL.Query().Get("label"))
 	if err != nil {
-		writeErr(w, 400, err.Error())
+		writeErr(w, code, err.Error())
 		return
 	}
-	project.KeepSecrets(p, s.rt.Project())
-	if err := s.rt.LoadProject(r.Context(), p); err != nil {
-		writeErr(w, loadErrorCode(err), err.Error())
-		return
-	}
-	var versionID int64
-	if s.versions != nil {
-		label := r.URL.Query().Get("label")
-		versionID, _ = s.versions.Save(r.Context(), project.RedactSecretsJSON(raw), label)
-	}
-	s.recordAudit(r, audit.ActionProjectDeploy, "", nil, nil, fmt.Sprintf("pages=%d datasources=%d", len(p.Pages), len(p.Datasources)))
-	saved, warning := s.keepDeployed(p)
+	p, versionID, saved, warning := d.project, d.versionID, d.saved, d.warning
 	out := map[string]any{"ok": true, "datasources": len(p.Datasources), "pages": len(p.Pages), "versionId": versionID, "saved": saved}
 	if warning != "" {
 		out["warning"] = warning
@@ -262,6 +252,35 @@ func (s *Server) handleWriteTag(w http.ResponseWriter, r *http.Request) {
 		Binding: body.Datasource + ":" + path, Value: body.Value, WidgetID: body.WidgetID,
 	})
 	writeJSON(w, res.Code, writeReply(res))
+}
+
+// deployed is what a deploy did.
+type deployed struct {
+	project   *project.Project
+	versionID int64
+	saved     bool
+	warning   string
+}
+
+// deploy runs a project document the way the IDE's Deploy does: it must validate, it is loaded (the
+// datasources' passwords kept when the document leaves them blank), saved as a new version, written
+// to the project file and audited. On failure it gives the HTTP status and nothing changes.
+func (s *Server) deploy(r *http.Request, raw []byte, label string) (deployed, int, error) {
+	p, err := project.Parse(raw)
+	if err != nil {
+		return deployed{}, 400, err
+	}
+	project.KeepSecrets(p, s.rt.Project())
+	if err := s.rt.LoadProject(r.Context(), p); err != nil {
+		return deployed{}, loadErrorCode(err), err
+	}
+	var versionID int64
+	if s.versions != nil {
+		versionID, _ = s.versions.Save(r.Context(), project.RedactSecretsJSON(raw), label)
+	}
+	s.recordAudit(r, audit.ActionProjectDeploy, "", nil, nil, fmt.Sprintf("pages=%d datasources=%d%s", len(p.Pages), len(p.Datasources), map[bool]string{true: " (" + label + ")"}[label != ""]))
+	saved, warning := s.keepDeployed(p)
+	return deployed{project: p, versionID: versionID, saved: saved, warning: warning}, 0, nil
 }
 
 // loadErrorCode is the HTTP status for a project the runtime would not load: one this runtime may
@@ -664,4 +683,12 @@ func (s *Server) executeRecipeEntries(r *http.Request, entries []recipestore.Ent
 		applied++
 	}
 	return errs, applied
+}
+
+// mcpDeploy lets the MCP screen-building tools change the project the way a deploy does, as the
+// user who called them.
+func (s *Server) mcpDeploy(ctx context.Context, raw []byte, label string) error {
+	r, _ := http.NewRequestWithContext(ctx, http.MethodPost, "/mcp", nil)
+	_, _, err := s.deploy(r, raw, label)
+	return err
 }
