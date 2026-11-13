@@ -233,6 +233,13 @@ export function App() {
           Security off
         </div>
       )}
+      {project.simulation && (
+        // Made-up values must never be taken for the plant's: always shown, kiosk or not.
+        <div data-testid="simulation-badge" role="status"
+          className="fixed bottom-2 right-2 z-50 rounded px-2 py-1 text-xs font-semibold bg-violet-600/90 text-white shadow">
+          {tr("Simulated values")}
+        </div>
+      )}
       {showPerf && <PerfReadout />}
       {writeNotice && (
         <div role="alert"

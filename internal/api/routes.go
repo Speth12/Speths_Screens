@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -82,7 +83,7 @@ func (s *Server) handleRestoreVersion(w http.ResponseWriter, r *http.Request) {
 	}
 	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
-		writeErr(w, 500, err.Error())
+		writeErr(w, loadErrorCode(err), err.Error())
 		return
 	}
 	// Save the restore itself as a new version so the log stays append-only.
@@ -124,7 +125,7 @@ func writeErr(w http.ResponseWriter, code int, msg string) {
 func (s *Server) handleAlive(w http.ResponseWriter, r *http.Request) {
 	// version and schemaVersion (the newest project format this runtime reads) let an IDE say "that runtime is
 	// older" before a deploy is refused.
-	writeJSON(w, 200, map[string]any{"ok": true, "version": s.Version, "schemaVersion": project.CurrentSchemaVersion})
+	writeJSON(w, 200, map[string]any{"ok": true, "version": s.Version, "schemaVersion": project.CurrentSchemaVersion, "simulation": s.rt.AllowSimulation})
 }
 
 func (s *Server) handleGetProject(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +153,7 @@ func (s *Server) handlePostProject(w http.ResponseWriter, r *http.Request) {
 	}
 	project.KeepSecrets(p, s.rt.Project())
 	if err := s.rt.LoadProject(r.Context(), p); err != nil {
-		writeErr(w, 500, err.Error())
+		writeErr(w, loadErrorCode(err), err.Error())
 		return
 	}
 	var versionID int64
@@ -261,6 +262,15 @@ func (s *Server) handleWriteTag(w http.ResponseWriter, r *http.Request) {
 		Binding: body.Datasource + ":" + path, Value: body.Value, WidgetID: body.WidgetID,
 	})
 	writeJSON(w, res.Code, writeReply(res))
+}
+
+// loadErrorCode is the HTTP status for a project the runtime would not load: one this runtime may
+// not run (simulation outside a demonstration runtime) is a conflict, anything else a failure.
+func loadErrorCode(err error) int {
+	if errors.Is(err, runtime.ErrSimulationNotAllowed) {
+		return 409
+	}
+	return 500
 }
 
 // writeTag runs one write and records it in the audit trail and, when it

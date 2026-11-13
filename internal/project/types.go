@@ -46,6 +46,10 @@ type Types struct {
 	// Variables kept per browser tab, read as {session:name}; they never reach the runtime
 	SessionVars []SessionVar `json:"sessionVars,omitempty"`
 	Shell       *Shell       `json:"shell,omitempty"`
+	// Demonstrations only: every PLC datasource (REST, OPC UA, Modbus, MQTT) shows made-up
+	// values and nothing reaches a PLC. Only a runtime started with --allow-simulation (the
+	// desktop program) runs it; any other refuses the project
+	Simulation *bool `json:"simulation,omitempty"`
 	// The look of every screen: a preset, light or dark, and any element changed from the
 	// preset. A browser can still pick light or dark for itself; that choice is not saved in
 	// the project

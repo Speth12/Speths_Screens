@@ -80,3 +80,16 @@ func TestDeployToAFolderThatIsGone(t *testing.T) {
 		t.Errorf("deploy: %d %v", resp.StatusCode, got)
 	}
 }
+
+// A runtime not started for demonstrations refuses a project with simulation on, as a conflict.
+func TestDeployWithSimulationIsRefusedOutsideADemo(t *testing.T) {
+	_, _, hs := newTestServer(t)
+	doc := strings.Replace(keptProject, `"name": "Kept",`, `"name": "Kept", "simulation": true,`, 1)
+	resp := postJSON(t, hs.URL+"/api/v1/project", doc)
+	var got map[string]any
+	_ = json.NewDecoder(resp.Body).Decode(&got)
+	resp.Body.Close()
+	if resp.StatusCode != 409 || !strings.Contains(got["error"].(string), "--allow-simulation") {
+		t.Errorf("deploy: %d %v", resp.StatusCode, got)
+	}
+}

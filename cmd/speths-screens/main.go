@@ -77,6 +77,7 @@ func main() {
 	desktopFlag := flag.Bool("desktop", false, "run for this computer only: keep files in the data folder, pick a free port and open the IDE (the default when a program with the IDE is started with no arguments)")
 	dataDir := flag.String("data-dir", "", "folder for the databases and settings; relative file flags are placed inside it (desktop mode defaults to a per-user folder)")
 	noBrowser := flag.Bool("no-browser", false, "desktop mode: do not open the browser")
+	allowSimulation := flag.Bool("allow-simulation", false, "for demonstrations: run a project whose simulation setting is on, with made-up values in place of its PLC datasources (on by default in desktop mode; never use it in production)")
 	flag.Parse()
 
 	desktop := isDesktopStart(os.Args[1:], *desktopFlag, ideFS() != nil)
@@ -191,6 +192,11 @@ func main() {
 	defer versionSt.Close()
 
 	rt := runtime.New(store, hist)
+	// Made-up values only where demonstrations happen: the desktop program, or when asked for.
+	rt.AllowSimulation = *allowSimulation || desktop
+	if rt.AllowSimulation {
+		log.Printf("[Speth's Screens] simulation allowed: a project with simulation on shows made-up values (for demonstrations, not production)")
+	}
 	rt.AlarmStore = alarmSt
 	memSt, err := memstore.Open(*memoryDB)
 	if err != nil {
