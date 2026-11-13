@@ -102,7 +102,8 @@ describe("the toolbar", () => {
   it("has the commands used all the time, by name", () => {
     renderHeader();
     for (const name of ["Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Save to a file (Ctrl+S)", "Manage targets"]) expect(screen.getByRole("button", { name })).toBeTruthy();
-    for (const name of ["Preview", "Pull", "Deploy"]) expect(screen.getByRole("button", { name })).toBeTruthy();
+    for (const name of ["Pull", "Deploy"]) expect(screen.getByRole("button", { name })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Preview" })).toBeNull();
     expect(screen.getByRole("group", { name: "Screen size" })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Data" })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Target" })).toBeTruthy();
@@ -110,14 +111,13 @@ describe("the toolbar", () => {
 
   it("Preview, and the commands in the Project and Help menus, call what App gave the header", () => {
     renderHeader();
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     pick("Project", "Theme…");
     pick("Project", "Languages…");
     pick("View", "Widget gallery…");
     pick("Help", "Keyboard shortcuts");
     pick("View", "Project JSON");
     pick("View", /^Preview/);
-    expect(handlers.onPreview).toHaveBeenCalledTimes(2);
+    expect(handlers.onPreview).toHaveBeenCalledTimes(1);
     for (const h of [handlers.onTheme, handlers.onLanguages, handlers.onGallery, handlers.onHelp, handlers.onToggleJSON]) expect(h).toHaveBeenCalledTimes(1);
   });
 
