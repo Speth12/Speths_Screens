@@ -8,7 +8,7 @@
 // the same custom widgets are then built with those choices, so the choices are a starting point a
 // project can still turn into custom chrome.
 import type { CustomWidget, CustomWidgetPart, FrameSlot, Shell, ShellHeader, ShellStyle } from "@speths-screens/shared-types";
-import { FONTS, TYPE_SCALE, tokenColor } from "./tokens";
+import { TYPE_SCALE, fontStack, tokenColor } from "./tokens";
 
 const bare = { noPadding: true, bgColor: "transparent", borderColor: "none" } as const;
 
@@ -218,7 +218,8 @@ export function shellStyleVars(s: ShellStyle | undefined, nav = false): SlotStyl
     v["--muted-foreground"] = `color-mix(in srgb, ${fg} 72%, transparent)`;
   }
   if (border) v["--border"] = border;
-  if (s.font) { v.fontFamily = FONTS[s.font].stack; v["--font-sans"] = FONTS[s.font].stack; }
+  const font = fontStack(s.font);
+  if (font) { v.fontFamily = font; v["--font-sans"] = font; }
   const scale = FONT_SCALE[s.fontSize ?? "normal"];
   if (scale !== 1) for (const [k, size] of Object.entries(TYPE_SCALE)) v[`--type-${k}`] = `calc(${size} * ${scale})`;
   if (s.bold) v.fontWeight = 600;

@@ -14,6 +14,10 @@ export interface Project {
      */
     enabledSymbolPacks?: string[];
     /**
+     * The project's own fonts, used by their id wherever a font is chosen
+     */
+    fonts?: FontAsset[];
+    /**
      * What the historian stores and for how long. Missing means every change, plus one sample
      * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
      */
@@ -76,6 +80,11 @@ export interface Project {
      * desktop program) runs it; any other refuses the project
      */
     simulation?: boolean;
+    /**
+     * Named looks a widget can take by its styleId, so many widgets share one look and a change
+     * to it reaches them all
+     */
+    styles?: NamedStyle[];
     /**
      * The look of every screen: a preset, light or dark, and any element changed from the
      * preset. A browser can still pick light or dark for itself; that choice is not saved in
@@ -235,7 +244,17 @@ export interface CustomWidgetLayoutOverride {
 }
 
 export interface CustomWidgetParam {
+    /**
+     * For a text parameter: the text a use shows when it gives none
+     */
+    default?:     string;
     description?: string;
+    /**
+     * tag or text. tag (the default): each use gives a tag, and {name} stands for it in the
+     * parts' tags and expressions. text: each use gives a text, and {name} stands for it in the
+     * parts' texts (label, static text, state labels, unit, placeholder)
+     */
+    kind?: string;
     /**
      * Used as {name} in bindings inside the custom widget
      */
@@ -584,11 +603,55 @@ export type HiddenOn = "tablet" | "phone";
  * Settings of a table widget
  */
 export interface CustomWidgetPartProps {
-    max?:        number;
-    min?:        number;
+    max?: number;
+    min?: number;
+    /**
+     * Scale marks and the lowest and highest value; missing means shown where the style has
+     * them
+     *
+     * The lowest and highest value under the slider; missing means shown
+     */
+    showTicks?: boolean;
+    /**
+     * The value as text on the gauge; false leaves only the gauge, to put a number of your own
+     * beside it
+     *
+     * The value as text beside the tank; false leaves only the tank, filling its place
+     *
+     * The value as text; false leaves only the control
+     *
+     * The value that raised the alarm; missing means shown
+     */
+    showValue?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
-    bgColor?:    string;
+    /**
+     * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+     * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+     * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+     * up)
+     *
+     * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+     * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+     * rising or falling), segment (seven-segment style digits)
+     *
+     * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+     * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+     * the color), ring (a ring that fills when on)
+     *
+     * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+     * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+     * card fills up)
+     *
+     * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+     * rotary knob), stepper (minus and plus buttons a step at a time)
+     *
+     * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+     * state color), pill (a rounded badge), stepper (every state in a row with the current one
+     * filled), icon (the state icon and its text)
+     */
+    variant?: Variant;
+    bgColor?: string;
     /**
      * Color the frame flashes while blinking; missing means the widget fades in and out
      */
@@ -602,13 +665,16 @@ export interface CustomWidgetPartProps {
      * Border width in pixels; missing means the theme's
      */
     borderWidth?: number;
+    cardStyle?:   CardStyle;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
     colorThresholds?: Threshold[];
     fontBold?:        boolean;
     /**
-     * mono | sans | serif; empty means the theme font
+     * A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+     * the project's own fonts), or mono | sans | serif for the device's own; empty means the
+     * theme font
      */
     fontFamily?: string;
     fontItalic?: boolean;
@@ -622,8 +688,42 @@ export interface CustomWidgetPartProps {
      */
     fontSize?:      string;
     fontUnderline?: boolean;
-    label?:         string;
-    noPadding?:     boolean;
+    /**
+     * How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+     * draws the nearest weight it has. Overrides fontBold
+     */
+    fontWeight?: number;
+    label?:      string;
+    /**
+     * The label's color; missing means the text color, faded
+     */
+    labelColor?: string;
+    /**
+     * An icon drawn before the label
+     */
+    labelIcon?: PageIcon;
+    /**
+     * Where the label sits: above the value (the default), below it, or to its left
+     */
+    labelPosition?: LabelPosition;
+    /**
+     * The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+     */
+    labelSize?:      string;
+    labelTransform?: TextCase;
+    /**
+     * How heavy the label's text is, as fontWeight
+     */
+    labelWeight?: number;
+    /**
+     * Space added between letters, in ems (0.05 is a little wider); negative is tighter
+     */
+    letterSpacing?: number;
+    /**
+     * The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+     */
+    lineHeight?: number;
+    noPadding?:  boolean;
     /**
      * Space inside the card in pixels; overrides noPadding and the theme
      */
@@ -647,15 +747,43 @@ export interface CustomWidgetPartProps {
     /**
      * false hides the unit beside the value; missing means shown
      */
-    showUnit?:  boolean;
+    showUnit?: boolean;
+    /**
+     * A line through the text
+     */
+    strike?: boolean;
+    /**
+     * The id of a named style of the project whose look this widget takes; its own settings win
+     * over the style's
+     */
+    styleId?:   string;
     textAlign?: TextAlign;
     textColor?: string;
+    /**
+     * A shadow or an outline behind the text, for text over a picture or a color
+     */
+    textShadow?:    TextShadow;
+    textTransform?: TextCase;
     /**
      * top | center | bottom: where the value sits in the card; missing means center
      */
     valign?: string;
     /**
-     * TextDisplay: fixed text shown instead of a tag value
+     * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+     * ellipsis; missing means the widget's own way
+     */
+    wrap?: Wrap;
+    /**
+     * The number itself; false leaves only the history line, the range bar or the arrow of its
+     * style, filling its place
+     */
+    showNumber?: boolean;
+    /**
+     * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+     */
+    rotation?: number;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
      */
     staticText?: string;
     /**
@@ -667,20 +795,62 @@ export interface CustomWidgetPartProps {
      */
     falseLabel?: string;
     /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
+     * The state as text beside the light; false leaves only the light
+     */
+    showText?: boolean;
+    /**
      * LED color when true
      */
     trueColor?: string;
     /**
      * LED text when true
      */
-    trueLabel?:  string;
-    btnColor?:   ButtonColor;
+    trueLabel?: string;
+    /**
+     * Marks at each quarter with their values beside the tank
+     */
+    showScale?: boolean;
+    /**
+     * A moving wave on the surface (still for a browser that asks for less motion)
+     */
+    wave?:     boolean;
+    btnColor?: ButtonColor;
+    /**
+     * Any color (#rrggbb) for the button in place of the named ones
+     */
+    btnCustomColor?: string;
+    /**
+     * The id of a project image drawn on the button (a logo), in place of an icon
+     */
+    btnImage?: string;
+    /**
+     * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+     * iconOnly (no text)
+     */
+    btnLayout?:  BtnLayout;
     btnRounded?: ButtonRounded;
+    /**
+     * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+     * pill (fully rounded ends). A square or round button is as large as fits its place
+     */
+    btnShape?:   BtnShape;
     btnVariant?: ButtonVariant;
     /**
-     * Button icon (emoji or short text)
+     * An icon from the icon set, drawn in the text color; wins over the typed icon
      */
-    icon?: string;
+    iconName?: PageIcon;
+    /**
+     * A toggle's text for off; missing means OFF
+     */
+    offLabel?: string;
+    /**
+     * A toggle's text for on (the segments and rocker styles); missing means ON
+     */
+    onLabel?: string;
     /**
      * Toggle button color when off
      */
@@ -689,6 +859,12 @@ export interface CustomWidgetPartProps {
      * Toggle button color when on
      */
     toggleOnColor?: string;
+    /**
+     * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+     * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+     * side with the current one filled)
+     */
+    toggleStyle?: ToggleStyle;
     /**
      * Setpoint slider step
      */
@@ -740,6 +916,12 @@ export interface CustomWidgetPartProps {
      * HistoryLog rows per page
      */
     pageSize?: number;
+    rowSize?:  RowSize;
+    rowStyle?: RowStyle;
+    /**
+     * The button that saves the rows as a CSV file; missing means shown
+     */
+    showExport?: boolean;
     /**
      * AlarmBanner max visible rows
      */
@@ -748,6 +930,14 @@ export interface CustomWidgetPartProps {
      * AlarmBanner: show acknowledged alarms
      */
     showAcked?: boolean;
+    /**
+     * The severity word at the start of each alarm; missing means shown
+     */
+    showSeverity?: boolean;
+    /**
+     * When the alarm was raised; missing means shown
+     */
+    showTime?: boolean;
     /**
      * Image object-fit, as set by the properties panel
      */
@@ -895,6 +1085,10 @@ export interface CustomWidgetPartProps {
      */
     showName?: boolean;
     /**
+     * The background of the heading row; missing means the card's own
+     */
+    headerColor?: string;
+    /**
      * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
@@ -907,17 +1101,56 @@ export interface CustomWidgetPartProps {
      */
     showEntries?: boolean;
     /**
+     * The heading over the names; missing means Tag
+     */
+    nameHeader?: string;
+    /**
      * Table widget rows
      */
     rows?: TableRow[];
+    /**
+     * The heading row; missing means shown
+     */
+    showHeader?: boolean;
+    /**
+     * The heading over the values; missing means Value
+     */
+    valueHeader?: string;
     [property: string]: any;
 }
 
 export type ButtonColor = "blue" | "green" | "red" | "amber" | "zinc" | "purple" | "orange" | "white";
 
+/**
+ * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+ * iconOnly (no text)
+ */
+export type BtnLayout = "beside" | "stacked" | "iconOnly";
+
 export type ButtonRounded = "none" | "sm" | "md" | "lg" | "full";
 
-export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
+/**
+ * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+ * pill (fully rounded ends). A square or round button is as large as fits its place
+ */
+export type BtnShape = "rectangle" | "square" | "round" | "pill";
+
+/**
+ * filled: a solid color. outlined: a thin line. ghost: only the text. flat: a tint of the
+ * color. industrial: a shaded panel button. raised: three-dimensional, pressing down when
+ * touched. glossy: a shine across the top. pushbutton: a realistic domed button in a metal
+ * ring, lit when a toggle is on
+ */
+export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial" | "raised" | "glossy" | "pushbutton";
+
+/**
+ * How a widget's card is drawn: plain, accent (a colored bar down the left), header (the
+ * label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade
+ * from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a
+ * small panel), inset (pressed into the page). A theme sets it for every card and a widget
+ * can set its own
+ */
+export type CardStyle = "plain" | "accent" | "header" | "outlined" | "gradient" | "glass" | "inset";
 
 export interface Threshold {
     /**
@@ -951,11 +1184,32 @@ export type ImageFit = "contain" | "cover" | "fill";
 export type Format = "time" | "timeSeconds" | "dateTime" | "date";
 
 /**
+ * An icon drawn before the label
+ *
+ * An icon from the icon set, drawn in the text color; wins over the typed icon
+ *
+ * The icon the icon style draws for this state
+ *
+ * Shown beside the page's name in the navigation; missing shows the name's first letter
+ */
+export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask" | "play" | "pause" | "stopSquare" | "power" | "refresh" | "undoTurn" | "checkMark" | "cross" | "plus" | "minus" | "arrowUp" | "arrowDown" | "arrowLeft" | "arrowRight" | "chevronUp" | "chevronDown" | "chevronLeft" | "chevronRight" | "menuBars" | "expand" | "sliders" | "funnel" | "search" | "bell" | "bellOff" | "caution" | "infoCircle" | "helpCircle" | "okCircle" | "failCircle" | "padlock" | "padlockOpen" | "keyIcon" | "eye" | "eyeOff" | "shield" | "thermometer" | "droplet" | "wind" | "flame" | "snowflake" | "fanBlades" | "speedometer" | "weighScale" | "ruler" | "beaker" | "factory" | "conveyor" | "crate" | "wrench" | "hammer" | "cog" | "recycle" | "leaf" | "lightbulb" | "battery" | "plugIcon" | "wifi" | "signalBars" | "chip" | "serverRack" | "databaseIcon" | "networkIcon" | "layers" | "activity" | "barChart" | "lineChart" | "pieChart" | "calendar" | "timer" | "clockFace" | "pastTime" | "saveDisk" | "download" | "upload" | "document" | "folder" | "printer" | "camera" | "phoneHandset" | "mail" | "people" | "signIn" | "signOut" | "star" | "flagIcon" | "mapPin" | "sun" | "moon" | "speaker" | "speakerOff" | "trashCan" | "pencil" | "chainLink";
+
+/**
  * Shape: rectangle (missing means this), ellipse or line
  *
  * What a shape widget draws
  */
 export type ShapeKind = "rectangle" | "ellipse" | "line";
+
+/**
+ * Where the label sits: above the value (the default), below it, or to its left
+ */
+export type LabelPosition = "top" | "bottom" | "left";
+
+/**
+ * Letters as written, ALL CAPITALS, all small, or Each Word Capitalized
+ */
+export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
 
 /**
  * Symbol: what it does while animate is true
@@ -971,6 +1225,19 @@ export interface RefLine {
     value:  number;
 }
 
+/**
+ * How tall the rows of a list or a table are: tight (more rows in view), normal, roomy
+ * (larger text and room for a finger)
+ */
+export type RowSize = "tight" | "normal" | "roomy";
+
+/**
+ * How the rows of a list or a table are told apart: lined (a line under each), striped
+ * (every other row shaded), cards (each row its own block), bare (nothing between them);
+ * missing means the widget's own
+ */
+export type RowStyle = "lined" | "striped" | "cards" | "bare";
+
 export interface TableRow {
     binding: string;
     label:   string;
@@ -978,7 +1245,11 @@ export interface TableRow {
 }
 
 export interface StateEntry {
-    color:      string;
+    color: string;
+    /**
+     * The icon the icon style draws for this state
+     */
+    icon?:      PageIcon;
     label:      string;
     textColor?: string;
     value:      any;
@@ -1016,6 +1287,51 @@ export interface TrendSeries {
 }
 
 export type TextAlign = "left" | "center" | "right";
+
+/**
+ * A shadow or an outline behind the text, for text over a picture or a color
+ */
+export type TextShadow = "soft" | "strong" | "outline";
+
+/**
+ * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+ * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+ * side with the current one filled)
+ */
+export type ToggleStyle = "plain" | "switch" | "rocker" | "checkbox" | "segments";
+
+/**
+ * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+ * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+ * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+ * up)
+ *
+ * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+ * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+ * rising or falling), segment (seven-segment style digits)
+ *
+ * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+ * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+ * the color), ring (a ring that fills when on)
+ *
+ * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+ * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+ * card fills up)
+ *
+ * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+ * rotary knob), stepper (minus and plus buttons a step at a time)
+ *
+ * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+ * state color), pill (a rounded badge), stepper (every state in a row with the current one
+ * filled), icon (the state icon and its text)
+ */
+export type Variant = "arc" | "ring" | "half" | "dial" | "bar" | "vbar" | "segments" | "plain" | "sparkline" | "range" | "trend" | "segment" | "dot" | "pill" | "tile" | "lamp" | "icon" | "cylinder" | "silo" | "vessel" | "bottle" | "level" | "slider" | "fat" | "knob" | "stepper" | "label";
+
+/**
+ * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+ * ellipsis; missing means the widget's own way
+ */
+export type Wrap = "wrap" | "nowrap" | "ellipsis";
 
 /**
  * Trend X-axis label format
@@ -1143,6 +1459,28 @@ export interface CalculatedTag {
 export type DatasourceType = "opcua" | "mbtcp" | "mqtt" | "rest" | "virtual" | "memory";
 
 /**
+ * A font file kept in the project (TTF, OTF, WOFF or WOFF2)
+ */
+export interface FontAsset {
+    /**
+     * base64 data URL of the font file
+     */
+    dataUrl: string;
+    /**
+     * What a font setting names it by
+     */
+    id: string;
+    /**
+     * The name shown in the editor's font lists
+     */
+    name: string;
+    /**
+     * Original file size in bytes
+     */
+    size?: number;
+}
+
+/**
  * What the historian stores and for how long. Missing means every change, plus one sample
  * per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
  */
@@ -1229,6 +1567,10 @@ export interface Page {
      */
     access?: Access;
     /**
+     * What is behind this page; wins over backgroundColor and the theme's background
+     */
+    background?: Background;
+    /**
      * CSS color for the page background
      */
     backgroundColor?: string;
@@ -1254,9 +1596,67 @@ export interface Page {
 }
 
 /**
- * Shown beside the page's name in the navigation; missing shows the name's first letter
+ * What is behind this page; wins over backgroundColor and the theme's background
+ *
+ * What is drawn behind a page
+ *
+ * What is behind every page; a page's own background wins
  */
-export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask";
+export interface Background {
+    /**
+     * The direction a gradient runs in, in degrees (180 is top to bottom, the default)
+     */
+    angle?: number;
+    /**
+     * The color (solid, pattern), or the gradient's first color; missing means the theme's page
+     * color
+     */
+    color?: string;
+    /**
+     * The gradient's second color, or the color of a pattern's marks
+     */
+    color2?: string;
+    /**
+     * How much of the theme's page color is laid over a picture so text on it reads: 0 is none,
+     * 0.6 is most of it
+     */
+    dim?: number;
+    /**
+     * A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+     * tile repeats it, stretch pulls it to the page's shape
+     */
+    fit?: Fit;
+    /**
+     * solid: one color. gradient: one color running into another. picture: one of the project's
+     * pictures. pattern: small marks repeated over a color
+     */
+    kind: Kind;
+    /**
+     * The marks of a pattern
+     */
+    pattern?: Pattern;
+    /**
+     * The id of a project image
+     */
+    picture?: string;
+}
+
+/**
+ * A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+ * tile repeats it, stretch pulls it to the page's shape
+ */
+export type Fit = "fill" | "whole" | "tile" | "stretch";
+
+/**
+ * solid: one color. gradient: one color running into another. picture: one of the project's
+ * pictures. pattern: small marks repeated over a color
+ */
+export type Kind = "solid" | "gradient" | "picture" | "pattern";
+
+/**
+ * The marks of a pattern
+ */
+export type Pattern = "dots" | "squares" | "stripes";
 
 export interface Widget {
     access?:   Access;
@@ -1396,11 +1796,55 @@ export interface WidgetPlacement {
  * Settings of a table widget
  */
 export interface WidgetProps {
-    max?:        number;
-    min?:        number;
+    max?: number;
+    min?: number;
+    /**
+     * Scale marks and the lowest and highest value; missing means shown where the style has
+     * them
+     *
+     * The lowest and highest value under the slider; missing means shown
+     */
+    showTicks?: boolean;
+    /**
+     * The value as text on the gauge; false leaves only the gauge, to put a number of your own
+     * beside it
+     *
+     * The value as text beside the tank; false leaves only the tank, filling its place
+     *
+     * The value as text; false leaves only the control
+     *
+     * The value that raised the alarm; missing means shown
+     */
+    showValue?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
-    bgColor?:    string;
+    /**
+     * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+     * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+     * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+     * up)
+     *
+     * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+     * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+     * rising or falling), segment (seven-segment style digits)
+     *
+     * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+     * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+     * the color), ring (a ring that fills when on)
+     *
+     * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+     * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+     * card fills up)
+     *
+     * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+     * rotary knob), stepper (minus and plus buttons a step at a time)
+     *
+     * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+     * state color), pill (a rounded badge), stepper (every state in a row with the current one
+     * filled), icon (the state icon and its text)
+     */
+    variant?: Variant;
+    bgColor?: string;
     /**
      * Color the frame flashes while blinking; missing means the widget fades in and out
      */
@@ -1414,13 +1858,16 @@ export interface WidgetProps {
      * Border width in pixels; missing means the theme's
      */
     borderWidth?: number;
+    cardStyle?:   CardStyle;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
     colorThresholds?: Threshold[];
     fontBold?:        boolean;
     /**
-     * mono | sans | serif; empty means the theme font
+     * A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+     * the project's own fonts), or mono | sans | serif for the device's own; empty means the
+     * theme font
      */
     fontFamily?: string;
     fontItalic?: boolean;
@@ -1434,8 +1881,42 @@ export interface WidgetProps {
      */
     fontSize?:      string;
     fontUnderline?: boolean;
-    label?:         string;
-    noPadding?:     boolean;
+    /**
+     * How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+     * draws the nearest weight it has. Overrides fontBold
+     */
+    fontWeight?: number;
+    label?:      string;
+    /**
+     * The label's color; missing means the text color, faded
+     */
+    labelColor?: string;
+    /**
+     * An icon drawn before the label
+     */
+    labelIcon?: PageIcon;
+    /**
+     * Where the label sits: above the value (the default), below it, or to its left
+     */
+    labelPosition?: LabelPosition;
+    /**
+     * The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+     */
+    labelSize?:      string;
+    labelTransform?: TextCase;
+    /**
+     * How heavy the label's text is, as fontWeight
+     */
+    labelWeight?: number;
+    /**
+     * Space added between letters, in ems (0.05 is a little wider); negative is tighter
+     */
+    letterSpacing?: number;
+    /**
+     * The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+     */
+    lineHeight?: number;
+    noPadding?:  boolean;
     /**
      * Space inside the card in pixels; overrides noPadding and the theme
      */
@@ -1459,15 +1940,43 @@ export interface WidgetProps {
     /**
      * false hides the unit beside the value; missing means shown
      */
-    showUnit?:  boolean;
+    showUnit?: boolean;
+    /**
+     * A line through the text
+     */
+    strike?: boolean;
+    /**
+     * The id of a named style of the project whose look this widget takes; its own settings win
+     * over the style's
+     */
+    styleId?:   string;
     textAlign?: TextAlign;
     textColor?: string;
+    /**
+     * A shadow or an outline behind the text, for text over a picture or a color
+     */
+    textShadow?:    TextShadow;
+    textTransform?: TextCase;
     /**
      * top | center | bottom: where the value sits in the card; missing means center
      */
     valign?: string;
     /**
-     * TextDisplay: fixed text shown instead of a tag value
+     * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+     * ellipsis; missing means the widget's own way
+     */
+    wrap?: Wrap;
+    /**
+     * The number itself; false leaves only the history line, the range bar or the arrow of its
+     * style, filling its place
+     */
+    showNumber?: boolean;
+    /**
+     * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+     */
+    rotation?: number;
+    /**
+     * TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
      */
     staticText?: string;
     /**
@@ -1479,20 +1988,62 @@ export interface WidgetProps {
      */
     falseLabel?: string;
     /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
+     * The state as text beside the light; false leaves only the light
+     */
+    showText?: boolean;
+    /**
      * LED color when true
      */
     trueColor?: string;
     /**
      * LED text when true
      */
-    trueLabel?:  string;
-    btnColor?:   ButtonColor;
+    trueLabel?: string;
+    /**
+     * Marks at each quarter with their values beside the tank
+     */
+    showScale?: boolean;
+    /**
+     * A moving wave on the surface (still for a browser that asks for less motion)
+     */
+    wave?:     boolean;
+    btnColor?: ButtonColor;
+    /**
+     * Any color (#rrggbb) for the button in place of the named ones
+     */
+    btnCustomColor?: string;
+    /**
+     * The id of a project image drawn on the button (a logo), in place of an icon
+     */
+    btnImage?: string;
+    /**
+     * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+     * iconOnly (no text)
+     */
+    btnLayout?:  BtnLayout;
     btnRounded?: ButtonRounded;
+    /**
+     * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+     * pill (fully rounded ends). A square or round button is as large as fits its place
+     */
+    btnShape?:   BtnShape;
     btnVariant?: ButtonVariant;
     /**
-     * Button icon (emoji or short text)
+     * An icon from the icon set, drawn in the text color; wins over the typed icon
      */
-    icon?: string;
+    iconName?: PageIcon;
+    /**
+     * A toggle's text for off; missing means OFF
+     */
+    offLabel?: string;
+    /**
+     * A toggle's text for on (the segments and rocker styles); missing means ON
+     */
+    onLabel?: string;
     /**
      * Toggle button color when off
      */
@@ -1501,6 +2052,12 @@ export interface WidgetProps {
      * Toggle button color when on
      */
     toggleOnColor?: string;
+    /**
+     * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+     * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+     * side with the current one filled)
+     */
+    toggleStyle?: ToggleStyle;
     /**
      * Setpoint slider step
      */
@@ -1552,6 +2109,12 @@ export interface WidgetProps {
      * HistoryLog rows per page
      */
     pageSize?: number;
+    rowSize?:  RowSize;
+    rowStyle?: RowStyle;
+    /**
+     * The button that saves the rows as a CSV file; missing means shown
+     */
+    showExport?: boolean;
     /**
      * AlarmBanner max visible rows
      */
@@ -1560,6 +2123,14 @@ export interface WidgetProps {
      * AlarmBanner: show acknowledged alarms
      */
     showAcked?: boolean;
+    /**
+     * The severity word at the start of each alarm; missing means shown
+     */
+    showSeverity?: boolean;
+    /**
+     * When the alarm was raised; missing means shown
+     */
+    showTime?: boolean;
     /**
      * Image object-fit, as set by the properties panel
      */
@@ -1707,6 +2278,10 @@ export interface WidgetProps {
      */
     showName?: boolean;
     /**
+     * The background of the heading row; missing means the card's own
+     */
+    headerColor?: string;
+    /**
      * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
@@ -1719,9 +2294,21 @@ export interface WidgetProps {
      */
     showEntries?: boolean;
     /**
+     * The heading over the names; missing means Tag
+     */
+    nameHeader?: string;
+    /**
      * Table widget rows
      */
     rows?: TableRow[];
+    /**
+     * The heading row; missing means shown
+     */
+    showHeader?: boolean;
+    /**
+     * The heading over the values; missing means Value
+     */
+    valueHeader?: string;
     [property: string]: any;
 }
 
@@ -2039,18 +2626,13 @@ export interface ShellStyle {
     background?:      string;
     bold?:            boolean;
     borderColor?:     string;
-    font?:            ThemeFont;
+    font?:            string;
     /**
      * Text size against the theme's; missing means normal
      */
     fontSize?:  FontSize;
     textColor?: string;
 }
-
-/**
- * The text font. All but system are bundled, so a PLC with no internet shows the same text
- */
-export type ThemeFont = "inter" | "roboto" | "open-sans" | "noto-sans" | "system";
 
 /**
  * Text size against the theme's; missing means normal
@@ -2094,6 +2676,21 @@ export interface ShellNavOptions {
 }
 
 /**
+ * A look kept under a name: the look settings (colors, card, corners, border, shadow,
+ * padding, font and text, label) a widget takes when it names this style. A setting the
+ * widget has itself wins
+ */
+export interface NamedStyle {
+    id:   string;
+    name: string;
+    /**
+     * Look settings by their name, as on a widget (bgColor, cardStyle, fontFamily, ...);
+     * anything that is not a look setting is ignored
+     */
+    props: { [key: string]: any };
+}
+
+/**
  * The look of every screen: a preset, light or dark, and any element changed from the
  * preset. A browser can still pick light or dark for itself; that choice is not saved in
  * the project
@@ -2105,14 +2702,19 @@ export interface Theme {
     /**
      * The main color of buttons and selections as #rrggbb; replaces the palette's
      */
-    accent?:  string;
-    corners?: ThemeCorners;
-    density?: ThemeDensity;
-    depth?:   ThemeDepth;
-    font?:    ThemeFont;
-    mode?:    ThemeMode;
-    palette?: ThemePalette;
-    preset?:  ThemePreset;
+    accent?: string;
+    /**
+     * What is behind every page; a page's own background wins
+     */
+    background?: Background;
+    cardStyle?:  CardStyle;
+    corners?:    ThemeCorners;
+    density?:    ThemeDensity;
+    depth?:      ThemeDepth;
+    font?:       string;
+    mode?:       ThemeMode;
+    palette?:    ThemePalette;
+    preset?:     ThemePreset;
 }
 
 /**
@@ -2139,16 +2741,19 @@ export type ThemeMode = "light" | "dark";
 
 /**
  * The colors: calm is gray with a muted blue; modern is cool white or charcoal with a
- * bright blue
+ * bright blue; slate is blue-gray; sand is warm; forest is green; navy is deep blue;
+ * contrast is black and white with the strongest contrast
  */
-export type ThemePalette = "calm" | "modern";
+export type ThemePalette = "calm" | "modern" | "slate" | "sand" | "forest" | "navy" | "contrast";
 
 /**
  * calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white
  * cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of
- * shadows. Missing means calm
+ * shadows. industrial: dark slate, square, inset cards. soft: warm sand, round, shaded
+ * cards. glass: deep navy with see-through cards over a gradient. highContrast: black on
+ * white with heavy lines. Missing means calm
  */
-export type ThemePreset = "calm" | "clean" | "modern";
+export type ThemePreset = "calm" | "clean" | "modern" | "industrial" | "soft" | "glass" | "highContrast";
 
 export interface Udt {
     description?: string;

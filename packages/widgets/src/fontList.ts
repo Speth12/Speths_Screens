@@ -1,0 +1,25 @@
+// Written by scripts/fonts/fetch.mjs. DO NOT EDIT: the fonts bundled in packages/widgets/fonts.
+// weights is [lightest, heaviest] for a variable font, or each weight there is a file for.
+export const FONT_LIST = [
+  { id: "inter", name: "Inter", kind: "sans", variable: true, weights: [100, 900] },
+  { id: "roboto", name: "Roboto", kind: "sans", variable: true, weights: [100, 900] },
+  { id: "open-sans", name: "Open Sans", kind: "sans", variable: true, weights: [300, 800] },
+  { id: "noto-sans", name: "Noto Sans", kind: "sans", variable: true, weights: [100, 900] },
+  { id: "source-sans-3", name: "Source Sans 3", kind: "sans", variable: true, weights: [200, 900] },
+  { id: "ibm-plex-sans", name: "IBM Plex Sans", kind: "sans", variable: true, weights: [100, 700] },
+  { id: "lato", name: "Lato", kind: "sans", variable: false, weights: [300, 400, 700] },
+  { id: "montserrat", name: "Montserrat", kind: "sans", variable: true, weights: [100, 900] },
+  { id: "poppins", name: "Poppins", kind: "sans", variable: false, weights: [300, 400, 500, 600, 700] },
+  { id: "nunito", name: "Nunito", kind: "sans", variable: true, weights: [200, 1000] },
+  { id: "work-sans", name: "Work Sans", kind: "sans", variable: true, weights: [100, 900] },
+  { id: "barlow", name: "Barlow", kind: "sans", variable: false, weights: [300, 400, 500, 600, 700] },
+  { id: "roboto-condensed", name: "Roboto Condensed", kind: "condensed", variable: true, weights: [100, 900] },
+  { id: "barlow-condensed", name: "Barlow Condensed", kind: "condensed", variable: false, weights: [300, 400, 500, 600, 700] },
+  { id: "oswald", name: "Oswald", kind: "condensed", variable: true, weights: [200, 700] },
+  { id: "jetbrains-mono", name: "JetBrains Mono", kind: "mono", variable: true, weights: [100, 800] },
+  { id: "roboto-mono", name: "Roboto Mono", kind: "mono", variable: true, weights: [100, 700] },
+  { id: "ibm-plex-mono", name: "IBM Plex Mono", kind: "mono", variable: false, weights: [300, 400, 500, 600, 700] },
+  { id: "roboto-slab", name: "Roboto Slab", kind: "serif", variable: true, weights: [100, 900] },
+  { id: "merriweather", name: "Merriweather", kind: "serif", variable: true, weights: [300, 900] },
+  { id: "orbitron", name: "Orbitron", kind: "display", variable: true, weights: [400, 900] },
+] as const;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useProject } from "../store/projectStore";
-import { PREVIEW_MINIMUM, PopupLayer, WidgetHostProvider, fitScale, placement, stageSize, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { PREVIEW_MINIMUM, PopupLayer, WidgetHostProvider, fitScale, placement, stageSize, pageBackground, resolveTheme, themeVars } from "@speths-screens/widgets";
 import { runPageScript } from "../store/scriptRuntime";
 import { useShallow } from "zustand/react/shallow";
 import { WidgetRenderer, ideHost } from "../widgets";
@@ -125,7 +125,7 @@ export function PreviewMode({ onExit }: Props) {
               transformOrigin: "center center",
               flexShrink: 0,
               ...themeVars(resolveTheme(project.theme)),
-              background: page.backgroundColor ?? "var(--background)",
+              background: "var(--background)", ...pageBackground(page, project.theme, project.images),
             }}
           >
             {page.widgets.map((w) => (

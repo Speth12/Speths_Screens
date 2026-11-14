@@ -1,7 +1,8 @@
 // A new widget from the palette: what it starts as, and where it goes. A click puts it in the middle
 // of the part of the page that is in view, so it never lands where it cannot be seen; a drag puts it
 // where it is dropped.
-import { COL_W, GAP, ROW_H, type WidgetManifest } from "@speths-screens/widgets";
+import { COL_W, GAP, ROW_H, type ReadyMade, type WidgetManifest } from "@speths-screens/widgets";
+import { withLook } from "./widgetLook";
 import { SNAP_STEP, type Rect } from "./canvasSnapping";
 import { convertWidget } from "./presets";
 import { newWidgetId, type Widget } from "./projectStore";
@@ -20,7 +21,25 @@ export function newWidget(m: WidgetManifest, pixel: boolean): Widget {
   const base = { id: newWidgetId(), type: m.type, x: 0, y: 0, w: m.defaultSize.w, h: m.defaultSize.h } as Widget;
   const sized = pixel ? convertWidget(base, "pixel") : base;
   // A new widget starts with its manifest's defaults (a button writes 1 while pressed).
-  return { ...sized, ...structuredClone(m.defaults) } as Widget;
+  const made = { ...sized, ...structuredClone(m.defaults) } as Widget;
+  // An element starts as itself, with no card and no label around it; a card is a choice in its Look.
+  return STARTS_PLAIN.has(m.type) ? ({ ...made, props: withLook(made.props as Record<string, unknown> | undefined, "plain") } as Widget) : made;
+}
+
+/** The widgets that start plain: the single elements a screen is built from. Lists and panels (a trend,
+ *  a table, the alarm and history lists, recipes) keep their card, which is what holds their rows
+ *  together; a pipe, a shape, a custom widget and the header parts never had one. */
+export const STARTS_PLAIN = new Set<string>([
+  "gauge", "numericDisplay", "textDisplay", "led", "tank", "button", "setpoint", "multiState", "numericInput", "textInput", "image", "symbol",
+]);
+
+/** A ready-made custom widget placed on a page: a copy that names it, drawn as a card with the
+ *  ready-made's name as its label, at its designed size (room for the label added), at 0,0. */
+export function readyMadeInstance(rm: ReadyMade, pixel: boolean): Widget {
+  const LABEL = 28, PAD = 24;
+  const px = { w: (rm.customWidget.width ?? 240) + PAD, h: (rm.customWidget.height ?? 120) + PAD + LABEL };
+  const size = pixel ? px : { w: Math.max(1, Math.ceil(px.w / COL_PITCH)), h: Math.max(1, Math.ceil(px.h / ROW_PITCH)) };
+  return { id: newWidgetId(), type: "customWidget", x: 0, y: 0, ...size, props: { customWidgetId: rm.customWidget.id, params: { tag: "" }, label: rm.name } } as Widget;
 }
 
 /** A new widget's size held inside a custom widget's designed box (a header 60 px high gets a button

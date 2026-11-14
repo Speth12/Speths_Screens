@@ -11,6 +11,8 @@ type Types struct {
 	Datasources      []Datasource          `json:"datasources"`
 	// Symbol pack ids shown in the IDE symbol library. Missing means all packs
 	EnabledSymbolPacks []string `json:"enabledSymbolPacks,omitempty"`
+	// The project's own fonts, used by their id wherever a font is chosen
+	Fonts []FontAsset `json:"fonts,omitempty"`
 	// What the historian stores and for how long. Missing means every change, plus one sample
 	// per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 	Historian *HistorianSettings `json:"historian,omitempty"`
@@ -50,6 +52,9 @@ type Types struct {
 	// values and nothing reaches a PLC. Only a runtime started with --allow-simulation (the
 	// desktop program) runs it; any other refuses the project
 	Simulation *bool `json:"simulation,omitempty"`
+	// Named looks a widget can take by its styleId, so many widgets share one look and a change
+	// to it reaches them all
+	Styles []NamedStyle `json:"styles,omitempty"`
 	// The look of every screen: a preset, light or dark, and any element changed from the
 	// preset. A browser can still pick light or dark for itself; that choice is not saved in
 	// the project
@@ -146,7 +151,13 @@ type CustomWidgetLayoutOverride struct {
 }
 
 type CustomWidgetParam struct {
+	// For a text parameter: the text a use shows when it gives none
+	Default     *string `json:"default,omitempty"`
 	Description *string `json:"description,omitempty"`
+	// tag or text. tag (the default): each use gives a tag, and {name} stands for it in the
+	// parts' tags and expressions. text: each use gives a text, and {name} stands for it in the
+	// parts' texts (label, static text, state labels, unit, placeholder)
+	Kind *string `json:"kind,omitempty"`
 	// Used as {name} in bindings inside the custom widget
 	Name string `json:"name"`
 }
@@ -363,22 +374,63 @@ type PartFlexOverride struct {
 //
 // Settings of a table widget
 type CustomWidgetPartProps struct {
-	Max        *float64    `json:"max,omitempty"`
-	Min        *float64    `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	// Scale marks and the lowest and highest value; missing means shown where the style has
+	// them
+	//
+	// The lowest and highest value under the slider; missing means shown
+	ShowTicks *bool `json:"showTicks,omitempty"`
+	// The value as text on the gauge; false leaves only the gauge, to put a number of your own
+	// beside it
+	//
+	// The value as text beside the tank; false leaves only the tank, filling its place
+	//
+	// The value as text; false leaves only the control
+	//
+	// The value that raised the alarm; missing means shown
+	ShowValue  *bool       `json:"showValue,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
-	BgColor    *string     `json:"bgColor,omitempty"`
+	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+	// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+	// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+	// up)
+	//
+	// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+	// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+	// rising or falling), segment (seven-segment style digits)
+	//
+	// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+	// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+	// the color), ring (a ring that fills when on)
+	//
+	// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+	// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+	// card fills up)
+	//
+	// How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+	// rotary knob), stepper (minus and plus buttons a step at a time)
+	//
+	// How the state is drawn: tile (a filled block, the default), label (only the text, in the
+	// state color), pill (a rounded badge), stepper (every state in a row with the current one
+	// filled), icon (the state icon and its text)
+	Variant *Variant `json:"variant,omitempty"`
+	BgColor *string  `json:"bgColor,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
 	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	BorderWidth *float64   `json:"borderWidth,omitempty"`
+	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+	// the project's own fonts), or mono | sans | serif for the device's own; empty means the
+	// theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -387,8 +439,26 @@ type CustomWidgetPartProps struct {
 	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
-	Label         *string `json:"label,omitempty"`
-	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+	// draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64  `json:"fontWeight,omitempty"`
+	Label      *string `json:"label,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor *string `json:"labelColor,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon `json:"labelIcon,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *LabelPosition `json:"labelPosition,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize      *string   `json:"labelSize,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight *float64 `json:"lineHeight,omitempty"`
+	NoPadding  *bool    `json:"noPadding,omitempty"`
 	// Space inside the card in pixels; overrides noPadding and the theme
 	Padding *float64 `json:"padding,omitempty"`
 	// Corner radius in pixels; missing means the theme's
@@ -400,30 +470,72 @@ type CustomWidgetPartProps struct {
 	// Show the tag quality indicator
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// false hides the unit beside the value; missing means shown
-	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win
+	// over the style's
+	StyleID   *string    `json:"styleId,omitempty"`
 	TextAlign *TextAlign `json:"textAlign,omitempty"`
 	TextColor *string    `json:"textColor,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow    *TextShadow `json:"textShadow,omitempty"`
+	TextTransform *TextCase   `json:"textTransform,omitempty"`
 	// top | center | bottom: where the value sits in the card; missing means center
 	Valign *string `json:"valign,omitempty"`
-	// TextDisplay: fixed text shown instead of a tag value
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+	// ellipsis; missing means the widget's own way
+	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The number itself; false leaves only the history line, the range bar or the arrow of its
+	// style, filling its place
+	ShowNumber *bool `json:"showNumber,omitempty"`
+	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+	Rotation *int64 `json:"rotation,omitempty"`
+	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
 	FalseColor *string `json:"falseColor,omitempty"`
 	// LED text when false
 	FalseLabel *string `json:"falseLabel,omitempty"`
+	// Button icon (emoji or short text)
+	Icon *string `json:"icon,omitempty"`
+	// The state as text beside the light; false leaves only the light
+	ShowText *bool `json:"showText,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true
-	TrueLabel  *string        `json:"trueLabel,omitempty"`
-	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
+	TrueLabel *string `json:"trueLabel,omitempty"`
+	// Marks at each quarter with their values beside the tank
+	ShowScale *bool `json:"showScale,omitempty"`
+	// A moving wave on the surface (still for a browser that asks for less motion)
+	Wave     *bool        `json:"wave,omitempty"`
+	BtnColor *ButtonColor `json:"btnColor,omitempty"`
+	// Any color (#rrggbb) for the button in place of the named ones
+	BtnCustomColor *string `json:"btnCustomColor,omitempty"`
+	// The id of a project image drawn on the button (a logo), in place of an icon
+	BtnImage *string `json:"btnImage,omitempty"`
+	// Where the icon sits: beside (beside the text, the default), stacked (over the text),
+	// iconOnly (no text)
+	BtnLayout  *BtnLayout     `json:"btnLayout,omitempty"`
 	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
+	// The button's outline: rectangle (fills its place, the default), square, round (a circle),
+	// pill (fully rounded ends). A square or round button is as large as fits its place
+	BtnShape   *BtnShape      `json:"btnShape,omitempty"`
 	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
-	// Button icon (emoji or short text)
-	Icon *string `json:"icon,omitempty"`
+	// An icon from the icon set, drawn in the text color; wins over the typed icon
+	IconName *PageIcon `json:"iconName,omitempty"`
+	// A toggle's text for off; missing means OFF
+	OffLabel *string `json:"offLabel,omitempty"`
+	// A toggle's text for on (the segments and rocker styles); missing means ON
+	OnLabel *string `json:"onLabel,omitempty"`
 	// Toggle button color when off
 	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
 	// Toggle button color when on
 	ToggleOnColor *string `json:"toggleOnColor,omitempty"`
+	// How a button that toggles is drawn: plain (a button that lights up, the default), switch
+	// (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+	// side with the current one filled)
+	ToggleStyle *ToggleStyle `json:"toggleStyle,omitempty"`
 	// Setpoint slider step
 	Step *float64 `json:"step,omitempty"`
 	// MultiState value→label→color map
@@ -450,11 +562,19 @@ type CustomWidgetPartProps struct {
 	Windows []int64       `json:"windows,omitempty"`
 	XFormat *TrendXFormat `json:"xFormat,omitempty"`
 	// HistoryLog rows per page
-	PageSize *int64 `json:"pageSize,omitempty"`
+	PageSize *int64    `json:"pageSize,omitempty"`
+	RowSize  *RowSize  `json:"rowSize,omitempty"`
+	RowStyle *RowStyle `json:"rowStyle,omitempty"`
+	// The button that saves the rows as a CSV file; missing means shown
+	ShowExport *bool `json:"showExport,omitempty"`
 	// AlarmBanner max visible rows
 	MaxRows *int64 `json:"maxRows,omitempty"`
 	// AlarmBanner: show acknowledged alarms
 	ShowAcked *bool `json:"showAcked,omitempty"`
+	// The severity word at the start of each alarm; missing means shown
+	ShowSeverity *bool `json:"showSeverity,omitempty"`
+	// When the alarm was raised; missing means shown
+	ShowTime *bool `json:"showTime,omitempty"`
 	// Image object-fit, as set by the properties panel
 	Fit *ImageFit `json:"fit,omitempty"`
 	// Image: data-URL, URL or 'lib:<imageId>'
@@ -533,14 +653,22 @@ type CustomWidgetPartProps struct {
 	Compact *bool `json:"compact,omitempty"`
 	// Show the signed-in name beside the icon
 	ShowName *bool `json:"showName,omitempty"`
+	// The background of the heading row; missing means the card's own
+	HeaderColor *string `json:"headerColor,omitempty"`
 	// Older projects: the recipe (shown as a set of its own) the widget shows
 	RecipeID *string `json:"recipeId,omitempty"`
 	// The recipe set the table shows; missing shows the first set of the project
 	RecipeSetID *string `json:"recipeSetId,omitempty"`
 	// Older projects: list the tags and values
 	ShowEntries *bool `json:"showEntries,omitempty"`
+	// The heading over the names; missing means Tag
+	NameHeader *string `json:"nameHeader,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
+	// The heading row; missing means shown
+	ShowHeader *bool `json:"showHeader,omitempty"`
+	// The heading over the values; missing means Value
+	ValueHeader *string `json:"valueHeader,omitempty"`
 }
 
 type Threshold struct {
@@ -565,7 +693,9 @@ type TableRow struct {
 }
 
 type StateEntry struct {
-	Color     string      `json:"color"`
+	Color string `json:"color"`
+	// The icon the icon style draws for this state
+	Icon      *PageIcon   `json:"icon,omitempty"`
 	Label     string      `json:"label"`
 	TextColor *string     `json:"textColor,omitempty"`
 	Value     interface{} `json:"value"`
@@ -649,6 +779,18 @@ type CalculatedTag struct {
 	Path string `json:"path"`
 }
 
+// A font file kept in the project (TTF, OTF, WOFF or WOFF2)
+type FontAsset struct {
+	// base64 data URL of the font file
+	DataURL string `json:"dataUrl"`
+	// What a font setting names it by
+	ID string `json:"id"`
+	// The name shown in the editor's font lists
+	Name string `json:"name"`
+	// Original file size in bytes
+	Size *int64 `json:"size,omitempty"`
+}
+
 // What the historian stores and for how long. Missing means every change, plus one sample
 // per tag every 60 s, kept for the runtime's --history-retention (default 7 days)
 type HistorianSettings struct {
@@ -703,6 +845,8 @@ type NamespaceNode struct {
 type Page struct {
 	// Who may see this page and operate the widgets on it
 	Access *Access `json:"access,omitempty"`
+	// What is behind this page; wins over backgroundColor and the theme's background
+	Background *Background `json:"background,omitempty"`
 	// CSS color for the page background
 	BackgroundColor *string `json:"backgroundColor,omitempty"`
 	// Pages with the same group are listed together under that heading in the sidebar
@@ -716,6 +860,34 @@ type Page struct {
 	// Page script (JavaScript source)
 	Script  *string  `json:"script,omitempty"`
 	Widgets []Widget `json:"widgets"`
+}
+
+// What is behind this page; wins over backgroundColor and the theme's background
+//
+// # What is drawn behind a page
+//
+// What is behind every page; a page's own background wins
+type Background struct {
+	// The direction a gradient runs in, in degrees (180 is top to bottom, the default)
+	Angle *float64 `json:"angle,omitempty"`
+	// The color (solid, pattern), or the gradient's first color; missing means the theme's page
+	// color
+	Color *string `json:"color,omitempty"`
+	// The gradient's second color, or the color of a pattern's marks
+	Color2 *string `json:"color2,omitempty"`
+	// How much of the theme's page color is laid over a picture so text on it reads: 0 is none,
+	// 0.6 is most of it
+	Dim *float64 `json:"dim,omitempty"`
+	// A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+	// tile repeats it, stretch pulls it to the page's shape
+	Fit *Fit `json:"fit,omitempty"`
+	// solid: one color. gradient: one color running into another. picture: one of the project's
+	// pictures. pattern: small marks repeated over a color
+	Kind Kind `json:"kind"`
+	// The marks of a pattern
+	Pattern *PatternEnum `json:"pattern,omitempty"`
+	// The id of a project image
+	Picture *string `json:"picture,omitempty"`
 }
 
 type Widget struct {
@@ -824,22 +996,63 @@ type WidgetPlacement struct {
 //
 // Settings of a table widget
 type WidgetProps struct {
-	Max        *float64    `json:"max,omitempty"`
-	Min        *float64    `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	// Scale marks and the lowest and highest value; missing means shown where the style has
+	// them
+	//
+	// The lowest and highest value under the slider; missing means shown
+	ShowTicks *bool `json:"showTicks,omitempty"`
+	// The value as text on the gauge; false leaves only the gauge, to put a number of your own
+	// beside it
+	//
+	// The value as text beside the tank; false leaves only the tank, filling its place
+	//
+	// The value as text; false leaves only the control
+	//
+	// The value that raised the alarm; missing means shown
+	ShowValue  *bool       `json:"showValue,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
-	BgColor    *string     `json:"bgColor,omitempty"`
+	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+	// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+	// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+	// up)
+	//
+	// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+	// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+	// rising or falling), segment (seven-segment style digits)
+	//
+	// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+	// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+	// the color), ring (a ring that fills when on)
+	//
+	// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+	// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+	// card fills up)
+	//
+	// How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+	// rotary knob), stepper (minus and plus buttons a step at a time)
+	//
+	// How the state is drawn: tile (a filled block, the default), label (only the text, in the
+	// state color), pill (a rounded badge), stepper (every state in a row with the current one
+	// filled), icon (the state icon and its text)
+	Variant *Variant `json:"variant,omitempty"`
+	BgColor *string  `json:"bgColor,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
 	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	BorderWidth *float64   `json:"borderWidth,omitempty"`
+	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
-	// mono | sans | serif; empty means the theme font
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of
+	// the project's own fonts), or mono | sans | serif for the device's own; empty means the
+	// theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	FontItalic *bool   `json:"fontItalic,omitempty"`
 	// Exact text size in pixels; overrides fontSize
@@ -848,8 +1061,26 @@ type WidgetProps struct {
 	// the card); empty means the widget's own size
 	FontSize      *string `json:"fontSize,omitempty"`
 	FontUnderline *bool   `json:"fontUnderline,omitempty"`
-	Label         *string `json:"label,omitempty"`
-	NoPadding     *bool   `json:"noPadding,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font
+	// draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64  `json:"fontWeight,omitempty"`
+	Label      *string `json:"label,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor *string `json:"labelColor,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon `json:"labelIcon,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *LabelPosition `json:"labelPosition,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize      *string   `json:"labelSize,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight *float64 `json:"lineHeight,omitempty"`
+	NoPadding  *bool    `json:"noPadding,omitempty"`
 	// Space inside the card in pixels; overrides noPadding and the theme
 	Padding *float64 `json:"padding,omitempty"`
 	// Corner radius in pixels; missing means the theme's
@@ -861,30 +1092,72 @@ type WidgetProps struct {
 	// Show the tag quality indicator
 	ShowQuality *bool `json:"showQuality,omitempty"`
 	// false hides the unit beside the value; missing means shown
-	ShowUnit  *bool      `json:"showUnit,omitempty"`
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win
+	// over the style's
+	StyleID   *string    `json:"styleId,omitempty"`
 	TextAlign *TextAlign `json:"textAlign,omitempty"`
 	TextColor *string    `json:"textColor,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow    *TextShadow `json:"textShadow,omitempty"`
+	TextTransform *TextCase   `json:"textTransform,omitempty"`
 	// top | center | bottom: where the value sits in the card; missing means center
 	Valign *string `json:"valign,omitempty"`
-	// TextDisplay: fixed text shown instead of a tag value
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+	// ellipsis; missing means the widget's own way
+	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The number itself; false leaves only the history line, the range bar or the arrow of its
+	// style, filling its place
+	ShowNumber *bool `json:"showNumber,omitempty"`
+	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
+	Rotation *int64 `json:"rotation,omitempty"`
+	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
 	StaticText *string `json:"staticText,omitempty"`
 	// LED color when false
 	FalseColor *string `json:"falseColor,omitempty"`
 	// LED text when false
 	FalseLabel *string `json:"falseLabel,omitempty"`
+	// Button icon (emoji or short text)
+	Icon *string `json:"icon,omitempty"`
+	// The state as text beside the light; false leaves only the light
+	ShowText *bool `json:"showText,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true
-	TrueLabel  *string        `json:"trueLabel,omitempty"`
-	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
+	TrueLabel *string `json:"trueLabel,omitempty"`
+	// Marks at each quarter with their values beside the tank
+	ShowScale *bool `json:"showScale,omitempty"`
+	// A moving wave on the surface (still for a browser that asks for less motion)
+	Wave     *bool        `json:"wave,omitempty"`
+	BtnColor *ButtonColor `json:"btnColor,omitempty"`
+	// Any color (#rrggbb) for the button in place of the named ones
+	BtnCustomColor *string `json:"btnCustomColor,omitempty"`
+	// The id of a project image drawn on the button (a logo), in place of an icon
+	BtnImage *string `json:"btnImage,omitempty"`
+	// Where the icon sits: beside (beside the text, the default), stacked (over the text),
+	// iconOnly (no text)
+	BtnLayout  *BtnLayout     `json:"btnLayout,omitempty"`
 	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
+	// The button's outline: rectangle (fills its place, the default), square, round (a circle),
+	// pill (fully rounded ends). A square or round button is as large as fits its place
+	BtnShape   *BtnShape      `json:"btnShape,omitempty"`
 	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
-	// Button icon (emoji or short text)
-	Icon *string `json:"icon,omitempty"`
+	// An icon from the icon set, drawn in the text color; wins over the typed icon
+	IconName *PageIcon `json:"iconName,omitempty"`
+	// A toggle's text for off; missing means OFF
+	OffLabel *string `json:"offLabel,omitempty"`
+	// A toggle's text for on (the segments and rocker styles); missing means ON
+	OnLabel *string `json:"onLabel,omitempty"`
 	// Toggle button color when off
 	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
 	// Toggle button color when on
 	ToggleOnColor *string `json:"toggleOnColor,omitempty"`
+	// How a button that toggles is drawn: plain (a button that lights up, the default), switch
+	// (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+	// side with the current one filled)
+	ToggleStyle *ToggleStyle `json:"toggleStyle,omitempty"`
 	// Setpoint slider step
 	Step *float64 `json:"step,omitempty"`
 	// MultiState value→label→color map
@@ -911,11 +1184,19 @@ type WidgetProps struct {
 	Windows []int64       `json:"windows,omitempty"`
 	XFormat *TrendXFormat `json:"xFormat,omitempty"`
 	// HistoryLog rows per page
-	PageSize *int64 `json:"pageSize,omitempty"`
+	PageSize *int64    `json:"pageSize,omitempty"`
+	RowSize  *RowSize  `json:"rowSize,omitempty"`
+	RowStyle *RowStyle `json:"rowStyle,omitempty"`
+	// The button that saves the rows as a CSV file; missing means shown
+	ShowExport *bool `json:"showExport,omitempty"`
 	// AlarmBanner max visible rows
 	MaxRows *int64 `json:"maxRows,omitempty"`
 	// AlarmBanner: show acknowledged alarms
 	ShowAcked *bool `json:"showAcked,omitempty"`
+	// The severity word at the start of each alarm; missing means shown
+	ShowSeverity *bool `json:"showSeverity,omitempty"`
+	// When the alarm was raised; missing means shown
+	ShowTime *bool `json:"showTime,omitempty"`
 	// Image object-fit, as set by the properties panel
 	Fit *ImageFit `json:"fit,omitempty"`
 	// Image: data-URL, URL or 'lib:<imageId>'
@@ -994,14 +1275,22 @@ type WidgetProps struct {
 	Compact *bool `json:"compact,omitempty"`
 	// Show the signed-in name beside the icon
 	ShowName *bool `json:"showName,omitempty"`
+	// The background of the heading row; missing means the card's own
+	HeaderColor *string `json:"headerColor,omitempty"`
 	// Older projects: the recipe (shown as a set of its own) the widget shows
 	RecipeID *string `json:"recipeId,omitempty"`
 	// The recipe set the table shows; missing shows the first set of the project
 	RecipeSetID *string `json:"recipeSetId,omitempty"`
 	// Older projects: list the tags and values
 	ShowEntries *bool `json:"showEntries,omitempty"`
+	// The heading over the names; missing means Tag
+	NameHeader *string `json:"nameHeader,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
+	// The heading row; missing means shown
+	ShowHeader *bool `json:"showHeader,omitempty"`
+	// The heading over the values; missing means Value
+	ValueHeader *string `json:"valueHeader,omitempty"`
 }
 
 type Preset struct {
@@ -1181,11 +1470,11 @@ type ShellStyle struct {
 	// Navigation: the background of the page being shown
 	ActiveBackground *string `json:"activeBackground,omitempty"`
 	// Navigation: the text of the page being shown
-	ActiveTextColor *string    `json:"activeTextColor,omitempty"`
-	Background      *string    `json:"background,omitempty"`
-	Bold            *bool      `json:"bold,omitempty"`
-	BorderColor     *string    `json:"borderColor,omitempty"`
-	Font            *ThemeFont `json:"font,omitempty"`
+	ActiveTextColor *string `json:"activeTextColor,omitempty"`
+	Background      *string `json:"background,omitempty"`
+	Bold            *bool   `json:"bold,omitempty"`
+	BorderColor     *string `json:"borderColor,omitempty"`
+	Font            *string `json:"font,omitempty"`
 	// Text size against the theme's; missing means normal
 	FontSize  *FontSize `json:"fontSize,omitempty"`
 	TextColor *string   `json:"textColor,omitempty"`
@@ -1205,6 +1494,17 @@ type ShellNavOptions struct {
 	Width *int64 `json:"width,omitempty"`
 }
 
+// A look kept under a name: the look settings (colors, card, corners, border, shadow,
+// padding, font and text, label) a widget takes when it names this style. A setting the
+// widget has itself wins
+type NamedStyle struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Look settings by their name, as on a widget (bgColor, cardStyle, fontFamily, ...);
+	// anything that is not a look setting is ignored
+	Props map[string]interface{} `json:"props"`
+}
+
 // The look of every screen: a preset, light or dark, and any element changed from the
 // preset. A browser can still pick light or dark for itself; that choice is not saved in
 // the project
@@ -1213,14 +1513,17 @@ type ShellNavOptions struct {
 // theme can be taken whole or built from its parts
 type Theme struct {
 	// The main color of buttons and selections as #rrggbb; replaces the palette's
-	Accent  *string       `json:"accent,omitempty"`
-	Corners *ThemeCorners `json:"corners,omitempty"`
-	Density *ThemeDensity `json:"density,omitempty"`
-	Depth   *ThemeDepth   `json:"depth,omitempty"`
-	Font    *ThemeFont    `json:"font,omitempty"`
-	Mode    *ThemeMode    `json:"mode,omitempty"`
-	Palette *ThemePalette `json:"palette,omitempty"`
-	Preset  *ThemePreset  `json:"preset,omitempty"`
+	Accent *string `json:"accent,omitempty"`
+	// What is behind every page; a page's own background wins
+	Background *Background   `json:"background,omitempty"`
+	CardStyle  *CardStyle    `json:"cardStyle,omitempty"`
+	Corners    *ThemeCorners `json:"corners,omitempty"`
+	Density    *ThemeDensity `json:"density,omitempty"`
+	Depth      *ThemeDepth   `json:"depth,omitempty"`
+	Font       *string       `json:"font,omitempty"`
+	Mode       *ThemeMode    `json:"mode,omitempty"`
+	Palette    *ThemePalette `json:"palette,omitempty"`
+	Preset     *ThemePreset  `json:"preset,omitempty"`
 }
 
 type Udt struct {
@@ -1392,6 +1695,16 @@ const (
 	Zinc   ButtonColor = "zinc"
 )
 
+// Where the icon sits: beside (beside the text, the default), stacked (over the text),
+// iconOnly (no text)
+type BtnLayout string
+
+const (
+	Beside   BtnLayout = "beside"
+	IconOnly BtnLayout = "iconOnly"
+	Stacked  BtnLayout = "stacked"
+)
+
 type ButtonRounded string
 
 const (
@@ -1402,14 +1715,49 @@ const (
 	Sm                ButtonRounded = "sm"
 )
 
+// The button's outline: rectangle (fills its place, the default), square, round (a circle),
+// pill (fully rounded ends). A square or round button is as large as fits its place
+type BtnShape string
+
+const (
+	BtnShapePill      BtnShape = "pill"
+	BtnShapeRectangle BtnShape = "rectangle"
+	BtnShapeRound     BtnShape = "round"
+	BtnShapeSquare    BtnShape = "square"
+)
+
+// filled: a solid color. outlined: a thin line. ghost: only the text. flat: a tint of the
+// color. industrial: a shaded panel button. raised: three-dimensional, pressing down when
+// touched. glossy: a shine across the top. pushbutton: a realistic domed button in a metal
+// ring, lit when a toggle is on
 type ButtonVariant string
 
 const (
-	ButtonVariantFlat ButtonVariant = "flat"
-	Filled            ButtonVariant = "filled"
-	Ghost             ButtonVariant = "ghost"
-	Industrial        ButtonVariant = "industrial"
-	Outlined          ButtonVariant = "outlined"
+	ButtonVariantFlat       ButtonVariant = "flat"
+	ButtonVariantIndustrial ButtonVariant = "industrial"
+	ButtonVariantOutlined   ButtonVariant = "outlined"
+	ButtonVariantRaised     ButtonVariant = "raised"
+	Filled                  ButtonVariant = "filled"
+	Ghost                   ButtonVariant = "ghost"
+	Glossy                  ButtonVariant = "glossy"
+	Pushbutton              ButtonVariant = "pushbutton"
+)
+
+// How a widget's card is drawn: plain, accent (a colored bar down the left), header (the
+// label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade
+// from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a
+// small panel), inset (pressed into the page). A theme sets it for every card and a widget
+// can set its own
+type CardStyle string
+
+const (
+	Accent            CardStyle = "accent"
+	CardStyleGlass    CardStyle = "glass"
+	CardStyleGradient CardStyle = "gradient"
+	CardStyleOutlined CardStyle = "outlined"
+	CardStylePlain    CardStyle = "plain"
+	Header            CardStyle = "header"
+	Inset             CardStyle = "inset"
 )
 
 // Shape: how a line crosses its box; missing means horizontal
@@ -1429,9 +1777,9 @@ const (
 type ImageFit string
 
 const (
-	Contain ImageFit = "contain"
-	Cover   ImageFit = "cover"
-	Fill    ImageFit = "fill"
+	Contain      ImageFit = "contain"
+	Cover        ImageFit = "cover"
+	ImageFitFill ImageFit = "fill"
 )
 
 // What to show; missing means timeSeconds
@@ -1444,15 +1792,156 @@ const (
 	FormatTimeSeconds Format = "timeSeconds"
 )
 
+// An icon drawn before the label
+//
+// An icon from the icon set, drawn in the text color; wins over the typed icon
+//
+// # The icon the icon style draws for this state
+//
+// Shown beside the page's name in the navigation; missing shows the name's first letter
+type PageIcon string
+
+const (
+	Activity       PageIcon = "activity"
+	Alarm          PageIcon = "alarm"
+	ArrowDown      PageIcon = "arrowDown"
+	ArrowLeft      PageIcon = "arrowLeft"
+	ArrowRight     PageIcon = "arrowRight"
+	ArrowUp        PageIcon = "arrowUp"
+	BarChart       PageIcon = "barChart"
+	Battery        PageIcon = "battery"
+	Beaker         PageIcon = "beaker"
+	Bell           PageIcon = "bell"
+	BellOff        PageIcon = "bellOff"
+	Bolt           PageIcon = "bolt"
+	Calendar       PageIcon = "calendar"
+	Camera         PageIcon = "camera"
+	Caution        PageIcon = "caution"
+	ChainLink      PageIcon = "chainLink"
+	Chart          PageIcon = "chart"
+	CheckMark      PageIcon = "checkMark"
+	ChevronDown    PageIcon = "chevronDown"
+	ChevronLeft    PageIcon = "chevronLeft"
+	ChevronRight   PageIcon = "chevronRight"
+	ChevronUp      PageIcon = "chevronUp"
+	Chip           PageIcon = "chip"
+	ClockFace      PageIcon = "clockFace"
+	Cog            PageIcon = "cog"
+	Conveyor       PageIcon = "conveyor"
+	Crate          PageIcon = "crate"
+	Cross          PageIcon = "cross"
+	DatabaseIcon   PageIcon = "databaseIcon"
+	Document       PageIcon = "document"
+	Download       PageIcon = "download"
+	Droplet        PageIcon = "droplet"
+	Expand         PageIcon = "expand"
+	Eye            PageIcon = "eye"
+	EyeOff         PageIcon = "eyeOff"
+	Factory        PageIcon = "factory"
+	FailCircle     PageIcon = "failCircle"
+	FanBlades      PageIcon = "fanBlades"
+	FlagIcon       PageIcon = "flagIcon"
+	Flame          PageIcon = "flame"
+	Flask          PageIcon = "flask"
+	Funnel         PageIcon = "funnel"
+	Graph          PageIcon = "graph"
+	Hammer         PageIcon = "hammer"
+	HelpCircle     PageIcon = "helpCircle"
+	Home           PageIcon = "home"
+	InfoCircle     PageIcon = "infoCircle"
+	KeyIcon        PageIcon = "keyIcon"
+	Layers         PageIcon = "layers"
+	Leaf           PageIcon = "leaf"
+	Lightbulb      PageIcon = "lightbulb"
+	LineChart      PageIcon = "lineChart"
+	Mail           PageIcon = "mail"
+	MapPin         PageIcon = "mapPin"
+	MenuBars       PageIcon = "menuBars"
+	Minus          PageIcon = "minus"
+	Moon           PageIcon = "moon"
+	Motor          PageIcon = "motor"
+	NetworkIcon    PageIcon = "networkIcon"
+	OkCircle       PageIcon = "okCircle"
+	Padlock        PageIcon = "padlock"
+	PadlockOpen    PageIcon = "padlockOpen"
+	PageIconDial   PageIcon = "dial"
+	PageIconFolder PageIcon = "folder"
+	PageIconList   PageIcon = "list"
+	PageIconMap    PageIcon = "map"
+	PageIconVessel PageIcon = "vessel"
+	PastTime       PageIcon = "pastTime"
+	Pause          PageIcon = "pause"
+	Pencil         PageIcon = "pencil"
+	People         PageIcon = "people"
+	PhoneHandset   PageIcon = "phoneHandset"
+	PieChart       PageIcon = "pieChart"
+	Play           PageIcon = "play"
+	PlugIcon       PageIcon = "plugIcon"
+	Plus           PageIcon = "plus"
+	Power          PageIcon = "power"
+	Printer        PageIcon = "printer"
+	Pump           PageIcon = "pump"
+	Recycle        PageIcon = "recycle"
+	Refresh        PageIcon = "refresh"
+	Ruler          PageIcon = "ruler"
+	SaveDisk       PageIcon = "saveDisk"
+	Search         PageIcon = "search"
+	ServerRack     PageIcon = "serverRack"
+	Settings       PageIcon = "settings"
+	Shield         PageIcon = "shield"
+	SignIn         PageIcon = "signIn"
+	SignOut        PageIcon = "signOut"
+	SignalBars     PageIcon = "signalBars"
+	Sliders        PageIcon = "sliders"
+	Snowflake      PageIcon = "snowflake"
+	Speaker        PageIcon = "speaker"
+	SpeakerOff     PageIcon = "speakerOff"
+	Speedometer    PageIcon = "speedometer"
+	Star           PageIcon = "star"
+	StopSquare     PageIcon = "stopSquare"
+	Sun            PageIcon = "sun"
+	Thermometer    PageIcon = "thermometer"
+	Timer          PageIcon = "timer"
+	Tools          PageIcon = "tools"
+	TrashCan       PageIcon = "trashCan"
+	UndoTurn       PageIcon = "undoTurn"
+	Upload         PageIcon = "upload"
+	User           PageIcon = "user"
+	Valve          PageIcon = "valve"
+	WeighScale     PageIcon = "weighScale"
+	Wifi           PageIcon = "wifi"
+	Wind           PageIcon = "wind"
+	Wrench         PageIcon = "wrench"
+)
+
 // Shape: rectangle (missing means this), ellipse or line
 //
 // What a shape widget draws
 type ShapeKind string
 
 const (
-	Ellipse   ShapeKind = "ellipse"
-	Line      ShapeKind = "line"
-	Rectangle ShapeKind = "rectangle"
+	Ellipse            ShapeKind = "ellipse"
+	Line               ShapeKind = "line"
+	ShapeKindRectangle ShapeKind = "rectangle"
+)
+
+// Where the label sits: above the value (the default), below it, or to its left
+type LabelPosition string
+
+const (
+	LabelPositionBottom LabelPosition = "bottom"
+	LabelPositionLeft   LabelPosition = "left"
+	LabelPositionTop    LabelPosition = "top"
+)
+
+// Letters as written, ALL CAPITALS, all small, or Each Word Capitalized
+type TextCase string
+
+const (
+	Capitalize   TextCase = "capitalize"
+	Lowercase    TextCase = "lowercase"
+	TextCaseNone TextCase = "none"
+	Uppercase    TextCase = "uppercase"
 )
 
 // Symbol: what it does while animate is true
@@ -1467,13 +1956,35 @@ const (
 	Still SymbolMotion = "still"
 )
 
+// How tall the rows of a list or a table are: tight (more rows in view), normal, roomy
+// (larger text and room for a finger)
+type RowSize string
+
+const (
+	Roomy         RowSize = "roomy"
+	RowSizeNormal RowSize = "normal"
+	Tight         RowSize = "tight"
+)
+
+// How the rows of a list or a table are told apart: lined (a line under each), striped
+// (every other row shaded), cards (each row its own block), bare (nothing between them);
+// missing means the widget's own
+type RowStyle string
+
+const (
+	Bare    RowStyle = "bare"
+	Cards   RowStyle = "cards"
+	Lined   RowStyle = "lined"
+	Striped RowStyle = "striped"
+)
+
 // list: icon and name down the side, grouped; tabs: names in a row; icons: large icon
 // buttons in a row; bar: icon over name, sharing the width
 type Style string
 
 const (
-	Bar       Style = "bar"
 	Icons     Style = "icons"
+	StyleBar  Style = "bar"
 	StyleList Style = "list"
 	StyleTabs Style = "tabs"
 )
@@ -1484,6 +1995,93 @@ const (
 	TextAlignCenter TextAlign = "center"
 	TextAlignLeft   TextAlign = "left"
 	TextAlignRight  TextAlign = "right"
+)
+
+// A shadow or an outline behind the text, for text over a picture or a color
+type TextShadow string
+
+const (
+	Outline        TextShadow = "outline"
+	Strong         TextShadow = "strong"
+	TextShadowSoft TextShadow = "soft"
+)
+
+// How a button that toggles is drawn: plain (a button that lights up, the default), switch
+// (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+// side with the current one filled)
+type ToggleStyle string
+
+const (
+	Checkbox            ToggleStyle = "checkbox"
+	Rocker              ToggleStyle = "rocker"
+	Switch              ToggleStyle = "switch"
+	ToggleStylePlain    ToggleStyle = "plain"
+	ToggleStyleSegments ToggleStyle = "segments"
+)
+
+// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+// up)
+//
+// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+// rising or falling), segment (seven-segment style digits)
+//
+// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+// the color), ring (a ring that fills when on)
+//
+// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+// card fills up)
+//
+// How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+// rotary knob), stepper (minus and plus buttons a step at a time)
+//
+// How the state is drawn: tile (a filled block, the default), label (only the text, in the
+// state color), pill (a rounded badge), stepper (every state in a row with the current one
+// filled), icon (the state icon and its text)
+type Variant string
+
+const (
+	Arc             Variant = "arc"
+	Bottle          Variant = "bottle"
+	Cylinder        Variant = "cylinder"
+	Dot             Variant = "dot"
+	Fat             Variant = "fat"
+	Half            Variant = "half"
+	Icon            Variant = "icon"
+	Knob            Variant = "knob"
+	Label           Variant = "label"
+	Lamp            Variant = "lamp"
+	Level           Variant = "level"
+	Range           Variant = "range"
+	Ring            Variant = "ring"
+	Segment         Variant = "segment"
+	Silo            Variant = "silo"
+	Slider          Variant = "slider"
+	Sparkline       Variant = "sparkline"
+	Stepper         Variant = "stepper"
+	VariantBar      Variant = "bar"
+	VariantDial     Variant = "dial"
+	VariantPill     Variant = "pill"
+	VariantPlain    Variant = "plain"
+	VariantSegments Variant = "segments"
+	VariantTile     Variant = "tile"
+	VariantTrend    Variant = "trend"
+	VariantVessel   Variant = "vessel"
+	Vbar            Variant = "vbar"
+)
+
+// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
+// ellipsis; missing means the widget's own way
+type WrapEnum string
+
+const (
+	Ellipsis WrapEnum = "ellipsis"
+	Nowrap   WrapEnum = "nowrap"
+	Wrap     WrapEnum = "wrap"
 )
 
 // Trend X-axis label format
@@ -1522,9 +2120,9 @@ const (
 	Tank            WidgetType = "tank"
 	TextDisplay     WidgetType = "textDisplay"
 	TextInput       WidgetType = "textInput"
-	Trend           WidgetType = "trend"
 	UserMenu        WidgetType = "userMenu"
 	WidgetTypeImage WidgetType = "image"
+	WidgetTypeTrend WidgetType = "trend"
 )
 
 // How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
@@ -1581,31 +2179,40 @@ type NamespaceNodeType string
 
 const (
 	Asset                    NamespaceNodeType = "asset"
-	Folder                   NamespaceNodeType = "folder"
+	NamespaceNodeTypeFolder  NamespaceNodeType = "folder"
 	NamespaceNodeTypeVirtual NamespaceNodeType = "virtual"
 	Tag                      NamespaceNodeType = "tag"
 )
 
-// Shown beside the page's name in the navigation; missing shows the name's first letter
-type PageIcon string
+// A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+// tile repeats it, stretch pulls it to the page's shape
+type Fit string
 
 const (
-	Alarm        PageIcon = "alarm"
-	Bolt         PageIcon = "bolt"
-	Chart        PageIcon = "chart"
-	Dial         PageIcon = "dial"
-	Flask        PageIcon = "flask"
-	Graph        PageIcon = "graph"
-	Home         PageIcon = "home"
-	Motor        PageIcon = "motor"
-	PageIconList PageIcon = "list"
-	PageIconMap  PageIcon = "map"
-	Pump         PageIcon = "pump"
-	Settings     PageIcon = "settings"
-	Tools        PageIcon = "tools"
-	User         PageIcon = "user"
-	Valve        PageIcon = "valve"
-	Vessel       PageIcon = "vessel"
+	FitFill    Fit = "fill"
+	FitStretch Fit = "stretch"
+	FitTile    Fit = "tile"
+	Whole      Fit = "whole"
+)
+
+// solid: one color. gradient: one color running into another. picture: one of the project's
+// pictures. pattern: small marks repeated over a color
+type Kind string
+
+const (
+	KindGradient Kind = "gradient"
+	Pattern      Kind = "pattern"
+	Picture      Kind = "picture"
+	Solid        Kind = "solid"
+)
+
+// The marks of a pattern
+type PatternEnum string
+
+const (
+	Dots    PatternEnum = "dots"
+	Squares PatternEnum = "squares"
+	Stripes PatternEnum = "stripes"
 )
 
 // none: no login, anyone who reaches the runtime can read and write. login: every user must
@@ -1674,24 +2281,13 @@ const (
 	Mark      Logo = "mark"
 )
 
-// The text font. All but system are bundled, so a PLC with no internet shows the same text
-type ThemeFont string
-
-const (
-	Inter    ThemeFont = "inter"
-	NotoSans ThemeFont = "noto-sans"
-	OpenSans ThemeFont = "open-sans"
-	Roboto   ThemeFont = "roboto"
-	System   ThemeFont = "system"
-)
-
 // Text size against the theme's; missing means normal
 type FontSize string
 
 const (
-	Large  FontSize = "large"
-	Normal FontSize = "normal"
-	Small  FontSize = "small"
+	FontSizeNormal FontSize = "normal"
+	Large          FontSize = "large"
+	Small          FontSize = "small"
 )
 
 // Where the project and page names sit; missing means left
@@ -1718,9 +2314,9 @@ const (
 type ThemeCorners string
 
 const (
-	Round  ThemeCorners = "round"
-	Soft   ThemeCorners = "soft"
-	Square ThemeCorners = "square"
+	ThemeCornersRound  ThemeCorners = "round"
+	ThemeCornersSoft   ThemeCorners = "soft"
+	ThemeCornersSquare ThemeCorners = "square"
 )
 
 // Padding and text size. touch is larger, with controls at least 44 px tall, for tablets
@@ -1738,9 +2334,9 @@ const (
 type ThemeDepth string
 
 const (
-	Borderless     ThemeDepth = "borderless"
-	Raised         ThemeDepth = "raised"
-	ThemeDepthFlat ThemeDepth = "flat"
+	Borderless       ThemeDepth = "borderless"
+	ThemeDepthFlat   ThemeDepth = "flat"
+	ThemeDepthRaised ThemeDepth = "raised"
 )
 
 // Missing means the preset's own (light for calm and clean, dark for modern)
@@ -1752,23 +2348,35 @@ const (
 )
 
 // The colors: calm is gray with a muted blue; modern is cool white or charcoal with a
-// bright blue
+// bright blue; slate is blue-gray; sand is warm; forest is green; navy is deep blue;
+// contrast is black and white with the strongest contrast
 type ThemePalette string
 
 const (
+	Contrast           ThemePalette = "contrast"
+	Forest             ThemePalette = "forest"
+	Navy               ThemePalette = "navy"
+	Sand               ThemePalette = "sand"
+	Slate              ThemePalette = "slate"
 	ThemePaletteCalm   ThemePalette = "calm"
 	ThemePaletteModern ThemePalette = "modern"
 )
 
 // calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white
 // cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of
-// shadows. Missing means calm
+// shadows. industrial: dark slate, square, inset cards. soft: warm sand, round, shaded
+// cards. glass: deep navy with see-through cards over a gradient. highContrast: black on
+// white with heavy lines. Missing means calm
 type ThemePreset string
 
 const (
-	Clean             ThemePreset = "clean"
-	ThemePresetCalm   ThemePreset = "calm"
-	ThemePresetModern ThemePreset = "modern"
+	Clean                 ThemePreset = "clean"
+	HighContrast          ThemePreset = "highContrast"
+	ThemePresetCalm       ThemePreset = "calm"
+	ThemePresetGlass      ThemePreset = "glass"
+	ThemePresetIndustrial ThemePreset = "industrial"
+	ThemePresetModern     ThemePreset = "modern"
+	ThemePresetSoft       ThemePreset = "soft"
 )
 
 // thresholds: the value under the first step; missing leaves the property's own setting

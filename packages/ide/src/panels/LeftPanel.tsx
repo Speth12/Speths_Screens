@@ -6,6 +6,8 @@ import { NamespaceList } from "./NamespaceList";
 import { AddDatasourceModal } from "./AddDatasourceModal";
 import { Users } from "./Users";
 import { ChromeSettings } from "./ChromeSettings";
+import { FontLibrary } from "./FontLibrary";
+import { StyleLibrary } from "./StyleFields";
 import { AuditTrail } from "./AuditTrail";
 import { HistorySettings } from "./HistorySettings";
 import { CertPinModal, needsCertPin } from "./CertCheck";
@@ -322,6 +324,12 @@ export function LeftPanel({ width }: { width?: number }) {
           </TreeSection>
           <TreeSection label="Header and navigation">
             <ChromeSettings />
+          </TreeSection>
+          <TreeSection label="Styles">
+            <StyleLibrary />
+          </TreeSection>
+          <TreeSection label="Fonts">
+            <FontLibrary />
           </TreeSection>
           <TreeSection label="Users">
             <Users />

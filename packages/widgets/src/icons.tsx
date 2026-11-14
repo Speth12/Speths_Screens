@@ -1,8 +1,12 @@
-// The page icons a project can name (PageIcon in schema.json): simple 24 px line drawings that take
-// the text color, so every theme and mode colors them.
+// The icons a project can name (PageIcon in schema.json), for pages, buttons, lights, states and
+// labels: simple 24 px line drawings that take the text color, so every theme and mode colors them.
+// The first sixteen are drawn here; the rest come from the Lucide set (iconData.ts, written by
+// scripts/icons/build.mjs).
+import { createElement } from "react";
 import type { PageIcon } from "@speths-screens/shared-types";
+import { ICON_NODES } from "./iconData";
 
-const PATHS: Record<PageIcon, string> = {
+const PATHS: Partial<Record<PageIcon, string>> = {
   home: "M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10",
   graph: "M3 17l5-6 4 4 8-9M3 21h18",
   alarm: "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0",
@@ -21,7 +25,7 @@ const PATHS: Record<PageIcon, string> = {
   flask: "M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8",
 };
 
-export const ICON_NAMES = Object.keys(PATHS) as PageIcon[];
+export const ICON_NAMES = [...Object.keys(PATHS), ...Object.keys(ICON_NODES)] as PageIcon[];
 
 /** A page's icon; with no name, the first letter of the page's name in the same box. */
 export function Icon({ name, label, size = 20 }: { name?: PageIcon; label?: string; size?: number }) {
@@ -36,7 +40,7 @@ export function Icon({ name, label, size = 20 }: { name?: PageIcon; label?: stri
   return (
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-      <path d={PATHS[name]} />
+      {PATHS[name] ? <path d={PATHS[name]} /> : (ICON_NODES[name] ?? []).map(([tag, attrs], i) => createElement(tag, { key: i, ...attrs }))}
     </svg>
   );
 }

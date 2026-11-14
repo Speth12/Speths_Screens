@@ -4,7 +4,7 @@ import { newWidgetId } from "../store/projectStore";
 import { preferNs } from "../store/tagPaths";
 import { PRESET_DRAG, SavePresetDialog, insertPreset } from "./Presets";
 import { GALLERY_DRAG, insertGalleryWidget } from "./GalleryPanel";
-import { DEVICE_WIDTH, SYMBOLS, chromeStyles, effectiveFrame, effectivePlacement, forDevice, resolveTheme, themeVars } from "@speths-screens/widgets";
+import { DEVICE_WIDTH, SYMBOLS, chromeStyles, effectiveFrame, effectivePlacement, forDevice, pageBackground, resolveTheme, themeVars } from "@speths-screens/widgets";
 import { ScreenFrame } from "./ScreenFrame";
 import { useEditorView } from "../store/editorView";
 import { WidgetRenderer } from "../widgets";
@@ -548,7 +548,10 @@ export function Canvas() {
   // The screen's theme applies inside the page, not to the IDE around it.
   const screenTheme = themeVars(resolveTheme(project.theme));
   const pageBg = page.backgroundColor ?? "";
-  const gridBg = isPixelMode
+  // A page with a background of its own (or the theme's) is drawn with it, as the operator draws it; the
+  // editor's dots are left out so the background is seen as it is.
+  const ownBg = pageBackground(page, project.theme, project.images);
+  const gridBg = ownBg && (page.background || !page.backgroundColor) ? { ...screenTheme, ...ownBg } : isPixelMode
     ? { ...screenTheme, backgroundColor: pageBg || "var(--background)", backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${16 * zoom}px ${16 * zoom}px` }
     : { ...screenTheme, backgroundColor: pageBg || "var(--background)", backgroundImage: `radial-gradient(circle, #3f3f4644 1px, transparent 1px)`, backgroundSize: `${eColW + GAP}px ${eRowH + GAP}px`, backgroundPosition: `${GAP / 2}px ${GAP / 2}px` };
 

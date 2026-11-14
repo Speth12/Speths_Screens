@@ -2,7 +2,7 @@
 // The IDE (canvas, preview) and the operator screen each provide one; the
 // widgets never import app code, so one library serves both.
 import { createContext, useContext } from "react";
-import type { CustomWidget, PageIcon, RecipeSet } from "@speths-screens/shared-types";
+import type { CardStyle, CustomWidget, NamedStyle, PageIcon, RecipeSet } from "@speths-screens/shared-types";
 import type { Device } from "./layout";
 
 export type Quality = "Good" | "Bad" | "Uncertain" | "Unknown";
@@ -56,6 +56,10 @@ export interface WidgetHost {
   useCustomWidget(id: string | undefined): CustomWidget | undefined;
   /** The screen size being drawn, which picks a custom widget's tablet and phone layout. */
   useDevice(): Device;
+  /** A named style of the project (a widget's styleId). A host without it draws widgets with their own settings only. */
+  useStyle?(id: string | undefined): NamedStyle | undefined;
+  /** How the project's theme draws every card (a widget's own cardStyle wins). A host without it draws plain cards. */
+  useCardStyle?(): CardStyle | undefined;
   /** The project's pages and the one being shown (the page list). */
   usePages(): { pages: PageInfo[]; activeId: string | undefined };
   /** The datasources and whether they are connected (driver status). */

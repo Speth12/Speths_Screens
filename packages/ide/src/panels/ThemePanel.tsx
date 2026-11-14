@@ -1,20 +1,22 @@
 // The screens' look: take a preset whole, or change any element of it. The project holds only the
 // elements changed, so a project with just a preset follows the preset if it later improves.
-import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, FONTS, resolveTheme } from "@speths-screens/widgets";
+import { Gallery, ICON_NAMES, MANIFESTS, PRESETS, resolveTheme, themeBackground } from "@speths-screens/widgets";
 import type { PageIcon, ShellNav, Theme, ThemePreset } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
+import { FontPicker } from "./SettingsEditor";
+import { BackgroundFields } from "./BackgroundFields";
 import { CloseIcon } from "../ui/icons";
 import { withNav } from "../store/chromeOptions";
 
-type Element = Exclude<keyof Theme, "preset" | "accent">;
+type Element = Exclude<keyof Theme, "preset" | "accent" | "background">;
 
 const ELEMENTS: { key: Element; label: string; options: readonly (readonly [string, string])[] }[] = [
   { key: "mode", label: "Light or dark", options: [["light", "Light"], ["dark", "Dark"]] },
-  { key: "palette", label: "Colors", options: [["calm", "Calm gray"], ["modern", "Modern blue"]] },
+  { key: "palette", label: "Colors", options: [["calm", "Calm gray"], ["modern", "Modern blue"], ["slate", "Slate"], ["sand", "Warm sand"], ["forest", "Forest green"], ["navy", "Deep navy"], ["contrast", "High contrast"]] },
   { key: "corners", label: "Corners", options: [["square", "Square"], ["soft", "Soft"], ["round", "Round"]] },
   { key: "depth", label: "Depth", options: [["flat", "Flat, bordered"], ["raised", "Raised, shadow"], ["borderless", "Borderless"]] },
   { key: "density", label: "Density", options: [["compact", "Compact"], ["comfortable", "Comfortable"], ["touch", "Touch (large)"]] },
-  { key: "font", label: "Font", options: Object.entries(FONTS).map(([id, f]) => [id, f.name] as const) },
+  { key: "cardStyle", label: "Cards", options: [["plain", "Plain"], ["accent", "Accent bar"], ["header", "Label on a band"], ["outlined", "Outlined"], ["gradient", "Soft gradient"], ["glass", "Glass (see-through)"], ["inset", "Inset"]] },
 ];
 
 const SHOWN = MANIFESTS.filter((m) => ["gauge", "button", "numericDisplay"].includes(m.type));
@@ -53,7 +55,7 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
       <div className="flex-1 overflow-auto p-3 flex flex-col gap-4">
         <section>
           <h3 className="text-[11px] font-semibold text-zinc-400 mb-1.5">Start from a theme</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {(Object.keys(PRESETS) as ThemePreset[]).map((id) => (
               <button key={id} data-testid={`preset-${id}`} onClick={() => pick(id)} aria-pressed={preset === id && !changed}
                 className={`text-left rounded border px-2 py-1.5 ${preset === id ? "border-blue-500 bg-zinc-900" : "border-zinc-700 hover:border-zinc-500"}`}>
@@ -75,12 +77,17 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
                 </select>
               </label>
             ))}
+            <div data-testid="theme-font"><FontPicker f={{ label: "Font" }} value={spec?.font} put={(v) => set("font", (v as string | undefined) ?? "")} /></div>
             <label className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">Accent color
               <span className="flex items-center gap-1">
                 <input aria-label="Accent color" type="color" value={spec?.accent ?? resolved.colors.primary} onChange={(ev) => setAccent(ev.target.value)} />
                 {spec?.accent && <button onClick={() => setAccent("")} className="text-[10px] text-zinc-400 hover:text-zinc-200">reset</button>}
               </span>
             </label>
+          </div>
+          <div className="mt-2 max-w-sm">
+            <BackgroundFields label="Behind every page" none={`The theme's own${themeBackground({ preset }) ? " (a gradient)" : " (the page color)"}`} value={spec?.background}
+              onChange={(background) => { const next = { ...(spec ?? { preset }) }; if (background) next.background = background; else delete next.background; setTheme(next); }} />
           </div>
           {changed > 0 && <button onClick={() => pick(preset)} className="mt-2 text-[11px] text-blue-400 hover:text-blue-300">Reset to {PRESETS[preset].name}</button>}
         </section>

@@ -25,7 +25,11 @@ export type Field = FieldBase & (
   | { kind: "number"; default?: number; min?: number; max?: number; step?: number;
       /** Blank clears the setting (shown as this placeholder, e.g. "auto"). */
       blank?: string }
-  | { kind: "text"; default?: string; placeholder?: string }
+  | { kind: "text"; default?: string; placeholder?: string;
+      /** A box of several lines; a line break is kept. */
+      multiline?: boolean }
+  /** A font: the bundled ones, the project's own, or the theme's when unset. */
+  | { kind: "font" }
   /** A number when the text is numeric, otherwise the text (state values, button values). */
   | { kind: "value"; default?: number | string; placeholder?: string }
   | { kind: "boolean"; default?: boolean }
@@ -36,7 +40,9 @@ export type Field = FieldBase & (
       optional?: boolean;
       /** Also offers "none", stored as this value (e.g. "transparent"). */
       none?: string }
-  | { kind: "choice"; default?: string; display?: "buttons" | "select" | "swatches";
+  | { kind: "choice"; default?: string; display?: "buttons" | "select" | "swatches" | "icons";
+      /** The values are numbers, stored as numbers. */
+      numeric?: boolean;
       /** A value of "" is the theme's default. */
       options: { value: string; label?: string; swatch?: string }[] }
   /** A page of the project. */
@@ -45,6 +51,8 @@ export type Field = FieldBase & (
   | { kind: "binding"; placeholder?: string }
   /** An image: library, URL or upload. */
   | { kind: "image" }
+  /** One of the project's pictures, by its id (a logo on a button). */
+  | { kind: "projectImage" }
   /** A symbol from the symbol packs. */
   | { kind: "symbol" }
   /** A recipe of the project. */

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RecipeSet, RecipesProps, RecipeVariable, SetRecipe } from "@speths-screens/shared-types";
 import { useHost } from "./host";
+import { ROWS_CSS, rowLook } from "./rows";
 import { mayEditRecipes } from "./recipeSets";
 
 type Result = { ok: boolean; msg: string };
@@ -42,6 +43,7 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
   const projectSets = host.useRecipeSets();
   const user = host.useUser();
   const canEdit = mayEditRecipes(user);
+  const look = rowLook(w.props);
   const [fromRuntime, setFromRuntime] = useState<RecipeSet[] | null>(null);
   const [setId, setSetId] = useState<string | undefined>(undefined);
   const [recipeId, setRecipeId] = useState<string | undefined>(undefined);
@@ -140,7 +142,8 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
   const none = !recipe;
 
   return (
-    <div className="h-full flex flex-col gap-2 min-h-0" data-testid="recipe-set">
+    <div {...look.attrs} style={look.style} className="h-full flex flex-col gap-2 min-h-0" data-testid="recipe-set">
+      {look.styled && <style>{ROWS_CSS}</style>}
       <div className="flex flex-wrap items-center gap-2">
         {!fixedSet && sets.length > 1 && (
           <select aria-label={t("Recipe set")} value={set.id} onChange={(e) => pick(() => { setSetId(e.target.value); setRecipeId(undefined); })}
@@ -195,7 +198,7 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
       <div className="flex-1 min-h-0 overflow-auto">
         <table className="w-full text-xs border-collapse" data-testid="recipe-table">
           <thead className="sticky top-0" style={{ background: "var(--card)", color: "var(--muted-foreground)" }}>
-            <tr>
+            <tr className="ss-head">
               <th className="text-left font-medium px-1 py-1 w-6">#</th>
               <th className="text-left font-medium px-1 py-1">{t("Variable")}</th>
               <th className="text-right font-medium px-1 py-1">{t("Recipe value")}</th>
@@ -210,7 +213,7 @@ export function RecipesWidget({ w }: { w: { props?: RecipesProps } }) {
               const match = known && val !== undefined && same(st.value, val);
               const typed = v.binding in draft;
               return (
-                <tr key={v.binding} style={{ borderTop: "1px solid var(--border)" }}>
+                <tr key={v.binding} className="ss-row" style={{ borderTop: "1px solid var(--border)" }}>
                   <td className="px-1 py-0.5 tabular-nums" style={{ color: "var(--muted-foreground)" }}>{i + 1}</td>
                   <td className="px-1 py-0.5 font-mono">{t(columnName(v))}</td>
                   <td className="px-1 py-0.5 text-right">

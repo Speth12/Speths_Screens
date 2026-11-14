@@ -102,13 +102,27 @@ export function CustomWidgetProperties({ cw }: { cw: CustomWidget }) {
 
       <div className="space-y-1.5">
         <div className="text-ui-label text-zinc-400">Parameters</div>
-        {cw.params.length === 0 && <div className="text-ui-label text-zinc-500">None. A parameter lets each use give its own tag, written {"{name}"} in a part's tag.</div>}
+        {cw.params.length === 0 && <div className="text-ui-label text-zinc-500">None. A parameter lets each use give its own tag or its own text, written {"{name}"} in a part's tag or text.</div>}
         {cw.params.map((p, i) => (
           <div key={i} className="flex items-center gap-1">
             <span className="text-ui-label text-purple-400 font-mono">{"{"}</span>
             <Input mono aria-label={`Parameter ${i + 1} name`} value={p.name}
               onChange={(e) => setParams(cw.params.map((q, j) => (j === i ? { ...q, name: e.target.value } : q)))} />
             <span className="text-ui-label text-purple-400 font-mono">{"}"}</span>
+            <select aria-label={`Parameter ${i + 1} kind`} value={p.kind ?? "tag"} title="A tag parameter stands for a tag in the parts' tags; a text parameter for a text in their labels and texts"
+              onChange={(e) => setParams(cw.params.map((q, j) => {
+                if (j !== i) return q;
+                const { kind: _k, default: _d, ...rest } = q;
+                return e.target.value === "text" ? { ...rest, kind: "text", ...(q.default ? { default: q.default } : {}) } : rest;
+              }))}
+              className="bg-zinc-900 border border-zinc-700 rounded px-1 py-1 text-ui-label text-zinc-200">
+              <option value="tag">tag</option>
+              <option value="text">text</option>
+            </select>
+            {p.kind === "text" && (
+              <Input aria-label={`Parameter ${i + 1} default text`} value={p.default ?? ""} placeholder="default text"
+                onChange={(e) => setParams(cw.params.map((q, j) => (j === i ? (e.target.value ? { ...q, default: e.target.value } : (({ default: _d, ...rest }) => rest)(q)) : q)))} />
+            )}
             <button type="button" aria-label={`Remove parameter ${i + 1}`} title="Remove" className="text-zinc-500 hover:text-red-500 px-1"
               onClick={() => setParams(cw.params.filter((_, j) => j !== i))}><CloseIcon size={12} /></button>
           </div>

@@ -115,6 +115,16 @@
       "type": "array",
       "items": { "$ref": "#/$defs/ImageAsset" }
     },
+    "fonts": {
+      "type": "array",
+      "description": "The project's own fonts, used by their id wherever a font is chosen",
+      "items": { "$ref": "#/$defs/FontAsset" }
+    },
+    "styles": {
+      "type": "array",
+      "description": "Named looks a widget can take by its styleId, so many widgets share one look and a change to it reaches them all",
+      "items": { "$ref": "#/$defs/NamedStyle" }
+    },
     "udts": {
       "type": "array",
       "items": { "$ref": "#/$defs/UDT" }
@@ -144,6 +154,8 @@
         "corners": { "$ref": "#/$defs/ThemeCorners" },
         "depth": { "$ref": "#/$defs/ThemeDepth" },
         "density": { "$ref": "#/$defs/ThemeDensity" },
+        "cardStyle": { "$ref": "#/$defs/CardStyle" },
+        "background": { "$ref": "#/$defs/Background", "description": "What is behind every page; a page's own background wins" },
         "font": { "$ref": "#/$defs/ThemeFont" },
         "accent": {
           "type": "string",
@@ -155,8 +167,8 @@
     "ThemePreset": {
       "title": "ThemePreset",
       "type": "string",
-      "enum": ["calm", "clean", "modern"],
-      "description": "calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of shadows. Missing means calm"
+      "enum": ["calm", "clean", "modern", "industrial", "soft", "glass", "highContrast"],
+      "description": "calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of shadows. industrial: dark slate, square, inset cards. soft: warm sand, round, shaded cards. glass: deep navy with see-through cards over a gradient. highContrast: black on white with heavy lines. Missing means calm"
     },
     "ThemeMode": {
       "title": "ThemeMode",
@@ -167,8 +179,8 @@
     "ThemePalette": {
       "title": "ThemePalette",
       "type": "string",
-      "enum": ["calm", "modern"],
-      "description": "The colors: calm is gray with a muted blue; modern is cool white or charcoal with a bright blue"
+      "enum": ["calm", "modern", "slate", "sand", "forest", "navy", "contrast"],
+      "description": "The colors: calm is gray with a muted blue; modern is cool white or charcoal with a bright blue; slate is blue-gray; sand is warm; forest is green; navy is deep blue; contrast is black and white with the strongest contrast"
     },
     "ThemeCorners": {
       "title": "ThemeCorners",
@@ -182,6 +194,53 @@
       "enum": ["flat", "raised", "borderless"],
       "description": "flat: a 1 px border. raised: a soft shadow. borderless: neither, the cards stand out by color alone"
     },
+    "NamedStyle": {
+      "title": "NamedStyle",
+      "type": "object",
+      "description": "A look kept under a name: the look settings (colors, card, corners, border, shadow, padding, font and text, label) a widget takes when it names this style. A setting the widget has itself wins",
+      "required": ["id", "name", "props"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "props": { "type": "object", "description": "Look settings by their name, as on a widget (bgColor, cardStyle, fontFamily, ...); anything that is not a look setting is ignored" }
+      }
+    },
+    "Background": {
+      "title": "Background",
+      "type": "object",
+      "description": "What is drawn behind a page",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["solid", "gradient", "picture", "pattern"], "description": "solid: one color. gradient: one color running into another. picture: one of the project's pictures. pattern: small marks repeated over a color" },
+        "color": { "type": "string", "description": "The color (solid, pattern), or the gradient's first color; missing means the theme's page color" },
+        "color2": { "type": "string", "description": "The gradient's second color, or the color of a pattern's marks" },
+        "angle": { "type": "number", "minimum": 0, "maximum": 360, "description": "The direction a gradient runs in, in degrees (180 is top to bottom, the default)" },
+        "picture": { "type": "string", "description": "The id of a project image" },
+        "fit": { "type": "string", "enum": ["fill", "whole", "tile", "stretch"], "description": "A picture: fill covers the page and may be cut off (the default), whole shows all of it, tile repeats it, stretch pulls it to the page's shape" },
+        "pattern": { "type": "string", "enum": ["dots", "squares", "stripes"], "description": "The marks of a pattern" },
+        "dim": { "type": "number", "minimum": 0, "maximum": 0.95, "description": "How much of the theme's page color is laid over a picture so text on it reads: 0 is none, 0.6 is most of it" }
+      }
+    },
+    "RowStyle": {
+      "title": "RowStyle",
+      "type": "string",
+      "enum": ["lined", "striped", "cards", "bare"],
+      "description": "How the rows of a list or a table are told apart: lined (a line under each), striped (every other row shaded), cards (each row its own block), bare (nothing between them); missing means the widget's own"
+    },
+    "RowSize": {
+      "title": "RowSize",
+      "type": "string",
+      "enum": ["tight", "normal", "roomy"],
+      "description": "How tall the rows of a list or a table are: tight (more rows in view), normal, roomy (larger text and room for a finger)"
+    },
+    "CardStyle": {
+      "title": "CardStyle",
+      "type": "string",
+      "enum": ["plain", "accent", "header", "outlined", "gradient", "glass", "inset"],
+      "description": "How a widget's card is drawn: plain, accent (a colored bar down the left), header (the label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a small panel), inset (pressed into the page). A theme sets it for every card and a widget can set its own"
+    },
     "ThemeDensity": {
       "title": "ThemeDensity",
       "type": "string",
@@ -191,8 +250,7 @@
     "ThemeFont": {
       "title": "ThemeFont",
       "type": "string",
-      "enum": ["inter", "roboto", "open-sans", "noto-sans", "system"],
-      "description": "The text font. All but system are bundled, so a PLC with no internet shows the same text"
+      "description": "The text font: the id of a bundled font (inter, roboto, open-sans, noto-sans, lato, jetbrains-mono and the others in packages/widgets/src/fontList.ts), system, or the id of one of the project's own fonts. Bundled and project fonts need no internet"
     },
     "Security": {
       "title": "Security",
@@ -488,6 +546,7 @@
         "name":            { "type": "string" },
         "widgets":         { "type": "array", "items": { "$ref": "#/$defs/Widget" } },
         "backgroundColor": { "type": "string", "description": "CSS color for the page background" },
+        "background": { "$ref": "#/$defs/Background", "description": "What is behind this page; wins over backgroundColor and the theme's background" },
         "script":          { "type": "string", "description": "Page script (JavaScript source)" },
         "icon":            { "$ref": "#/$defs/PageIcon", "description": "Shown beside the page's name in the navigation; missing shows the name's first letter" },
         "group":           { "type": "string", "description": "Pages with the same group are listed together under that heading in the sidebar" },
@@ -498,7 +557,7 @@
     "PageIcon": {
       "title": "PageIcon",
       "type": "string",
-      "enum": ["home", "graph", "alarm", "settings", "pump", "vessel", "valve", "motor", "dial", "list", "chart", "map", "user", "tools", "bolt", "flask"]
+      "enum": ["home", "graph", "alarm", "settings", "pump", "vessel", "valve", "motor", "dial", "list", "chart", "map", "user", "tools", "bolt", "flask", "play", "pause", "stopSquare", "power", "refresh", "undoTurn", "checkMark", "cross", "plus", "minus", "arrowUp", "arrowDown", "arrowLeft", "arrowRight", "chevronUp", "chevronDown", "chevronLeft", "chevronRight", "menuBars", "expand", "sliders", "funnel", "search", "bell", "bellOff", "caution", "infoCircle", "helpCircle", "okCircle", "failCircle", "padlock", "padlockOpen", "keyIcon", "eye", "eyeOff", "shield", "thermometer", "droplet", "wind", "flame", "snowflake", "fanBlades", "speedometer", "weighScale", "ruler", "beaker", "factory", "conveyor", "crate", "wrench", "hammer", "cog", "recycle", "leaf", "lightbulb", "battery", "plugIcon", "wifi", "signalBars", "chip", "serverRack", "databaseIcon", "networkIcon", "layers", "activity", "barChart", "lineChart", "pieChart", "calendar", "timer", "clockFace", "pastTime", "saveDisk", "download", "upload", "document", "folder", "printer", "camera", "phoneHandset", "mail", "people", "signIn", "signOut", "star", "flagIcon", "mapPin", "sun", "moon", "speaker", "speakerOff", "trashCan", "pencil", "chainLink"]
     },
     "Shell": {
       "title": "Shell",
@@ -662,7 +721,8 @@
     "ButtonVariant": {
       "title": "ButtonVariant",
       "type": "string",
-      "enum": ["filled", "outlined", "ghost", "flat", "industrial"]
+      "enum": ["filled", "outlined", "ghost", "flat", "industrial", "raised", "glossy", "pushbutton"],
+      "description": "filled: a solid color. outlined: a thin line. ghost: only the text. flat: a tint of the color. industrial: a shaded panel button. raised: three-dimensional, pressing down when touched. glossy: a shine across the top. pushbutton: a realistic domed button in a metal ring, lit when a toggle is on"
     },
     "ButtonRounded": {
       "title": "ButtonRounded",
@@ -725,6 +785,10 @@
       "required": ["value", "label", "color"],
       "additionalProperties": false,
       "properties": {
+        "icon": {
+          "$ref": "#/$defs/PageIcon",
+          "description": "The icon the icon style draws for this state"
+        },
         "value":     {},
         "label":     { "type": "string" },
         "color":     { "type": "string" },
@@ -932,7 +996,9 @@
       "additionalProperties": false,
       "properties": {
         "name":        { "type": "string", "description": "Used as {name} in bindings inside the custom widget" },
-        "description": { "type": "string" }
+        "description": { "type": "string" },
+        "kind":        { "type": "string", "pattern": "^(tag|text)$", "description": "tag or text. tag (the default): each use gives a tag, and {name} stands for it in the parts' tags and expressions. text: each use gives a text, and {name} stands for it in the parts' texts (label, static text, state labels, unit, placeholder)" },
+        "default":     { "type": "string", "description": "For a text parameter: the text a use shows when it gives none" }
       }
     },
     "CustomWidgetLayout": {
@@ -987,6 +1053,25 @@
         "grow":  { "type": "number", "minimum": 0 },
         "basis": { "type": "integer", "minimum": 0 }
       }
+    },
+    "FontAsset": {
+      "title": "FontAsset",
+      "type": "object",
+      "description": "A font file kept in the project (TTF, OTF, WOFF or WOFF2)",
+      "required": ["id", "name", "dataUrl"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "What a font setting names it by" },
+        "name": { "type": "string", "description": "The name shown in the editor's font lists" },
+        "dataUrl": { "type": "string", "description": "base64 data URL of the font file" },
+        "size": { "type": "integer", "description": "Original file size in bytes" }
+      }
+    },
+    "TextCase": {
+      "title": "TextCase",
+      "type": "string",
+      "enum": ["none", "uppercase", "lowercase", "capitalize"],
+      "description": "Letters as written, ALL CAPITALS, all small, or Each Word Capitalized"
     },
     "ImageAsset": {
       "title": "ImageAsset",
@@ -1091,12 +1176,80 @@
         "textColor": {
           "type": "string"
         },
+        "styleId": {
+          "type": "string",
+          "description": "The id of a named style of the project whose look this widget takes; its own settings win over the style's"
+        },
+        "labelIcon": {
+          "$ref": "#/$defs/PageIcon",
+          "description": "An icon drawn before the label"
+        },
+        "cardStyle": {
+          "$ref": "#/$defs/CardStyle"
+        },
         "noPadding": {
           "type": "boolean"
         },
         "fontFamily": {
           "type": "string",
-          "description": "mono | sans | serif; empty means the theme font"
+          "description": "A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font"
+        },
+        "fontWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold"
+        },
+        "letterSpacing": {
+          "type": "number",
+          "minimum": -0.2,
+          "maximum": 2,
+          "description": "Space added between letters, in ems (0.05 is a little wider); negative is tighter"
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 4,
+          "description": "The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)"
+        },
+        "textTransform": {
+          "$ref": "#/$defs/TextCase"
+        },
+        "strike": {
+          "type": "boolean",
+          "description": "A line through the text"
+        },
+        "textShadow": {
+          "type": "string",
+          "enum": ["soft", "strong", "outline"],
+          "description": "A shadow or an outline behind the text, for text over a picture or a color"
+        },
+        "wrap": {
+          "type": "string",
+          "enum": ["wrap", "nowrap", "ellipsis"],
+          "description": "Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way"
+        },
+        "labelSize": {
+          "type": "string",
+          "description": "The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs"
+        },
+        "labelWeight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "How heavy the label's text is, as fontWeight"
+        },
+        "labelColor": {
+          "type": "string",
+          "description": "The label's color; missing means the text color, faded"
+        },
+        "labelTransform": {
+          "$ref": "#/$defs/TextCase"
+        },
+        "labelPosition": {
+          "type": "string",
+          "enum": ["top", "bottom", "left"],
+          "description": "Where the label sits: above the value (the default), below it, or to its left"
         },
         "fontSize": {
           "type": "string",
@@ -1182,6 +1335,19 @@
         }
       ],
       "properties": {
+        "showValue": {
+          "type": "boolean",
+          "description": "The value as text on the gauge; false leaves only the gauge, to put a number of your own beside it"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["arc", "ring", "half", "dial", "bar", "vbar", "segments"],
+          "description": "How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full ring with the value in the middle), half (a half circle), dial (a needle over a ticked scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light up)"
+        },
+        "showTicks": {
+          "type": "boolean",
+          "description": "Scale marks and the lowest and highest value; missing means shown where the style has them"
+        },
         "min": {
           "type": "number"
         },
@@ -1210,6 +1376,15 @@
         }
       ],
       "properties": {
+        "showNumber": {
+          "type": "boolean",
+          "description": "The number itself; false leaves only the history line, the range bar or the arrow of its style, filling its place"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["plain", "sparkline", "range", "trend", "segment"],
+          "description": "How the number is drawn: plain (the default), sparkline (the last minutes as a small line under it), range (a bar from min to max under it), trend (an arrow showing whether it is rising or falling), segment (seven-segment style digits)"
+        },
         "min": {
           "type": "number"
         },
@@ -1234,7 +1409,14 @@
       "properties": {
         "staticText": {
           "type": "string",
-          "description": "TextDisplay: fixed text shown instead of a tag value"
+          "description": "TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line"
+        },
+        "rotation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 270,
+          "multipleOf": 90,
+          "description": "The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)"
         }
       },
       "unevaluatedProperties": false
@@ -1249,6 +1431,18 @@
         }
       ],
       "properties": {
+        "showText": {
+          "type": "boolean",
+          "description": "The state as text beside the light; false leaves only the light"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["dot", "pill", "tile", "lamp", "icon", "ring"],
+          "description": "How the state is drawn: dot (the default, a round light and its text), pill (a rounded badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in the color), ring (a ring that fills when on)"
+        },
+        "icon": {
+          "$ref": "#/$defs/PageIcon"
+        },
         "trueColor": {
           "type": "string",
           "description": "LED color when true"
@@ -1278,6 +1472,23 @@
         }
       ],
       "properties": {
+        "showValue": {
+          "type": "boolean",
+          "description": "The value as text beside the tank; false leaves only the tank, filling its place"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["bar", "cylinder", "silo", "vessel", "bottle", "level"],
+          "description": "How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole card fills up)"
+        },
+        "showScale": {
+          "type": "boolean",
+          "description": "Marks at each quarter with their values beside the tank"
+        },
+        "wave": {
+          "type": "boolean",
+          "description": "A moving wave on the surface (still for a browser that asks for less motion)"
+        },
         "min": {
           "type": "number"
         },
@@ -1306,6 +1517,35 @@
         }
       ],
       "properties": {
+        "btnLayout": {
+          "type": "string",
+          "enum": ["beside", "stacked", "iconOnly"],
+          "description": "Where the icon sits: beside (beside the text, the default), stacked (over the text), iconOnly (no text)"
+        },
+        "btnShape": {
+          "type": "string",
+          "enum": ["rectangle", "square", "round", "pill"],
+          "description": "The button's outline: rectangle (fills its place, the default), square, round (a circle), pill (fully rounded ends). A square or round button is as large as fits its place"
+        },
+        "btnImage": {
+          "type": "string",
+          "description": "The id of a project image drawn on the button (a logo), in place of an icon"
+        },
+        "btnCustomColor": {
+          "type": "string",
+          "description": "Any color (#rrggbb) for the button in place of the named ones"
+        },
+        "iconName": {
+          "$ref": "#/$defs/PageIcon",
+          "description": "An icon from the icon set, drawn in the text color; wins over the typed icon"
+        },
+        "toggleStyle": {
+          "type": "string",
+          "enum": ["plain", "switch", "rocker", "checkbox", "segments"],
+          "description": "How a button that toggles is drawn: plain (a button that lights up, the default), switch (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by side with the current one filled)"
+        },
+        "onLabel": { "type": "string", "description": "A toggle's text for on (the segments and rocker styles); missing means ON" },
+        "offLabel": { "type": "string", "description": "A toggle's text for off; missing means OFF" },
         "btnVariant": {
           "$ref": "#/$defs/ButtonVariant"
         },
@@ -1340,6 +1580,19 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["slider", "fat", "knob", "stepper"],
+          "description": "How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a rotary knob), stepper (minus and plus buttons a step at a time)"
+        },
+        "showValue": {
+          "type": "boolean",
+          "description": "The value as text; false leaves only the control"
+        },
+        "showTicks": {
+          "type": "boolean",
+          "description": "The lowest and highest value under the slider; missing means shown"
+        },
         "min": {
           "type": "number"
         },
@@ -1366,6 +1619,11 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["tile", "label", "pill", "stepper", "icon"],
+          "description": "How the state is drawn: tile (a filled block, the default), label (only the text, in the state color), pill (a rounded badge), stepper (every state in a row with the current one filled), icon (the state icon and its text)"
+        },
         "states": {
           "type": "array",
           "items": {
@@ -1473,6 +1731,16 @@
         }
       ],
       "properties": {
+        "rowStyle": {
+          "$ref": "#/$defs/RowStyle"
+        },
+        "rowSize": {
+          "$ref": "#/$defs/RowSize"
+        },
+        "showExport": {
+          "type": "boolean",
+          "description": "The button that saves the rows as a CSV file; missing means shown"
+        },
         "pageSize": {
           "type": "integer",
           "description": "HistoryLog rows per page"
@@ -1490,6 +1758,24 @@
         }
       ],
       "properties": {
+        "rowStyle": {
+          "$ref": "#/$defs/RowStyle"
+        },
+        "rowSize": {
+          "$ref": "#/$defs/RowSize"
+        },
+        "showSeverity": {
+          "type": "boolean",
+          "description": "The severity word at the start of each alarm; missing means shown"
+        },
+        "showValue": {
+          "type": "boolean",
+          "description": "The value that raised the alarm; missing means shown"
+        },
+        "showTime": {
+          "type": "boolean",
+          "description": "When the alarm was raised; missing means shown"
+        },
         "maxRows": {
           "type": "integer",
           "description": "AlarmBanner max visible rows"
@@ -1613,6 +1899,16 @@
       "description": "Settings of a recipes widget: the project's recipes, each with a button that writes its values",
       "allOf": [{ "$ref": "#/$defs/FrameProps" }],
       "properties": {
+        "rowStyle": {
+          "$ref": "#/$defs/RowStyle"
+        },
+        "rowSize": {
+          "$ref": "#/$defs/RowSize"
+        },
+        "headerColor": {
+          "type": "string",
+          "description": "The background of the heading row; missing means the card's own"
+        },
         "recipeSetId": { "type": "string", "description": "The recipe set the table shows; missing shows the first set of the project" },
         "recipeId": { "type": "string", "description": "Older projects: the recipe (shown as a set of its own) the widget shows" },
         "showEntries": { "type": "boolean", "description": "Older projects: list the tags and values" }
@@ -1763,6 +2059,22 @@
         }
       ],
       "properties": {
+        "rowStyle": {
+          "$ref": "#/$defs/RowStyle"
+        },
+        "rowSize": {
+          "$ref": "#/$defs/RowSize"
+        },
+        "headerColor": {
+          "type": "string",
+          "description": "The background of the heading row; missing means the card's own"
+        },
+        "showHeader": {
+          "type": "boolean",
+          "description": "The heading row; missing means shown"
+        },
+        "nameHeader": { "type": "string", "description": "The heading over the names; missing means Tag" },
+        "valueHeader": { "type": "string", "description": "The heading over the values; missing means Value" },
         "rows": {
           "type": "array",
           "items": {
