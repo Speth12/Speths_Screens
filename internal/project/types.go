@@ -368,7 +368,12 @@ type CustomWidgetPartProps struct {
 	Max *float64 `json:"max,omitempty"`
 	Min *float64 `json:"min,omitempty"`
 	// Scale marks and the lowest and highest value; missing means shown where the style has them
-	ShowTicks  *bool       `json:"showTicks,omitempty"`
+	ShowTicks *bool `json:"showTicks,omitempty"`
+	// The value as text on the gauge; false leaves only the gauge, to put a number of your own
+	// beside it
+	//
+	// The value as text beside the tank; false leaves only the tank, filling its place
+	ShowValue  *bool       `json:"showValue,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
 	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
@@ -453,6 +458,9 @@ type CustomWidgetPartProps struct {
 	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
 	// ellipsis; missing means the widget's own way
 	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The number itself; false leaves only the history line, the range bar or the arrow of its
+	// style, filling its place
+	ShowNumber *bool `json:"showNumber,omitempty"`
 	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
 	Rotation *int64 `json:"rotation,omitempty"`
 	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
@@ -463,6 +471,8 @@ type CustomWidgetPartProps struct {
 	FalseLabel *string `json:"falseLabel,omitempty"`
 	// Button icon (emoji or short text)
 	Icon *string `json:"icon,omitempty"`
+	// The state as text beside the light; false leaves only the light
+	ShowText *bool `json:"showText,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true
@@ -893,7 +903,12 @@ type WidgetProps struct {
 	Max *float64 `json:"max,omitempty"`
 	Min *float64 `json:"min,omitempty"`
 	// Scale marks and the lowest and highest value; missing means shown where the style has them
-	ShowTicks  *bool       `json:"showTicks,omitempty"`
+	ShowTicks *bool `json:"showTicks,omitempty"`
+	// The value as text on the gauge; false leaves only the gauge, to put a number of your own
+	// beside it
+	//
+	// The value as text beside the tank; false leaves only the tank, filling its place
+	ShowValue  *bool       `json:"showValue,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
 	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
@@ -978,6 +993,9 @@ type WidgetProps struct {
 	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
 	// ellipsis; missing means the widget's own way
 	Wrap *WrapEnum `json:"wrap,omitempty"`
+	// The number itself; false leaves only the history line, the range bar or the arrow of its
+	// style, filling its place
+	ShowNumber *bool `json:"showNumber,omitempty"`
 	// The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
 	Rotation *int64 `json:"rotation,omitempty"`
 	// TextDisplay: fixed text shown instead of a tag value. A line break in it starts a new line
@@ -988,6 +1006,8 @@ type WidgetProps struct {
 	FalseLabel *string `json:"falseLabel,omitempty"`
 	// Button icon (emoji or short text)
 	Icon *string `json:"icon,omitempty"`
+	// The state as text beside the light; false leaves only the light
+	ShowText *bool `json:"showText,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true

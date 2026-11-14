@@ -112,6 +112,15 @@ describe("card styles", () => {
   it("the header style puts the label on a band; a widget that is not a card has no style", () => {
     expect(draw("numericDisplay", { label: "Flow", cardStyle: "header" })).toContain("data-card-header");
     expect(draw("numericDisplay", { label: "Flow", cardStyle: "header", bgColor: "transparent", borderColor: "transparent" })).not.toContain("data-card-style");
-    expect(draw("shape", { cardStyle: "glass" })).not.toContain("data-card-style");
+    expect(draw("pipe", { cardStyle: "glass" })).not.toContain("data-card-style");
+  });
+
+  it("a rectangle given a card style is a card to build on; without one it is a plain rectangle", () => {
+    const card = draw("shape", { cardStyle: "plain" });
+    expect(card).toContain("var(--card)");
+    expect(card).toContain("var(--radius");
+    expect(draw("shape", { cardStyle: "glass" })).toContain("blur(10px)");
+    expect(draw("shape", {})).not.toContain("var(--card)");
+    expect(draw("shape", { kind: "ellipse", cardStyle: "glass" })).not.toContain("blur");
   });
 });

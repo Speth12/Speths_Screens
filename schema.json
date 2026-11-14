@@ -1272,6 +1272,10 @@
         }
       ],
       "properties": {
+        "showValue": {
+          "type": "boolean",
+          "description": "The value as text on the gauge; false leaves only the gauge, to put a number of your own beside it"
+        },
         "variant": {
           "type": "string",
           "enum": ["arc", "ring", "half", "dial", "bar", "vbar", "segments"],
@@ -1309,6 +1313,10 @@
         }
       ],
       "properties": {
+        "showNumber": {
+          "type": "boolean",
+          "description": "The number itself; false leaves only the history line, the range bar or the arrow of its style, filling its place"
+        },
         "variant": {
           "type": "string",
           "enum": ["plain", "sparkline", "range", "trend", "segment"],
@@ -1360,6 +1368,10 @@
         }
       ],
       "properties": {
+        "showText": {
+          "type": "boolean",
+          "description": "The state as text beside the light; false leaves only the light"
+        },
         "variant": {
           "type": "string",
           "enum": ["dot", "pill", "tile", "lamp", "icon", "ring"],
@@ -1397,6 +1409,10 @@
         }
       ],
       "properties": {
+        "showValue": {
+          "type": "boolean",
+          "description": "The value as text beside the tank; false leaves only the tank, filling its place"
+        },
         "variant": {
           "type": "string",
           "enum": ["bar", "cylinder", "silo", "vessel", "bottle", "level"],

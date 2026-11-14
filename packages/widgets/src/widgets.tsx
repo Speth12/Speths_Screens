@@ -16,7 +16,7 @@ import { SYMBOLS } from "./symbols";
 import { AccessGate } from "./access";
 import { usePopups } from "./popup";
 import { fontStack, tokenColor } from "./tokens";
-import { GaugeVariant, LedVariant, RangeBar, SegmentDigits, Sparkline, TankVariant, TrendArrow, useRecent, type GaugeVariantName, type LedVariantName, type TankVariantName } from "./variants";
+import { GaugeVariant, LedVariant, lightBox, RangeBar, SegmentDigits, Sparkline, TankVariant, TrendArrow, useRecent, type GaugeVariantName, type LedVariantName, type TankVariantName } from "./variants";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
 import { RecipesWidget } from "./recipes";
@@ -198,6 +198,24 @@ export function resolveColor(value: unknown, thresholds: Threshold[]): string | 
   return null;
 }
 
+// ── Card styles ────────────────────────────────────────────────────────────
+
+/** Changes a card's CSS to one of the card styles. The header style is the label's own (the frame
+ *  draws it); here it changes nothing. `keepBorder` leaves a border something else has colored. */
+export function applyCardStyle(style: React.CSSProperties, cardStyle: string, o: { fill: string; accent: string; border?: string; keepBorder?: boolean }): void {
+  const { fill, accent } = o;
+  if (cardStyle === "accent") style.boxShadow = [`inset 4px 0 0 ${accent}`, style.boxShadow].filter((x) => x && x !== "none").join(", ");
+  if (cardStyle === "outlined") { style.background = "transparent"; style.boxShadow = "none"; if (!o.keepBorder) style.border = `2px solid ${o.border ?? "var(--border)"}`; }
+  if (cardStyle === "gradient") style.background = `linear-gradient(165deg, color-mix(in srgb, ${fill} 90%, #fff), color-mix(in srgb, ${fill} 92%, #000))`;
+  if (cardStyle === "glass") {
+    style.background = `color-mix(in srgb, ${fill} 55%, transparent)`;
+    style.backdropFilter = "blur(10px)";
+    (style as Record<string, unknown>).WebkitBackdropFilter = "blur(10px)";
+    if (!o.keepBorder && !o.border) style.border = "1px solid color-mix(in srgb, var(--foreground) 18%, transparent)";
+  }
+  if (cardStyle === "inset") { style.background = `color-mix(in srgb, ${fill} 94%, #000)`; style.boxShadow = "inset 0 2px 6px rgba(0,0,0,.28)"; }
+}
+
 // ── Frame ──────────────────────────────────────────────────────────────────
 
 const NO_THRESHOLDS: Threshold[] = [];
@@ -254,20 +272,10 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
 
   // The card's style: only a widget that is a card has one.
   const styled = !(bare || cardless) && cardStyle !== "plain";
-  const fill = bgColor ?? "var(--card)";
   const accent = dynColor ?? "var(--primary)";
   if (styled) {
     (style as Record<string, unknown>)["--frame-pad"] = typeof style.padding === "number" ? `${style.padding}px` : style.padding;
-    if (cardStyle === "accent") style.boxShadow = [`inset 4px 0 0 ${accent}`, style.boxShadow].filter((x) => x && x !== "none").join(", ");
-    if (cardStyle === "outlined") { style.background = "transparent"; style.boxShadow = "none"; if (!dynColor) style.border = `2px solid ${borderColor ?? "var(--border)"}`; }
-    if (cardStyle === "gradient") style.background = `linear-gradient(165deg, color-mix(in srgb, ${fill} 90%, #fff), color-mix(in srgb, ${fill} 92%, #000))`;
-    if (cardStyle === "glass") {
-      style.background = `color-mix(in srgb, ${fill} 55%, transparent)`;
-      style.backdropFilter = "blur(10px)";
-      (style as Record<string, unknown>).WebkitBackdropFilter = "blur(10px)";
-      if (!dynColor && !borderColor) style.border = "1px solid color-mix(in srgb, var(--foreground) 18%, transparent)";
-    }
-    if (cardStyle === "inset") { style.background = `color-mix(in srgb, ${fill} 94%, #000)`; style.boxShadow = "inset 0 2px 6px rgba(0,0,0,.28)"; }
+    applyCardStyle(style, cardStyle, { fill: bgColor ?? "var(--card)", accent, border: borderColor, keepBorder: !!dynColor });
   }
   const labelAt = p.labelPosition ?? "top";
   // The label as a colored band across the top of the card (the header style), when it sits on top.
@@ -341,7 +349,7 @@ function GaugeWidget({ w }: WP<"gauge">) {
   const maxPt = gaugePolar(GAUGE_START + GAUGE_SWEEP, GAUGE_R + 6);
 
   if (p.variant && p.variant !== "arc") {
-    const text = `${typeof t.value === "number" ? t.value.toFixed(1) : "—"}${p.unit && p.showUnit !== false ? ` ${p.unit}` : ""}`;
+    const text = p.showValue === false ? undefined : `${typeof t.value === "number" ? t.value.toFixed(1) : "—"}${p.unit && p.showUnit !== false ? ` ${p.unit}` : ""}`;
     return (
       <div className="flex flex-col h-full justify-center gap-0.5">
         <div className="min-h-0 flex-1">
@@ -393,11 +401,13 @@ function GaugeWidget({ w }: WP<"gauge">) {
         <circle cx={GAUGE_CX} cy={GAUGE_CY} r="3.5" style={{ fill: "var(--muted-foreground)" }} />
         <circle cx={GAUGE_CX} cy={GAUGE_CY} r="1.5" style={{ fill: "var(--card)" }} />
       </svg>
+      {p.showValue !== false && (
       <div className="absolute left-0 right-0 text-center font-semibold tabular-nums leading-none whitespace-nowrap"
         style={{ bottom: "4%", color: "var(--foreground)", fontSize: "clamp(0.875rem, 11cqmin, 2rem)" }}>
         {typeof t.value === "number" ? t.value.toFixed(1) : "—"}
         {p.unit ? ` ${p.unit}` : ""}
       </div>
+      )}
       </div>
       {qualityShown(p.showQuality, t.quality) && (
         <div className={`text-xs text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
@@ -412,6 +422,16 @@ function NumericDisplayWidget({ w }: WP<"numericDisplay">) {
   const variant = p.variant ?? "plain";
   const recent = useRecent(variant === "sparkline" || variant === "trend" ? t.value : undefined);
   const min = p.min ?? 0, max = p.max ?? 100;
+  if (p.showNumber === false && variant !== "plain" && variant !== "segment") {
+    // Only the style's own part, filling the place: a history line, a range bar or an arrow to put beside a number of your own.
+    return (
+      <div data-element={variant} className="flex flex-col h-full w-full justify-center" style={variant === "trend" ? { containerType: "size", fontSize: "min(160cqh, 160cqw)", alignItems: "center", lineHeight: 1 } : undefined}>
+        {variant === "sparkline" && <Sparkline values={recent} fill />}
+        {variant === "range" && <RangeBar pct={typeof t.value === "number" ? (t.value - min) / (max - min) : 0} min={min} max={max} />}
+        {variant === "trend" && <TrendArrow values={recent} />}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col h-full" style={{ justifyContent: VALIGN[p.valign ?? ""] ?? "center" }}>
       <div className={`${mainText(p, "text-3xl").className} font-semibold tabular-nums leading-none`}>
@@ -453,15 +473,15 @@ function LEDWidget({ w }: WP<"led">) {
   const trueColor = p.trueColor ?? "#22c55e";
   const falseColor = p.falseColor ?? "#3f3f46";
   if (p.variant && p.variant !== "dot") {
-    return <LedVariant variant={p.variant as LedVariantName} on={on} color={on ? trueColor : falseColor} label={on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")} icon={p.icon} />;
+    return <LedVariant variant={p.variant as LedVariantName} on={on} color={on ? trueColor : falseColor} label={p.showText === false ? undefined : on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")} icon={p.icon} />;
   }
   return (
     <div className="flex items-center gap-2 h-full">
       <div
-        className="w-6 h-6 rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]"
+        className={`${lightBox(p.showText === false, "w-6 h-6")} rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.4)]`}
         style={{ background: on ? trueColor : falseColor, boxShadow: on ? `0 0 10px ${trueColor}88` : undefined }}
       />
-      <div className="text-sm font-medium">{on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")}</div>
+      {p.showText !== false && <div className="text-sm font-medium">{on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")}</div>}
     </div>
   );
 }
@@ -480,9 +500,13 @@ function TankWidget({ w }: WP<"tank">) {
   if (p.variant && p.variant !== "bar") {
     return (
       <TankVariant variant={p.variant as TankVariantName} pct={pct / 100} color={fillColor} min={min} max={max} showScale={p.showScale} wave={p.wave}>
-        <div className={`${mainText(p, "text-xl").className} font-semibold tabular-nums leading-none`}>{fmt(t.value)}</div>
-        {p.unit && p.showUnit !== false && <div className="text-xs text-zinc-500">{p.unit}</div>}
-        {qualityShown(p.showQuality, t.quality) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+        {p.showValue !== false && (
+          <>
+            <div className={`${mainText(p, "text-xl").className} font-semibold tabular-nums leading-none`}>{fmt(t.value)}</div>
+            {p.unit && p.showUnit !== false && <div className="text-xs text-zinc-500">{p.unit}</div>}
+            {qualityShown(p.showQuality, t.quality) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+          </>
+        )}
       </TankVariant>
     );
   }
@@ -490,7 +514,7 @@ function TankWidget({ w }: WP<"tank">) {
   return (
     <div className="flex gap-3 h-full items-end">
       {/* Vertical bar */}
-      <div className="flex flex-col w-10 h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700">
+      <div className={`flex flex-col ${p.showValue === false ? "w-full" : "w-10"} h-full bg-zinc-800 rounded-md overflow-hidden relative border border-zinc-700`}>
         {[75, 50, 25].map((q) => (
           <div key={q} className="absolute left-0 right-0 border-t border-zinc-600/50"
             style={{ bottom: `${q}%` }} />
@@ -501,11 +525,13 @@ function TankWidget({ w }: WP<"tank">) {
         />
       </div>
       {/* Value + quality */}
+      {p.showValue !== false && (
       <div className="flex flex-col justify-end pb-1">
         <div className={`${mainText(p, "text-xl").className} font-semibold tabular-nums leading-none`}>{fmt(t.value)}</div>
         {p.unit && p.showUnit !== false && <div className="text-xs text-zinc-500">{p.unit}</div>}
         {qualityShown(p.showQuality, t.quality) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
       </div>
+      )}
     </div>
   );
 }
@@ -1091,6 +1117,18 @@ function ShapeWidget({ w }: WP<"shape">) {
           style={{ stroke, strokeWidth: width }} />
       </svg>
     );
+  }
+  // A rectangle given a card style is a card to build on: the theme's card color, border, corners and
+  // shadow unless it has its own, then the style.
+  if (kind === "rectangle" && p.cardStyle) {
+    const fill = paintOf(p.fill, "var(--card)");
+    const card: React.CSSProperties = {
+      boxSizing: "border-box", background: fill,
+      border: `${p.weight ?? 1}px ${p.dashed ? "dashed" : "solid"} ${paintOf(p.stroke, "var(--border)")}`,
+      borderRadius: p.cornerRadius ?? "var(--radius, 0.5rem)", boxShadow: "var(--shadow, none)",
+    };
+    applyCardStyle(card, p.cardStyle, { fill, accent: "var(--primary)", border: p.stroke ? paintOf(p.stroke, "") : undefined });
+    return <div role="img" aria-label={p.label ?? "Card"} data-shape="rectangle" data-card-style={p.cardStyle} className="w-full h-full" style={card} />;
   }
   return (
     <div role="img" aria-label={p.label ?? (kind === "ellipse" ? "Ellipse" : "Rectangle")} data-shape={kind} className="w-full h-full"

@@ -593,7 +593,14 @@ export interface CustomWidgetPartProps {
     /**
      * Scale marks and the lowest and highest value; missing means shown where the style has them
      */
-    showTicks?:  boolean;
+    showTicks?: boolean;
+    /**
+     * The value as text on the gauge; false leaves only the gauge, to put a number of your own
+     * beside it
+     *
+     * The value as text beside the tank; false leaves only the tank, filling its place
+     */
+    showValue?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
     /**
@@ -729,6 +736,11 @@ export interface CustomWidgetPartProps {
      */
     wrap?: Wrap;
     /**
+     * The number itself; false leaves only the history line, the range bar or the arrow of its
+     * style, filling its place
+     */
+    showNumber?: boolean;
+    /**
      * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
      */
     rotation?: number;
@@ -748,6 +760,10 @@ export interface CustomWidgetPartProps {
      * Button icon (emoji or short text)
      */
     icon?: string;
+    /**
+     * The state as text beside the light; false leaves only the light
+     */
+    showText?: boolean;
     /**
      * LED color when true
      */
@@ -1559,7 +1575,14 @@ export interface WidgetProps {
     /**
      * Scale marks and the lowest and highest value; missing means shown where the style has them
      */
-    showTicks?:  boolean;
+    showTicks?: boolean;
+    /**
+     * The value as text on the gauge; false leaves only the gauge, to put a number of your own
+     * beside it
+     *
+     * The value as text beside the tank; false leaves only the tank, filling its place
+     */
+    showValue?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
     /**
@@ -1695,6 +1718,11 @@ export interface WidgetProps {
      */
     wrap?: Wrap;
     /**
+     * The number itself; false leaves only the history line, the range bar or the arrow of its
+     * style, filling its place
+     */
+    showNumber?: boolean;
+    /**
      * The text turned clockwise by 0, 90, 180 or 270 degrees (90 reads top to bottom)
      */
     rotation?: number;
@@ -1714,6 +1742,10 @@ export interface WidgetProps {
      * Button icon (emoji or short text)
      */
     icon?: string;
+    /**
+     * The state as text beside the light; false leaves only the light
+     */
+    showText?: boolean;
     /**
      * LED color when true
      */

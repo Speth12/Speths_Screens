@@ -128,6 +128,8 @@ export interface GaugeProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
+  /** The value as text on the gauge; false leaves only the gauge, to put a number of your own beside it */
+  showValue?: boolean;
   /** How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full ring with the value in the middle), half (a half circle), dial (a needle over a ticked scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light up) */
   variant?: string;
   /** Scale marks and the lowest and highest value; missing means shown where the style has them */
@@ -200,6 +202,8 @@ export interface NumericDisplayProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
+  /** The number itself; false leaves only the history line, the range bar or the arrow of its style, filling its place */
+  showNumber?: boolean;
   /** How the number is drawn: plain (the default), sparkline (the last minutes as a small line under it), range (a bar from min to max under it), trend (an arrow showing whether it is rising or falling), segment (seven-segment style digits) */
   variant?: string;
   min?: number;
@@ -337,6 +341,8 @@ export interface LedProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
+  /** The state as text beside the light; false leaves only the light */
+  showText?: boolean;
   /** How the state is drawn: dot (the default, a round light and its text), pill (a rounded badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in the color), ring (a ring that fills when on) */
   variant?: string;
   icon?: PageIcon;
@@ -412,6 +418,8 @@ export interface TankProps {
   blinkPeriodMs?: number;
   /** Color the frame flashes while blinking; missing means the widget fades in and out */
   blinkColor?: string;
+  /** The value as text beside the tank; false leaves only the tank, filling its place */
+  showValue?: boolean;
   /** How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole card fills up) */
   variant?: string;
   /** Marks at each quarter with their values beside the tank */
@@ -1934,11 +1942,11 @@ export type TypedWidget<T extends WidgetType = WidgetType> = {
 
 /** Each widget type's settings, frame settings first. */
 export const PROPS_KEYS: { readonly [K in WidgetType]: readonly (keyof PropsByType[K] & string)[] } = {
-  gauge: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "showTicks", "min", "max", "unit", "thresholds"],
-  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "min", "max", "unit"],
+  gauge: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showTicks", "min", "max", "unit", "thresholds"],
+  numericDisplay: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showNumber", "variant", "min", "max", "unit"],
   textDisplay: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText", "rotation"],
-  led: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "icon", "trueColor", "falseColor", "trueLabel", "falseLabel"],
-  tank: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "showScale", "wave", "min", "max", "unit", "thresholds"],
+  led: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showText", "variant", "icon", "trueColor", "falseColor", "trueLabel", "falseLabel"],
+  tank: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showScale", "wave", "min", "max", "unit", "thresholds"],
   button: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"],
   setpoint: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"],
   multiState: ["label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"],

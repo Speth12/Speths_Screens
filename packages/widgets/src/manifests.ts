@@ -78,12 +78,14 @@ function widget(type: WidgetType, label: string, w: number, h: number, settings:
 export const MANIFESTS: WidgetManifest[] = [
   widget("gauge", "Gauge", 4, 3, [
     { key: "variant", label: "Style", kind: "choice", display: "select", default: "arc", options: [{ value: "arc", label: "Arc with a needle" }, { value: "ring", label: "Ring, value in the middle" }, { value: "half", label: "Half circle" }, { value: "dial", label: "Needle dial with ticks" }, { value: "bar", label: "Horizontal bar" }, { value: "vbar", label: "Vertical bar" }, { value: "segments", label: "Segments (blocks that light up)" }] },
-    { key: "showTicks", label: "Scale marks and end values", kind: "boolean", default: true },
+    { key: "showValue", label: "Show the value", kind: "boolean", default: true, half: true, note: "Off leaves only the gauge, for a number of your own beside it." },
+    { key: "showTicks", label: "Scale marks and end values", kind: "boolean", default: true, half: true },
     ...range(), unit,
     { key: "thresholds", label: "Fill color thresholds", kind: "list", item: thresholdItem, newItem: nextThreshold, empty: "No thresholds — default fill color" },
   ]),
   widget("numericDisplay", "Numeric", 3, 2, [
     { key: "variant", label: "Style", kind: "choice", display: "select", default: "plain", note: "The line and the arrow show the values since the screen was opened.", options: [{ value: "plain", label: "Plain number" }, { value: "sparkline", label: "With a small history line" }, { value: "range", label: "With a bar from min to max" }, { value: "trend", label: "With a rising or falling arrow" }, { value: "segment", label: "Seven-segment digits" }] },
+    { key: "showNumber", label: "Show the number", kind: "boolean", default: true, showIf: (c) => c.variant === "sparkline" || c.variant === "range" || c.variant === "trend", note: "Off leaves only the line, the bar or the arrow." },
     ...range(), unit,
   ]),
   widget("textDisplay", "Text", 4, 2, [
@@ -93,6 +95,7 @@ export const MANIFESTS: WidgetManifest[] = [
   ]),
   widget("led", "LED", 2, 2, [
     { key: "variant", label: "Style", kind: "choice", display: "select", default: "dot", options: [{ value: "dot", label: "Round light and text" }, { value: "pill", label: "Pill badge" }, { value: "tile", label: "Filled tile" }, { value: "lamp", label: "Square lamp" }, { value: "icon", label: "Icon" }, { value: "ring", label: "Ring" }] },
+    { key: "showText", label: "Show the state as text", kind: "boolean", default: true, note: "Off leaves only the light, as large as its place." },
     { key: "icon", label: "Icon", kind: "choice", display: "select", default: "bolt", showIf: (c) => c.variant === "icon", options: ICON_NAMES.map((value) => ({ value })) },
     { key: "trueColor", label: "ON color", kind: "color", default: "#22c55e", half: true },
     { key: "falseColor", label: "OFF color", kind: "color", default: "#3f3f46", half: true },
@@ -101,6 +104,7 @@ export const MANIFESTS: WidgetManifest[] = [
   ]),
   widget("tank", "Tank", 2, 4, [
     { key: "variant", label: "Style", kind: "choice", display: "select", default: "bar", options: [{ value: "bar", label: "Bar beside the value" }, { value: "cylinder", label: "Cylinder" }, { value: "silo", label: "Silo with a cone" }, { value: "vessel", label: "Vessel on its side" }, { value: "bottle", label: "Bottle" }, { value: "level", label: "The whole card fills" }] },
+    { key: "showValue", label: "Show the value", kind: "boolean", default: true, note: "Off leaves only the tank, for a number of your own beside it." },
     { key: "showScale", label: "Scale beside the tank", kind: "boolean", default: false, half: true, showIf: (c) => !!c.variant && c.variant !== "bar" && c.variant !== "level" },
     { key: "wave", label: "Moving surface", kind: "boolean", default: false, half: true, showIf: (c) => !!c.variant && c.variant !== "bar" && c.variant !== "level" },
     ...range(), unit,

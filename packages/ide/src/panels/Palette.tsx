@@ -1,7 +1,7 @@
 import { useProject } from "../store/projectStore";
-import { MANIFESTS, type WidgetManifest } from "@speths-screens/widgets";
+import { MANIFESTS, readyMadeFor, type ReadyMade, type WidgetManifest } from "@speths-screens/widgets";
 import { PresetList } from "./Presets";
-import { PALETTE_DRAG, fitNewWidget, newWidget, placeNew, visibleCanvasRect } from "../store/newWidget";
+import { PALETTE_DRAG, fitNewWidget, newWidget, placeNew, readyMadeInstance, visibleCanvasRect } from "../store/newWidget";
 import { useSelection } from "../store/selection";
 import { surfaceCustomWidget, surfaceOf, surfaceSnap } from "../store/surface";
 import { WidgetIcon } from "../ui/icons";
@@ -18,6 +18,23 @@ function useAddWidget() {
     if (!page) return;
     const pixel = surfaceSnap(project, activePageId) === "pixel";
     const w = fitNewWidget(newWidget(m, pixel), surfaceCustomWidget(project, activePageId));
+    const at = placeNew(visibleCanvasRect(), w, page.widgets, pixel);
+    addWidget(page.id, { ...w, ...at });
+    useSelection.getState().set([w.id]);
+  };
+}
+
+/** Adds a ready-made custom widget to the project (once) and places a copy of it in view, selected. */
+function useAddReadyMade() {
+  const { activePageId, addWidget, addCustomWidget } = useProject();
+  return (rm: ReadyMade) => {
+    const before = useProject.getState().project;
+    if (!before.customWidgets?.some((c) => c.id === rm.customWidget.id)) addCustomWidget(structuredClone(rm.customWidget));
+    const { project } = useProject.getState();
+    const page = surfaceOf(project, activePageId);
+    if (!page) return;
+    const pixel = surfaceSnap(project, activePageId) === "pixel";
+    const w = fitNewWidget(readyMadeInstance(rm, pixel), surfaceCustomWidget(project, activePageId));
     const at = placeNew(visibleCanvasRect(), w, page.widgets, pixel);
     addWidget(page.id, { ...w, ...at });
     useSelection.getState().set([w.id]);
@@ -51,21 +68,32 @@ export function Palette() {
 
 export function WidgetPalette() {
   const add = useAddWidget();
+  const addReadyMade = useAddReadyMade();
   return (
     <>
-    <div className="px-2 pt-2 text-[10px] text-zinc-500">Click to add in the middle of the page, or drag onto the page.</div>
+    <div className="px-2 pt-2 text-[10px] text-zinc-500">
+      Click to add in the middle of the page, or drag onto the page. Each is the element on its own; the indented ones are ready-made
+      custom widgets built from the elements, which you can open and change.
+    </div>
     <div className="p-2 space-y-1">
       {PALETTE.map((it) => (
-        <button
-          key={it.type}
-          draggable onDragStart={dragType(it)}
-          onClick={() => add(it)}
-          title={`Add a ${it.label}: click, or drag onto the page`}
-          className="w-full flex items-center gap-2 text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors cursor-grab"
-        >
-          <WidgetIcon type={it.type} size={14} />
-          {it.label}
-        </button>
+        <div key={it.type} className="space-y-1">
+          <button
+            draggable onDragStart={dragType(it)}
+            onClick={() => add(it)}
+            title={`Add a ${it.label}: click, or drag onto the page`}
+            className="w-full flex items-center gap-2 text-left text-[11px] px-3 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors cursor-grab"
+          >
+            <WidgetIcon type={it.type} size={14} />
+            {it.label}
+          </button>
+          {readyMadeFor(it.type).map((rm) => (
+            <button key={rm.customWidget.id} onClick={() => addReadyMade(rm)} title={`${rm.about}. A ready-made custom widget: added to the project and placed on the page.`}
+              className="w-[calc(100%-1rem)] ml-4 flex items-center gap-2 text-left text-[11px] px-2.5 py-1.5 rounded border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors">
+              {rm.name}
+            </button>
+          ))}
+        </div>
       ))}
     </div>
     <PresetList />

@@ -39,8 +39,8 @@ export interface GaugeDrawing {
   variant: GaugeVariantName;
   /** How full, 0 to 1. */
   pct: number;
-  /** The value as text, with its unit. */
-  text: string;
+  /** The value as text, with its unit; none draws the gauge alone. */
+  text?: string;
   min: number; max: number;
   color: string;
   showTicks?: boolean;
@@ -56,6 +56,8 @@ function Ends({ min, max }: { min: number; max: number }) {
 export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }: GaugeDrawing) {
   const f = clamp01(pct);
   const ticks = showTicks !== false;
+  // With no value and no end values the bar is the whole element and fills its place.
+  const alone = !text && !ticks;
   if (variant === "ring") {
     return (
       <div data-variant="ring" className="relative w-full h-full" style={{ containerType: "size" }}>
@@ -64,7 +66,7 @@ export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }:
           <circle cx="50" cy="50" r="41" fill="none" strokeWidth="9" strokeLinecap="round" pathLength={100}
             strokeDasharray={`${(f * 100).toFixed(2)} 100`} style={{ stroke: color, transition: "stroke-dasharray 0.3s ease-out", opacity: f > 0.004 ? 1 : 0 }} />
         </svg>
-        <div className={`absolute inset-0 flex items-center justify-center ${valueCls}`} style={valueText("clamp(0.875rem, 17cqmin, 2.5rem)")}>{text}</div>
+        {text && <div className={`absolute inset-0 flex items-center justify-center ${valueCls}`} style={valueText("clamp(0.875rem, 17cqmin, 2.5rem)")}>{text}</div>}
       </div>
     );
   }
@@ -78,7 +80,7 @@ export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }:
           {ticks && <text x="9" y="57.5" textAnchor="middle" fontSize="5" style={{ fill: muted }}>{min}</text>}
           {ticks && <text x="91" y="57.5" textAnchor="middle" fontSize="5" style={{ fill: muted }}>{max}</text>}
         </svg>
-        <div className={`absolute left-0 right-0 text-center ${valueCls}`} style={{ ...valueText("clamp(0.875rem, 15cqmin, 2.25rem)"), bottom: "12%" }}>{text}</div>
+        {text && <div className={`absolute left-0 right-0 text-center ${valueCls}`} style={{ ...valueText("clamp(0.875rem, 15cqmin, 2.25rem)"), bottom: "12%" }}>{text}</div>}
       </div>
     );
   }
@@ -100,18 +102,18 @@ export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }:
           </g>
           <circle cx="50" cy="52" r="4" style={{ fill: "var(--foreground)" }} />
         </svg>
-        <div className={`absolute left-0 right-0 bottom-0 text-center ${valueCls}`} style={valueText("clamp(0.75rem, 11cqmin, 1.75rem)")}>{text}</div>
+        {text && <div className={`absolute left-0 right-0 bottom-0 text-center ${valueCls}`} style={valueText("clamp(0.75rem, 11cqmin, 1.75rem)")}>{text}</div>}
       </div>
     );
   }
   if (variant === "vbar") {
     return (
       <div data-variant="vbar" className="flex h-full items-stretch gap-3">
-        <div className="relative w-5 shrink-0 rounded-full overflow-hidden" style={{ background: track }}>
+        <div className={`relative rounded-full overflow-hidden ${text || ticks ? "w-5 shrink-0" : "w-full"}`} style={{ background: track }}>
           <div className="absolute left-0 right-0 bottom-0 rounded-full" style={{ height: `${f * 100}%`, background: color, transition: "height 0.3s ease-out" }} />
         </div>
         {ticks && <div className="flex flex-col justify-between text-xs tabular-nums" style={{ color: muted }}><span>{max}</span><span>{min}</span></div>}
-        <div className={`flex items-center text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>
+        {text && <div className={`flex items-center text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>}
       </div>
     );
   }
@@ -119,8 +121,8 @@ export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }:
     const count = 12, lit = Math.round(f * count);
     return (
       <div data-variant="segments" className="flex flex-col h-full justify-center gap-2">
-        <div className={`text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>
-        <div className="flex gap-[3px] h-4">
+        {text && <div className={`text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>}
+        <div className={`flex gap-[3px] ${alone ? "h-full" : "h-4"}`}>
           {Array.from({ length: count }, (_, i) => (
             <div key={i} data-lit={i < lit || undefined} className="flex-1 rounded-[2px]" style={{ background: i < lit ? color : track, transition: "background 0.2s" }} />
           ))}
@@ -131,8 +133,8 @@ export function GaugeVariant({ variant, pct, text, min, max, color, showTicks }:
   }
   return (
     <div data-variant="bar" className="flex flex-col h-full justify-center gap-2">
-      <div className={`text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>
-      <div className="relative h-3 rounded-full overflow-hidden" style={{ background: track }}>
+      {text && <div className={`text-2xl ${valueCls}`} style={{ color: "var(--foreground)" }}>{text}</div>}
+      <div className={`relative rounded-full overflow-hidden ${alone ? "h-full" : "h-3"}`} style={{ background: track }}>
         <div className="absolute left-0 top-0 bottom-0 rounded-full" style={{ width: `${f * 100}%`, background: color, transition: "width 0.3s ease-out" }} />
       </div>
       {ticks && <Ends min={min} max={max} />}
@@ -162,8 +164,8 @@ export interface TankDrawing {
   min: number; max: number;
   showScale?: boolean;
   wave?: boolean;
-  /** The value, unit and quality, drawn beside (or over) the tank. */
-  children: React.ReactNode;
+  /** The value, unit and quality, drawn beside (or over) the tank; none draws the tank alone. */
+  children?: React.ReactNode;
 }
 
 export function TankVariant({ variant, pct, color, min, max, showScale, wave, children }: TankDrawing) {
@@ -181,9 +183,9 @@ export function TankVariant({ variant, pct, color, min, max, showScale, wave, ch
   const top = s.h * (1 - f);
   const quarters = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <div data-variant={variant} className="flex gap-3 h-full items-end">
+    <div data-variant={variant} className={`flex gap-3 h-full items-end ${children ? "" : "justify-center"}`}>
       {wave && <style>{WAVE_CSS}</style>}
-      <svg viewBox={`0 0 ${s.w} ${s.h}`} className="h-full shrink min-w-0" style={{ aspectRatio: `${s.w} / ${s.h}`, maxWidth: "60%" }}>
+      <svg viewBox={`0 0 ${s.w} ${s.h}`} className="h-full shrink min-w-0" style={{ aspectRatio: `${s.w} / ${s.h}`, maxWidth: children ? "60%" : "100%" }}>
         <defs><clipPath id={`tank-${id}`}><path d={s.d} /></clipPath></defs>
         <path d={s.d} style={{ fill: track }} />
         <g clipPath={`url(#tank-${id})`}>
@@ -201,7 +203,7 @@ export function TankVariant({ variant, pct, color, min, max, showScale, wave, ch
           {quarters.map((q) => <span key={q}>{Math.round((min + (max - min) * q) * 100) / 100}</span>)}
         </div>
       )}
-      <div className="flex flex-col justify-end pb-1 min-w-0">{children}</div>
+      {children && <div className="flex flex-col justify-end pb-1 min-w-0">{children}</div>}
     </div>
   );
 }
@@ -209,12 +211,13 @@ export function TankVariant({ variant, pct, color, min, max, showScale, wave, ch
 // ── Number ─────────────────────────────────────────────────────────────────
 
 /** A small line of the values shown since the screen was drawn. */
-export function Sparkline({ values, color = "var(--primary)" }: { values: number[]; color?: string }) {
-  if (values.length < 2) return <div data-variant="sparkline" className="h-6 mt-1" />;
+export function Sparkline({ values, color = "var(--primary)", fill }: { values: number[]; color?: string; fill?: boolean }) {
+  const box = fill ? "w-full h-full" : "w-full h-6 mt-1";
+  if (values.length < 2) return <div data-variant="sparkline" className={box} />;
   const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * 100).toFixed(1)},${(22 - ((v - lo) / span) * 20).toFixed(1)}`).join(" ");
   return (
-    <svg data-variant="sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" className="w-full h-6 mt-1">
+    <svg data-variant="sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" className={box}>
       <polyline points={pts} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" style={{ stroke: color }} />
     </svg>
   );
@@ -280,10 +283,16 @@ export function SegmentDigits({ text, color = "var(--foreground)" }: { text: str
 // ── State light ────────────────────────────────────────────────────────────
 
 export type LedVariantName = "pill" | "tile" | "lamp" | "icon" | "ring";
-export interface LedDrawing { variant: LedVariantName; on: boolean; color: string; label: string; icon?: PageIcon }
+export interface LedDrawing { variant: LedVariantName; on: boolean; color: string;
+  /** The state as text; none draws the light alone, as large as its place. */
+  label?: string; icon?: PageIcon }
+
+/** A light's size: small beside its text, or as large as its place when it is alone. */
+export const lightBox = (alone: boolean, small: string) => (alone ? "h-full aspect-square max-w-full" : small);
 
 export function LedVariant({ variant, on, color, label, icon }: LedDrawing) {
-  const text = <span className="text-sm font-medium">{label}</span>;
+  const alone = !label;
+  const text = label ? <span className="text-sm font-medium">{label}</span> : null;
   if (variant === "pill") {
     return (
       <div data-variant="pill" className="flex items-center h-full">
@@ -301,7 +310,7 @@ export function LedVariant({ variant, on, color, label, icon }: LedDrawing) {
   if (variant === "lamp") {
     return (
       <div data-variant="lamp" className="flex items-center gap-2 h-full">
-        <div className="w-7 h-7 rounded-[3px]" style={{ background: color, border: "2px solid color-mix(in srgb, var(--foreground) 35%, transparent)", boxShadow: on ? `0 0 10px ${color}` : "inset 0 0 6px rgba(0,0,0,.35)" }} />
+        <div className={`${lightBox(alone, "w-7 h-7")} rounded-[3px]`} style={{ background: color, border: "2px solid color-mix(in srgb, var(--foreground) 35%, transparent)", boxShadow: on ? `0 0 10px ${color}` : "inset 0 0 6px rgba(0,0,0,.35)" }} />
         {text}
       </div>
     );
@@ -309,14 +318,14 @@ export function LedVariant({ variant, on, color, label, icon }: LedDrawing) {
   if (variant === "ring") {
     return (
       <div data-variant="ring" className="flex items-center gap-2 h-full">
-        <div className="w-6 h-6 rounded-full" style={{ border: `3px solid ${color}`, background: on ? color : "transparent", transition: "background 0.2s" }} />
+        <div className={`${lightBox(alone, "w-6 h-6")} rounded-full`} style={{ border: `3px solid ${color}`, background: on ? color : "transparent", transition: "background 0.2s" }} />
         {text}
       </div>
     );
   }
   return (
     <div data-variant="icon" className="flex items-center gap-2 h-full" >
-      <span style={{ color, opacity: on ? 1 : 0.7 }}><Icon name={icon ?? "bolt"} size={28} /></span>
+      <span className={alone ? "h-full aspect-square [&>svg]:w-full [&>svg]:h-full" : ""} style={{ color, opacity: on ? 1 : 0.7 }}><Icon name={icon ?? "bolt"} size={28} /></span>
       {text}
     </div>
   );
