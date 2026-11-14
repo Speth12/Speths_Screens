@@ -96,7 +96,7 @@ export const MANIFESTS: WidgetManifest[] = [
   widget("led", "LED", 2, 2, [
     { key: "variant", label: "Style", kind: "choice", display: "select", default: "dot", options: [{ value: "dot", label: "Round light and text" }, { value: "pill", label: "Pill badge" }, { value: "tile", label: "Filled tile" }, { value: "lamp", label: "Square lamp" }, { value: "icon", label: "Icon" }, { value: "ring", label: "Ring" }] },
     { key: "showText", label: "Show the state as text", kind: "boolean", default: true, note: "Off leaves only the light, as large as its place." },
-    { key: "icon", label: "Icon", kind: "choice", display: "select", default: "bolt", showIf: (c) => c.variant === "icon", options: ICON_NAMES.map((value) => ({ value })) },
+    { key: "icon", label: "Icon", kind: "choice", display: "icons", default: "bolt", showIf: (c) => c.variant === "icon", options: ICON_NAMES.map((value) => ({ value })) },
     { key: "trueColor", label: "ON color", kind: "color", default: "#22c55e", half: true },
     { key: "falseColor", label: "OFF color", kind: "color", default: "#3f3f46", half: true },
     { key: "trueLabel", label: "ON label", kind: "text", default: "ON", half: true },
@@ -112,12 +112,22 @@ export const MANIFESTS: WidgetManifest[] = [
   ]),
   // What a button does is its events; new buttons write 1 while pressed.
   widget("button", "Button", 3, 2, [
-    { key: "btnVariant", label: "Variant", kind: "choice", default: "filled",
-      options: ["filled", "outlined", "ghost", "flat", "industrial"].map((value) => ({ value })) },
-    { key: "btnColor", label: "Color", kind: "choice", display: "swatches", default: "blue", options: BUTTON_SWATCHES },
-    { key: "btnRounded", label: "Corners", kind: "choice", default: "md",
+    { key: "btnShape", label: "Shape", kind: "choice", default: "rectangle",
+      options: [{ value: "rectangle", label: "Rectangle" }, { value: "square", label: "Square" }, { value: "round", label: "Round" }, { value: "pill", label: "Pill" }] },
+    { key: "btnVariant", label: "Look", kind: "choice", display: "select", default: "filled",
+      options: [{ value: "filled", label: "Solid color" }, { value: "raised", label: "3D, presses down" }, { value: "glossy", label: "Glossy" }, { value: "pushbutton", label: "Realistic pushbutton (metal ring)" },
+        { value: "industrial", label: "Shaded panel button" }, { value: "flat", label: "Tinted" }, { value: "outlined", label: "Outlined" }, { value: "ghost", label: "Text only" }] },
+    { key: "btnColor", label: "Color", kind: "choice", display: "swatches", default: "blue", options: BUTTON_SWATCHES, showIf: (c) => !c.btnCustomColor },
+    { key: "btnCustomColor", label: "Any color", kind: "color", optional: true, default: "#0ea5e9" },
+    { key: "btnRounded", label: "Corners", kind: "choice", default: "md", showIf: (c) => !c.btnShape || c.btnShape === "rectangle" || c.btnShape === "square",
       options: ["none", "sm", "md", "lg", "full"].map((value) => ({ value })) },
-    { key: "icon", label: "Icon (emoji or symbol)", kind: "text", placeholder: "e.g. ▶ 🔴 ⚙" },
+    { key: "iconName", label: "Icon", kind: "choice", display: "icons", default: "", showIf: (c) => !c.btnImage, options: [{ value: "", label: "None" }, ...ICON_NAMES.map((value) => ({ value }))] },
+    { key: "icon", label: "Or an emoji or symbol", kind: "text", placeholder: "e.g. ▶ 🔴 ⚙", showIf: (c) => !c.iconName && !c.btnImage },
+    { key: "btnImage", label: "Or a picture (a logo)", kind: "projectImage" },
+    { key: "btnLayout", label: "Icon and text", kind: "choice", default: "beside", options: [{ value: "beside", label: "Side by side" }, { value: "stacked", label: "Icon over text" }, { value: "iconOnly", label: "Icon only" }] },
+    { key: "toggleStyle", label: "A toggle is drawn as", kind: "choice", display: "select", default: "plain", note: "For a button whose click toggles its tag.", options: [{ value: "plain", label: "A button that lights up" }, { value: "switch", label: "Sliding switch" }, { value: "rocker", label: "Rocker" }, { value: "checkbox", label: "Checkbox" }, { value: "segments", label: "Off and on side by side" }] },
+    { key: "offLabel", label: "Text for off", kind: "text", default: "OFF", half: true, showIf: (c) => c.toggleStyle === "rocker" || c.toggleStyle === "segments" },
+    { key: "onLabel", label: "Text for on", kind: "text", default: "ON", half: true, showIf: (c) => c.toggleStyle === "rocker" || c.toggleStyle === "segments" },
     { key: "toggleOnColor", label: "Toggle ON color", kind: "choice", display: "swatches", default: "green", options: BUTTON_SWATCHES,
       note: "Used when the button has a toggle action" },
     { key: "toggleOffColor", label: "Toggle OFF color", kind: "choice", display: "swatches", default: "zinc", options: BUTTON_SWATCHES },
@@ -125,14 +135,19 @@ export const MANIFESTS: WidgetManifest[] = [
   widget("setpoint", "Setpoint", 4, 2, [
     ...range(), unit,
     { key: "step", label: "Step", kind: "number", default: 1, min: 0.01, step: 0.1 },
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "slider", options: [{ value: "slider", label: "Slider" }, { value: "fat", label: "Thick slider (for a finger)" }, { value: "knob", label: "Rotary knob" }, { value: "stepper", label: "Minus and plus buttons" }] },
+    { key: "showValue", label: "Show the value", kind: "boolean", default: true, half: true },
+    { key: "showTicks", label: "Lowest and highest value", kind: "boolean", default: true, half: true, showIf: (c) => !c.variant || c.variant === "slider" || c.variant === "fat" },
   ]),
   widget("multiState", "Multi-State", 3, 2, [
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "tile", options: [{ value: "tile", label: "Filled block" }, { value: "label", label: "Text in the state's color" }, { value: "pill", label: "Pill badge" }, { value: "stepper", label: "Every state in a row" }, { value: "icon", label: "Icon and text" }] },
     { key: "states", label: "States", kind: "list", seed: () => DEFAULT_STATES,
       item: [
         { key: "value", label: "Value", kind: "value", default: 0, half: true },
         { key: "label", label: "Label", kind: "text", half: true },
         { key: "color", label: "Background", kind: "color", default: "#1c1c1e", half: true },
         { key: "textColor", label: "Text", kind: "color", default: "#ffffff", half: true },
+        { key: "icon", label: "Icon (the icon style)", kind: "choice", display: "icons", default: "", options: [{ value: "", label: "First letter" }, ...ICON_NAMES.map((value) => ({ value }))] },
       ],
       newItem: (items) => ({ value: items.length, label: `STATE ${items.length}`, color: "#1c1c1e", textColor: "#ffffff" }) },
   ]),
@@ -180,10 +195,18 @@ export const MANIFESTS: WidgetManifest[] = [
   widget("textInput", "Text In", 3, 2, []),
   widget("historyLog", "History", 6, 4, [
     { key: "pageSize", label: "Rows to fetch", kind: "number", default: 100, min: 10, max: 500 },
+    { key: "showExport", label: "Button to save the rows as a CSV file", kind: "boolean", default: true },
+    { key: "rowStyle", label: "Rows", kind: "choice", display: "select", default: "", options: [{ value: "", label: "The widget's own" }, { value: "lined", label: "A line under each" }, { value: "striped", label: "Every other row shaded" }, { value: "cards", label: "Each row its own block" }, { value: "bare", label: "Nothing between them" }] },
+    { key: "rowSize", label: "Row height", kind: "choice", default: "", options: [{ value: "", label: "own" }, { value: "tight", label: "tight" }, { value: "normal", label: "normal" }, { value: "roomy", label: "roomy (for a finger)" }] },
   ]),
   widget("alarmBanner", "Alarms", 6, 3, [
     { key: "maxRows", label: "Max rows", kind: "number", default: 5, min: 1, max: 20 },
     { key: "showAcked", label: "Show acknowledged alarms", kind: "boolean", default: false },
+    { key: "showSeverity", label: "Severity", kind: "boolean", default: true, half: true },
+    { key: "showValue", label: "Value", kind: "boolean", default: true, half: true },
+    { key: "showTime", label: "Time", kind: "boolean", default: true, half: true },
+    { key: "rowStyle", label: "Rows", kind: "choice", display: "select", default: "", options: [{ value: "", label: "The widget's own" }, { value: "lined", label: "A line under each" }, { value: "striped", label: "Every other row shaded" }, { value: "cards", label: "Each row its own block" }, { value: "bare", label: "Nothing between them" }] },
+    { key: "rowSize", label: "Row height", kind: "choice", default: "", options: [{ value: "", label: "own" }, { value: "tight", label: "tight" }, { value: "normal", label: "normal" }, { value: "roomy", label: "roomy (for a finger)" }] },
   ], { bindings: [] }),
   widget("image", "Image", 3, 3, [
     { key: "src", label: "Image", kind: "image" },
@@ -195,6 +218,12 @@ export const MANIFESTS: WidgetManifest[] = [
     { key: "params", label: "Parameters", kind: "customWidgetParams" },
   ], { bindings: [] }),
   widget("table", "Table", 4, 4, [
+    { key: "showHeader", label: "Heading row", kind: "boolean", default: true },
+    { key: "nameHeader", label: "Heading over the names", kind: "text", default: "Tag", half: true, showIf: (c) => c.showHeader !== false },
+    { key: "valueHeader", label: "Heading over the values", kind: "text", default: "Value", half: true, showIf: (c) => c.showHeader !== false },
+    { key: "rowStyle", label: "Rows", kind: "choice", display: "select", default: "", options: [{ value: "", label: "The widget's own" }, { value: "lined", label: "A line under each" }, { value: "striped", label: "Every other row shaded" }, { value: "cards", label: "Each row its own block" }, { value: "bare", label: "Nothing between them" }] },
+    { key: "rowSize", label: "Row height", kind: "choice", default: "", options: [{ value: "", label: "own" }, { value: "tight", label: "tight" }, { value: "normal", label: "normal" }, { value: "roomy", label: "roomy (for a finger)" }] },
+    { key: "headerColor", label: "Heading row color", kind: "color", optional: true, default: "#2f4f6f" },
     { key: "rows", label: "Rows", kind: "list", empty: "No rows configured",
       item: [
         { key: "label", label: "Label", kind: "text", half: true },
@@ -263,6 +292,9 @@ export const MANIFESTS: WidgetManifest[] = [
   ], { bindings: [], events: [] }),
   widget("recipes", "Recipes", 4, 5, [
     { key: "recipeSetId", label: "Recipe set", kind: "recipe", note: "Blank shows the first set of the project." },
+    { key: "rowStyle", label: "Rows", kind: "choice", display: "select", default: "", options: [{ value: "", label: "The widget's own" }, { value: "lined", label: "A line under each" }, { value: "striped", label: "Every other row shaded" }, { value: "cards", label: "Each row its own block" }, { value: "bare", label: "Nothing between them" }] },
+    { key: "rowSize", label: "Row height", kind: "choice", default: "", options: [{ value: "", label: "own" }, { value: "tight", label: "tight" }, { value: "normal", label: "normal" }, { value: "roomy", label: "roomy (for a finger)" }] },
+    { key: "headerColor", label: "Heading row color", kind: "color", optional: true, default: "#2f4f6f" },
   ], { bindings: [], events: [], legacyProps: ["recipeId", "showEntries"] }),
   widget("userMenu", "User menu", 1, 1, [
     { key: "showName", label: "Show the name beside the icon", kind: "boolean", default: false },
@@ -282,6 +314,7 @@ export const FRAME_SETTINGS: SettingsGroup[] = [
   ] },
   { title: "Appearance", fields: [
     { key: "label", label: "Label", kind: "text" },
+    { key: "labelIcon", label: "Icon before the label", kind: "choice", display: "icons", default: "", options: [{ value: "", label: "None" }, ...ICON_NAMES.map((value) => ({ value }))] },
     { key: "bgColor", label: "Background", kind: "color", optional: true, none: "transparent", default: "#1c1c1e" },
     { key: "borderColor", label: "Border color", kind: "color", optional: true, none: "transparent", default: "#3f3f46" },
     { key: "showLabel", label: "Show the label", kind: "boolean", default: true },

@@ -6,7 +6,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  Access, Action, ButtonColor, CustomWidgetPart, FrameProps, StateEntry, Threshold, TypedWidget,
+  Access, Action, ButtonColor, CustomWidgetParam, CustomWidgetPart, FrameProps, StateEntry, Threshold, TypedWidget,
   Widget, WidgetBindings, WidgetEvents, WidgetType,
 } from "@speths-screens/shared-types";
 import { useHost, useTag, useTags, type TagState, type WriteRequest } from "./host";
@@ -16,6 +16,11 @@ import { SYMBOLS } from "./symbols";
 import { AccessGate } from "./access";
 import { usePopups } from "./popup";
 import { fontStack, tokenColor } from "./tokens";
+import { FAT_SLIDER_CSS, Knob, MultiStateVariant, Stepper, ToggleVisual, type MultiStateVariantName, type ToggleStyleName } from "./controls";
+import { BUTTON_COLORS, BUTTON_CSS, ButtonFace, type ButtonLook, type ButtonShape } from "./button";
+import { Icon } from "./icons";
+import { ROWS_CSS, rowLook } from "./rows";
+import { withStyle } from "./styles";
 import { GaugeVariant, LedVariant, lightBox, RangeBar, SegmentDigits, Sparkline, TankVariant, TrendArrow, useRecent, type GaugeVariantName, type LedVariantName, type TankVariantName } from "./variants";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
@@ -232,7 +237,9 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
 
   const { bgColor, borderColor, textColor } = p;
   const themeCard = useHost().useCardStyle?.();
-  const cardStyle = p.cardStyle ?? themeCard ?? "plain";
+  // The theme's card style is for cards in the theme's own color; a widget given a color of its own
+  // (a logo block, a colored tile) keeps it unless it asks for a style itself.
+  const cardStyle = p.cardStyle ?? (bgColor ? "plain" : themeCard) ?? "plain";
 
   const isTransparent = bgColor === "none" || bgColor === "transparent";
 
@@ -261,7 +268,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   // no shadow or corners either, but it keeps its label.
   const noBorder = borderColor === "none" || borderColor === "transparent";
   const cardless = isTransparent && noBorder;
-  const bare = w.type === "pipe" || w.type === "shape" || ((w.type === "symbol" || SHELL_TYPES.has(w.type)) && !bgColor && !borderColor);
+  const bare = w.type === "pipe" || w.type === "shape" || ((w.type === "symbol" || w.type === "button" || SHELL_TYPES.has(w.type)) && !bgColor && !borderColor);
   if (bare || cardless) {
     style.background = "transparent";
     style.border = "none";
@@ -289,7 +296,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
             margin: "calc(-1 * var(--frame-pad)) calc(-1 * var(--frame-pad)) 0", padding: "0.3rem var(--frame-pad)" }
         : labelStyle(p, dynColor ?? (textColor ?? "var(--card-foreground)"))}
     >
-      {p.label}
+      {p.labelIcon ? <span className="inline-flex items-center gap-1.5 max-w-full"><Icon name={p.labelIcon} size={14} /><span className="truncate">{p.label}</span></span> : p.label}
     </div>
   );
   return (
@@ -538,52 +545,30 @@ function TankWidget({ w }: WP<"tank">) {
 
 // ── Button style system ────────────────────────────────────────────────────
 
-type BtnVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
-type BtnRounded = "none" | "sm" | "md" | "lg" | "full";
-
-const BTN_ROUNDED: Record<BtnRounded, string> = {
-  none: "rounded-none", sm: "rounded-sm", md: "rounded-md", lg: "rounded-lg", full: "rounded-full",
-};
-
-const BTN_COLORS: Record<ButtonColor, Record<BtnVariant, string>> = {
-  blue:   { filled: "bg-blue-600 hover:bg-blue-500 text-white",                 outlined: "border-2 border-blue-500 text-blue-300 hover:bg-blue-900/30",   ghost: "text-blue-300 hover:bg-blue-900/40",      flat: "bg-blue-900/40 text-blue-300 hover:bg-blue-800/50",   industrial: "bg-gradient-to-b from-blue-500 to-blue-700 border border-blue-900 text-white shadow-inner" },
-  green:  { filled: "bg-emerald-600 hover:bg-emerald-500 text-white",           outlined: "border-2 border-emerald-500 text-emerald-300 hover:bg-emerald-900/30", ghost: "text-emerald-300 hover:bg-emerald-900/40", flat: "bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/50", industrial: "bg-gradient-to-b from-emerald-500 to-emerald-700 border border-emerald-900 text-white shadow-inner" },
-  red:    { filled: "bg-red-600 hover:bg-red-500 text-white",                   outlined: "border-2 border-red-500 text-red-300 hover:bg-red-900/30",       ghost: "text-red-300 hover:bg-red-900/40",        flat: "bg-red-900/40 text-red-300 hover:bg-red-800/50",       industrial: "bg-gradient-to-b from-red-500 to-red-700 border border-red-900 text-white shadow-inner" },
-  amber:  { filled: "bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold",  outlined: "border-2 border-amber-500 text-amber-300 hover:bg-amber-900/30",  ghost: "text-amber-300 hover:bg-amber-900/40",    flat: "bg-amber-900/40 text-amber-300 hover:bg-amber-800/50",  industrial: "bg-gradient-to-b from-amber-400 to-amber-600 border border-amber-900 text-zinc-900 shadow-inner" },
-  zinc:   { filled: "bg-zinc-700 hover:bg-zinc-600 text-zinc-100",              outlined: "border-2 border-zinc-500 text-zinc-300 hover:bg-zinc-800",        ghost: "text-zinc-300 hover:bg-zinc-800",          flat: "bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/60",    industrial: "bg-gradient-to-b from-zinc-500 to-zinc-700 border border-zinc-900 text-white shadow-inner" },
-  purple: { filled: "bg-purple-600 hover:bg-purple-500 text-white",             outlined: "border-2 border-purple-500 text-purple-300 hover:bg-purple-900/30", ghost: "text-purple-300 hover:bg-purple-900/40",  flat: "bg-purple-900/40 text-purple-300 hover:bg-purple-800/50", industrial: "bg-gradient-to-b from-purple-500 to-purple-700 border border-purple-900 text-white shadow-inner" },
-  orange: { filled: "bg-orange-500 hover:bg-orange-400 text-white",             outlined: "border-2 border-orange-500 text-orange-300 hover:bg-orange-900/30", ghost: "text-orange-300 hover:bg-orange-900/40",  flat: "bg-orange-900/40 text-orange-300 hover:bg-orange-800/50", industrial: "bg-gradient-to-b from-orange-400 to-orange-600 border border-orange-900 text-white shadow-inner" },
-  white:  { filled: "bg-white hover:bg-zinc-100 text-zinc-900",                 outlined: "border-2 border-zinc-300 text-zinc-100 hover:bg-zinc-800",         ghost: "text-zinc-200 hover:bg-zinc-800",          flat: "bg-white/10 text-zinc-200 hover:bg-white/20",          industrial: "bg-gradient-to-b from-zinc-200 to-zinc-400 border border-zinc-600 text-zinc-900 shadow-inner" },
-};
-
-function btnClass(variant: BtnVariant | undefined, color: ButtonColor, rounded: BtnRounded | undefined, activeOn = false): string {
-  const colorCls = BTN_COLORS[color]?.[variant ?? "filled"] ?? BTN_COLORS.blue.filled;
-  const roundedCls = BTN_ROUNDED[rounded ?? "md"] ?? "rounded-md";
-  const activeCls = activeOn ? "ring-2 ring-current ring-offset-1 ring-offset-zinc-950" : "";
-  return `w-full h-full ${roundedCls} ${colorCls} text-sm font-medium transition-all active:scale-95 ${activeCls}`;
-}
-
-// ── Write widgets ──────────────────────────────────────────────────────────
-
-/** A button only draws: what it does is its events (see Interaction). A
- *  button with a toggle action shows its tag's state. */
 function ButtonWidget({ w }: WP<"button">) {
   const p = w.props ?? {};
   const t = useTag(w.bindings?.value);
+  const host = useHost();
+  const libImage = host.useImage(p.btnImage ?? "");
   const clicks = w.events?.onClick ?? [];
   const toggles = clicks.some((a) => a.type === "toggle");
   const navigates = clicks.some((a) => a.type === "navigate");
   const on = toggles && !!t.value;
-  const color: ButtonColor = toggles
-    ? (on ? p.toggleOnColor as ButtonColor | undefined ?? "green" : p.toggleOffColor as ButtonColor | undefined ?? "zinc")
-    : p.btnColor ?? (navigates ? "purple" : "blue");
+  const named = (c: string | undefined, missing: ButtonColor) => BUTTON_COLORS[(c as ButtonColor | undefined) ?? missing] ?? BUTTON_COLORS[missing];
+  if (toggles && p.toggleStyle && p.toggleStyle !== "plain") {
+    return <ToggleVisual style={p.toggleStyle as ToggleStyleName} on={on} color={p.btnCustomColor || named(p.toggleOnColor, "green")}
+      label={p.label} onLabel={p.onLabel} offLabel={p.offLabel} />;
+  }
+  // A toggle shows its on and off colors; any other button its own (a custom color wins over the named ones).
+  const color = toggles
+    ? (on ? named(p.toggleOnColor, "green") : named(p.toggleOffColor, "zinc"))
+    : p.btnCustomColor || named(p.btnColor, navigates ? "purple" : "blue");
   return (
-    <button className={btnClass(p.btnVariant, color, p.btnRounded, on)}>
-      <span className="flex items-center justify-center gap-1.5">
-        {p.icon && <span className="text-base leading-none">{p.icon}</span>}
-        {p.label ?? "Press"}
-      </span>
-    </button>
+    <>
+      <style>{BUTTON_CSS}</style>
+      <ButtonFace look={p.btnVariant as ButtonLook | undefined} shape={p.btnShape as ButtonShape | undefined} rounded={p.btnRounded} color={color} on={on}
+        label={p.label} iconName={p.iconName} icon={p.icon} image={p.btnImage ? libImage : undefined} layout={p.btnLayout as "beside" | "stacked" | "iconOnly" | undefined} />
+    </>
   );
 }
 
@@ -674,12 +659,23 @@ function SetpointWidget({ w }: WP<"setpoint">) {
     if (tag) host.requestWrite({ binding: tag, value: n, widgetId: w.id });
   };
 
+  const variant = p.variant ?? "slider";
+  const shown = displayVal.toFixed(step < 1 ? 1 : 0);
+  const text = p.showValue === false ? undefined : `${shown}${p.unit && p.showUnit !== false ? ` ${p.unit}` : ""}`;
+  if (variant === "knob") return <Knob value={displayVal} min={min} max={max} step={step} text={text} onDraft={setDraft} onCommit={commit} />;
+  if (variant === "stepper") return <Stepper value={displayVal} min={min} max={max} step={step} text={text} onCommit={commit} />;
+  const fat = variant === "fat";
+  const ends = p.showTicks !== false;
+
   return (
-    <div className="flex flex-col h-full justify-center gap-2">
+    <div data-setpoint={variant} className="flex flex-col h-full justify-center gap-2">
+      {fat && <style>{FAT_SLIDER_CSS}</style>}
+      {p.showValue !== false && (
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-semibold tabular-nums">{displayVal.toFixed(step < 1 ? 1 : 0)}</span>
-        {p.unit && <span className="text-xs text-zinc-500">{p.unit}</span>}
+        <span className="text-2xl font-semibold tabular-nums">{shown}</span>
+        {p.unit && p.showUnit !== false && <span className="text-xs text-zinc-500">{p.unit}</span>}
       </div>
+      )}
       <input
         type="range"
         min={min} max={max} step={step}
@@ -687,15 +683,17 @@ function SetpointWidget({ w }: WP<"setpoint">) {
         onChange={(e) => setDraft(Number(e.target.value))}
         onMouseUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
         onTouchEnd={(e) => commit(Number((e.target as HTMLInputElement).value))}
-        className="w-full accent-blue-500 cursor-pointer"
+        className={fat ? "ss-fat" : "w-full accent-blue-500 cursor-pointer"}
       />
+      {(ends || qualityShown(p.showQuality, t.quality)) && (
       <div className="flex justify-between text-xs text-zinc-600">
-        <span>{min}</span>
+        <span>{ends ? min : ""}</span>
         {qualityShown(p.showQuality, t.quality) && (
           <span className={qualityColor[t.quality] ?? "text-zinc-600"}>{t.quality}</span>
         )}
-        <span>{max}</span>
+        <span>{ends ? max : ""}</span>
       </div>
+      )}
     </div>
   );
 }
@@ -732,17 +730,21 @@ function HistoryLogWidget({ w }: WP<"historyLog">) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
+  const look = rowLook(w.props);
   return (
-    <div className="h-full flex flex-col">
+    <div {...look.attrs} style={look.style} className="h-full flex flex-col">
+      {look.styled && <style>{ROWS_CSS}</style>}
+      {w.props?.showExport !== false && (
       <div className="flex items-center justify-end mb-0.5 shrink-0">
         <button onClick={downloadCSV} className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400">
           ↓ CSV
         </button>
       </div>
+      )}
       <div className="flex-1 overflow-auto text-xs tabular-nums space-y-0.5">
         {rows.length === 0 && <div className="text-zinc-600 italic">No history</div>}
         {[...rows].reverse().map((r, i) => (
-          <div key={i} className="flex gap-2 border-b border-zinc-800/50 pb-0.5">
+          <div key={i} className="ss-row flex gap-2 border-b border-zinc-800/50 pb-0.5">
             <span className="text-zinc-600 shrink-0">
               {new Date(r.ts > 1e15 ? r.ts / 1e6 : r.ts).toLocaleTimeString()}
             </span>
@@ -765,6 +767,8 @@ function MultiStateWidget({ w }: WP<"multiState">) {
   const bg      = match?.color    ?? "#1c1c1e";
   const textClr = match?.textColor ?? "#71717a";
   const text    = match?.label    ?? (raw == null ? "—" : String(raw));
+  const variant = w.props?.variant;
+  if (variant && variant !== "tile") return <MultiStateVariant variant={variant as MultiStateVariantName} states={states} current={match} text={text} />;
 
   return (
     <div
@@ -786,9 +790,34 @@ export function rewriteBinding(binding: string | undefined, params: Record<strin
   return binding.replace(/\{(\w+)\}/g, (_, key: string) => params[key] ?? `{${key}}`);
 }
 
+/** The settings of a part that are text a person reads, where a text parameter's {name} is filled in. */
+const TEXT_SETTINGS = ["label", "staticText", "trueLabel", "falseLabel", "unit", "placeholder"] as const;
+
+/** The text each text parameter stands for in one use: what the use gives, else the parameter's default. */
+export function textParams(defs: readonly CustomWidgetParam[] | undefined, given: Record<string, string>): Record<string, string> | undefined {
+  const texts = (defs ?? []).filter((d) => d.kind === "text");
+  if (!texts.length) return undefined;
+  return Object.fromEntries(texts.map((d) => [d.name, given[d.name] || d.default || ""]));
+}
+
+/** A part's settings with {name} replaced in its texts; other braces are left as written. */
+export function fillTexts<P extends Record<string, unknown> | undefined>(props: P, texts: Record<string, string> | undefined): P {
+  if (!props || !texts) return props;
+  let out: Record<string, unknown> | undefined;
+  for (const key of TEXT_SETTINGS) {
+    const v = props[key];
+    if (typeof v !== "string" || !v.includes("{")) continue;
+    const filled = v.replace(/\{(\w+)\}/g, (all, name: string) => (name in texts ? texts[name]! : all));
+    if (filled !== v) (out ??= { ...props })[key] = filled;
+  }
+  return (out ?? props) as P;
+}
+
 /** A custom widget part with the instance's parameters filled into its
- *  tags (bindings, action tags and dynamics). */
-function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Widget {
+ *  tags (bindings, action tags and dynamics) and, for text parameters, its texts. */
+function resolveInner(fw: CustomWidgetPart, params: Record<string, string>, texts?: Record<string, string>): Widget {
+  // A text parameter is no tag: a part's tag naming one would read the text as a path.
+  if (texts) params = Object.fromEntries(Object.entries(params).filter(([k]) => !(k in texts)));
   const rb = (b: string | undefined) => rewriteBinding(b, params);
   const bindings: WidgetBindings | undefined = fw.bindings && {
     value: rb(fw.bindings.value), visible: rb(fw.bindings.visible), color: rb(fw.bindings.color),
@@ -803,9 +832,10 @@ function resolveInner(fw: CustomWidgetPart, params: Record<string, string>): Wid
     Object.entries(fw.dynamics).map(([k, d]) => [k, { ...d, expr: rewriteExpr(d.expr, params) }]),
   );
   // A custom widget placed inside this one passes its own parameters on: their values may name this one's.
+  const all = texts ? { ...params, ...texts } : params;
   const props = fw.type === "customWidget" && fw.props?.params
-    ? { ...fw.props, params: Object.fromEntries(Object.entries(fw.props.params).map(([k, v]) => [k, rewriteBinding(v, params) ?? v])) }
-    : fw.props;
+    ? { ...fw.props, params: Object.fromEntries(Object.entries(fw.props.params).map(([k, v]) => [k, rewriteBinding(v, all) ?? v])) }
+    : fillTexts(fw.props as Record<string, unknown> | undefined, texts);
   const { localId, ...rest } = fw;
   return { ...rest, id: localId, props, bindings, events, dynamics } as Widget;
 }
@@ -836,7 +866,7 @@ function useBoxSize(): [React.RefCallback<HTMLDivElement>, Size] {
 
 /** A custom widget with a designed size. Pinned to an edge its parts follow their anchors and keep
  *  their size; placed anywhere else the whole design is scaled to fit, keeping its proportions. */
-function DesignedCustomWidget({ parts, design, params }: { parts: CustomWidgetPart[]; design: Size; params: Record<string, string> }) {
+function DesignedCustomWidget({ parts, design, params, texts }: { parts: CustomWidgetPart[]; design: Size; params: Record<string, string>; texts?: Record<string, string> }) {
   const pinned = useContext(FrameSlotContext);
   const [ref, box] = useBoxSize();
   const inner = (
@@ -844,7 +874,7 @@ function DesignedCustomWidget({ parts, design, params }: { parts: CustomWidgetPa
       {parts.map((fw) => (
         <div key={fw.localId} data-part={fw.localId}
           style={pinned ? anchoredStyle(fw, design) : { position: "absolute", left: fw.x, top: fw.y, width: fw.w, height: fw.h }}>
-          <WidgetRenderer w={resolveInner(fw, params)} />
+          <WidgetRenderer w={resolveInner(fw, params, texts)} />
         </div>
       ))}
     </FrameSlotContext.Provider>
@@ -868,6 +898,7 @@ function CustomWidgetView({ w }: WP<"customWidget">) {
   const cw = host.useCustomWidget(cwId);
   const device = host.useDevice();
   const depth = useContext(NestingContext);
+  const texts = textParams(cw?.params, params);
 
   if (!cw || depth >= NESTING_LIMIT) {
     return (
@@ -883,7 +914,7 @@ function CustomWidgetView({ w }: WP<"customWidget">) {
     return (
       <NestingContext.Provider value={depth + 1}>
         <DesignedCustomWidget parts={cw.widgets.filter((fw) => !(device !== "desktop" && fw.hiddenOn?.includes(device)))}
-          design={{ width: cw.width, height: cw.height }} params={params} />
+          design={{ width: cw.width, height: cw.height }} params={params} texts={texts} />
       </NestingContext.Provider>
     );
   }
@@ -896,7 +927,7 @@ function CustomWidgetView({ w }: WP<"customWidget">) {
             if (!style) return null;
             return (
               <div key={fw.localId} style={style}>
-                <WidgetRenderer w={resolveInner(fw, params)} />
+                <WidgetRenderer w={resolveInner(fw, params, texts)} />
               </div>
             );
           }
@@ -906,7 +937,7 @@ function CustomWidgetView({ w }: WP<"customWidget">) {
           const height = `${((fw.h / (w.h || 1)) * 100).toFixed(1)}%`;
           return (
             <div key={fw.localId} className="absolute" style={{ left, top, width, height }}>
-              <WidgetRenderer w={resolveInner(fw, params)} />
+              <WidgetRenderer w={resolveInner(fw, params, texts)} />
             </div>
           );
         })}
@@ -923,13 +954,15 @@ function TableWidget({ w }: WP<"table">) {
   const tags = useTags(bindings);
   const showQuality = w.props?.showQuality;
 
+  const look = rowLook(w.props);
   return (
-    <div className="h-full overflow-auto">
+    <div {...look.attrs} style={look.style} className="h-full overflow-auto">
+      {look.styled && <style>{ROWS_CSS}</style>}
       <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="border-b border-zinc-700">
-            <th className="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
-            <th className="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
+        <thead style={w.props?.showHeader === false ? { display: "none" } : undefined}>
+          <tr className="ss-head border-b border-zinc-700">
+            <th className="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">{w.props?.nameHeader ?? "Tag"}</th>
+            <th className="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">{w.props?.valueHeader ?? "Value"}</th>
             {showQuality && <th className="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Q</th>}
           </tr>
         </thead>
@@ -940,7 +973,7 @@ function TableWidget({ w }: WP<"table">) {
           {(rows ?? []).map((row, i) => {
             const t = tags[row.binding];
             return (
-              <tr key={i} className="border-b border-zinc-800/60 hover:bg-zinc-800/30">
+              <tr key={i} className="ss-row border-b border-zinc-800/60 hover:bg-zinc-800/30">
                 <td className="py-1 pr-2 text-zinc-400 truncate max-w-[120px]" title={row.binding}>
                   {row.label || row.binding}
                 </td>
@@ -1164,17 +1197,22 @@ function AlarmBannerWidget({ w }: WP<"alarmBanner">) {
     return <div className="flex items-center justify-center h-full text-emerald-600 text-xs font-medium">✓ No active alarms</div>;
   }
 
+  const look = rowLook(w.props);
+  const ap = w.props ?? {};
   return (
-    <div className="flex flex-col gap-1 h-full overflow-hidden">
+    <div {...look.attrs} style={look.style} className="flex flex-col gap-1 h-full overflow-hidden">
+      {look.styled && <style>{ROWS_CSS}</style>}
       {visible.map((a) => (
-        <div key={a.id} className={`flex items-center gap-2 px-2 py-1 rounded border text-xs ${sevBg[a.severity] ?? "border-zinc-700"}`}>
-          <span className="font-bold shrink-0 text-xs uppercase w-14" style={{ color: sevColor[a.severity] }}>{a.severity}</span>
+        <div key={a.id} className={`ss-row flex items-center gap-2 px-2 py-1 rounded border text-xs ${sevBg[a.severity] ?? "border-zinc-700"}`}
+          style={look.styled ? { boxShadow: `inset 3px 0 0 ${sevColor[a.severity] ?? "var(--border)"}` } : undefined}>
+          {ap.showSeverity !== false && <span className="font-bold shrink-0 text-xs uppercase w-14" style={{ color: sevColor[a.severity] }}>{a.severity}</span>}
           <span className="flex-1 truncate">{[a.ruleName, a.message].filter(Boolean).join(" — ")}</span>
-          {typeof a.value === "number" && <span className="tabular-nums text-xs text-zinc-400 shrink-0">{a.value.toFixed(1)}</span>}
-          {a.since !== undefined && <span className="text-xs text-zinc-600 shrink-0">{new Date(a.since).toLocaleTimeString()}</span>}
+          {ap.showValue !== false && typeof a.value === "number" && <span className="tabular-nums text-xs text-zinc-400 shrink-0">{a.value.toFixed(1)}</span>}
+          {ap.showTime !== false && a.since !== undefined && <span className="text-xs text-zinc-600 shrink-0">{new Date(a.since).toLocaleTimeString()}</span>}
           {ack && a.active && !a.acked && (
             <button onClick={() => ack(a.id)}
-              className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 hover:bg-zinc-600 shrink-0">ACK</button>
+              className="text-xs px-1.5 py-0.5 rounded shrink-0 hover:brightness-95"
+              style={{ background: "var(--secondary)", color: "var(--secondary-foreground)", border: "1px solid var(--border)" }}>ACK</button>
           )}
         </div>
       ))}
@@ -1365,7 +1403,10 @@ function Translated({ w, children }: { w: Widget; children: (w: Widget) => React
   return <>{children(shown)}</>;
 }
 
-export function WidgetRenderer({ w }: { w: Widget }) {
+export function WidgetRenderer({ w: given }: { w: Widget }) {
+  // A widget that names a style takes the style's look under its own settings.
+  const style = useHost().useStyle?.((given.props as { styleId?: string } | undefined)?.styleId);
+  const w = useMemo(() => (style ? ({ ...given, props: withStyle(given.props as Record<string, unknown> | undefined, style) } as Widget) : given), [given, style]);
   const R = (renderers[w.type] as React.ComponentType<{ w: Widget }> | undefined) ?? (() => (
     <div className="flex items-center justify-center h-full text-zinc-500 text-xs">{w.type}</div>
   ));

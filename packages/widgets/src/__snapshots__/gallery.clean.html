@@ -941,12 +941,26 @@
 <div style="font-size:11px;font-weight:600">Button</div>
 <div style="position:relative;width:168px;height:112px" data-testid="gallery-button-normal" title="Button, Normal" draggable="false">
 <div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
-<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -954,12 +968,26 @@
 </div>
 <div style="position:relative;width:168px;height:112px" data-testid="gallery-button-running" title="Button, Running" draggable="false">
 <div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
-<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -967,12 +995,26 @@
 </div>
 <div style="position:relative;width:168px;height:112px" data-testid="gallery-button-off" title="Button, Off" draggable="false">
 <div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
-<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -983,9 +1025,23 @@
 <div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-critical);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -996,9 +1052,23 @@
 <div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-warning);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -1009,9 +1079,23 @@
 <div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--alarm-info);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -1019,12 +1103,26 @@
 </div>
 <div style="position:relative;width:168px;height:112px" data-testid="gallery-button-bad" title="Button, Bad quality" draggable="false">
 <div class="relative w-full h-full" style="opacity:1;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
-<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -1034,12 +1132,26 @@
 <div class="relative w-full h-full" style="opacity:1;pointer-events:none;outline-offset:-2px;border-radius:var(--radius, 0.5rem);transition:opacity 0.05s, outline-color 0.2s">
 <div class="absolute inset-0 z-10 bg-zinc-950/50 rounded-lg pointer-events-none">
 </div>
-<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:var(--card);border-color:var(--border);border:var(--line-width, 1px) solid var(--border);box-shadow:var(--shadow, none);border-radius:var(--radius, 0.5rem);padding:var(--pad, 0.75rem);color:var(--card-foreground);font-family:var(--font-sans, inherit)">
+<div class="h-full w-full flex flex-col gap-1 select-none transition-colors overflow-hidden" style="background:transparent;border-color:var(--border);border:none;box-shadow:none;border-radius:0;padding:0;color:var(--card-foreground);font-family:var(--font-sans, inherit)">
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<button class="w-full h-full rounded-md bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all active:scale-95 ">
-<span class="flex items-center justify-center gap-1.5">Start</span>
+<style>
+.ss-btn { cursor: pointer; transition: transform 0.08s, filter 0.12s, box-shadow 0.08s; overflow: hidden; }
+.ss-btn:hover { filter: brightness(1.07); }
+.ss-btn:active { transform: scale(0.97); filter: brightness(0.95); }
+.ss-raised { margin-bottom: 5px !important; height: calc(100% - 6px) !important; }
+.ss-raised:active { transform: translateY(4px); --btn-depth: 1px; }
+.ss-push:active { transform: none; }
+.ss-push:active .ss-cap { transform: scale(0.95); filter: brightness(0.9); }
+.ss-cap { transition: transform 0.08s, filter 0.12s; }
+@media (prefers-reduced-motion: reduce) { .ss-btn, .ss-cap { transition: none; } .ss-btn:active, .ss-raised:active, .ss-push:active .ss-cap { transform: none; } }</style>
+<div class="w-full h-full flex items-center justify-center">
+<button data-layout="beside" data-look="filled" data-shape="rectangle" class="ss-btn  text-sm font-medium" style="width:100%;height:100%;border-radius:6px;padding:0 0.6em;background:#2563eb;color:#ffffff;border:none">
+<span class="flex items-center justify-center min-w-0 gap-1.5">
+<span class="min-w-0 truncate">Start</span>
+</span>
 </button>
+</div>
 </div>
 </div>
 </div>
@@ -1052,7 +1164,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1074,7 +1186,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1096,7 +1208,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">0</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1118,7 +1230,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1140,7 +1252,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1162,7 +1274,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1184,7 +1296,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -1209,7 +1321,7 @@
 <div class="text-xs uppercase tracking-wider truncate shrink-0" style="color:var(--card-foreground);opacity:0.6">Setpoint</div>
 <div class="flex-1 min-h-0 flex flex-col">
 <div class="flex-1 min-h-0 flex flex-col">
-<div class="flex flex-col h-full justify-center gap-2">
+<div data-setpoint="slider" class="flex flex-col h-full justify-center gap-2">
 <div class="flex items-baseline gap-1">
 <span class="text-2xl font-semibold tabular-nums">62</span>
 <span class="text-xs text-zinc-500">°C</span>
@@ -2540,7 +2652,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2566,7 +2678,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2592,7 +2704,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2618,7 +2730,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2644,7 +2756,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2670,7 +2782,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2696,7 +2808,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>
@@ -2724,7 +2836,7 @@
 <div class="h-full overflow-auto">
 <table class="w-full text-xs border-collapse">
 <thead>
-<tr class="border-b border-zinc-700">
+<tr class="ss-head border-b border-zinc-700">
 <th class="text-left text-zinc-500 font-medium py-0.5 pr-2 sticky top-0 bg-zinc-900">Tag</th>
 <th class="text-right text-zinc-500 font-medium py-0.5 pl-2 sticky top-0 bg-zinc-900">Value</th>
 </tr>

@@ -60,9 +60,11 @@ describe("ready-made custom widgets", () => {
     expect(new Set(READY_MADE.map((r) => r.customWidget.id)).size).toBe(READY_MADE.length);
   });
 
-  it.each(READY_MADE.map((r) => [r.name, r] as const))("%s is built from plain elements inside its box, and takes one tag", (_name, rm) => {
+  it.each(READY_MADE.map((r) => [r.name, r] as const))("%s is built from plain elements inside its box, and takes a tag", (_name, rm) => {
     const cw = rm.customWidget;
-    expect(cw.params.map((p) => p.name)).toEqual(["tag"]);
+    expect(cw.params[0]!.name).toBe("tag");
+    // Anything else it asks for is a text with a default, so a copy reads well before it is filled in.
+    for (const extra of cw.params.slice(1)) expect(extra).toMatchObject({ kind: "text", default: expect.any(String) });
     const elements = new Set(MANIFESTS.map((m) => m.type as string));
     for (const part of cw.widgets) {
       expect(elements.has(part.type), part.localId).toBe(true);

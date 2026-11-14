@@ -1,7 +1,7 @@
 // The IDE's side of the widget library (@speths-screens/widgets): the
 // host the canvas and preview draw with.
 import { useMemo } from "react";
-import {
+import { cardStyleOf,
   WidgetHostProvider, WidgetRenderer as LibraryRenderer, appTag, findCustomWidget, pickLanguage, recipeSetsOf, splitApp, translator,
   type AlarmView, type AppValues, type DriverInfo, type UserInfo, type WidgetHost, type WriteRequest,
 } from "@speths-screens/widgets";
@@ -137,7 +137,8 @@ export const ideHost: WidgetHost = {
   useImage: useIdeImage,
   useCustomWidget: useIdeCustomWidget,
   useDevice: () => useEditorView((s) => s.device),
-  useCardStyle: () => useProject((s) => s.project.theme?.cardStyle),
+  useStyle: (id) => useProject((s) => (id ? s.project.styles?.find((x) => x.id === id) : undefined)),
+  useCardStyle: () => cardStyleOf(useProject((s) => s.project.theme)),
   usePages: useIdePages,
   useDrivers: useIdeDrivers,
   useUser: useIdeUser,

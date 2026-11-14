@@ -30,10 +30,12 @@ export const usePropertyTab = create<{ tab: PropertyTab; set: (t: PropertyTab) =
   tab: "settings",
   set: (tab) => set({ tab }),
 }));
-import type { Access } from "@speths-screens/shared-types";
+import type { Access, Background } from "@speths-screens/shared-types";
+import { BackgroundFields } from "./BackgroundFields";
+import { StyleFields } from "./StyleFields";
 
 
-function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; script?: string; hideInNav?: boolean; access?: Access } }) {
+function PageProperties({ page }: { page: { id: string; name: string; backgroundColor?: string; background?: Background; script?: string; hideInNav?: boolean; access?: Access } }) {
   const { updatePage } = useProject();
   const inp = "w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-zinc-500";
   return (
@@ -52,6 +54,9 @@ function PageProperties({ page }: { page: { id: string; name: string; background
       </label>
 
       <AccessFields what="page" access={page.access} onChange={(access) => updatePage(page.id, { access })} />
+
+      <BackgroundFields label="Background" none="The theme's (or the color below)" value={page.background}
+        onChange={(background) => updatePage(page.id, { background })} />
 
       <div>
         <div className="text-[10px] text-zinc-500 mb-1">Background color</div>
@@ -204,6 +209,9 @@ export function Properties() {
         )}
         {tab === "look" && (
           <>
+          <SettingsGroupBox title="Style">
+            <StyleFields props={props} onChange={(next) => updateWidget(page.id, w.id, { props: next })} />
+          </SettingsGroupBox>
           {/* Card or plain: one switch for the settings that take the card away (a pipe and a shape are always drawings) */}
           {w.type !== "pipe" && w.type !== "shape" && (
             <SettingsGroupBox title="Look">

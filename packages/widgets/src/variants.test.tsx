@@ -107,6 +107,9 @@ describe("card styles", () => {
     expect(draw("numericDisplay", { label: "Flow" }, 1, themed)).toContain('data-card-style="accent"');
     expect(draw("numericDisplay", { label: "Flow", cardStyle: "inset" }, 1, themed)).toContain('data-card-style="inset"');
     expect(draw("numericDisplay", { label: "Flow", cardStyle: "plain" }, 1, themed)).not.toContain("data-card-style");
+    // A widget with a color of its own keeps it: the theme's style is for cards in the theme's color.
+    expect(draw("numericDisplay", { label: "Flow", bgColor: "#102030" }, 1, themed)).not.toContain("data-card-style");
+    expect(draw("numericDisplay", { label: "Flow", bgColor: "#102030", cardStyle: "accent" }, 1, themed)).toContain('data-card-style="accent"');
   });
 
   it("the header style puts the label on a band; a widget that is not a card has no style", () => {

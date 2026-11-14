@@ -81,6 +81,11 @@ export interface Project {
      */
     simulation?: boolean;
     /**
+     * Named looks a widget can take by its styleId, so many widgets share one look and a change
+     * to it reaches them all
+     */
+    styles?: NamedStyle[];
+    /**
      * The look of every screen: a preset, light or dark, and any element changed from the
      * preset. A browser can still pick light or dark for itself; that choice is not saved in
      * the project
@@ -239,7 +244,17 @@ export interface CustomWidgetLayoutOverride {
 }
 
 export interface CustomWidgetParam {
+    /**
+     * For a text parameter: the text a use shows when it gives none
+     */
+    default?:     string;
     description?: string;
+    /**
+     * tag or text. tag (the default): each use gives a tag, and {name} stands for it in the
+     * parts' tags and expressions. text: each use gives a text, and {name} stands for it in the
+     * parts' texts (label, static text, state labels, unit, placeholder)
+     */
+    kind?: string;
     /**
      * Used as {name} in bindings inside the custom widget
      */
@@ -591,7 +606,10 @@ export interface CustomWidgetPartProps {
     max?: number;
     min?: number;
     /**
-     * Scale marks and the lowest and highest value; missing means shown where the style has them
+     * Scale marks and the lowest and highest value; missing means shown where the style has
+     * them
+     *
+     * The lowest and highest value under the slider; missing means shown
      */
     showTicks?: boolean;
     /**
@@ -599,6 +617,10 @@ export interface CustomWidgetPartProps {
      * beside it
      *
      * The value as text beside the tank; false leaves only the tank, filling its place
+     *
+     * The value as text; false leaves only the control
+     *
+     * The value that raised the alarm; missing means shown
      */
     showValue?:  boolean;
     thresholds?: Threshold[];
@@ -620,6 +642,13 @@ export interface CustomWidgetPartProps {
      * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
      * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
      * card fills up)
+     *
+     * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+     * rotary knob), stepper (minus and plus buttons a step at a time)
+     *
+     * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+     * state color), pill (a rounded badge), stepper (every state in a row with the current one
+     * filled), icon (the state icon and its text)
      */
     variant?: Variant;
     bgColor?: string;
@@ -670,6 +699,10 @@ export interface CustomWidgetPartProps {
      */
     labelColor?: string;
     /**
+     * An icon drawn before the label
+     */
+    labelIcon?: PageIcon;
+    /**
      * Where the label sits: above the value (the default), below it, or to its left
      */
     labelPosition?: LabelPosition;
@@ -718,7 +751,12 @@ export interface CustomWidgetPartProps {
     /**
      * A line through the text
      */
-    strike?:    boolean;
+    strike?: boolean;
+    /**
+     * The id of a named style of the project whose look this widget takes; its own settings win
+     * over the style's
+     */
+    styleId?:   string;
     textAlign?: TextAlign;
     textColor?: string;
     /**
@@ -779,10 +817,40 @@ export interface CustomWidgetPartProps {
     /**
      * A moving wave on the surface (still for a browser that asks for less motion)
      */
-    wave?:       boolean;
-    btnColor?:   ButtonColor;
+    wave?:     boolean;
+    btnColor?: ButtonColor;
+    /**
+     * Any color (#rrggbb) for the button in place of the named ones
+     */
+    btnCustomColor?: string;
+    /**
+     * The id of a project image drawn on the button (a logo), in place of an icon
+     */
+    btnImage?: string;
+    /**
+     * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+     * iconOnly (no text)
+     */
+    btnLayout?:  BtnLayout;
     btnRounded?: ButtonRounded;
+    /**
+     * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+     * pill (fully rounded ends). A square or round button is as large as fits its place
+     */
+    btnShape?:   BtnShape;
     btnVariant?: ButtonVariant;
+    /**
+     * An icon from the icon set, drawn in the text color; wins over the typed icon
+     */
+    iconName?: PageIcon;
+    /**
+     * A toggle's text for off; missing means OFF
+     */
+    offLabel?: string;
+    /**
+     * A toggle's text for on (the segments and rocker styles); missing means ON
+     */
+    onLabel?: string;
     /**
      * Toggle button color when off
      */
@@ -791,6 +859,12 @@ export interface CustomWidgetPartProps {
      * Toggle button color when on
      */
     toggleOnColor?: string;
+    /**
+     * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+     * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+     * side with the current one filled)
+     */
+    toggleStyle?: ToggleStyle;
     /**
      * Setpoint slider step
      */
@@ -842,6 +916,12 @@ export interface CustomWidgetPartProps {
      * HistoryLog rows per page
      */
     pageSize?: number;
+    rowSize?:  RowSize;
+    rowStyle?: RowStyle;
+    /**
+     * The button that saves the rows as a CSV file; missing means shown
+     */
+    showExport?: boolean;
     /**
      * AlarmBanner max visible rows
      */
@@ -850,6 +930,14 @@ export interface CustomWidgetPartProps {
      * AlarmBanner: show acknowledged alarms
      */
     showAcked?: boolean;
+    /**
+     * The severity word at the start of each alarm; missing means shown
+     */
+    showSeverity?: boolean;
+    /**
+     * When the alarm was raised; missing means shown
+     */
+    showTime?: boolean;
     /**
      * Image object-fit, as set by the properties panel
      */
@@ -997,6 +1085,10 @@ export interface CustomWidgetPartProps {
      */
     showName?: boolean;
     /**
+     * The background of the heading row; missing means the card's own
+     */
+    headerColor?: string;
+    /**
      * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
@@ -1009,17 +1101,47 @@ export interface CustomWidgetPartProps {
      */
     showEntries?: boolean;
     /**
+     * The heading over the names; missing means Tag
+     */
+    nameHeader?: string;
+    /**
      * Table widget rows
      */
     rows?: TableRow[];
+    /**
+     * The heading row; missing means shown
+     */
+    showHeader?: boolean;
+    /**
+     * The heading over the values; missing means Value
+     */
+    valueHeader?: string;
     [property: string]: any;
 }
 
 export type ButtonColor = "blue" | "green" | "red" | "amber" | "zinc" | "purple" | "orange" | "white";
 
+/**
+ * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+ * iconOnly (no text)
+ */
+export type BtnLayout = "beside" | "stacked" | "iconOnly";
+
 export type ButtonRounded = "none" | "sm" | "md" | "lg" | "full";
 
-export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
+/**
+ * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+ * pill (fully rounded ends). A square or round button is as large as fits its place
+ */
+export type BtnShape = "rectangle" | "square" | "round" | "pill";
+
+/**
+ * filled: a solid color. outlined: a thin line. ghost: only the text. flat: a tint of the
+ * color. industrial: a shaded panel button. raised: three-dimensional, pressing down when
+ * touched. glossy: a shine across the top. pushbutton: a realistic domed button in a metal
+ * ring, lit when a toggle is on
+ */
+export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial" | "raised" | "glossy" | "pushbutton";
 
 /**
  * How a widget's card is drawn: plain, accent (a colored bar down the left), header (the
@@ -1062,6 +1184,17 @@ export type ImageFit = "contain" | "cover" | "fill";
 export type Format = "time" | "timeSeconds" | "dateTime" | "date";
 
 /**
+ * An icon drawn before the label
+ *
+ * An icon from the icon set, drawn in the text color; wins over the typed icon
+ *
+ * The icon the icon style draws for this state
+ *
+ * Shown beside the page's name in the navigation; missing shows the name's first letter
+ */
+export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask" | "play" | "pause" | "stopSquare" | "power" | "refresh" | "undoTurn" | "checkMark" | "cross" | "plus" | "minus" | "arrowUp" | "arrowDown" | "arrowLeft" | "arrowRight" | "chevronUp" | "chevronDown" | "chevronLeft" | "chevronRight" | "menuBars" | "expand" | "sliders" | "funnel" | "search" | "bell" | "bellOff" | "caution" | "infoCircle" | "helpCircle" | "okCircle" | "failCircle" | "padlock" | "padlockOpen" | "keyIcon" | "eye" | "eyeOff" | "shield" | "thermometer" | "droplet" | "wind" | "flame" | "snowflake" | "fanBlades" | "speedometer" | "weighScale" | "ruler" | "beaker" | "factory" | "conveyor" | "crate" | "wrench" | "hammer" | "cog" | "recycle" | "leaf" | "lightbulb" | "battery" | "plugIcon" | "wifi" | "signalBars" | "chip" | "serverRack" | "databaseIcon" | "networkIcon" | "layers" | "activity" | "barChart" | "lineChart" | "pieChart" | "calendar" | "timer" | "clockFace" | "pastTime" | "saveDisk" | "download" | "upload" | "document" | "folder" | "printer" | "camera" | "phoneHandset" | "mail" | "people" | "signIn" | "signOut" | "star" | "flagIcon" | "mapPin" | "sun" | "moon" | "speaker" | "speakerOff" | "trashCan" | "pencil" | "chainLink";
+
+/**
  * Shape: rectangle (missing means this), ellipse or line
  *
  * What a shape widget draws
@@ -1092,6 +1225,19 @@ export interface RefLine {
     value:  number;
 }
 
+/**
+ * How tall the rows of a list or a table are: tight (more rows in view), normal, roomy
+ * (larger text and room for a finger)
+ */
+export type RowSize = "tight" | "normal" | "roomy";
+
+/**
+ * How the rows of a list or a table are told apart: lined (a line under each), striped
+ * (every other row shaded), cards (each row its own block), bare (nothing between them);
+ * missing means the widget's own
+ */
+export type RowStyle = "lined" | "striped" | "cards" | "bare";
+
 export interface TableRow {
     binding: string;
     label:   string;
@@ -1099,7 +1245,11 @@ export interface TableRow {
 }
 
 export interface StateEntry {
-    color:      string;
+    color: string;
+    /**
+     * The icon the icon style draws for this state
+     */
+    icon?:      PageIcon;
     label:      string;
     textColor?: string;
     value:      any;
@@ -1144,6 +1294,13 @@ export type TextAlign = "left" | "center" | "right";
 export type TextShadow = "soft" | "strong" | "outline";
 
 /**
+ * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+ * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+ * side with the current one filled)
+ */
+export type ToggleStyle = "plain" | "switch" | "rocker" | "checkbox" | "segments";
+
+/**
  * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
  * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
  * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
@@ -1160,8 +1317,15 @@ export type TextShadow = "soft" | "strong" | "outline";
  * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
  * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
  * card fills up)
+ *
+ * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+ * rotary knob), stepper (minus and plus buttons a step at a time)
+ *
+ * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+ * state color), pill (a rounded badge), stepper (every state in a row with the current one
+ * filled), icon (the state icon and its text)
  */
-export type Variant = "arc" | "ring" | "half" | "dial" | "bar" | "vbar" | "segments" | "plain" | "sparkline" | "range" | "trend" | "segment" | "dot" | "pill" | "tile" | "lamp" | "icon" | "cylinder" | "silo" | "vessel" | "bottle" | "level";
+export type Variant = "arc" | "ring" | "half" | "dial" | "bar" | "vbar" | "segments" | "plain" | "sparkline" | "range" | "trend" | "segment" | "dot" | "pill" | "tile" | "lamp" | "icon" | "cylinder" | "silo" | "vessel" | "bottle" | "level" | "slider" | "fat" | "knob" | "stepper" | "label";
 
 /**
  * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
@@ -1403,6 +1567,10 @@ export interface Page {
      */
     access?: Access;
     /**
+     * What is behind this page; wins over backgroundColor and the theme's background
+     */
+    background?: Background;
+    /**
      * CSS color for the page background
      */
     backgroundColor?: string;
@@ -1428,9 +1596,67 @@ export interface Page {
 }
 
 /**
- * Shown beside the page's name in the navigation; missing shows the name's first letter
+ * What is behind this page; wins over backgroundColor and the theme's background
+ *
+ * What is drawn behind a page
+ *
+ * What is behind every page; a page's own background wins
  */
-export type PageIcon = "home" | "graph" | "alarm" | "settings" | "pump" | "vessel" | "valve" | "motor" | "dial" | "list" | "chart" | "map" | "user" | "tools" | "bolt" | "flask";
+export interface Background {
+    /**
+     * The direction a gradient runs in, in degrees (180 is top to bottom, the default)
+     */
+    angle?: number;
+    /**
+     * The color (solid, pattern), or the gradient's first color; missing means the theme's page
+     * color
+     */
+    color?: string;
+    /**
+     * The gradient's second color, or the color of a pattern's marks
+     */
+    color2?: string;
+    /**
+     * How much of the theme's page color is laid over a picture so text on it reads: 0 is none,
+     * 0.6 is most of it
+     */
+    dim?: number;
+    /**
+     * A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+     * tile repeats it, stretch pulls it to the page's shape
+     */
+    fit?: Fit;
+    /**
+     * solid: one color. gradient: one color running into another. picture: one of the project's
+     * pictures. pattern: small marks repeated over a color
+     */
+    kind: Kind;
+    /**
+     * The marks of a pattern
+     */
+    pattern?: Pattern;
+    /**
+     * The id of a project image
+     */
+    picture?: string;
+}
+
+/**
+ * A picture: fill covers the page and may be cut off (the default), whole shows all of it,
+ * tile repeats it, stretch pulls it to the page's shape
+ */
+export type Fit = "fill" | "whole" | "tile" | "stretch";
+
+/**
+ * solid: one color. gradient: one color running into another. picture: one of the project's
+ * pictures. pattern: small marks repeated over a color
+ */
+export type Kind = "solid" | "gradient" | "picture" | "pattern";
+
+/**
+ * The marks of a pattern
+ */
+export type Pattern = "dots" | "squares" | "stripes";
 
 export interface Widget {
     access?:   Access;
@@ -1573,7 +1799,10 @@ export interface WidgetProps {
     max?: number;
     min?: number;
     /**
-     * Scale marks and the lowest and highest value; missing means shown where the style has them
+     * Scale marks and the lowest and highest value; missing means shown where the style has
+     * them
+     *
+     * The lowest and highest value under the slider; missing means shown
      */
     showTicks?: boolean;
     /**
@@ -1581,6 +1810,10 @@ export interface WidgetProps {
      * beside it
      *
      * The value as text beside the tank; false leaves only the tank, filling its place
+     *
+     * The value as text; false leaves only the control
+     *
+     * The value that raised the alarm; missing means shown
      */
     showValue?:  boolean;
     thresholds?: Threshold[];
@@ -1602,6 +1835,13 @@ export interface WidgetProps {
      * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
      * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
      * card fills up)
+     *
+     * How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a
+     * rotary knob), stepper (minus and plus buttons a step at a time)
+     *
+     * How the state is drawn: tile (a filled block, the default), label (only the text, in the
+     * state color), pill (a rounded badge), stepper (every state in a row with the current one
+     * filled), icon (the state icon and its text)
      */
     variant?: Variant;
     bgColor?: string;
@@ -1652,6 +1892,10 @@ export interface WidgetProps {
      */
     labelColor?: string;
     /**
+     * An icon drawn before the label
+     */
+    labelIcon?: PageIcon;
+    /**
      * Where the label sits: above the value (the default), below it, or to its left
      */
     labelPosition?: LabelPosition;
@@ -1700,7 +1944,12 @@ export interface WidgetProps {
     /**
      * A line through the text
      */
-    strike?:    boolean;
+    strike?: boolean;
+    /**
+     * The id of a named style of the project whose look this widget takes; its own settings win
+     * over the style's
+     */
+    styleId?:   string;
     textAlign?: TextAlign;
     textColor?: string;
     /**
@@ -1761,10 +2010,40 @@ export interface WidgetProps {
     /**
      * A moving wave on the surface (still for a browser that asks for less motion)
      */
-    wave?:       boolean;
-    btnColor?:   ButtonColor;
+    wave?:     boolean;
+    btnColor?: ButtonColor;
+    /**
+     * Any color (#rrggbb) for the button in place of the named ones
+     */
+    btnCustomColor?: string;
+    /**
+     * The id of a project image drawn on the button (a logo), in place of an icon
+     */
+    btnImage?: string;
+    /**
+     * Where the icon sits: beside (beside the text, the default), stacked (over the text),
+     * iconOnly (no text)
+     */
+    btnLayout?:  BtnLayout;
     btnRounded?: ButtonRounded;
+    /**
+     * The button's outline: rectangle (fills its place, the default), square, round (a circle),
+     * pill (fully rounded ends). A square or round button is as large as fits its place
+     */
+    btnShape?:   BtnShape;
     btnVariant?: ButtonVariant;
+    /**
+     * An icon from the icon set, drawn in the text color; wins over the typed icon
+     */
+    iconName?: PageIcon;
+    /**
+     * A toggle's text for off; missing means OFF
+     */
+    offLabel?: string;
+    /**
+     * A toggle's text for on (the segments and rocker styles); missing means ON
+     */
+    onLabel?: string;
     /**
      * Toggle button color when off
      */
@@ -1773,6 +2052,12 @@ export interface WidgetProps {
      * Toggle button color when on
      */
     toggleOnColor?: string;
+    /**
+     * How a button that toggles is drawn: plain (a button that lights up, the default), switch
+     * (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by
+     * side with the current one filled)
+     */
+    toggleStyle?: ToggleStyle;
     /**
      * Setpoint slider step
      */
@@ -1824,6 +2109,12 @@ export interface WidgetProps {
      * HistoryLog rows per page
      */
     pageSize?: number;
+    rowSize?:  RowSize;
+    rowStyle?: RowStyle;
+    /**
+     * The button that saves the rows as a CSV file; missing means shown
+     */
+    showExport?: boolean;
     /**
      * AlarmBanner max visible rows
      */
@@ -1832,6 +2123,14 @@ export interface WidgetProps {
      * AlarmBanner: show acknowledged alarms
      */
     showAcked?: boolean;
+    /**
+     * The severity word at the start of each alarm; missing means shown
+     */
+    showSeverity?: boolean;
+    /**
+     * When the alarm was raised; missing means shown
+     */
+    showTime?: boolean;
     /**
      * Image object-fit, as set by the properties panel
      */
@@ -1979,6 +2278,10 @@ export interface WidgetProps {
      */
     showName?: boolean;
     /**
+     * The background of the heading row; missing means the card's own
+     */
+    headerColor?: string;
+    /**
      * Older projects: the recipe (shown as a set of its own) the widget shows
      */
     recipeId?: string;
@@ -1991,9 +2294,21 @@ export interface WidgetProps {
      */
     showEntries?: boolean;
     /**
+     * The heading over the names; missing means Tag
+     */
+    nameHeader?: string;
+    /**
      * Table widget rows
      */
     rows?: TableRow[];
+    /**
+     * The heading row; missing means shown
+     */
+    showHeader?: boolean;
+    /**
+     * The heading over the values; missing means Value
+     */
+    valueHeader?: string;
     [property: string]: any;
 }
 
@@ -2361,6 +2676,21 @@ export interface ShellNavOptions {
 }
 
 /**
+ * A look kept under a name: the look settings (colors, card, corners, border, shadow,
+ * padding, font and text, label) a widget takes when it names this style. A setting the
+ * widget has itself wins
+ */
+export interface NamedStyle {
+    id:   string;
+    name: string;
+    /**
+     * Look settings by their name, as on a widget (bgColor, cardStyle, fontFamily, ...);
+     * anything that is not a look setting is ignored
+     */
+    props: { [key: string]: any };
+}
+
+/**
  * The look of every screen: a preset, light or dark, and any element changed from the
  * preset. A browser can still pick light or dark for itself; that choice is not saved in
  * the project
@@ -2372,15 +2702,19 @@ export interface Theme {
     /**
      * The main color of buttons and selections as #rrggbb; replaces the palette's
      */
-    accent?:    string;
-    cardStyle?: CardStyle;
-    corners?:   ThemeCorners;
-    density?:   ThemeDensity;
-    depth?:     ThemeDepth;
-    font?:      string;
-    mode?:      ThemeMode;
-    palette?:   ThemePalette;
-    preset?:    ThemePreset;
+    accent?: string;
+    /**
+     * What is behind every page; a page's own background wins
+     */
+    background?: Background;
+    cardStyle?:  CardStyle;
+    corners?:    ThemeCorners;
+    density?:    ThemeDensity;
+    depth?:      ThemeDepth;
+    font?:       string;
+    mode?:       ThemeMode;
+    palette?:    ThemePalette;
+    preset?:     ThemePreset;
 }
 
 /**
@@ -2407,16 +2741,19 @@ export type ThemeMode = "light" | "dark";
 
 /**
  * The colors: calm is gray with a muted blue; modern is cool white or charcoal with a
- * bright blue
+ * bright blue; slate is blue-gray; sand is warm; forest is green; navy is deep blue;
+ * contrast is black and white with the strongest contrast
  */
-export type ThemePalette = "calm" | "modern";
+export type ThemePalette = "calm" | "modern" | "slate" | "sand" | "forest" | "navy" | "contrast";
 
 /**
  * calm: ISA-101 gray, flat, square corners, color only for abnormal states. clean: white
  * cards, soft depth, round corners. modern: charcoal, soft corners, borders instead of
- * shadows. Missing means calm
+ * shadows. industrial: dark slate, square, inset cards. soft: warm sand, round, shaded
+ * cards. glass: deep navy with see-through cards over a gradient. highContrast: black on
+ * white with heavy lines. Missing means calm
  */
-export type ThemePreset = "calm" | "clean" | "modern";
+export type ThemePreset = "calm" | "clean" | "modern" | "industrial" | "soft" | "glass" | "highContrast";
 
 export interface Udt {
     description?: string;

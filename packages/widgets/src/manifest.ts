@@ -40,7 +40,7 @@ export type Field = FieldBase & (
       optional?: boolean;
       /** Also offers "none", stored as this value (e.g. "transparent"). */
       none?: string }
-  | { kind: "choice"; default?: string; display?: "buttons" | "select" | "swatches";
+  | { kind: "choice"; default?: string; display?: "buttons" | "select" | "swatches" | "icons";
       /** The values are numbers, stored as numbers. */
       numeric?: boolean;
       /** A value of "" is the theme's default. */
@@ -51,6 +51,8 @@ export type Field = FieldBase & (
   | { kind: "binding"; placeholder?: string }
   /** An image: library, URL or upload. */
   | { kind: "image" }
+  /** One of the project's pictures, by its id (a logo on a button). */
+  | { kind: "projectImage" }
   /** A symbol from the symbol packs. */
   | { kind: "symbol" }
   /** A recipe of the project. */

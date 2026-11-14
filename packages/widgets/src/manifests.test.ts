@@ -25,7 +25,7 @@ function settingNode(type: string, key: string): SchemaNode | undefined {
 /** Which schema types a field kind may edit. */
 const KIND_TYPES: Record<Field["kind"], string[] | "any"> = {
   number: ["number", "integer"], text: ["string"], font: ["string"], color: ["string"], choice: ["string", "integer"],
-  page: ["string"], binding: ["string"], recipe: ["string"], image: ["string"], symbol: ["string"], customWidget: ["string"],
+  page: ["string"], binding: ["string"], recipe: ["string"], image: ["string"], projectImage: ["string"], symbol: ["string"], customWidget: ["string"],
   boolean: ["boolean"], list: ["array"], numbers: ["array"], customWidgetParams: ["object"], value: "any",
 };
 
@@ -51,6 +51,10 @@ function checkField(where: string, f: Field, node: SchemaNode | undefined) {
   }
 }
 
+/** Frame settings the editor edits with a control of its own, not a field drawn from the manifest:
+ *  a widget's named style (the Style box at the top of its Look tab). */
+const OWN_EDITOR = ["styleId"];
+
 describe("manifests", () => {
   it("one manifest per widget type, matching the renderers", () => {
     const types = MANIFESTS.map((m) => m.type);
@@ -60,13 +64,13 @@ describe("manifests", () => {
 
   it("frame settings are exactly FrameProps", () => {
     for (const f of frameFields) checkField("frame", f, frameProps[f.key]);
-    expect(frameFields.map((f) => f.key).sort()).toEqual(Object.keys(frameProps).sort());
+    expect([...frameFields.map((f) => f.key), ...OWN_EDITOR].sort()).toEqual(Object.keys(frameProps).sort());
   });
 
   for (const m of MANIFESTS) {
     it(`${m.type}: its settings plus the frame's are exactly its settings type`, () => {
       for (const f of m.settings) checkField(m.type, f, settingNode(m.type, f.key));
-      const edited = [...frameFields, ...m.settings].map((f) => f.key).concat(m.legacyProps ?? []).sort();
+      const edited = [...frameFields, ...m.settings].map((f) => f.key).concat(m.legacyProps ?? [], OWN_EDITOR).sort();
       expect(edited).toEqual([...PROPS_KEYS[m.type]].sort());
     });
   }

@@ -1,8 +1,9 @@
 // Draws the settings a widget manifest declares (@speths-screens/widgets),
 // one control per field kind. Replaces the hand-written editor per widget.
 import { useRef } from "react";
-import { FONTS, SYMBOLS, SymbolSVG, fontStack, recipeSetsOf, type Field, type FontKind } from "@speths-screens/widgets";
+import { FONTS, Icon, SYMBOLS, SymbolSVG, fontStack, recipeSetsOf, type Field, type FontKind } from "@speths-screens/widgets";
 import type { Widget } from "../store/projectStore";
+import type { PageIcon } from "@speths-screens/shared-types";
 import { useProject } from "../store/projectStore";
 import { BindingInput } from "./BindingInput";
 import { CloseIcon } from "../ui/icons";
@@ -168,6 +169,23 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
           </div>
         );
       }
+      if (f.display === "icons") {
+        return (
+          <div>
+            <Label text={f.label} />
+            <div role="listbox" aria-label={f.label} className="grid grid-cols-8 gap-1 max-h-36 overflow-auto rounded border border-zinc-800 p-1">
+              {f.options.map((o) => (
+                <button key={o.value} type="button" role="option" aria-selected={cur === o.value} aria-label={o.value === "" ? o.label ?? "None" : o.value} title={o.value === "" ? o.label ?? "None" : o.value}
+                  onClick={() => store(o.value)}
+                  className={`h-7 flex items-center justify-center rounded text-[9px] ${cur === o.value ? "bg-blue-700 text-white" : "text-zinc-300 hover:bg-zinc-800"}`}>
+                  {o.value === "" ? "–" : <Icon name={o.value as PageIcon} size={16} />}
+                </button>
+              ))}
+            </div>
+            {note}
+          </div>
+        );
+      }
       if (f.display === "swatches") {
         return (
           <div>
@@ -212,6 +230,8 @@ function FieldControl({ f, config, set, w }: { f: Field; config: Config; set: (k
       );
     case "image":
       return <ImagePicker value={(v as string | undefined) ?? ""} put={put} />;
+    case "projectImage":
+      return <ProjectImagePicker f={f} value={v as string | undefined} put={put} />;
     case "symbol": {
       const sym = SYMBOLS.find((s) => s.id === v);
       return (
@@ -322,10 +342,31 @@ function CustomWidgetParams({ f, customWidgetId, value, put }: {
       {fp.params.map((p) => (
         <div key={p.name}>
           <div className="text-[10px] text-zinc-400 font-mono">{`{${p.name}}`}{p.description && <span className="text-zinc-600 ml-1 font-sans">{p.description}</span>}</div>
-          <BindingInput value={value[p.name] ?? ""} placeholder="value or tag path"
-            onChange={(s) => put(withKey(value, p.name, s || undefined))} className={`${inp} font-mono w-full`} />
+          {p.kind === "text" ? (
+            <input aria-label={`Text for ${p.name}`} value={value[p.name] ?? ""} placeholder={p.default || "text"}
+              onChange={(e) => put(withKey(value, p.name, e.target.value || undefined))} className={inp} />
+          ) : (
+            <BindingInput value={value[p.name] ?? ""} placeholder="value or tag path"
+              onChange={(s) => put(withKey(value, p.name, s || undefined))} className={`${inp} font-mono w-full`} />
+          )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/** One of the project's pictures (added in the Images tab), by its id. */
+function ProjectImagePicker({ f, value, put }: { f: { label: string }; value: string | undefined; put: (v: unknown) => void }) {
+  const images = useProject((s) => s.project.images) ?? [];
+  return (
+    <div>
+      <Label text={f.label} />
+      <select aria-label={f.label} value={value ?? ""} onChange={(e) => put(e.target.value || undefined)} className={inp}>
+        <option value="">None</option>
+        {value && !images.some((i) => i.id === value) && <option value={value}>{value} (missing)</option>}
+        {images.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+      </select>
+      {images.length === 0 && <div className="text-[10px] text-zinc-600 mt-0.5">Add a picture in the Images tab first.</div>}
     </div>
   );
 }

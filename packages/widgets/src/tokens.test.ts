@@ -46,7 +46,7 @@ describe.each(THEMES.map((t) => [t.id, t] as const))("theme %s", (_id, theme) =>
 });
 
 const MODES = ["light", "dark"] as const;
-const PALETTES = ["calm", "modern"] as const;
+const PALETTES = ["calm", "modern", "slate", "sand", "forest", "navy", "contrast"] as const;
 
 // Every palette in both modes must pass, whichever preset or element mix picks it.
 describe.each(PALETTES.flatMap((p) => MODES.map((m) => [p, m] as const)))("palette %s, %s", (palette, mode) => {

@@ -12,7 +12,7 @@ import { apiFetch, getToken, onTokenChange, setToken, wsURL } from "./auth";
 import { LoginScreen } from "./LoginScreen";
 import { applyAlarmMessage } from "./alarmMessages";
 import { AlarmContext, type AlarmEvent } from "./alarmContext";
-import { applyProjectFonts, applyTheme, deviceFor, pickLanguage, resolveTheme, translator } from "@speths-screens/widgets";
+import { applyProjectFonts, applyTheme, pageBackground, deviceFor, pickLanguage, resolveTheme, translator } from "@speths-screens/widgets";
 
 // A browser's own theme choice, kept on this device only.
 const THEME_KEY = "speths-screens-theme";
@@ -280,7 +280,7 @@ export function App() {
         <div
           ref={canvasRef}
           className="flex-1 overflow-auto p-3"
-          style={{ background: page.backgroundColor || undefined }}
+          style={pageBackground(page, project.theme, project.images)}
           onTouchStart={isKiosk ? handleTouchStart : undefined}
           onTouchEnd={isKiosk ? handleTouchEnd : undefined}
         >

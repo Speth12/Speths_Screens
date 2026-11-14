@@ -33,9 +33,10 @@ export {
   slotFor, slotsByEdge, type FrameEdge, type SlotLike,
 } from "./layout";
 export { applyTransform, suit, driveValue, DRIVEN_KIND, type DrivenValue } from "./drive";
+export { STYLE_KEYS, applyStyle, lookSettings, removeStyle, withStyle } from "./styles";
 export { READY_MADE, readyMadeFor, type ReadyMade } from "./readyMade";
 export {
-  THEMES, PRESETS, resolveTheme, COLOR_TOKENS, FONTS, cardStyleOf, fontStack, projectFontsCss, applyProjectFonts, projectFontFamily, TYPE_SCALE, themeVars, themeStyle, applyTheme, tokenColor,
+  THEMES, PRESETS, resolveTheme, COLOR_TOKENS, FONTS, cardStyleOf, themeBackground, backgroundCss, pageBackground, fontStack, projectFontsCss, applyProjectFonts, projectFontFamily, TYPE_SCALE, themeVars, themeStyle, applyTheme, tokenColor,
   type Theme, type ThemeColors, type FontId, type FontInfo, type FontKind, type TypeScale,
 } from "./tokens";
 export { Gallery, GALLERY_STATES, galleryCell, galleryInsert, type GalleryState } from "./gallery";

@@ -183,9 +183,9 @@ export function TankVariant({ variant, pct, color, min, max, showScale, wave, ch
   const top = s.h * (1 - f);
   const quarters = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <div data-variant={variant} className={`flex gap-3 h-full items-end ${children ? "" : "justify-center"}`}>
+    <div data-variant={variant} className={`flex gap-3 h-full items-end ${children ? "" : "justify-center"}`} style={{ containerType: "size" }}>
       {wave && <style>{WAVE_CSS}</style>}
-      <svg viewBox={`0 0 ${s.w} ${s.h}`} className="h-full shrink min-w-0" style={{ aspectRatio: `${s.w} / ${s.h}`, maxWidth: children ? "60%" : "100%" }}>
+      <svg viewBox={`0 0 ${s.w} ${s.h}`} className="h-full min-w-0 flex-1" style={{ maxWidth: `calc(100cqh * ${s.w} / ${s.h})` }}>
         <defs><clipPath id={`tank-${id}`}><path d={s.d} /></clipPath></defs>
         <path d={s.d} style={{ fill: track }} />
         <g clipPath={`url(#tank-${id})`}>
@@ -199,11 +199,11 @@ export function TankVariant({ variant, pct, color, min, max, showScale, wave, ch
         <path d={s.d} fill="none" strokeWidth="1.5" strokeLinejoin="round" style={{ stroke: muted }} />
       </svg>
       {showScale && (
-        <div className="flex flex-col-reverse justify-between h-full text-xs tabular-nums leading-none" style={{ color: muted }}>
+        <div className="flex flex-col-reverse justify-between h-full shrink-0 text-xs tabular-nums leading-none" style={{ color: muted }}>
           {quarters.map((q) => <span key={q}>{Math.round((min + (max - min) * q) * 100) / 100}</span>)}
         </div>
       )}
-      {children && <div className="flex flex-col justify-end pb-1 min-w-0">{children}</div>}
+      {children && <div className="flex flex-col justify-end pb-1 shrink-0">{children}</div>}
     </div>
   );
 }

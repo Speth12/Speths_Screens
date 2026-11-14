@@ -26,7 +26,7 @@ function part(localId: string, p: PartInit): CustomWidgetPart {
 }
 
 function make(element: WidgetType, id: string, name: string, about: string, width: number, height: number, widgets: CustomWidgetPart[]): ReadyMade {
-  return { element, name, about, customWidget: { id: `rm-${id}`, name, description: about, params: [{ name: "tag", description: "The tag it shows" }], width, height, widgets } };
+  return { element, name, about, customWidget: { id: `rm-${id}`, name, description: about, params: [{ name: "tag", description: "The tag it shows" }, ...(widgets.some((w) => JSON.stringify(w.props).includes("{name}")) ? [{ name: "name", kind: "text", default: "Pump 1", description: "The name written on it" }] : [])], width, height, widgets } };
 }
 
 const number = (x: number, y: number, w: number, h: number, more: Record<string, unknown> = {}): PartInit =>
@@ -71,7 +71,7 @@ export const READY_MADE: ReadyMade[] = [
   ]),
   make("led", "lamp-text", "Light with a name and its state", "A light, a name you write, and the state as a pill", 280, 40, [
     part("light", { type: "led", x: 0, y: 6, w: 28, h: 28, props: { variant: "lamp", showText: false } }),
-    part("name", { type: "textDisplay", x: 40, y: 0, w: 130, h: 40, props: { staticText: "Pump 1", fontWeight: 600 }, bound: false, anchorX: "stretch" }),
+    part("name", { type: "textDisplay", x: 40, y: 0, w: 130, h: 40, props: { staticText: "{name}", fontWeight: 600 }, bound: false, anchorX: "stretch" }),
     part("state", { type: "led", x: 176, y: 4, w: 104, h: 32, props: { variant: "pill", trueLabel: "RUNNING", falseLabel: "STOPPED" }, anchorX: "right" }),
   ]),
   make("led", "status-tile", "Status tile with an icon", "A filled tile with an icon light beside it", 220, 64, [

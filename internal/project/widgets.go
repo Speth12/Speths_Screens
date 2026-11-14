@@ -4,12 +4,16 @@ package project
 
 // GaugeProps holds the settings of a gauge widget.
 type GaugeProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -78,12 +82,16 @@ type GaugeProps struct {
 
 // NumericDisplayProps holds the settings of a numericDisplay widget.
 type NumericDisplayProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -149,12 +157,16 @@ type NumericDisplayProps struct {
 
 // TextDisplayProps holds the settings of a textDisplay widget.
 type TextDisplayProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -217,12 +229,16 @@ type TextDisplayProps struct {
 
 // LedProps holds the settings of a led widget.
 type LedProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -294,12 +310,16 @@ type LedProps struct {
 
 // TankProps holds the settings of a tank widget.
 type TankProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -370,154 +390,16 @@ type TankProps struct {
 
 // ButtonProps holds the settings of a button widget.
 type ButtonProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
-	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
-	FontFamily *string `json:"fontFamily,omitempty"`
-	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
-	FontWeight *int64 `json:"fontWeight,omitempty"`
-	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
-	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
-	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
-	LineHeight    *float64  `json:"lineHeight,omitempty"`
-	TextTransform *TextCase `json:"textTransform,omitempty"`
-	// A line through the text
-	Strike *bool `json:"strike,omitempty"`
-	// A shadow or an outline behind the text, for text over a picture or a color
-	TextShadow *string `json:"textShadow,omitempty"`
-	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
-	Wrap *string `json:"wrap,omitempty"`
-	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
-	LabelSize *string `json:"labelSize,omitempty"`
-	// How heavy the label's text is, as fontWeight
-	LabelWeight *int64 `json:"labelWeight,omitempty"`
-	// The label's color; missing means the text color, faded
-	LabelColor     *string   `json:"labelColor,omitempty"`
-	LabelTransform *TextCase `json:"labelTransform,omitempty"`
-	// Where the label sits: above the value (the default), below it, or to its left
-	LabelPosition *string `json:"labelPosition,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
-	FontSize *string `json:"fontSize,omitempty"`
-	// Exact text size in pixels; overrides fontSize
-	FontPx *float64 `json:"fontPx,omitempty"`
-	// Space inside the card in pixels; overrides noPadding and the theme
-	Padding *float64 `json:"padding,omitempty"`
-	// Corner radius in pixels; missing means the theme's
-	Radius *float64 `json:"radius,omitempty"`
-	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
-	// false removes the card's shadow; missing means the theme's
-	Shadow *bool `json:"shadow,omitempty"`
-	// false hides the label above the value; missing means shown
-	ShowLabel *bool `json:"showLabel,omitempty"`
-	// false hides the unit beside the value; missing means shown
-	ShowUnit *bool `json:"showUnit,omitempty"`
-	// top | center | bottom: where the value sits in the card; missing means center
-	Valign        *string    `json:"valign,omitempty"`
-	FontBold      *bool      `json:"fontBold,omitempty"`
-	FontItalic    *bool      `json:"fontItalic,omitempty"`
-	FontUnderline *bool      `json:"fontUnderline,omitempty"`
-	TextAlign     *TextAlign `json:"textAlign,omitempty"`
-	// Show the tag quality indicator
-	ShowQuality *bool `json:"showQuality,omitempty"`
-	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
-	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	// Blink period in milliseconds while dynamics.blink is on; missing means 800
-	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
-	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string        `json:"blinkColor,omitempty"`
-	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
-	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
-	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
-	// Button icon (emoji or short text)
-	Icon *string `json:"icon,omitempty"`
-	// Toggle button color when on
-	ToggleOnColor *string `json:"toggleOnColor,omitempty"`
-	// Toggle button color when off
-	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
-}
-
-// SetpointProps holds the settings of a setpoint widget.
-type SetpointProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
-	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
-	FontFamily *string `json:"fontFamily,omitempty"`
-	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
-	FontWeight *int64 `json:"fontWeight,omitempty"`
-	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
-	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
-	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
-	LineHeight    *float64  `json:"lineHeight,omitempty"`
-	TextTransform *TextCase `json:"textTransform,omitempty"`
-	// A line through the text
-	Strike *bool `json:"strike,omitempty"`
-	// A shadow or an outline behind the text, for text over a picture or a color
-	TextShadow *string `json:"textShadow,omitempty"`
-	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
-	Wrap *string `json:"wrap,omitempty"`
-	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
-	LabelSize *string `json:"labelSize,omitempty"`
-	// How heavy the label's text is, as fontWeight
-	LabelWeight *int64 `json:"labelWeight,omitempty"`
-	// The label's color; missing means the text color, faded
-	LabelColor     *string   `json:"labelColor,omitempty"`
-	LabelTransform *TextCase `json:"labelTransform,omitempty"`
-	// Where the label sits: above the value (the default), below it, or to its left
-	LabelPosition *string `json:"labelPosition,omitempty"`
-	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
-	FontSize *string `json:"fontSize,omitempty"`
-	// Exact text size in pixels; overrides fontSize
-	FontPx *float64 `json:"fontPx,omitempty"`
-	// Space inside the card in pixels; overrides noPadding and the theme
-	Padding *float64 `json:"padding,omitempty"`
-	// Corner radius in pixels; missing means the theme's
-	Radius *float64 `json:"radius,omitempty"`
-	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
-	// false removes the card's shadow; missing means the theme's
-	Shadow *bool `json:"shadow,omitempty"`
-	// false hides the label above the value; missing means shown
-	ShowLabel *bool `json:"showLabel,omitempty"`
-	// false hides the unit beside the value; missing means shown
-	ShowUnit *bool `json:"showUnit,omitempty"`
-	// top | center | bottom: where the value sits in the card; missing means center
-	Valign        *string    `json:"valign,omitempty"`
-	FontBold      *bool      `json:"fontBold,omitempty"`
-	FontItalic    *bool      `json:"fontItalic,omitempty"`
-	FontUnderline *bool      `json:"fontUnderline,omitempty"`
-	TextAlign     *TextAlign `json:"textAlign,omitempty"`
-	// Show the tag quality indicator
-	ShowQuality *bool `json:"showQuality,omitempty"`
-	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
-	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
-	// Blink period in milliseconds while dynamics.blink is on; missing means 800
-	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
-	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string  `json:"blinkColor,omitempty"`
-	Min        *float64 `json:"min,omitempty"`
-	Max        *float64 `json:"max,omitempty"`
-	Unit       *string  `json:"unit,omitempty"`
-	// Setpoint slider step
-	Step *float64 `json:"step,omitempty"`
-}
-
-// MultiStateProps holds the settings of a multiState widget.
-type MultiStateProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -572,18 +454,196 @@ type MultiStateProps struct {
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
+	// Where the icon sits: beside (beside the text, the default), stacked (over the text), iconOnly (no text)
+	BtnLayout *string `json:"btnLayout,omitempty"`
+	// The button's outline: rectangle (fills its place, the default), square, round (a circle), pill (fully rounded ends). A square or round button is as large as fits its place
+	BtnShape *string `json:"btnShape,omitempty"`
+	// The id of a project image drawn on the button (a logo), in place of an icon
+	BtnImage *string `json:"btnImage,omitempty"`
+	// Any color (#rrggbb) for the button in place of the named ones
+	BtnCustomColor *string `json:"btnCustomColor,omitempty"`
+	// An icon from the icon set, drawn in the text color; wins over the typed icon
+	IconName *PageIcon `json:"iconName,omitempty"`
+	// How a button that toggles is drawn: plain (a button that lights up, the default), switch (a sliding switch), rocker (a two-way rocker), checkbox, segments (off and on side by side with the current one filled)
+	ToggleStyle *string `json:"toggleStyle,omitempty"`
+	// A toggle's text for on (the segments and rocker styles); missing means ON
+	OnLabel *string `json:"onLabel,omitempty"`
+	// A toggle's text for off; missing means OFF
+	OffLabel   *string        `json:"offLabel,omitempty"`
+	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
+	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
+	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
+	// Button icon (emoji or short text)
+	Icon *string `json:"icon,omitempty"`
+	// Toggle button color when on
+	ToggleOnColor *string `json:"toggleOnColor,omitempty"`
+	// Toggle button color when off
+	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
+}
+
+// SetpointProps holds the settings of a setpoint widget.
+type SetpointProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// How the setpoint is set: slider (the default), fat (a thick slider for a finger), knob (a rotary knob), stepper (minus and plus buttons a step at a time)
+	Variant *string `json:"variant,omitempty"`
+	// The value as text; false leaves only the control
+	ShowValue *bool `json:"showValue,omitempty"`
+	// The lowest and highest value under the slider; missing means shown
+	ShowTicks *bool    `json:"showTicks,omitempty"`
+	Min       *float64 `json:"min,omitempty"`
+	Max       *float64 `json:"max,omitempty"`
+	Unit      *string  `json:"unit,omitempty"`
+	// Setpoint slider step
+	Step *float64 `json:"step,omitempty"`
+}
+
+// MultiStateProps holds the settings of a multiState widget.
+type MultiStateProps struct {
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
+	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
+	FontFamily *string `json:"fontFamily,omitempty"`
+	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
+	FontWeight *int64 `json:"fontWeight,omitempty"`
+	// Space added between letters, in ems (0.05 is a little wider); negative is tighter
+	LetterSpacing *float64 `json:"letterSpacing,omitempty"`
+	// The height of a line of text as a multiple of the text size (1.2 is tight, 1.5 is roomy)
+	LineHeight    *float64  `json:"lineHeight,omitempty"`
+	TextTransform *TextCase `json:"textTransform,omitempty"`
+	// A line through the text
+	Strike *bool `json:"strike,omitempty"`
+	// A shadow or an outline behind the text, for text over a picture or a color
+	TextShadow *string `json:"textShadow,omitempty"`
+	// Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an ellipsis; missing means the widget's own way
+	Wrap *string `json:"wrap,omitempty"`
+	// The label's text size: xs | sm | base | lg | xl | 2xl | 3xl; missing means xs
+	LabelSize *string `json:"labelSize,omitempty"`
+	// How heavy the label's text is, as fontWeight
+	LabelWeight *int64 `json:"labelWeight,omitempty"`
+	// The label's color; missing means the text color, faded
+	LabelColor     *string   `json:"labelColor,omitempty"`
+	LabelTransform *TextCase `json:"labelTransform,omitempty"`
+	// Where the label sits: above the value (the default), below it, or to its left
+	LabelPosition *string `json:"labelPosition,omitempty"`
+	// xs | sm | base | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl, or fit (the text grows to fill the card); empty means the widget's own size
+	FontSize *string `json:"fontSize,omitempty"`
+	// Exact text size in pixels; overrides fontSize
+	FontPx *float64 `json:"fontPx,omitempty"`
+	// Space inside the card in pixels; overrides noPadding and the theme
+	Padding *float64 `json:"padding,omitempty"`
+	// Corner radius in pixels; missing means the theme's
+	Radius *float64 `json:"radius,omitempty"`
+	// Border width in pixels; missing means the theme's
+	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	// false removes the card's shadow; missing means the theme's
+	Shadow *bool `json:"shadow,omitempty"`
+	// false hides the label above the value; missing means shown
+	ShowLabel *bool `json:"showLabel,omitempty"`
+	// false hides the unit beside the value; missing means shown
+	ShowUnit *bool `json:"showUnit,omitempty"`
+	// top | center | bottom: where the value sits in the card; missing means center
+	Valign        *string    `json:"valign,omitempty"`
+	FontBold      *bool      `json:"fontBold,omitempty"`
+	FontItalic    *bool      `json:"fontItalic,omitempty"`
+	FontUnderline *bool      `json:"fontUnderline,omitempty"`
+	TextAlign     *TextAlign `json:"textAlign,omitempty"`
+	// Show the tag quality indicator
+	ShowQuality *bool `json:"showQuality,omitempty"`
+	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
+	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
+	// Blink period in milliseconds while dynamics.blink is on; missing means 800
+	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
+	// Color the frame flashes while blinking; missing means the widget fades in and out
+	BlinkColor *string `json:"blinkColor,omitempty"`
+	// How the state is drawn: tile (a filled block, the default), label (only the text, in the state color), pill (a rounded badge), stepper (every state in a row with the current one filled), icon (the state icon and its text)
+	Variant *string `json:"variant,omitempty"`
 	// MultiState value→label→color map
 	States []StateEntry `json:"states,omitempty"`
 }
 
 // TrendProps holds the settings of a trend widget.
 type TrendProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -663,12 +723,16 @@ type TrendProps struct {
 
 // NumericInputProps holds the settings of a numericInput widget.
 type NumericInputProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -730,12 +794,16 @@ type NumericInputProps struct {
 
 // TextInputProps holds the settings of a textInput widget.
 type TextInputProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -794,12 +862,16 @@ type TextInputProps struct {
 
 // HistoryLogProps holds the settings of a historyLog widget.
 type HistoryLogProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -853,19 +925,27 @@ type HistoryLogProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string `json:"blinkColor,omitempty"`
+	BlinkColor *string   `json:"blinkColor,omitempty"`
+	RowStyle   *RowStyle `json:"rowStyle,omitempty"`
+	RowSize    *RowSize  `json:"rowSize,omitempty"`
+	// The button that saves the rows as a CSV file; missing means shown
+	ShowExport *bool `json:"showExport,omitempty"`
 	// HistoryLog rows per page
 	PageSize *int64 `json:"pageSize,omitempty"`
 }
 
 // AlarmBannerProps holds the settings of a alarmBanner widget.
 type AlarmBannerProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -919,7 +999,15 @@ type AlarmBannerProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string `json:"blinkColor,omitempty"`
+	BlinkColor *string   `json:"blinkColor,omitempty"`
+	RowStyle   *RowStyle `json:"rowStyle,omitempty"`
+	RowSize    *RowSize  `json:"rowSize,omitempty"`
+	// The severity word at the start of each alarm; missing means shown
+	ShowSeverity *bool `json:"showSeverity,omitempty"`
+	// The value that raised the alarm; missing means shown
+	ShowValue *bool `json:"showValue,omitempty"`
+	// When the alarm was raised; missing means shown
+	ShowTime *bool `json:"showTime,omitempty"`
 	// AlarmBanner max visible rows
 	MaxRows *int64 `json:"maxRows,omitempty"`
 	// AlarmBanner: show acknowledged alarms
@@ -928,12 +1016,16 @@ type AlarmBannerProps struct {
 
 // ImageProps holds the settings of a image widget.
 type ImageProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -996,12 +1088,16 @@ type ImageProps struct {
 
 // SymbolProps holds the settings of a symbol widget.
 type SymbolProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1070,12 +1166,16 @@ type SymbolProps struct {
 
 // PipeProps holds the settings of a pipe widget.
 type PipeProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1148,12 +1248,16 @@ type PipeProps struct {
 
 // AlarmIndicatorProps holds the settings of a alarmIndicator widget.
 type AlarmIndicatorProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1214,12 +1318,16 @@ type AlarmIndicatorProps struct {
 
 // PageTitleProps holds the settings of a pageTitle widget.
 type PageTitleProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1280,12 +1388,16 @@ type PageTitleProps struct {
 
 // ShapeProps holds the settings of a shape widget.
 type ShapeProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1362,12 +1474,16 @@ type ShapeProps struct {
 
 // CustomWidgetProps holds the settings of a customWidget widget.
 type CustomWidgetProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1430,12 +1546,16 @@ type CustomWidgetProps struct {
 
 // PageListProps holds the settings of a pageList widget.
 type PageListProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1504,12 +1624,16 @@ type PageListProps struct {
 
 // ClockProps holds the settings of a clock widget.
 type ClockProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1574,12 +1698,16 @@ type ClockProps struct {
 
 // DriverStatusProps holds the settings of a driverStatus widget.
 type DriverStatusProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1640,12 +1768,16 @@ type DriverStatusProps struct {
 
 // UserMenuProps holds the settings of a userMenu widget.
 type UserMenuProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1706,12 +1838,16 @@ type UserMenuProps struct {
 
 // RecipesProps holds the settings of a recipes widget.
 type RecipesProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1765,7 +1901,11 @@ type RecipesProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string `json:"blinkColor,omitempty"`
+	BlinkColor *string   `json:"blinkColor,omitempty"`
+	RowStyle   *RowStyle `json:"rowStyle,omitempty"`
+	RowSize    *RowSize  `json:"rowSize,omitempty"`
+	// The background of the heading row; missing means the card's own
+	HeaderColor *string `json:"headerColor,omitempty"`
 	// The recipe set the table shows; missing shows the first set of the project
 	RecipeSetID *string `json:"recipeSetId,omitempty"`
 	// Older projects: the recipe (shown as a set of its own) the widget shows
@@ -1776,12 +1916,16 @@ type RecipesProps struct {
 
 // TableProps holds the settings of a table widget.
 type TableProps struct {
-	Label       *string    `json:"label,omitempty"`
-	BgColor     *string    `json:"bgColor,omitempty"`
-	BorderColor *string    `json:"borderColor,omitempty"`
-	TextColor   *string    `json:"textColor,omitempty"`
-	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
-	NoPadding   *bool      `json:"noPadding,omitempty"`
+	Label       *string `json:"label,omitempty"`
+	BgColor     *string `json:"bgColor,omitempty"`
+	BorderColor *string `json:"borderColor,omitempty"`
+	TextColor   *string `json:"textColor,omitempty"`
+	// The id of a named style of the project whose look this widget takes; its own settings win over the style's
+	StyleID *string `json:"styleId,omitempty"`
+	// An icon drawn before the label
+	LabelIcon *PageIcon  `json:"labelIcon,omitempty"`
+	CardStyle *CardStyle `json:"cardStyle,omitempty"`
+	NoPadding *bool      `json:"noPadding,omitempty"`
 	// A font id (a bundled font such as roboto-condensed or jetbrains-mono, system, or one of the project's own fonts), or mono | sans | serif for the device's own; empty means the theme font
 	FontFamily *string `json:"fontFamily,omitempty"`
 	// How heavy the text is: 100 (thin) to 900 (black), 400 is regular and 700 bold. A font draws the nearest weight it has. Overrides fontBold
@@ -1835,7 +1979,17 @@ type TableProps struct {
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMs *int64 `json:"blinkPeriodMs,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
-	BlinkColor *string `json:"blinkColor,omitempty"`
+	BlinkColor *string   `json:"blinkColor,omitempty"`
+	RowStyle   *RowStyle `json:"rowStyle,omitempty"`
+	RowSize    *RowSize  `json:"rowSize,omitempty"`
+	// The background of the heading row; missing means the card's own
+	HeaderColor *string `json:"headerColor,omitempty"`
+	// The heading row; missing means shown
+	ShowHeader *bool `json:"showHeader,omitempty"`
+	// The heading over the names; missing means Tag
+	NameHeader *string `json:"nameHeader,omitempty"`
+	// The heading over the values; missing means Value
+	ValueHeader *string `json:"valueHeader,omitempty"`
 	// Table widget rows
 	Rows []TableRow `json:"rows,omitempty"`
 }
@@ -2024,30 +2178,30 @@ func (w Widget) AsTable() (TableProps, error) {
 
 // PropsKeys lists each widget type's settings, frame settings first.
 var PropsKeys = map[WidgetType][]string{
-	Gauge:           {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showTicks", "min", "max", "unit", "thresholds"},
-	NumericDisplay:  {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showNumber", "variant", "min", "max", "unit"},
-	TextDisplay:     {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText", "rotation"},
-	LED:             {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showText", "variant", "icon", "trueColor", "falseColor", "trueLabel", "falseLabel"},
-	Tank:            {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showScale", "wave", "min", "max", "unit", "thresholds"},
-	Button:          {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
-	Setpoint:        {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit", "step"},
-	MultiState:      {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "states"},
-	WidgetTypeTrend: {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
-	NumericInput:    {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
-	TextInput:       {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
-	HistoryLog:      {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "pageSize"},
-	AlarmBanner:     {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "maxRows", "showAcked"},
-	WidgetTypeImage: {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
-	Symbol:          {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
-	Pipe:            {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
-	AlarmIndicator:  {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"},
-	PageTitle:       {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"},
-	Shape:           {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
-	CustomWidget:    {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
-	PageList:        {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"},
-	Clock:           {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
-	DriverStatus:    {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
-	UserMenu:        {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
-	Recipes:         {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "recipeSetId", "recipeId", "showEntries"},
-	Table:           {"label", "bgColor", "borderColor", "textColor", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rows"},
+	Gauge:           {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showTicks", "min", "max", "unit", "thresholds"},
+	NumericDisplay:  {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showNumber", "variant", "min", "max", "unit"},
+	TextDisplay:     {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "staticText", "rotation"},
+	LED:             {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showText", "variant", "icon", "trueColor", "falseColor", "trueLabel", "falseLabel"},
+	Tank:            {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showValue", "variant", "showScale", "wave", "min", "max", "unit", "thresholds"},
+	Button:          {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "btnLayout", "btnShape", "btnImage", "btnCustomColor", "iconName", "toggleStyle", "onLabel", "offLabel", "btnVariant", "btnColor", "btnRounded", "icon", "toggleOnColor", "toggleOffColor"},
+	Setpoint:        {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "showValue", "showTicks", "min", "max", "unit", "step"},
+	MultiState:      {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "variant", "states"},
+	WidgetTypeTrend: {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "duration", "xFormat", "min", "max", "tags", "refLines", "autoscale", "showGrid", "showLegend", "showToolbar", "windows", "live"},
+	NumericInput:    {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "min", "max", "unit"},
+	TextInput:       {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor"},
+	HistoryLog:      {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rowStyle", "rowSize", "showExport", "pageSize"},
+	AlarmBanner:     {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rowStyle", "rowSize", "showSeverity", "showValue", "showTime", "maxRows", "showAcked"},
+	WidgetTypeImage: {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "src", "fit"},
+	Symbol:          {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "symbolId", "stroke", "motion", "animate", "cycleSeconds"},
+	Pipe:            {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "points", "weight", "color", "flow", "reverse", "flowColor", "cycleSeconds"},
+	AlarmIndicator:  {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "page"},
+	PageTitle:       {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showIcon"},
+	Shape:           {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "kind", "fill", "stroke", "weight", "cornerRadius", "direction", "dashed", "arrowStart", "arrowEnd"},
+	CustomWidget:    {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "customWidgetId", "params"},
+	PageList:        {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "style", "showGroups", "showIcons", "showLabels", "showSettings"},
+	Clock:           {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "format", "hour12", "showWeekday"},
+	DriverStatus:    {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "compact"},
+	UserMenu:        {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "showName"},
+	Recipes:         {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rowStyle", "rowSize", "headerColor", "recipeSetId", "recipeId", "showEntries"},
+	Table:           {"label", "bgColor", "borderColor", "textColor", "styleId", "labelIcon", "cardStyle", "noPadding", "fontFamily", "fontWeight", "letterSpacing", "lineHeight", "textTransform", "strike", "textShadow", "wrap", "labelSize", "labelWeight", "labelColor", "labelTransform", "labelPosition", "fontSize", "fontPx", "padding", "radius", "borderWidth", "shadow", "showLabel", "showUnit", "valign", "fontBold", "fontItalic", "fontUnderline", "textAlign", "showQuality", "colorThresholds", "blinkPeriodMs", "blinkColor", "rowStyle", "rowSize", "headerColor", "showHeader", "nameHeader", "valueHeader", "rows"},
 }
