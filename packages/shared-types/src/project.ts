@@ -588,11 +588,34 @@ export type HiddenOn = "tablet" | "phone";
  * Settings of a table widget
  */
 export interface CustomWidgetPartProps {
-    max?:        number;
-    min?:        number;
+    max?: number;
+    min?: number;
+    /**
+     * Scale marks and the lowest and highest value; missing means shown where the style has them
+     */
+    showTicks?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
-    bgColor?:    string;
+    /**
+     * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+     * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+     * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+     * up)
+     *
+     * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+     * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+     * rising or falling), segment (seven-segment style digits)
+     *
+     * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+     * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+     * the color), ring (a ring that fills when on)
+     *
+     * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+     * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+     * card fills up)
+     */
+    variant?: Variant;
+    bgColor?: string;
     /**
      * Color the frame flashes while blinking; missing means the widget fades in and out
      */
@@ -606,6 +629,7 @@ export interface CustomWidgetPartProps {
      * Border width in pixels; missing means the theme's
      */
     borderWidth?: number;
+    cardStyle?:   CardStyle;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
@@ -721,20 +745,28 @@ export interface CustomWidgetPartProps {
      */
     falseLabel?: string;
     /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
      * LED color when true
      */
     trueColor?: string;
     /**
      * LED text when true
      */
-    trueLabel?:  string;
+    trueLabel?: string;
+    /**
+     * Marks at each quarter with their values beside the tank
+     */
+    showScale?: boolean;
+    /**
+     * A moving wave on the surface (still for a browser that asks for less motion)
+     */
+    wave?:       boolean;
     btnColor?:   ButtonColor;
     btnRounded?: ButtonRounded;
     btnVariant?: ButtonVariant;
-    /**
-     * Button icon (emoji or short text)
-     */
-    icon?: string;
     /**
      * Toggle button color when off
      */
@@ -973,6 +1005,15 @@ export type ButtonRounded = "none" | "sm" | "md" | "lg" | "full";
 
 export type ButtonVariant = "filled" | "outlined" | "ghost" | "flat" | "industrial";
 
+/**
+ * How a widget's card is drawn: plain, accent (a colored bar down the left), header (the
+ * label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade
+ * from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a
+ * small panel), inset (pressed into the page). A theme sets it for every card and a widget
+ * can set its own
+ */
+export type CardStyle = "plain" | "accent" | "header" | "outlined" | "gradient" | "glass" | "inset";
+
 export interface Threshold {
     /**
      * CSS color, e.g. '#22c55e'
@@ -1085,6 +1126,26 @@ export type TextAlign = "left" | "center" | "right";
  * A shadow or an outline behind the text, for text over a picture or a color
  */
 export type TextShadow = "soft" | "strong" | "outline";
+
+/**
+ * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+ * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+ * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+ * up)
+ *
+ * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+ * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+ * rising or falling), segment (seven-segment style digits)
+ *
+ * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+ * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+ * the color), ring (a ring that fills when on)
+ *
+ * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+ * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+ * card fills up)
+ */
+export type Variant = "arc" | "ring" | "half" | "dial" | "bar" | "vbar" | "segments" | "plain" | "sparkline" | "range" | "trend" | "segment" | "dot" | "pill" | "tile" | "lamp" | "icon" | "cylinder" | "silo" | "vessel" | "bottle" | "level";
 
 /**
  * Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
@@ -1493,11 +1554,34 @@ export interface WidgetPlacement {
  * Settings of a table widget
  */
 export interface WidgetProps {
-    max?:        number;
-    min?:        number;
+    max?: number;
+    min?: number;
+    /**
+     * Scale marks and the lowest and highest value; missing means shown where the style has them
+     */
+    showTicks?:  boolean;
     thresholds?: Threshold[];
     unit?:       string;
-    bgColor?:    string;
+    /**
+     * How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+     * ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+     * scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+     * up)
+     *
+     * How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+     * under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+     * rising or falling), segment (seven-segment style digits)
+     *
+     * How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+     * badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+     * the color), ring (a ring that fills when on)
+     *
+     * How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+     * ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+     * card fills up)
+     */
+    variant?: Variant;
+    bgColor?: string;
     /**
      * Color the frame flashes while blinking; missing means the widget fades in and out
      */
@@ -1511,6 +1595,7 @@ export interface WidgetProps {
      * Border width in pixels; missing means the theme's
      */
     borderWidth?: number;
+    cardStyle?:   CardStyle;
     /**
      * Frame border color rules, applied to the color tag (bindings.color, else the value tag)
      */
@@ -1626,20 +1711,28 @@ export interface WidgetProps {
      */
     falseLabel?: string;
     /**
+     * Button icon (emoji or short text)
+     */
+    icon?: string;
+    /**
      * LED color when true
      */
     trueColor?: string;
     /**
      * LED text when true
      */
-    trueLabel?:  string;
+    trueLabel?: string;
+    /**
+     * Marks at each quarter with their values beside the tank
+     */
+    showScale?: boolean;
+    /**
+     * A moving wave on the surface (still for a browser that asks for less motion)
+     */
+    wave?:       boolean;
     btnColor?:   ButtonColor;
     btnRounded?: ButtonRounded;
     btnVariant?: ButtonVariant;
-    /**
-     * Button icon (emoji or short text)
-     */
-    icon?: string;
     /**
      * Toggle button color when off
      */
@@ -2247,14 +2340,15 @@ export interface Theme {
     /**
      * The main color of buttons and selections as #rrggbb; replaces the palette's
      */
-    accent?:  string;
-    corners?: ThemeCorners;
-    density?: ThemeDensity;
-    depth?:   ThemeDepth;
-    font?:    string;
-    mode?:    ThemeMode;
-    palette?: ThemePalette;
-    preset?:  ThemePreset;
+    accent?:    string;
+    cardStyle?: CardStyle;
+    corners?:   ThemeCorners;
+    density?:   ThemeDensity;
+    depth?:     ThemeDepth;
+    font?:      string;
+    mode?:      ThemeMode;
+    palette?:   ThemePalette;
+    preset?:    ThemePreset;
 }
 
 /**

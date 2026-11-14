@@ -137,6 +137,7 @@ export const ideHost: WidgetHost = {
   useImage: useIdeImage,
   useCustomWidget: useIdeCustomWidget,
   useDevice: () => useEditorView((s) => s.device),
+  useCardStyle: () => useProject((s) => s.project.theme?.cardStyle),
   usePages: useIdePages,
   useDrivers: useIdeDrivers,
   useUser: useIdeUser,

@@ -2,6 +2,7 @@
 // Defaults here match what the widgets draw when a setting is unset.
 import type { WidgetType } from "@speths-screens/shared-types";
 import type { BindingSlot, Field, GallerySample, WidgetManifest } from "./manifest";
+import { ICON_NAMES } from "./icons";
 
 type Config = Record<string, unknown>;
 
@@ -76,22 +77,32 @@ function widget(type: WidgetType, label: string, w: number, h: number, settings:
 /** In palette order. */
 export const MANIFESTS: WidgetManifest[] = [
   widget("gauge", "Gauge", 4, 3, [
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "arc", options: [{ value: "arc", label: "Arc with a needle" }, { value: "ring", label: "Ring, value in the middle" }, { value: "half", label: "Half circle" }, { value: "dial", label: "Needle dial with ticks" }, { value: "bar", label: "Horizontal bar" }, { value: "vbar", label: "Vertical bar" }, { value: "segments", label: "Segments (blocks that light up)" }] },
+    { key: "showTicks", label: "Scale marks and end values", kind: "boolean", default: true },
     ...range(), unit,
     { key: "thresholds", label: "Fill color thresholds", kind: "list", item: thresholdItem, newItem: nextThreshold, empty: "No thresholds — default fill color" },
   ]),
-  widget("numericDisplay", "Numeric", 3, 2, [...range(), unit]),
+  widget("numericDisplay", "Numeric", 3, 2, [
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "plain", note: "The line and the arrow show the values since the screen was opened.", options: [{ value: "plain", label: "Plain number" }, { value: "sparkline", label: "With a small history line" }, { value: "range", label: "With a bar from min to max" }, { value: "trend", label: "With a rising or falling arrow" }, { value: "segment", label: "Seven-segment digits" }] },
+    ...range(), unit,
+  ]),
   widget("textDisplay", "Text", 4, 2, [
     { key: "staticText", label: "Static text", kind: "text", multiline: true, placeholder: "e.g. Pump Status", note: "Leave blank to show the tag value. Enter starts a new line." },
     { key: "rotation", label: "Turned", kind: "choice", numeric: true, default: "0",
       options: [{ value: "0", label: "not turned" }, { value: "90", label: "90°" }, { value: "180", label: "180°" }, { value: "270", label: "270°" }] },
   ]),
   widget("led", "LED", 2, 2, [
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "dot", options: [{ value: "dot", label: "Round light and text" }, { value: "pill", label: "Pill badge" }, { value: "tile", label: "Filled tile" }, { value: "lamp", label: "Square lamp" }, { value: "icon", label: "Icon" }, { value: "ring", label: "Ring" }] },
+    { key: "icon", label: "Icon", kind: "choice", display: "select", default: "bolt", showIf: (c) => c.variant === "icon", options: ICON_NAMES.map((value) => ({ value })) },
     { key: "trueColor", label: "ON color", kind: "color", default: "#22c55e", half: true },
     { key: "falseColor", label: "OFF color", kind: "color", default: "#3f3f46", half: true },
     { key: "trueLabel", label: "ON label", kind: "text", default: "ON", half: true },
     { key: "falseLabel", label: "OFF label", kind: "text", default: "OFF", half: true },
   ]),
   widget("tank", "Tank", 2, 4, [
+    { key: "variant", label: "Style", kind: "choice", display: "select", default: "bar", options: [{ value: "bar", label: "Bar beside the value" }, { value: "cylinder", label: "Cylinder" }, { value: "silo", label: "Silo with a cone" }, { value: "vessel", label: "Vessel on its side" }, { value: "bottle", label: "Bottle" }, { value: "level", label: "The whole card fills" }] },
+    { key: "showScale", label: "Scale beside the tank", kind: "boolean", default: false, half: true, showIf: (c) => !!c.variant && c.variant !== "bar" && c.variant !== "level" },
+    { key: "wave", label: "Moving surface", kind: "boolean", default: false, half: true, showIf: (c) => !!c.variant && c.variant !== "bar" && c.variant !== "level" },
     ...range(), unit,
     { key: "thresholds", label: "Fill color thresholds", kind: "list", item: thresholdItem, newItem: nextThreshold, empty: "No thresholds — default fill color" },
   ]),
@@ -272,6 +283,7 @@ export const FRAME_SETTINGS: SettingsGroup[] = [
     { key: "showLabel", label: "Show the label", kind: "boolean", default: true },
     { key: "showUnit", label: "Show the unit", kind: "boolean", default: true },
     { key: "showQuality", label: "Always show quality (otherwise only when not Good)", kind: "boolean", default: false },
+    { key: "cardStyle", label: "Card style", kind: "choice", display: "select", default: "", note: "Glass blurs what is behind it, which costs drawing time on a small panel.", options: [{ value: "", label: "the theme's" }, { value: "plain", label: "Plain" }, { value: "accent", label: "Accent bar on the left" }, { value: "header", label: "Label on a colored band" }, { value: "outlined", label: "Outlined, no fill" }, { value: "gradient", label: "Soft gradient" }, { value: "glass", label: "Glass (see-through)" }, { value: "inset", label: "Inset" }] },
     { key: "noPadding", label: "No padding", kind: "boolean", default: false },
     { key: "padding", label: "Padding (px)", kind: "number", min: 0, blank: "theme", half: true },
     { key: "radius", label: "Corner radius (px)", kind: "number", min: 0, blank: "theme", half: true },

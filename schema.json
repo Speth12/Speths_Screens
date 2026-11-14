@@ -149,6 +149,7 @@
         "corners": { "$ref": "#/$defs/ThemeCorners" },
         "depth": { "$ref": "#/$defs/ThemeDepth" },
         "density": { "$ref": "#/$defs/ThemeDensity" },
+        "cardStyle": { "$ref": "#/$defs/CardStyle" },
         "font": { "$ref": "#/$defs/ThemeFont" },
         "accent": {
           "type": "string",
@@ -186,6 +187,12 @@
       "type": "string",
       "enum": ["flat", "raised", "borderless"],
       "description": "flat: a 1 px border. raised: a soft shadow. borderless: neither, the cards stand out by color alone"
+    },
+    "CardStyle": {
+      "title": "CardStyle",
+      "type": "string",
+      "enum": ["plain", "accent", "header", "outlined", "gradient", "glass", "inset"],
+      "description": "How a widget's card is drawn: plain, accent (a colored bar down the left), header (the label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a small panel), inset (pressed into the page). A theme sets it for every card and a widget can set its own"
     },
     "ThemeDensity": {
       "title": "ThemeDensity",
@@ -1114,6 +1121,9 @@
         "textColor": {
           "type": "string"
         },
+        "cardStyle": {
+          "$ref": "#/$defs/CardStyle"
+        },
         "noPadding": {
           "type": "boolean"
         },
@@ -1262,6 +1272,15 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["arc", "ring", "half", "dial", "bar", "vbar", "segments"],
+          "description": "How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full ring with the value in the middle), half (a half circle), dial (a needle over a ticked scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light up)"
+        },
+        "showTicks": {
+          "type": "boolean",
+          "description": "Scale marks and the lowest and highest value; missing means shown where the style has them"
+        },
         "min": {
           "type": "number"
         },
@@ -1290,6 +1309,11 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["plain", "sparkline", "range", "trend", "segment"],
+          "description": "How the number is drawn: plain (the default), sparkline (the last minutes as a small line under it), range (a bar from min to max under it), trend (an arrow showing whether it is rising or falling), segment (seven-segment style digits)"
+        },
         "min": {
           "type": "number"
         },
@@ -1336,6 +1360,14 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["dot", "pill", "tile", "lamp", "icon", "ring"],
+          "description": "How the state is drawn: dot (the default, a round light and its text), pill (a rounded badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in the color), ring (a ring that fills when on)"
+        },
+        "icon": {
+          "$ref": "#/$defs/PageIcon"
+        },
         "trueColor": {
           "type": "string",
           "description": "LED color when true"
@@ -1365,6 +1397,19 @@
         }
       ],
       "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["bar", "cylinder", "silo", "vessel", "bottle", "level"],
+          "description": "How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole card fills up)"
+        },
+        "showScale": {
+          "type": "boolean",
+          "description": "Marks at each quarter with their values beside the tank"
+        },
+        "wave": {
+          "type": "boolean",
+          "description": "A moving wave on the surface (still for a browser that asks for less motion)"
+        },
         "min": {
           "type": "number"
         },

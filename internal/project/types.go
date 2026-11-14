@@ -365,18 +365,38 @@ type PartFlexOverride struct {
 //
 // Settings of a table widget
 type CustomWidgetPartProps struct {
-	Max        *float64    `json:"max,omitempty"`
-	Min        *float64    `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	// Scale marks and the lowest and highest value; missing means shown where the style has them
+	ShowTicks  *bool       `json:"showTicks,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
-	BgColor    *string     `json:"bgColor,omitempty"`
+	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+	// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+	// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+	// up)
+	//
+	// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+	// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+	// rising or falling), segment (seven-segment style digits)
+	//
+	// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+	// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+	// the color), ring (a ring that fills when on)
+	//
+	// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+	// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+	// card fills up)
+	Variant *Variant `json:"variant,omitempty"`
+	BgColor *string  `json:"bgColor,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
 	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	BorderWidth *float64   `json:"borderWidth,omitempty"`
+	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
@@ -441,15 +461,19 @@ type CustomWidgetPartProps struct {
 	FalseColor *string `json:"falseColor,omitempty"`
 	// LED text when false
 	FalseLabel *string `json:"falseLabel,omitempty"`
+	// Button icon (emoji or short text)
+	Icon *string `json:"icon,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true
-	TrueLabel  *string        `json:"trueLabel,omitempty"`
+	TrueLabel *string `json:"trueLabel,omitempty"`
+	// Marks at each quarter with their values beside the tank
+	ShowScale *bool `json:"showScale,omitempty"`
+	// A moving wave on the surface (still for a browser that asks for less motion)
+	Wave       *bool          `json:"wave,omitempty"`
 	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
 	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
 	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
-	// Button icon (emoji or short text)
-	Icon *string `json:"icon,omitempty"`
 	// Toggle button color when off
 	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
 	// Toggle button color when on
@@ -866,18 +890,38 @@ type WidgetPlacement struct {
 //
 // Settings of a table widget
 type WidgetProps struct {
-	Max        *float64    `json:"max,omitempty"`
-	Min        *float64    `json:"min,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	// Scale marks and the lowest and highest value; missing means shown where the style has them
+	ShowTicks  *bool       `json:"showTicks,omitempty"`
 	Thresholds []Threshold `json:"thresholds,omitempty"`
 	Unit       *string     `json:"unit,omitempty"`
-	BgColor    *string     `json:"bgColor,omitempty"`
+	// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+	// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+	// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+	// up)
+	//
+	// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+	// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+	// rising or falling), segment (seven-segment style digits)
+	//
+	// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+	// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+	// the color), ring (a ring that fills when on)
+	//
+	// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+	// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+	// card fills up)
+	Variant *Variant `json:"variant,omitempty"`
+	BgColor *string  `json:"bgColor,omitempty"`
 	// Color the frame flashes while blinking; missing means the widget fades in and out
 	BlinkColor *string `json:"blinkColor,omitempty"`
 	// Blink period in milliseconds while dynamics.blink is on; missing means 800
 	BlinkPeriodMS *int64  `json:"blinkPeriodMs,omitempty"`
 	BorderColor   *string `json:"borderColor,omitempty"`
 	// Border width in pixels; missing means the theme's
-	BorderWidth *float64 `json:"borderWidth,omitempty"`
+	BorderWidth *float64   `json:"borderWidth,omitempty"`
+	CardStyle   *CardStyle `json:"cardStyle,omitempty"`
 	// Frame border color rules, applied to the color tag (bindings.color, else the value tag)
 	ColorThresholds []Threshold `json:"colorThresholds,omitempty"`
 	FontBold        *bool       `json:"fontBold,omitempty"`
@@ -942,15 +986,19 @@ type WidgetProps struct {
 	FalseColor *string `json:"falseColor,omitempty"`
 	// LED text when false
 	FalseLabel *string `json:"falseLabel,omitempty"`
+	// Button icon (emoji or short text)
+	Icon *string `json:"icon,omitempty"`
 	// LED color when true
 	TrueColor *string `json:"trueColor,omitempty"`
 	// LED text when true
-	TrueLabel  *string        `json:"trueLabel,omitempty"`
+	TrueLabel *string `json:"trueLabel,omitempty"`
+	// Marks at each quarter with their values beside the tank
+	ShowScale *bool `json:"showScale,omitempty"`
+	// A moving wave on the surface (still for a browser that asks for less motion)
+	Wave       *bool          `json:"wave,omitempty"`
 	BtnColor   *ButtonColor   `json:"btnColor,omitempty"`
 	BtnRounded *ButtonRounded `json:"btnRounded,omitempty"`
 	BtnVariant *ButtonVariant `json:"btnVariant,omitempty"`
-	// Button icon (emoji or short text)
-	Icon *string `json:"icon,omitempty"`
 	// Toggle button color when off
 	ToggleOffColor *string `json:"toggleOffColor,omitempty"`
 	// Toggle button color when on
@@ -1283,14 +1331,15 @@ type ShellNavOptions struct {
 // theme can be taken whole or built from its parts
 type Theme struct {
 	// The main color of buttons and selections as #rrggbb; replaces the palette's
-	Accent  *string       `json:"accent,omitempty"`
-	Corners *ThemeCorners `json:"corners,omitempty"`
-	Density *ThemeDensity `json:"density,omitempty"`
-	Depth   *ThemeDepth   `json:"depth,omitempty"`
-	Font    *string       `json:"font,omitempty"`
-	Mode    *ThemeMode    `json:"mode,omitempty"`
-	Palette *ThemePalette `json:"palette,omitempty"`
-	Preset  *ThemePreset  `json:"preset,omitempty"`
+	Accent    *string       `json:"accent,omitempty"`
+	CardStyle *CardStyle    `json:"cardStyle,omitempty"`
+	Corners   *ThemeCorners `json:"corners,omitempty"`
+	Density   *ThemeDensity `json:"density,omitempty"`
+	Depth     *ThemeDepth   `json:"depth,omitempty"`
+	Font      *string       `json:"font,omitempty"`
+	Mode      *ThemeMode    `json:"mode,omitempty"`
+	Palette   *ThemePalette `json:"palette,omitempty"`
+	Preset    *ThemePreset  `json:"preset,omitempty"`
 }
 
 type Udt struct {
@@ -1475,11 +1524,28 @@ const (
 type ButtonVariant string
 
 const (
-	ButtonVariantFlat ButtonVariant = "flat"
-	Filled            ButtonVariant = "filled"
-	Ghost             ButtonVariant = "ghost"
-	Industrial        ButtonVariant = "industrial"
-	Outlined          ButtonVariant = "outlined"
+	ButtonVariantFlat     ButtonVariant = "flat"
+	ButtonVariantOutlined ButtonVariant = "outlined"
+	Filled                ButtonVariant = "filled"
+	Ghost                 ButtonVariant = "ghost"
+	Industrial            ButtonVariant = "industrial"
+)
+
+// How a widget's card is drawn: plain, accent (a colored bar down the left), header (the
+// label on a colored band), outlined (a heavier border and no fill), gradient (a soft shade
+// from top to bottom), glass (see-through, blurring what is behind; costs drawing time on a
+// small panel), inset (pressed into the page). A theme sets it for every card and a widget
+// can set its own
+type CardStyle string
+
+const (
+	Accent            CardStyle = "accent"
+	CardStyleOutlined CardStyle = "outlined"
+	CardStylePlain    CardStyle = "plain"
+	Glass             CardStyle = "glass"
+	Gradient          CardStyle = "gradient"
+	Header            CardStyle = "header"
+	Inset             CardStyle = "inset"
 )
 
 // Shape: how a line crosses its box; missing means horizontal
@@ -1561,8 +1627,8 @@ const (
 type Style string
 
 const (
-	Bar       Style = "bar"
 	Icons     Style = "icons"
+	StyleBar  Style = "bar"
 	StyleList Style = "list"
 	StyleTabs Style = "tabs"
 )
@@ -1582,6 +1648,49 @@ const (
 	Outline        TextShadow = "outline"
 	Strong         TextShadow = "strong"
 	TextShadowSoft TextShadow = "soft"
+)
+
+// How the gauge is drawn: arc (the default, a 270 degree arc with a needle), ring (a full
+// ring with the value in the middle), half (a half circle), dial (a needle over a ticked
+// scale), bar and vbar (a horizontal or vertical bar), segments (a row of blocks that light
+// up)
+//
+// How the number is drawn: plain (the default), sparkline (the last minutes as a small line
+// under it), range (a bar from min to max under it), trend (an arrow showing whether it is
+// rising or falling), segment (seven-segment style digits)
+//
+// How the state is drawn: dot (the default, a round light and its text), pill (a rounded
+// badge), tile (the whole card takes the color), lamp (a square light), icon (the icon in
+// the color), ring (a ring that fills when on)
+//
+// How the tank is drawn: bar (the default, a narrow bar beside the value), cylinder (domed
+// ends), silo (a cone at the bottom), vessel (lying on its side), bottle, level (the whole
+// card fills up)
+type Variant string
+
+const (
+	Arc           Variant = "arc"
+	Bottle        Variant = "bottle"
+	Cylinder      Variant = "cylinder"
+	Dot           Variant = "dot"
+	Half          Variant = "half"
+	Icon          Variant = "icon"
+	Lamp          Variant = "lamp"
+	Level         Variant = "level"
+	Pill          Variant = "pill"
+	Range         Variant = "range"
+	Ring          Variant = "ring"
+	Segment       Variant = "segment"
+	Segments      Variant = "segments"
+	Silo          Variant = "silo"
+	Sparkline     Variant = "sparkline"
+	Tile          Variant = "tile"
+	VariantBar    Variant = "bar"
+	VariantDial   Variant = "dial"
+	VariantPlain  Variant = "plain"
+	VariantTrend  Variant = "trend"
+	VariantVessel Variant = "vessel"
+	Vbar          Variant = "vbar"
 )
 
 // Long text: wrap onto more lines, stay on one line, or stay on one line cut off with an
@@ -1630,9 +1739,9 @@ const (
 	Tank            WidgetType = "tank"
 	TextDisplay     WidgetType = "textDisplay"
 	TextInput       WidgetType = "textInput"
-	Trend           WidgetType = "trend"
 	UserMenu        WidgetType = "userMenu"
 	WidgetTypeImage WidgetType = "image"
+	WidgetTypeTrend WidgetType = "trend"
 )
 
 // How the server's certificate is checked (https REST, ssl MQTT, OPC UA with security).
@@ -1698,22 +1807,22 @@ const (
 type PageIcon string
 
 const (
-	Alarm        PageIcon = "alarm"
-	Bolt         PageIcon = "bolt"
-	Chart        PageIcon = "chart"
-	Dial         PageIcon = "dial"
-	Flask        PageIcon = "flask"
-	Graph        PageIcon = "graph"
-	Home         PageIcon = "home"
-	Motor        PageIcon = "motor"
-	PageIconList PageIcon = "list"
-	PageIconMap  PageIcon = "map"
-	Pump         PageIcon = "pump"
-	Settings     PageIcon = "settings"
-	Tools        PageIcon = "tools"
-	User         PageIcon = "user"
-	Valve        PageIcon = "valve"
-	Vessel       PageIcon = "vessel"
+	Alarm          PageIcon = "alarm"
+	Bolt           PageIcon = "bolt"
+	Chart          PageIcon = "chart"
+	Flask          PageIcon = "flask"
+	Graph          PageIcon = "graph"
+	Home           PageIcon = "home"
+	Motor          PageIcon = "motor"
+	PageIconDial   PageIcon = "dial"
+	PageIconList   PageIcon = "list"
+	PageIconMap    PageIcon = "map"
+	PageIconVessel PageIcon = "vessel"
+	Pump           PageIcon = "pump"
+	Settings       PageIcon = "settings"
+	Tools          PageIcon = "tools"
+	User           PageIcon = "user"
+	Valve          PageIcon = "valve"
 )
 
 // none: no login, anyone who reaches the runtime can read and write. login: every user must

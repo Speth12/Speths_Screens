@@ -15,6 +15,7 @@ const ELEMENTS: { key: Element; label: string; options: readonly (readonly [stri
   { key: "corners", label: "Corners", options: [["square", "Square"], ["soft", "Soft"], ["round", "Round"]] },
   { key: "depth", label: "Depth", options: [["flat", "Flat, bordered"], ["raised", "Raised, shadow"], ["borderless", "Borderless"]] },
   { key: "density", label: "Density", options: [["compact", "Compact"], ["comfortable", "Comfortable"], ["touch", "Touch (large)"]] },
+  { key: "cardStyle", label: "Cards", options: [["plain", "Plain"], ["accent", "Accent bar"], ["header", "Label on a band"], ["outlined", "Outlined"], ["gradient", "Soft gradient"], ["glass", "Glass (see-through)"], ["inset", "Inset"]] },
 ];
 
 const SHOWN = MANIFESTS.filter((m) => ["gauge", "button", "numericDisplay"].includes(m.type));

@@ -49,6 +49,7 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
   // The built-in header and navigation are built from the project's choices for them.
   const projectShell = project?.shell;
   const security = project?.security;
+  const cardStyle = project?.theme?.cardStyle;
   const languages = project?.languages;
   const translations = project?.translations;
   const { pageName, pageId, projectName } = app;
@@ -86,6 +87,7 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
       useCustomWidget: (id: string | undefined) => findCustomWidget({ customWidgets, shell: projectShell, security }, id),
       useTranslate: () => translate,
       useDevice: useOperatorDevice,
+      useCardStyle: () => cardStyle,
       // A page the person may not see is left out of the navigation.
       usePages: () => {
         const user = { loginRequired, role: tokenUser(token)?.role };
@@ -99,5 +101,5 @@ export function useOperatorHost(project: Project | null, navigate: (pageId: stri
         return { name: user?.name, role: user?.role, loginRequired, logout: user ? onLogout : undefined };
       },
     };
-  }, [viewOnly, images, customWidgets, projectShell, security, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipeSets, drivers, token, loginRequired, onLogout, settings]);
+  }, [viewOnly, images, customWidgets, projectShell, security, cardStyle, languages, translations, language, navigate, pageName, pageId, projectName, pages, recipeSets, drivers, token, loginRequired, onLogout, settings]);
 }

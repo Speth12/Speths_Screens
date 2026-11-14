@@ -11,7 +11,7 @@
 //            color property can name one as "token:alarm-critical"
 // plus shape, type, spacing and shadow, so a theme can change the feel too.
 import type {
-  FontAsset, Theme as ThemeSpec, ThemeCorners, ThemeDensity, ThemeDepth, ThemeMode, ThemePalette, ThemePreset,
+  CardStyle, FontAsset, Theme as ThemeSpec, ThemeCorners, ThemeDensity, ThemeDepth, ThemeMode, ThemePalette, ThemePreset,
 } from "@speths-screens/shared-types";
 import { FONT_LIST } from "./fontList";
 
@@ -189,6 +189,11 @@ const DENSITY: Record<ThemeDensity, { pad: string; size: string; control: string
 interface Preset {
   name: string; tagline: string; mode: ThemeMode; palette: ThemePalette;
   corners: ThemeCorners; depth: ThemeDepth; density: ThemeDensity; font: FontId;
+}
+
+/** How a project's theme draws its cards: what it says, else plain. */
+export function cardStyleOf(spec: ThemeSpec | undefined): CardStyle {
+  return spec?.cardStyle ?? "plain";
 }
 
 /** The ready-made starting points. An element in a project's theme replaces the preset's. */

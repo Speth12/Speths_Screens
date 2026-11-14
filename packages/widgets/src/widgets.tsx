@@ -16,6 +16,7 @@ import { SYMBOLS } from "./symbols";
 import { AccessGate } from "./access";
 import { usePopups } from "./popup";
 import { fontStack, tokenColor } from "./tokens";
+import { GaugeVariant, LedVariant, RangeBar, SegmentDigits, Sparkline, TankVariant, TrendArrow, useRecent, type GaugeVariantName, type LedVariantName, type TankVariantName } from "./variants";
 import { SymbolSVG } from "./SymbolSVG";
 import { anchoredStyle, fitInBox, partStyle, stackFor, stackStyle, type Size } from "./layout";
 import { RecipesWidget } from "./recipes";
@@ -212,6 +213,8 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   const dynColor = resolveColor(colorTag.value, colorThresholds);
 
   const { bgColor, borderColor, textColor } = p;
+  const themeCard = useHost().useCardStyle?.();
+  const cardStyle = p.cardStyle ?? themeCard ?? "plain";
 
   const isTransparent = bgColor === "none" || bgColor === "transparent";
 
@@ -249,11 +252,34 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
     style.padding = 0;
   }
 
+  // The card's style: only a widget that is a card has one.
+  const styled = !(bare || cardless) && cardStyle !== "plain";
+  const fill = bgColor ?? "var(--card)";
+  const accent = dynColor ?? "var(--primary)";
+  if (styled) {
+    (style as Record<string, unknown>)["--frame-pad"] = typeof style.padding === "number" ? `${style.padding}px` : style.padding;
+    if (cardStyle === "accent") style.boxShadow = [`inset 4px 0 0 ${accent}`, style.boxShadow].filter((x) => x && x !== "none").join(", ");
+    if (cardStyle === "outlined") { style.background = "transparent"; style.boxShadow = "none"; if (!dynColor) style.border = `2px solid ${borderColor ?? "var(--border)"}`; }
+    if (cardStyle === "gradient") style.background = `linear-gradient(165deg, color-mix(in srgb, ${fill} 90%, #fff), color-mix(in srgb, ${fill} 92%, #000))`;
+    if (cardStyle === "glass") {
+      style.background = `color-mix(in srgb, ${fill} 55%, transparent)`;
+      style.backdropFilter = "blur(10px)";
+      (style as Record<string, unknown>).WebkitBackdropFilter = "blur(10px)";
+      if (!dynColor && !borderColor) style.border = "1px solid color-mix(in srgb, var(--foreground) 18%, transparent)";
+    }
+    if (cardStyle === "inset") { style.background = `color-mix(in srgb, ${fill} 94%, #000)`; style.boxShadow = "inset 0 2px 6px rgba(0,0,0,.28)"; }
+  }
   const labelAt = p.labelPosition ?? "top";
+  // The label as a colored band across the top of the card (the header style), when it sits on top.
+  const band = styled && cardStyle === "header" && labelAt === "top";
   const label = p.label && !bare && p.showLabel !== false && w.type !== "button" && ( // a button says its own label
     <div
+      data-card-header={band || undefined}
       className={labelAt === "left" ? "text-xs uppercase tracking-wider truncate shrink-0 self-center" : "text-xs uppercase tracking-wider truncate shrink-0"}
-      style={labelStyle(p, dynColor ?? (textColor ?? "var(--card-foreground)"))}
+      style={band
+        ? { ...labelStyle(p, "var(--primary-foreground)"), opacity: 1, color: p.labelColor || "var(--primary-foreground)", background: accent,
+            margin: "calc(-1 * var(--frame-pad)) calc(-1 * var(--frame-pad)) 0", padding: "0.3rem var(--frame-pad)" }
+        : labelStyle(p, dynColor ?? (textColor ?? "var(--card-foreground)"))}
     >
       {p.label}
     </div>
@@ -261,6 +287,7 @@ function Frame({ w, children }: { w: Widget; children: React.ReactNode }) {
   return (
     <div
       className={`h-full w-full flex ${labelAt === "left" ? "flex-row gap-2" : "flex-col gap-1"} select-none transition-colors overflow-hidden`}
+      data-card-style={styled ? cardStyle : undefined}
       style={style}
     >
       {labelAt !== "bottom" && label}
@@ -313,6 +340,20 @@ function GaugeWidget({ w }: WP<"gauge">) {
   const minPt = gaugePolar(GAUGE_START, GAUGE_R + 6);
   const maxPt = gaugePolar(GAUGE_START + GAUGE_SWEEP, GAUGE_R + 6);
 
+  if (p.variant && p.variant !== "arc") {
+    const text = `${typeof t.value === "number" ? t.value.toFixed(1) : "—"}${p.unit && p.showUnit !== false ? ` ${p.unit}` : ""}`;
+    return (
+      <div className="flex flex-col h-full justify-center gap-0.5">
+        <div className="min-h-0 flex-1">
+          <GaugeVariant variant={p.variant as GaugeVariantName} pct={pct} text={text} min={min} max={max} color={arcColor} showTicks={p.showTicks} />
+        </div>
+        {qualityShown(p.showQuality, t.quality) && (
+          <div className={`text-xs text-center ${qualityColor[t.quality] ?? "text-zinc-600"}`}>{t.quality}</div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full justify-center gap-0.5">
       {/* The value is HTML text over the gauge's opening, sized from the card, so it stays readable in a small one. */}
@@ -325,7 +366,7 @@ function GaugeWidget({ w }: WP<"gauge">) {
           <path d={gaugeArcPath(GAUGE_START, fillSweep)} fill="none" stroke={arcColor} strokeWidth="7" strokeLinecap="round" />
         )}
         {/* Tick marks at 0%, 25%, 50%, 75%, 100% */}
-        {[0, 0.25, 0.5, 0.75, 1].map((q) => {
+        {p.showTicks !== false && [0, 0.25, 0.5, 0.75, 1].map((q) => {
           const a = GAUGE_START + q * GAUGE_SWEEP;
           const outer = gaugePolar(a, GAUGE_R + 2);
           const inner = gaugePolar(a, GAUGE_R - 9);
@@ -368,12 +409,18 @@ function GaugeWidget({ w }: WP<"gauge">) {
 function NumericDisplayWidget({ w }: WP<"numericDisplay">) {
   const p = w.props ?? {};
   const t = useTag(w.bindings?.value);
+  const variant = p.variant ?? "plain";
+  const recent = useRecent(variant === "sparkline" || variant === "trend" ? t.value : undefined);
+  const min = p.min ?? 0, max = p.max ?? 100;
   return (
     <div className="flex flex-col h-full" style={{ justifyContent: VALIGN[p.valign ?? ""] ?? "center" }}>
       <div className={`${mainText(p, "text-3xl").className} font-semibold tabular-nums leading-none`}>
-        {fmt(t.value)}
+        {variant === "segment" ? <SegmentDigits text={fmt(t.value)} /> : fmt(t.value)}
         {unitOf(p)}
+        {variant === "trend" && <TrendArrow values={recent} />}
       </div>
+      {variant === "sparkline" && <Sparkline values={recent} />}
+      {variant === "range" && <RangeBar pct={typeof t.value === "number" ? (t.value - min) / (max - min) : 0} min={min} max={max} />}
       {qualityShown(p.showQuality, t.quality) && (
         <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>
       )}
@@ -405,6 +452,9 @@ function LEDWidget({ w }: WP<"led">) {
   const on = !!t.value;
   const trueColor = p.trueColor ?? "#22c55e";
   const falseColor = p.falseColor ?? "#3f3f46";
+  if (p.variant && p.variant !== "dot") {
+    return <LedVariant variant={p.variant as LedVariantName} on={on} color={on ? trueColor : falseColor} label={on ? (p.trueLabel ?? "ON") : (p.falseLabel ?? "OFF")} icon={p.icon} />;
+  }
   return (
     <div className="flex items-center gap-2 h-full">
       <div
@@ -426,6 +476,16 @@ function TankWidget({ w }: WP<"tank">) {
   const v = typeof t.value === "number" ? t.value : 0;
   const pct = Math.max(0, Math.min(100, ((v - min) / (max - min)) * 100));
   const fillColor = resolveColor(v, fillThresholds(p)) ?? "#3b82f6";
+
+  if (p.variant && p.variant !== "bar") {
+    return (
+      <TankVariant variant={p.variant as TankVariantName} pct={pct / 100} color={fillColor} min={min} max={max} showScale={p.showScale} wave={p.wave}>
+        <div className={`${mainText(p, "text-xl").className} font-semibold tabular-nums leading-none`}>{fmt(t.value)}</div>
+        {p.unit && p.showUnit !== false && <div className="text-xs text-zinc-500">{p.unit}</div>}
+        {qualityShown(p.showQuality, t.quality) && <div className={`text-xs mt-1 ${qualityColor[t.quality] ?? "text-zinc-500"}`}>{t.quality}</div>}
+      </TankVariant>
+    );
+  }
 
   return (
     <div className="flex gap-3 h-full items-end">
@@ -913,6 +973,7 @@ export const MOTION_CSS = `
 @keyframes ss-spin { to { transform: rotate(360deg); } }
 @keyframes ss-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes ss-flow { to { stroke-dashoffset: var(--ss-flow-step, -18); } }
+@keyframes ss-wave { to { transform: translateX(40px); } }
 @media (prefers-reduced-motion: reduce) {
   [data-ss-motion] { animation: none !important; }
 }`;
